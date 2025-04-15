@@ -145,11 +145,27 @@ export default function PersonasPage() {
                       <div className="mb-2">
                         <span className="text-xs font-medium text-gray-500">TRAITS</span>
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {(Array.isArray(persona.traits) ? persona.traits : (persona.traits ? persona.traits.split(',').map((t: string) => t.trim()) : [])).map((trait: string, i: number) => (
-                            <Badge key={i} variant="secondary" className="text-xs">
-                              {trait}
-                            </Badge>
-                          ))}
+                          {(() => {
+                            let traits: string[] = [];
+                            if (Array.isArray(persona.traits)) {
+                              traits = persona.traits;
+                            } else if (typeof persona.traits === 'string') {
+                              if (persona.traits.trim().startsWith('[')) {
+                                try {
+                                  traits = JSON.parse(persona.traits);
+                                } catch {
+                                  traits = persona.traits.split(',').map((t: string) => t.trim());
+                                }
+                              } else {
+                                traits = persona.traits.split(',').map((t: string) => t.trim());
+                              }
+                            }
+                            return traits.map((trait, i) => (
+                              <Badge key={i} variant="secondary" className="text-xs">
+                                {trait}
+                              </Badge>
+                            ));
+                          })()}
                         </div>
                       </div>
                       <div className="mb-2">

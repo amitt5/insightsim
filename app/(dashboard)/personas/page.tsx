@@ -35,12 +35,12 @@ export default function PersonasPage() {
               Create New Persona
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="px-6 pt-6 pb-2">
               <DialogTitle>Create New Persona</DialogTitle>
               <DialogDescription>Add a new AI participant persona for your simulations</DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-4 px-6 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-300">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
@@ -99,7 +99,7 @@ export default function PersonasPage() {
               </div>
 
             </div>
-            <DialogFooter>
+            <DialogFooter className="px-6 py-4 border-t">
               <Button type="submit" onClick={() => setOpen(false)}>
                 Save Persona
               </Button>

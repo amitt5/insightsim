@@ -1,23 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { use, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Download, UserCircle, ChevronLeft, ChevronRight } from "lucide-react"
 
-export default function SimulationViewPage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default function SimulationViewPage({ params }: { params: Promise<{ id: string }> }) {
+
+  const { id } = use(params)  // ✅ unwrap the promise
+
   const [activeTab, setActiveTab] = useState("transcript")
   const [isLeftPanelMinimized, setIsLeftPanelMinimized] = useState(false)
 
   // Mock data
   const simulation = {
-    id: params.id,
+    id: id,
     name: "New Snack Product Concept",
     date: "2025-04-10",
     mode: "AI Mod + AI Participants",

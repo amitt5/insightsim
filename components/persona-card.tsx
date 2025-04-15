@@ -64,11 +64,6 @@ export function PersonaCard({ persona, selected = false, onToggle, selectable = 
             <div className="min-w-0 flex-1">
               <h3 className="font-medium truncate">{persona.name}</h3>
               <p className="text-sm flex items-center gap-1 flex-wrap">
-                {persona.gender === "Male" && <span title="Male">♂️</span>}
-                {persona.gender === "Female" && <span title="Female">♀️</span>}
-                {persona.gender && !["Male", "Female"].includes(persona.gender) && (
-                  <span title="Other">⚧️</span>
-                )}
                 {persona.gender && <span>{persona.gender}</span>}
                 {persona.age && <span>{persona.age}</span>}
                 {persona.occupation && <><span>•</span> <span className="truncate">{persona.occupation}</span></>}

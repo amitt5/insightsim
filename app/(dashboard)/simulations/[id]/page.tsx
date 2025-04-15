@@ -125,17 +125,9 @@ export default function SimulationViewPage({ params }: { params: Promise<{ id: s
       {/* 3-Column Layout */}
       <div className="grid grid-cols-12 gap-4 h-[calc(100vh-200px)]">
         {/* Left Column - Participants */}
-        <div className={`${isLeftPanelMinimized ? 'col-span-1' : 'col-span-3'} overflow-hidden transition-all duration-300`}>
-          <Card className="h-full relative">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="absolute top-2 right-2 z-10"
-              onClick={() => setIsLeftPanelMinimized(!isLeftPanelMinimized)}
-            >
-              {isLeftPanelMinimized ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </Button>
-            <CardContent className={`p-4 ${isLeftPanelMinimized ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
+        <div className="col-span-3 overflow-auto">
+          <Card className="h-full">
+            <CardContent className="p-4">
               <h2 className="font-semibold mb-4">Participants</h2>
               <div className="space-y-4">
                 {simulation.participants.map((participant) => (

@@ -133,8 +133,16 @@ export default function PersonasPage() {
                         </div>
                         <div>
                           <h3 className="font-medium">{persona.name}</h3>
-                          <p className="text-sm">
-                            {persona.age} • {persona.occupation}
+                          <p className="text-sm flex items-center gap-1">
+                            {/* {persona.gender === "Male" && <span title="Male">♂️</span>}
+                            {persona.gender === "Female" && <span title="Female">♀️</span>} */}
+                            {persona.gender && !["Male", "Female"].includes(persona.gender) && (
+                              <span title="Other">⚧️</span>
+                            )}
+                            {persona.gender && <span>{persona.gender}</span>}
+                            {persona.age && <span>{persona.age}</span>}
+                            <span>•</span>
+                            {persona.occupation}
                           </p>
                         </div>
                       </div>

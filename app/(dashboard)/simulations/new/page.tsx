@@ -144,8 +144,33 @@ export default function NewSimulationPage() {
                       </div>
 
                       <div className="space-y-2">
+                        <Label htmlFor="gender">Gender</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">Female</SelectItem>
+                            <SelectItem value="Non-binary">Non-binary</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
                         <Label htmlFor="occupation">Occupation</Label>
                         <Input id="occupation" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="archetype">Archetype</Label>
+                        <Input id="archetype" placeholder="e.g., Budget Buyer, Trendsetter" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="bio">Short Bio</Label>
+                        <Textarea id="bio" rows={3} />
                       </div>
 
                       <div className="space-y-2">
@@ -154,13 +179,13 @@ export default function NewSimulationPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="bio">Short bio</Label>
-                        <Textarea id="bio" rows={3} />
+                        <Label htmlFor="persona_goal">Persona Goal</Label>
+                        <Input id="persona_goal" placeholder="What is this persona trying to achieve?" />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="archetype">Archetype</Label>
-                        <Input id="archetype" placeholder="e.g., Budget Buyer, Trendsetter" />
+                        <Label htmlFor="attitude">Attitude Toward Topic</Label>
+                        <Input id="attitude" placeholder="Initial bias or opinion" />
                       </div>
                     </div>
                     <DialogFooter>

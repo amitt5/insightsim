@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -15,32 +15,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Plus, UserCircle } from "lucide-react"
+import { Plus } from "lucide-react"
+import { usePersonas } from "@/lib/usePersonas"
+import { PersonaCard } from "@/components/persona-card"
 
 export default function PersonasPage() {
   const [open, setOpen] = useState(false)
-  const [personas, setPersonas] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    async function fetchPersonas() {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await fetch("/api/personas")
-        if (!res.ok) throw new Error("Failed to fetch personas")
-        const data = await res.json()
-        setPersonas(data)
-      } catch (err: any) {
-        setError(err.message || "Unknown error")
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchPersonas()
-  }, [])
+  const { personas, loading, error } = usePersonas()
 
   return (
     <div className="space-y-6">
@@ -124,69 +105,7 @@ export default function PersonasPage() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {personas.map((persona) => (
-                <Card key={persona.id} className="overflow-hidden">
-                  <CardContent className="p-0">
-                    <div className="bg-primary/10 p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary">
-                          <UserCircle className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">{persona.name}</h3>
-                          <p className="text-sm flex items-center gap-1">
-                            {/* {persona.gender === "Male" && <span title="Male">♂️</span>}
-                            {persona.gender === "Female" && <span title="Female">♀️</span>} */}
-                            {persona.gender && !["Male", "Female"].includes(persona.gender) && (
-                              <span title="Other">⚧️</span>
-                            )}
-                            {persona.gender && <span>{persona.gender}</span>}
-                            {persona.age && <span>{persona.age}</span>}
-                            <span>•</span>
-                            {persona.occupation}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <Badge className="mb-2">{persona.archetype}</Badge>
-                      <p className="mb-3 text-sm text-gray-600">{persona.bio}</p>
-                      <div className="mb-2">
-                        <span className="text-xs font-medium text-gray-500">TRAITS</span>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {(() => {
-                            let traits: string[] = [];
-                            if (Array.isArray(persona.traits)) {
-                              traits = persona.traits;
-                            } else if (typeof persona.traits === 'string') {
-                              if (persona.traits.trim().startsWith('[')) {
-                                try {
-                                  traits = JSON.parse(persona.traits);
-                                } catch {
-                                  traits = persona.traits.split(',').map((t: string) => t.trim());
-                                }
-                              } else {
-                                traits = persona.traits.split(',').map((t: string) => t.trim());
-                              }
-                            }
-                            return traits.map((trait, i) => (
-                              <Badge key={i} variant="secondary" className="text-xs">
-                                {trait}
-                              </Badge>
-                            ));
-                          })()}
-                        </div>
-                      </div>
-                      <div className="mb-2">
-                        <span className="text-xs font-medium text-gray-500">GOAL</span>
-                        <p className="text-xs text-gray-600">{persona.goal}</p>
-                      </div>
-                      <div>
-                        <span className="text-xs font-medium text-gray-500">ATTITUDE</span>
-                        <p className="text-xs text-gray-600">{persona.attitude}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <PersonaCard key={persona.id} persona={persona} />
               ))}
             </div>
           )}

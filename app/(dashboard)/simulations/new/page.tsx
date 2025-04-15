@@ -21,64 +21,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
+import { usePersonas } from "@/lib/usePersonas"
 
 export default function NewSimulationPage() {
   const [step, setStep] = useState(1)
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
   const [openPersonaModal, setOpenPersonaModal] = useState(false)
   const router = useRouter()
-
-  // Mock personas data
-  const personas = [
-    {
-      id: "1",
-      name: "Emma Chen",
-      age: 34,
-      occupation: "Marketing Manager",
-      traits: ["Health-conscious", "Tech-savvy", "Budget-aware"],
-      archetype: "Busy Professional",
-    },
-    {
-      id: "2",
-      name: "David Kim",
-      age: 28,
-      occupation: "Software Developer",
-      traits: ["Early adopter", "Analytical", "Convenience-focused"],
-      archetype: "Tech Enthusiast",
-    },
-    {
-      id: "3",
-      name: "Sarah Johnson",
-      age: 42,
-      occupation: "Healthcare Administrator",
-      traits: ["Quality-focused", "Practical", "Family-oriented"],
-      archetype: "Careful Planner",
-    },
-    {
-      id: "4",
-      name: "Michael Rodriguez",
-      age: 31,
-      occupation: "Financial Analyst",
-      traits: ["Value-conscious", "Detail-oriented", "Skeptical"],
-      archetype: "Rational Buyer",
-    },
-    {
-      id: "5",
-      name: "Aisha Patel",
-      age: 26,
-      occupation: "Content Creator",
-      traits: ["Trend-focused", "Social", "Experience-driven"],
-      archetype: "Trendsetter",
-    },
-    {
-      id: "6",
-      name: "Robert Wilson",
-      age: 58,
-      occupation: "Retired Teacher",
-      traits: ["Traditional", "Price-sensitive", "Community-minded"],
-      archetype: "Traditionalist",
-    },
-  ]
+  const { personas, loading, error } = usePersonas()
 
   const togglePersona = (id: string) => {
     setSelectedPersonas((prev) => (prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [...prev, id]))
@@ -96,7 +46,7 @@ export default function NewSimulationPage() {
         <h1 className="text-3xl font-bold">Create New Simulation</h1>
       </div>
 
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex justify-between">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex flex-col items-center">
@@ -220,16 +170,23 @@ export default function NewSimulationPage() {
                 </Dialog>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {personas.map((persona) => (
-                  <PersonaCard
-                    key={persona.id}
-                    persona={persona}
-                    selected={selectedPersonas.includes(persona.id)}
-                    onToggle={() => togglePersona(persona.id)}
-                  />
-                ))}
-              </div>
+              {loading ? (
+                <div className="p-4 text-center text-gray-500">Loading personas...</div>
+              ) : error ? (
+                <div className="p-4 text-center text-red-500">{error}</div>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                  {personas.map((persona) => (
+                    <PersonaCard
+                      key={persona.id}
+                      persona={persona}
+                      selected={selectedPersonas.includes(persona.id)}
+                      onToggle={() => togglePersona(persona.id)}
+                      selectable={true}
+                    />
+                  ))}
+                </div>
+              )}
             </CardContent>
             <CardFooter className="justify-between">
               <Button variant="outline" onClick={prevStep}>

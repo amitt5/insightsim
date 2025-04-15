@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Download, UserCircle } from "lucide-react"
+import { ArrowLeft, Download, UserCircle, ChevronLeft, ChevronRight } from "lucide-react"
 
 export default function SimulationViewPage({
   params,
@@ -13,6 +13,7 @@ export default function SimulationViewPage({
   params: { id: string }
 }) {
   const [activeTab, setActiveTab] = useState("transcript")
+  const [isLeftPanelMinimized, setIsLeftPanelMinimized] = useState(false)
 
   // Mock data
   const simulation = {
@@ -125,9 +126,17 @@ export default function SimulationViewPage({
       {/* 3-Column Layout */}
       <div className="grid grid-cols-12 gap-4 h-[calc(100vh-200px)]">
         {/* Left Column - Participants */}
-        <div className="col-span-3 overflow-auto">
-          <Card className="h-full">
-            <CardContent className="p-4">
+        <div className={`${isLeftPanelMinimized ? 'col-span-1' : 'col-span-3'} overflow-hidden transition-all duration-300`}>
+          <Card className="h-full relative">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="absolute top-2 right-2 z-10"
+              onClick={() => setIsLeftPanelMinimized(!isLeftPanelMinimized)}
+            >
+              {isLeftPanelMinimized ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+            <CardContent className={`p-4 ${isLeftPanelMinimized ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
               <h2 className="font-semibold mb-4">Participants</h2>
               <div className="space-y-4">
                 {simulation.participants.map((participant) => (
@@ -150,27 +159,43 @@ export default function SimulationViewPage({
         </div>
 
         {/* Middle Column - Chat Window */}
-        <div className="col-span-6 overflow-auto">
-          <Card className="h-full">
-            <CardContent className="p-4">
+        <div className={`${isLeftPanelMinimized ? 'col-span-8' : 'col-span-6'} overflow-auto transition-all duration-300`}>
+          <Card className="h-full flex flex-col">
+            <CardContent className="p-4 flex-1 overflow-auto">
               <h2 className="font-semibold mb-4">Discussion</h2>
               <div className="space-y-6">
                 {simulation.discussion.map((message, i) => (
-                  <div key={i} className="flex gap-4">
+                  <div key={i} className={`flex gap-4 ${message.speaker === "Moderator" ? "flex-row-reverse" : ""}`}>
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                       {message.speaker === "Moderator" ? "M" : message.speaker[0]}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                    <div className={`flex-1 ${message.speaker === "Moderator" ? "text-right" : ""}`}>
+                      <div className={`flex items-center gap-2 ${message.speaker === "Moderator" ? "justify-end" : ""}`}>
                         <span className="font-medium">{message.speaker}</span>
                         <span className="text-xs text-gray-500">{message.time}</span>
                       </div>
-                      <p className="mt-1 text-gray-700">{message.text}</p>
+                      <div className={`mt-1 inline-block rounded-lg px-4 py-2 ${
+                        message.speaker === "Moderator" 
+                          ? "bg-primary text-primary-foreground" 
+                          : "bg-muted"
+                      }`}>
+                        <p className="text-sm">{message.text}</p>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </CardContent>
+            <div className="p-4 border-t">
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Type your message..."
+                  className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <Button>Send</Button>
+              </div>
+            </div>
           </Card>
         </div>
 

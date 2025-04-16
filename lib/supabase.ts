@@ -7,12 +7,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Authentication helper functions
 export async function signUp(email: string, password: string) {
-  const { data, error } = await supabase.auth.signUp({
+  const response = await supabase.auth.signUp({
     email,
     password,
   });
   
-  return { data, error };
+  console.log("Supabase signUp response:", JSON.stringify({
+    user: response.data.user,
+    error: response.error
+  }));
+  
+  return response;
 }
 
 export async function signIn(email: string, password: string) {

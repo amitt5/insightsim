@@ -51,29 +51,85 @@ export default function SignupPage() {
     
     try {
       setLoading(true)
-      const { error } = await signUp(formState.email, formState.password)
+      // Sign up the user with Supabase Auth
+      const response = await signUp(formState.email, formState.password)
       
-      if (error) {
+      if (response.error) {
         toast({
           title: "Signup failed",
-          description: error.message || "Please check your information and try again",
+          description: response.error.message || "Please check your information and try again",
           variant: "destructive",
         })
         return
       }
       
-      // Create user profile in database
-      // This would typically include user metadata like name and company
-      // Using the user ID from the authentication
+      console.log("Signup response:", response);
       
-      // Show success message
-      toast({
-        title: "Account created",
-        description: "Please check your email to confirm your account",
-      })
+      // Get the user ID from the auth response
+      const authUserId = response.data.user?.id
       
-      // Redirect to login page
-      router.push("/login")
+      console.log("Auth user ID:", authUserId);
+      
+      if (authUserId) {
+        // Create a user profile in the custom users table
+        try {
+          const userResponse = await fetch('/api/users', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              auth_id: authUserId,
+              email: formState.email,
+              first_name: formState.firstName,
+              last_name: formState.lastName,
+              company: formState.company || null,
+              role: 'researcher',
+            }),
+          });
+          
+          if (!userResponse.ok) {
+            const errorData = await userResponse.json();
+            console.error('Error creating user profile:', errorData.error || 'Unknown error');
+            toast({
+              title: "Account created",
+              description: "Your account was created, but we had an issue setting up your profile. You can complete your profile later.",
+              variant: "default",
+            });
+          } else {
+            const userData = await userResponse.json();
+            console.log("User profile created:", userData);
+            
+            // Show success message
+            toast({
+              title: "Account created",
+              description: "Please check your email to confirm your account",
+            });
+          }
+          
+          // Redirect to login page
+          router.push("/login");
+        } catch (profileError: any) {
+          console.error('Error creating user profile:', profileError.message || profileError);
+          
+          // Still show a success message since auth account was created
+          toast({
+            title: "Account created",
+            description: "Your account was created, but we had an issue setting up your profile. You can complete your profile later.",
+            variant: "default",
+          });
+          
+          // Redirect to login page
+          router.push("/login");
+        }
+      } else {
+        console.error('No auth user ID was returned from signup');
+        toast({
+          title: "Signup issue",
+          description: "We couldn't complete your registration. Please try again or contact support.",
+          variant: "destructive",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "An error occurred",

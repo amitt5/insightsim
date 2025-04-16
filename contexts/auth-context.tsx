@@ -20,7 +20,7 @@ type AuthContextType = {
   user: User;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ data: { user: any, session: any }, error: any }>;
   signOut: () => Promise<{ error: any }>;
   resetPassword: (email: string) => Promise<{ error: any }>;
 };
@@ -93,8 +93,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   async function signUp(email: string, password: string) {
-    const { data, error } = await supabaseSignUp(email, password);
-    return { error };
+    const response = await supabaseSignUp(email, password);
+    console.log("Auth context signUp response:", response);
+    return response;
   }
 
   async function signOut() {

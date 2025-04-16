@@ -1,3 +1,5 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -8,8 +10,46 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { UserCircle, Settings, LogOut } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/components/ui/use-toast"
+import Link from "next/link"
 
 export function UserNav() {
+  const router = useRouter()
+  const { user, signOut } = useAuth()
+  const { toast } = useToast()
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await signOut()
+      
+      if (error) {
+        toast({
+          title: "Error signing out",
+          description: error.message,
+          variant: "destructive",
+        })
+        return
+      }
+      
+      // Show success message
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account",
+      })
+      
+      // Redirect to login page
+      router.push("/login")
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "An error occurred during sign out",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -20,17 +60,19 @@ export function UserNav() {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">Sarah Johnson</p>
-            <p className="text-xs text-muted-foreground">sarah@acmeresearch.com</p>
+            <p className="text-sm font-medium">{user?.email || "User"}</p>
+            <p className="text-xs text-muted-foreground">{user?.email || "Not signed in"}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
-        </DropdownMenuItem>
+        <Link href="/settings">
+          <DropdownMenuItem>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </DropdownMenuItem>
+        </Link>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

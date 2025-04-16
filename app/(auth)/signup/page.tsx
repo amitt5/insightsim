@@ -1,10 +1,90 @@
+"use client"
+
 import Link from "next/link"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Navbar } from "@/components/navbar"
+import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function SignupPage() {
+  const router = useRouter()
+  const { signUp } = useAuth()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [formState, setFormState] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    company: "",
+  })
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormState(prev => ({ ...prev, [name]: value }))
+  }
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!formState.email || !formState.password || !formState.firstName || !formState.lastName) {
+      toast({
+        title: "Missing information",
+        description: "Please fill out all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (formState.password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    try {
+      setLoading(true)
+      const { error } = await signUp(formState.email, formState.password)
+      
+      if (error) {
+        toast({
+          title: "Signup failed",
+          description: error.message || "Please check your information and try again",
+          variant: "destructive",
+        })
+        return
+      }
+      
+      // Create user profile in database
+      // This would typically include user metadata like name and company
+      // Using the user ID from the authentication
+      
+      // Show success message
+      toast({
+        title: "Account created",
+        description: "Please check your email to confirm your account",
+      })
+      
+      // Redirect to login page
+      router.push("/login")
+    } catch (error: any) {
+      toast({
+        title: "An error occurred",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+  
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -17,35 +97,67 @@ export default function SignupPage() {
           </div>
 
           <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First name</Label>
-                  <Input id="firstName" />
+                  <Input 
+                    id="firstName" 
+                    name="firstName"
+                    value={formState.firstName}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last name</Label>
-                  <Input id="lastName" />
+                  <Input 
+                    id="lastName" 
+                    name="lastName"
+                    value={formState.lastName}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="you@example.com" />
+                <Input 
+                  id="email" 
+                  name="email"
+                  type="email" 
+                  placeholder="you@example.com" 
+                  value={formState.email}
+                  onChange={handleInputChange}
+                  required
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" />
+                <Input 
+                  id="password" 
+                  name="password"
+                  type="password" 
+                  value={formState.password}
+                  onChange={handleInputChange}
+                  required
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="company">Company (optional)</Label>
-                <Input id="company" />
+                <Input 
+                  id="company" 
+                  name="company"
+                  value={formState.company}
+                  onChange={handleInputChange}
+                />
               </div>
 
-              <Button type="submit" className="w-full">
-                Create Account
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
 

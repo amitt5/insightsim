@@ -14,11 +14,38 @@ import { ArrowLeft, ArrowRight, Upload } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+
+export interface Simulation {
+  id: string
+  user_id: string
+  title: string
+  study_type: "focus-group" | "idi"
+  mode: "ai-both" | "human-mod"
+  topic?: string
+  stimulus_media_url?: string
+  discussion_questions: string[]
+  turn_based: boolean
+  num_turns: number
+  status: "Draft" | "Running" | "Completed"
+  created_at: string
+}
 
 export default function NewSimulationPage() {
   const [step, setStep] = useState(1)
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
   const [openPersonaModal, setOpenPersonaModal] = useState(false)
+  const [simulationData, setSimulationData] = useState({
+    title: "",
+    study_type: "focus-group",
+    mode: "ai-both",
+    topic: "",
+    stimulus_media_url: "",
+    discussion_questions: "1. What are your initial impressions of this product concept?\n2. How would you describe this product to a friend?\n3. What concerns, if any, would you have about trying this product?",
+    turn_based: false,
+    num_turns: "10",
+  });
+  
   const router = useRouter()
   const { personas, loading, error } = usePersonas()
 
@@ -26,13 +53,98 @@ export default function NewSimulationPage() {
     setSelectedPersonas((prev) => (prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [...prev, id]))
   }
 
-  const nextStep = () => setStep((prev) => Math.min(prev + 1, 4))
+  const nextStep = () => {
+    console.log('simulationData9', simulationData, selectedPersonas)
+    setStep((prev) => Math.min(prev + 1, 4))
+  }
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1))
   
-  const handleSavePersona = (personaData: any) => {
-    console.log("Save persona:", personaData)
-    // Here you would implement the save functionality
-  }
+  // Input change handlers
+  const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setSimulationData(prev => ({
+      ...prev,
+      [field]: e.target.value
+    }));
+    console.log('simulationData1', simulationData)
+  };
+
+  // Handle select changes
+  const handleSelectChange = (field: string) => (value: string) => {
+    setSimulationData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    console.log('simulationData2', simulationData)
+  };
+
+  // Handle switch change
+  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSimulationData(prev => ({
+      ...prev,
+      turn_based: e.target.checked
+    }));
+    console.log('simulationData3', simulationData)
+  };
+
+  // Handle radio group change
+  const handleRadioChange = (value: string) => {
+    setSimulationData(prev => ({
+      ...prev,
+      mode: value
+    }));
+    console.log('simulationData4', simulationData)
+  };
+
+  // Function to save simulation to database
+  const saveSimulation = async () => {
+    try {
+      const supabase = createClientComponentClient();
+      
+      // Get current user from session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        alert("You must be logged in to create a simulation.");
+        return;
+      }
+      console.log('simulationData5',session, simulationData)
+      // Parse discussion questions from text to array
+      const discussionQuestionsArray = simulationData.discussion_questions
+        .split('\n')
+        .filter(line => line.trim() !== '')
+        .map(line => line.trim());
+
+      // Create simulation record
+      const { data, error } = await supabase.from("simulations").insert([
+        {
+          user_id: session.user.id,
+          title: simulationData.title,
+          study_type: simulationData.study_type,
+          mode: simulationData.mode,
+          topic: simulationData.topic,
+          stimulus_media_url: simulationData.stimulus_media_url,
+          discussion_questions: discussionQuestionsArray,
+          turn_based: simulationData.turn_based,
+          num_turns: parseInt(simulationData.num_turns),
+          status: "Draft",
+          participants: selectedPersonas,
+        },
+      ]).select();
+
+      if (error) {
+        console.error("Error creating simulation:", error);
+        alert(`Failed to create simulation: ${error.message}`);
+        return;
+      }
+
+      // Navigate to the simulation detail page
+      if (data && data.length > 0) {
+        router.push(`/simulations/${data[0].id}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("An error occurred while creating the simulation.");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -70,12 +182,20 @@ export default function NewSimulationPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="studyTitle">Study Title</Label>
-                <Input id="studyTitle" placeholder="e.g., New Product Concept Testing" />
+                <Input 
+                  id="studyTitle" 
+                  placeholder="e.g., New Product Concept Testing" 
+                  value={simulationData.title}
+                  onChange={handleInputChange('title')}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="studyType">Study Type</Label>
-                <Select defaultValue="focus-group">
+                <Select 
+                  value={simulationData.study_type}
+                  onValueChange={handleSelectChange('study_type')}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select study type" />
                   </SelectTrigger>
@@ -88,7 +208,10 @@ export default function NewSimulationPage() {
 
               <div className="space-y-2">
                 <Label>Simulation Mode</Label>
-                <RadioGroup defaultValue="ai-both">
+                <RadioGroup 
+                  value={simulationData.mode}
+                  onValueChange={handleRadioChange}
+                >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="ai-both" id="ai-both" />
                     <Label htmlFor="ai-both">AI Moderator + AI Participants</Label>
@@ -120,7 +243,6 @@ export default function NewSimulationPage() {
                 <CreatePersonaDialog
                   open={openPersonaModal}
                   onOpenChange={setOpenPersonaModal}
-                  onSave={handleSavePersona}
                 />
               </div>
 
@@ -164,7 +286,12 @@ export default function NewSimulationPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="topic">Topic/Stimulus</Label>
-                <Input id="topic" placeholder="e.g., New snack flavor launch" />
+                <Input 
+                  id="topic" 
+                  placeholder="e.g., New snack flavor launch" 
+                  value={simulationData.topic}
+                  onChange={handleInputChange('topic')}
+                />
               </div>
 
               <div className="space-y-2">
@@ -184,9 +311,8 @@ export default function NewSimulationPage() {
                   id="questions"
                   placeholder="Enter your discussion questions here..."
                   rows={5}
-                  defaultValue={
-                    "1. What are your initial impressions of this product concept?\n2. How would you describe this product to a friend?\n3. What concerns, if any, would you have about trying this product?"
-                  }
+                  value={simulationData.discussion_questions}
+                  onChange={handleInputChange('discussion_questions')}
                 />
               </div>
             </CardContent>
@@ -212,12 +338,21 @@ export default function NewSimulationPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor="turn-based">Turn-based simulation</Label>
-                <Switch id="turn-based" />
+                <Switch 
+                  id="turn-based" 
+                  checked={simulationData.turn_based}
+                  onCheckedChange={(checked) => 
+                    setSimulationData(prev => ({ ...prev, turn_based: checked }))
+                  }
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="turns">Number of turns</Label>
-                <Select defaultValue="10">
+                <Select 
+                  value={simulationData.num_turns}
+                  onValueChange={handleSelectChange('num_turns')}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select number of turns" />
                   </SelectTrigger>
@@ -232,10 +367,10 @@ export default function NewSimulationPage() {
               <div className="rounded-md bg-gray-50 p-4">
                 <h3 className="mb-2 font-medium">Simulation Summary</h3>
                 <ul className="space-y-1 text-sm text-gray-600">
-                  <li>Study Type: Focus Group</li>
-                  <li>Mode: AI Moderator + AI Participants</li>
+                  <li>Study Type: {simulationData.study_type === 'focus-group' ? 'Focus Group' : 'In-Depth Interview'}</li>
+                  <li>Mode: {simulationData.mode === 'ai-both' ? 'AI Moderator + AI Participants' : 'Human Moderator + AI Participants'}</li>
                   <li>Participants: {selectedPersonas.length} selected</li>
-                  <li>Topic: New snack flavor launch</li>
+                  <li>Topic: {simulationData.topic || 'Not specified'}</li>
                 </ul>
               </div>
             </CardContent>
@@ -244,7 +379,12 @@ export default function NewSimulationPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <Button onClick={() => router.push("/simulations/1")}>Launch Simulation</Button>
+              <Button 
+                onClick={saveSimulation}
+                disabled={!simulationData.title || selectedPersonas.length === 0}
+              >
+                Launch Simulation
+              </Button>
             </CardFooter>
           </Card>
         )}

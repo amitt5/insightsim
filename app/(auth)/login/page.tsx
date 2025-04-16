@@ -51,7 +51,7 @@ export default function LoginPage() {
       }
       
       // Redirect to dashboard on successful login
-      router.push("/")
+      router.push("/dashboard")
     } catch (error: any) {
       toast({
         title: "An error occurred",

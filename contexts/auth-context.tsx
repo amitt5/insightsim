@@ -1,14 +1,8 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { 
-  getCurrentUser, 
-  signIn as supabaseSignIn, 
-  signUp as supabaseSignUp, 
-  signOut as supabaseSignOut,
-  resetPassword as supabaseResetPassword,
-  supabase
-} from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
 
 // Define the Auth context types
 type User = {
@@ -19,10 +13,7 @@ type User = {
 type AuthContextType = {
   user: User;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ data: { user: any, session: any }, error: any }>;
-  signOut: () => Promise<{ error: any }>;
-  resetPassword: (email: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
 };
 
 // Create the Auth context
@@ -37,28 +28,27 @@ type AuthProviderProps = {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const supabase = createClientComponentClient();
 
   // Check for user on initial load
   useEffect(() => {
     async function loadUser() {
       try {
         setLoading(true);
-        const { user: currentUser, error } = await getCurrentUser();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (currentUser) {
+        if (session?.user) {
           setUser({
-            id: currentUser.id,
-            email: currentUser.email,
+            id: session.user.id,
+            email: session.user.email,
           });
         } else {
           setUser(null);
         }
-        
-        if (error) {
-          console.error("Error loading user:", error);
-        }
       } catch (error) {
         console.error("Unexpected error loading user:", error);
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -69,7 +59,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (session && session.user) {
+        if (session?.user) {
           setUser({
             id: session.user.id,
             email: session.user.email,
@@ -84,37 +74,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase.auth]);
 
-  // Wrap the provider methods
-  async function signIn(email: string, password: string) {
-    const { data, error } = await supabaseSignIn(email, password);
-    return { error };
-  }
-
-  async function signUp(email: string, password: string) {
-    const response = await supabaseSignUp(email, password);
-    console.log("Auth context signUp response:", response);
-    return response;
-  }
-
+  // Sign out method using the server-side route
   async function signOut() {
-    const { error } = await supabaseSignOut();
-    return { error };
-  }
-
-  async function resetPassword(email: string) {
-    const { data, error } = await supabaseResetPassword(email);
-    return { error };
+    try {
+      // Call the server route for sign out
+      await fetch('/auth/sign-out', { method: 'POST' });
+      router.push('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   }
 
   const value = {
     user,
     loading,
-    signIn,
-    signUp,
     signOut,
-    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

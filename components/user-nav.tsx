@@ -22,25 +22,8 @@ export function UserNav() {
 
   const handleLogout = async () => {
     try {
-      const { error } = await signOut()
-      
-      if (error) {
-        toast({
-          title: "Error signing out",
-          description: error.message,
-          variant: "destructive",
-        })
-        return
-      }
-      
-      // Show success message
-      toast({
-        title: "Signed out successfully",
-        description: "You have been signed out of your account",
-      })
-      
-      // Redirect to login page
-      router.push("/login")
+      await signOut()
+      // The AuthContext signOut method now handles redirection and errors
     } catch (err: any) {
       toast({
         title: "Error",

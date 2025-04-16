@@ -7,12 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Navbar } from "@/components/navbar"
-import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/components/ui/use-toast"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { signIn } = useAuth()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [formState, setFormState] = useState({
@@ -39,7 +38,13 @@ export default function LoginPage() {
     
     try {
       setLoading(true)
-      const { error } = await signIn(formState.email, formState.password)
+      
+      // Use createClientComponentClient directly
+      const supabase = createClientComponentClient()
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formState.email,
+        password: formState.password,
+      })
       
       if (error) {
         toast({
@@ -49,6 +54,11 @@ export default function LoginPage() {
         })
         return
       }
+      
+      console.log("Login success:", {
+        hasSession: !!data.session,
+        hasUser: !!data.user,
+      })
       
       // Redirect to dashboard on successful login
       router.push("/dashboard")

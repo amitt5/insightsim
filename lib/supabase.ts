@@ -1,9 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Use the NextJS auth helpers for client components
+export const supabase = createClientComponentClient({
+  supabaseUrl,
+  supabaseKey: supabaseAnonKey,
+});
 
 // Authentication helper functions
 export async function signUp(email: string, password: string) {
@@ -25,6 +30,12 @@ export async function signIn(email: string, password: string) {
     email,
     password,
   });
+  
+  console.log("Sign in response:", JSON.stringify({
+    session: data?.session ? "Session exists" : "No session",
+    user: data?.user ? "User exists" : "No user",
+    error: error
+  }));
   
   return { data, error };
 }

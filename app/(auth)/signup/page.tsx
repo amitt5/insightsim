@@ -7,12 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Navbar } from "@/components/navbar"
-import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/components/ui/use-toast"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 export default function SignupPage() {
   const router = useRouter()
-  const { signUp } = useAuth()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [formState, setFormState] = useState({
@@ -51,8 +50,13 @@ export default function SignupPage() {
     
     try {
       setLoading(true)
-      // Sign up the user with Supabase Auth
-      const response = await signUp(formState.email, formState.password)
+      
+      // Use createClientComponentClient directly
+      const supabase = createClientComponentClient()
+      const response = await supabase.auth.signUp({
+        email: formState.email,
+        password: formState.password,
+      })
       
       if (response.error) {
         toast({
@@ -63,7 +67,11 @@ export default function SignupPage() {
         return
       }
       
-      console.log("Signup response:", response);
+      console.log("Signup response:", {
+        hasUser: !!response.data.user,
+        userId: response.data.user?.id,
+        hasSession: !!response.data.session,
+      });
       
       // Get the user ID from the auth response
       const authUserId = response.data.user?.id

@@ -200,8 +200,18 @@ export default function SimulationViewPage() {
     // Map each message to the database structure
     const messageEntries = parsedMessages.map((msg, index) => {
       const isModerator = msg.name.toLowerCase() === 'moderator';
-      const firstName = msg.name.split(' ')[0]; // Get first name
-      const senderId = isModerator ? null : nameToPersonaIdMap[firstName];
+      // Try to find persona ID using the full name first, then fallback to first name
+      let senderId = null;
+      if (!isModerator) {
+        // Check full name first
+        if (nameToPersonaIdMap[msg.name]) {
+          senderId = nameToPersonaIdMap[msg.name];
+        } else {
+          // Fallback to first name
+          const firstName = msg.name.split(' ')[0];
+          senderId = nameToPersonaIdMap[firstName];
+        }
+      }
       
       return {
         simulation_id: simulationId,
@@ -264,7 +274,9 @@ export default function SimulationViewPage() {
   const nameToPersonaIdMap = personas.reduce((map, persona) => {
     // Extract first name (assuming format is "First Last")
     const firstName = persona.name.split(' ')[0];
+    // Add both first name and full name as keys
     map[firstName] = persona.id;
+    map[persona.name] = persona.id;
     return map;
   }, {} as Record<string, string>);
   

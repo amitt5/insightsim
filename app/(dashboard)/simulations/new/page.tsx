@@ -106,7 +106,7 @@ export default function NewSimulationPage() {
         alert("You must be logged in to create a simulation.");
         return;
       }
-      console.log('simulationData5',session, simulationData)
+
       // Parse discussion questions from text to array
       const discussionQuestionsArray = simulationData.discussion_questions
         .split('\n')
@@ -117,7 +117,7 @@ export default function NewSimulationPage() {
       const { data, error } = await supabase.from("simulations").insert([
         {
           user_id: session.user.id,
-          title: simulationData.title,
+          study_title: simulationData.title,
           study_type: simulationData.study_type,
           mode: simulationData.mode,
           topic: simulationData.topic,
@@ -126,7 +126,6 @@ export default function NewSimulationPage() {
           turn_based: simulationData.turn_based,
           num_turns: parseInt(simulationData.num_turns),
           status: "Draft",
-          participants: selectedPersonas,
         },
       ]).select();
 
@@ -136,8 +135,29 @@ export default function NewSimulationPage() {
         return;
       }
 
-      // Navigate to the simulation detail page
-      if (data && data.length > 0) {
+      // If simulation was created successfully and personas were selected
+      if (data && data.length > 0 && selectedPersonas.length > 0) {
+        const simulationId = data[0].id;
+        
+        // Create entries in simulation_personas table for each selected persona
+        const personaEntries = selectedPersonas.map(personaId => ({
+          simulation_id: simulationId,
+          persona_id: personaId
+        }));
+        
+        const { error: personaError } = await supabase
+          .from("simulation_personas")
+          .insert(personaEntries);
+          
+        if (personaError) {
+          console.error("Error adding personas to simulation:", personaError);
+          alert("Simulation created, but there was an error adding the selected personas.");
+        }
+        
+        // Navigate to the simulation detail page
+        router.push(`/simulations/${simulationId}`);
+      } else if (data && data.length > 0) {
+        // Navigate to the simulation detail page even if no personas
         router.push(`/simulations/${data[0].id}`);
       }
     } catch (error) {

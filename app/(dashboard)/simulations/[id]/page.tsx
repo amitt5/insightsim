@@ -41,6 +41,26 @@ interface SimulationResponse {
   error?: string;
 }
 
+// Interface for simulation messages
+interface SimulationMessage {
+  id: string;
+  simulation_id: string;
+  sender_type: 'moderator' | 'participant';
+  sender_id: string | null;
+  message: string;
+  turn_number: number;
+  created_at: string;
+}
+
+// Interface for formatted message for display
+interface FormattedMessage {
+  speaker: string;
+  text: string;
+  time: string;
+  sender_id?: string | null;
+  sender_type?: string;
+}
+
 export default function SimulationViewPage() {
   const params = useParams(); // Use useParams() to get the business_id
   const simulationId = params.simulation_id as string;
@@ -51,6 +71,9 @@ export default function SimulationViewPage() {
   const [error, setError] = useState<string | null>(null)
   const [simulationData, setSimulationData] = useState<SimulationResponse | null>(null)
   const [messages, setMessages] = useState<Array<{name: string, message: string}>>([])
+  const [simulationMessages, setSimulationMessages] = useState<SimulationMessage[]>([])
+  const [formattedMessages, setFormattedMessages] = useState<FormattedMessage[]>([])
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -82,6 +105,70 @@ export default function SimulationViewPage() {
     fetchSimulationData();
   }, [simulationId]);
 
+  // Call fetchSimulationMessages when simulation data is loaded
+  useEffect(() => {
+    if (simulationData?.simulation?.id) {
+      fetchSimulationMessages(simulationData.simulation.id);
+    }
+  }, [simulationData]);
+
+  // Function to fetch simulation messages
+  const fetchSimulationMessages = async (simId: string) => {
+    try {
+      setIsLoadingMessages(true);
+      const response = await fetch(`/api/simulation-messages/${simId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching messages: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error("API error:", data.error);
+      }
+      
+      // Store the raw messages
+      setSimulationMessages(data.messages || []);
+      
+      // Create a map of persona IDs to names
+      const personaIdToNameMap = (data.personas || []).reduce((map: Record<string, string>, persona: { id: string, name: string }) => {
+        map[persona.id] = persona.name;
+        return map;
+      }, {});
+      
+      // Format messages for display
+      const formatted = (data.messages || []).map((msg: SimulationMessage) => {
+        let speakerName = "Unknown";
+        
+        if (msg.sender_type === 'moderator') {
+          speakerName = 'Moderator';
+        } else if (msg.sender_id && personaIdToNameMap[msg.sender_id]) {
+          speakerName = personaIdToNameMap[msg.sender_id];
+        }
+        
+        // Format timestamp (if available)
+        const timestamp = msg.created_at 
+          ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : `${msg.turn_number}`;
+        
+        return {
+          speaker: speakerName,
+          text: msg.message,
+          time: timestamp,
+          sender_id: msg.sender_id,
+          sender_type: msg.sender_type
+        };
+      });
+      
+      setFormattedMessages(formatted);
+    } catch (err: any) {
+      console.error("Error fetching simulation messages:", err);
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  };
+
   const runSimulation = async () => {
     console.log('runSimulation', simulationData);
     if(simulationData?.simulation && simulationData?.personas) {
@@ -110,10 +197,15 @@ export default function SimulationViewPage() {
           // Parse the response into messages
           
           const parsedMessages = parseSimulationResponse(data.reply);
-          console.log('Parsed messages:', parsedMessages);
+          // console.log('Parsed messages:', parsedMessages);
           
           // Save the messages to the database
-          await saveMessagesToDatabase(parsedMessages);
+          const saveResult = await saveMessagesToDatabase(parsedMessages);
+          
+          // Fetch updated messages after saving
+          if (saveResult && simulationData.simulation.id) {
+            await fetchSimulationMessages(simulationData.simulation.id);
+          }
         }
       } catch (error) {
         console.error("Error running simulation:", error);
@@ -302,7 +394,7 @@ export default function SimulationViewPage() {
     return map;
   }, {} as Record<string, string>);
   
-  console.log('Name to Persona ID Map:', nameToPersonaIdMap);
+  // console.log('Name to Persona ID Map:', nameToPersonaIdMap);
 
   return (
     <div className="space-y-6">
@@ -361,26 +453,32 @@ export default function SimulationViewPage() {
             <CardContent className="p-4 flex-1 overflow-auto">
               <h2 className="font-semibold mb-4">Discussion</h2>
               <div className="space-y-6">
-                {discussion.map((message, i) => (
-                  <div key={i} className={`flex gap-4 ${message.speaker === "Moderator" ? "flex-row-reverse" : ""}`}>
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      {message.speaker === "Moderator" ? "M" : message.speaker[0]}
-                    </div>
-                    <div className={`flex-1 ${message.speaker === "Moderator" ? "text-right" : ""}`}>
-                      <div className={`flex items-center gap-2 ${message.speaker === "Moderator" ? "justify-end" : ""}`}>
-                        <span className="font-medium">{message.speaker}</span>
-                        <span className="text-xs text-gray-500">{message.time}</span>
-                      </div>
-                      <div className={`mt-1 inline-block rounded-lg px-4 py-2 ${
-                        message.speaker === "Moderator" 
-                          ? "bg-primary text-primary-foreground" 
-                          : "bg-muted"
-                      }`}>
-                        <p className="text-sm">{message.text}</p>
-                      </div>
-                    </div>
+                {formattedMessages.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500">
+                    {isLoadingMessages ? "Loading discussion..." : "No messages yet. Start the simulation to begin the discussion."}
                   </div>
-                ))}
+                ) : (
+                  formattedMessages.map((message, i) => (
+                    <div key={i} className={`flex gap-4 ${message.speaker === "Moderator" ? "flex-row-reverse" : ""}`}>
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        {message.speaker === "Moderator" ? "M" : message.speaker[0]}
+                      </div>
+                      <div className={`flex-1 ${message.speaker === "Moderator" ? "text-right" : ""}`}>
+                        <div className={`flex items-center gap-2 ${message.speaker === "Moderator" ? "justify-end" : ""}`}>
+                          <span className="font-medium">{message.speaker}</span>
+                          <span className="text-xs text-gray-500">{message.time}</span>
+                        </div>
+                        <div className={`mt-1 inline-block rounded-lg px-4 py-2 ${
+                          message.speaker === "Moderator" 
+                            ? "bg-primary text-primary-foreground" 
+                            : "bg-muted"
+                        }`}>
+                          <p className="text-sm">{message.text}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
             <div className="p-4 border-t">

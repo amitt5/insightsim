@@ -108,6 +108,7 @@ export default function SimulationViewPage() {
         
         if (data.reply) {
           // Parse the response into messages
+          
           const parsedMessages = parseSimulationResponse(data.reply);
           console.log('Parsed messages:', parsedMessages);
           
@@ -117,6 +118,23 @@ export default function SimulationViewPage() {
       } catch (error) {
         console.error("Error running simulation:", error);
       }
+    }
+  }
+
+  function extractJsonFromResponse(response: string): any[] {
+    try {
+      // Remove Markdown-style code block (e.g., ```json ... ```)
+      const cleaned = response
+        .trim()
+        .replace(/^```json\s*/i, '') // remove leading ```json
+        .replace(/^```\s*/i, '')     // or just ```
+        .replace(/```$/, '')         // remove trailing ```
+        .trim();
+  
+      return JSON.parse(cleaned);
+    } catch (error) {
+      console.error('Failed to parse OpenAI response as JSON:', error);
+      throw new Error('Invalid JSON format from OpenAI');
     }
   }
 
@@ -178,7 +196,11 @@ export default function SimulationViewPage() {
   const parseSimulationResponse = (responseString: string) => {
     try {
       // Remove the initial "=" and any whitespace if it exists
-      const cleanedString = responseString.replace(/^\s*=\s*/, '');
+      const cleanedString = responseString.trim()
+      .replace(/^```json\s*/i, '') // remove leading ```json
+      .replace(/^```\s*/i, '')     // or just ```
+      .replace(/```$/, '')
+      .replace(/^\s*=\s*/, '');
       const parsed = JSON.parse(cleanedString);
       setMessages(parsed);
       return parsed;

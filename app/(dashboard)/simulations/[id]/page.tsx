@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Download, UserCircle, ChevronLeft, ChevronRight } from "lucide-react"
+import { prepareInitialPrompt } from "@/utils/preparePrompt";
 
 // Interface for the Simulation data
 interface Simulation {
@@ -65,7 +66,7 @@ export default function SimulationViewPage() {
         if (data.error) {
           throw new Error(data.error);
         }
-        
+        console.log('data111', data);
         setSimulationData(data);
         setError(null);
       } catch (err: any) {
@@ -79,6 +80,30 @@ export default function SimulationViewPage() {
     
     fetchSimulationData();
   }, [simulationId]);
+
+  const runSimulation = async () => {
+    console.log('runSimulation', simulationData);
+    // const response = await fetch(`/api/test-simulation`, {
+    //   method: 'POST',
+    //   body: JSON.stringify({ prompt: "What do you think about TikTok?" }),
+    // });
+    if(simulationData?.simulation && simulationData?.personas) {
+      const prompt = prepareInitialPrompt(simulationData?.simulation, simulationData?.personas);
+      console.log('prompt123', prompt, nameToPersonaIdMap);
+    // const res = await fetch('/api/run-simulation', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify({
+    //     prompt: prompt,
+    //   }),
+    // });
+    
+    // const data = await res.json();
+    // console.log('open api response123', data.reply); // this will have the simulated conversation
+  }
+  }
 
   // Mock data for discussion, insights, and themes (unchanged)
   const discussion = [
@@ -158,6 +183,16 @@ export default function SimulationViewPage() {
   }
 
   const { simulation, personas } = simulationData;
+
+  // Create a map of first names to persona IDs for easy lookup
+  const nameToPersonaIdMap = personas.reduce((map, persona) => {
+    // Extract first name (assuming format is "First Last")
+    const firstName = persona.name.split(' ')[0];
+    map[firstName] = persona.id;
+    return map;
+  }, {} as Record<string, string>);
+  
+  console.log('Name to Persona ID Map:', nameToPersonaIdMap);
 
   return (
     <div className="space-y-6">
@@ -245,7 +280,7 @@ export default function SimulationViewPage() {
                   placeholder="Type your message..."
                   className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
                 />
-                <Button>Send</Button>
+                <Button onClick={runSimulation}>Send</Button>
               </div>
             </div>
           </Card>

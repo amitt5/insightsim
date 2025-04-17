@@ -1,5 +1,5 @@
 "use client"
-
+import { useParams } from "next/navigation";
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -40,7 +40,10 @@ interface SimulationResponse {
   error?: string;
 }
 
-export default function SimulationViewPage({ params }: { params: { id: string } }) {
+export default function SimulationViewPage() {
+  const params = useParams(); // Use useParams() to get the business_id
+  const simulationId = params.simulation_id as string;
+
   const [activeTab, setActiveTab] = useState("transcript")
   const [isLeftPanelMinimized, setIsLeftPanelMinimized] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -75,7 +78,7 @@ export default function SimulationViewPage({ params }: { params: { id: string } 
     };
     
     fetchSimulationData();
-  }, [params.id]);
+  }, [simulationId]);
 
   // Mock data for discussion, insights, and themes (unchanged)
   const discussion = [

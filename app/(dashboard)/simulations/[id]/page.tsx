@@ -50,6 +50,7 @@ export default function SimulationViewPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [simulationData, setSimulationData] = useState<SimulationResponse | null>(null)
+  const [messages, setMessages] = useState<Array<{name: string, message: string}>>([])
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -83,26 +84,40 @@ export default function SimulationViewPage() {
 
   const runSimulation = async () => {
     console.log('runSimulation', simulationData);
-    // const response = await fetch(`/api/test-simulation`, {
-    //   method: 'POST',
-    //   body: JSON.stringify({ prompt: "What do you think about TikTok?" }),
-    // });
     if(simulationData?.simulation && simulationData?.personas) {
       const prompt = prepareInitialPrompt(simulationData?.simulation, simulationData?.personas);
       console.log('prompt123', prompt, nameToPersonaIdMap);
-    // const res = await fetch('/api/run-simulation', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     prompt: prompt,
-    //   }),
-    // });
     
-    // const data = await res.json();
-    // console.log('open api response123', data.reply); // this will have the simulated conversation
-  }
+      try {
+        const res = await fetch('/api/run-simulation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+          }),
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Error running simulation: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        console.log('API response:', data);
+        
+        if (data.reply) {
+          // Parse the response into messages
+          const parsedMessages = parseSimulationResponse(data.reply);
+          console.log('Parsed messages:', parsedMessages);
+          
+          // Save the messages to the database
+          await saveMessagesToDatabase(parsedMessages);
+        }
+      } catch (error) {
+        console.error("Error running simulation:", error);
+      }
+    }
   }
 
   // Mock data for discussion, insights, and themes (unchanged)
@@ -158,6 +173,67 @@ export default function SimulationViewPage() {
   ];
 
   const themes = ["Health", "Value", "Texture", "Innovation", "Sustainability"];
+
+  // Function to parse the simulation response
+  const parseSimulationResponse = (responseString: string) => {
+    try {
+      // Remove the initial "=" and any whitespace if it exists
+      const cleanedString = responseString.replace(/^\s*=\s*/, '');
+      const parsed = JSON.parse(cleanedString);
+      setMessages(parsed);
+      return parsed;
+    } catch (error) {
+      console.error("Error parsing simulation response:", error);
+      return [];
+    }
+  };
+
+  // Function to save messages to the database
+  const saveMessagesToDatabase = async (parsedMessages: Array<{name: string, message: string}>) => {
+    if (!simulationData?.simulation?.id) {
+      console.error("Simulation ID is not available");
+      return;
+    }
+
+    const simulationId = simulationData.simulation.id;
+    
+    // Map each message to the database structure
+    const messageEntries = parsedMessages.map((msg, index) => {
+      const isModerator = msg.name.toLowerCase() === 'moderator';
+      const firstName = msg.name.split(' ')[0]; // Get first name
+      const senderId = isModerator ? null : nameToPersonaIdMap[firstName];
+      
+      return {
+        simulation_id: simulationId,
+        sender_type: isModerator ? 'moderator' : 'participant',
+        sender_id: senderId,
+        message: msg.message,
+        turn_number: index + 1 // 1-indexed as specified
+      };
+    });
+    
+    try {
+      // Call API endpoint to save messages to database
+      const response = await fetch('/api/simulation-messages/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages: messageEntries }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error saving messages: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Messages saved successfully:', data);
+      return data;
+    } catch (error) {
+      console.error("Error saving messages to database:", error);
+      return null;
+    }
+  };
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-[70vh]">Loading simulation data...</div>;

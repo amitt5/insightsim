@@ -14,7 +14,6 @@ import { ArrowLeft, ArrowRight, Upload } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 export interface Simulation {
   id: string
@@ -98,67 +97,42 @@ export default function NewSimulationPage() {
   // Function to save simulation to database
   const saveSimulation = async () => {
     try {
-      const supabase = createClientComponentClient();
-      
-      // Get current user from session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        alert("You must be logged in to create a simulation.");
-        return;
-      }
-
       // Parse discussion questions from text to array
       const discussionQuestionsArray = simulationData.discussion_questions
         .split('\n')
         .filter(line => line.trim() !== '')
         .map(line => line.trim());
 
-      // Create simulation record
-      const { data, error } = await supabase.from("simulations").insert([
-        {
-          user_id: session.user.id,
-          study_title: simulationData.study_title,
-          study_type: simulationData.study_type,
-          mode: simulationData.mode,
-          topic: simulationData.topic,
-          stimulus_media_url: simulationData.stimulus_media_url,
-          discussion_questions: discussionQuestionsArray,
-          turn_based: simulationData.turn_based,
-          num_turns: parseInt(simulationData.num_turns),
-          status: "Draft",
+      // Call the API to create the simulation
+      const response = await fetch('/api/simulations/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      ]).select();
+        body: JSON.stringify({
+          ...simulationData,
+          discussion_questions: discussionQuestionsArray,
+          num_turns: parseInt(simulationData.num_turns),
+          personas: selectedPersonas,
+        }),
+      });
 
-      if (error) {
-        console.error("Error creating simulation:", error);
-        alert(`Failed to create simulation: ${error.message}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Error creating simulation:", data.error);
+        alert(`Failed to create simulation: ${data.error}`);
         return;
       }
 
-      // If simulation was created successfully and personas were selected
-      if (data && data.length > 0 && selectedPersonas.length > 0) {
-        const simulationId = data[0].id;
-        
-        // Create entries in simulation_personas table for each selected persona
-        const personaEntries = selectedPersonas.map(personaId => ({
-          simulation_id: simulationId,
-          persona_id: personaId
-        }));
-        
-        const { error: personaError } = await supabase
-          .from("simulation_personas")
-          .insert(personaEntries);
-          
-        if (personaError) {
-          console.error("Error adding personas to simulation:", personaError);
-          alert("Simulation created, but there was an error adding the selected personas.");
-        }
-        
-        // Navigate to the simulation detail page
-        router.push(`/simulations/${simulationId}`);
-      } else if (data && data.length > 0) {
-        // Navigate to the simulation detail page even if no personas
-        router.push(`/simulations/${data[0].id}`);
+      if (data.error) {
+        console.warn("Warning:", data.error);
+        alert(data.error);
+      }
+
+      // Navigate to the simulation detail page
+      if (data.simulation) {
+        router.push(`/simulations/${data.simulation.id}`);
       }
     } catch (error) {
       console.error("Error:", error);

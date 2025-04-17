@@ -1,18 +1,26 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
 
 export async function GET() {
-  const { data, error } = await supabase.from('personas').select('*');
+  try {
+    const supabase = createRouteHandlerClient({ cookies })
+    const { data, error } = await supabase.from('personas').select('*');
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error("Unexpected error fetching personas:", error);
+    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
   }
-
-  return NextResponse.json(data);
 }
 
 export async function POST(request: Request) {
   try {
+    const supabase = createRouteHandlerClient({ cookies })
     const personaData = await request.json();
     
     // Make sure we have the required fields
@@ -35,6 +43,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(data[0], { status: 201 });
   } catch (error: any) {
+    console.error("Error creating persona:", error);
     return NextResponse.json(
       { error: error.message || 'Failed to create persona' },
       { status: 500 }

@@ -19,7 +19,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 export interface Simulation {
   id: string
   user_id: string
-  title: string
+  study_title: string
   study_type: "focus-group" | "idi"
   mode: "ai-both" | "human-mod"
   topic?: string
@@ -36,7 +36,7 @@ export default function NewSimulationPage() {
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
   const [openPersonaModal, setOpenPersonaModal] = useState(false)
   const [simulationData, setSimulationData] = useState({
-    title: "",
+    study_title: "",
     study_type: "focus-group",
     mode: "ai-both",
     topic: "",
@@ -117,7 +117,7 @@ export default function NewSimulationPage() {
       const { data, error } = await supabase.from("simulations").insert([
         {
           user_id: session.user.id,
-          study_title: simulationData.title,
+          study_title: simulationData.study_title,
           study_type: simulationData.study_type,
           mode: simulationData.mode,
           topic: simulationData.topic,
@@ -205,8 +205,8 @@ export default function NewSimulationPage() {
                 <Input 
                   id="studyTitle" 
                   placeholder="e.g., New Product Concept Testing" 
-                  value={simulationData.title}
-                  onChange={handleInputChange('title')}
+                  value={simulationData.study_title}
+                  onChange={handleInputChange('study_title')}
                 />
               </div>
 
@@ -401,7 +401,7 @@ export default function NewSimulationPage() {
               </Button>
               <Button 
                 onClick={saveSimulation}
-                disabled={!simulationData.title || selectedPersonas.length === 0}
+                disabled={!simulationData.study_title || selectedPersonas.length === 0}
               >
                 Launch Simulation
               </Button>

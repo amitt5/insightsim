@@ -41,11 +41,11 @@ export default function SimulationsPage() {
         }
         
         const data: SimulationsApiResponse = await response.json();
-        
+        console.log('SimulationsApiResponse', data);
         // Map the API data to the view model
         const mappedSimulations = data.simulations.map(sim => ({
           id: sim.id,
-          name: sim.title,
+          name: sim.study_title,
           date: new Date(sim.created_at).toISOString().split('T')[0],
           mode: sim.mode === 'ai-both' ? 'AI Mod + AI Participants' : 'Human Mod + AI Participants',
           status: sim.status,

@@ -30,15 +30,14 @@ interface Persona {
   export function prepareInitialPrompt(simulation: Simulation, personas: Persona[]) {
     const { study_title, topic, discussion_questions } = simulation;
   
-    // Step 1: Build the context/introduction
     let prompt = `You are simulating a focus group discussion.\n`;
     prompt += `The topic of the discussion is: "${study_title}".\n`;
   
     if (topic) {
-      prompt += `bio info: ${topic}\n`;
+      prompt += `Background info: ${topic}\n`;
     }
   
-    // Step 2: List the participants
+    // Step 1: Participants
     prompt += `\nThere are ${personas.length} participants:\n`;
   
     personas.forEach((persona, index) => {
@@ -49,14 +48,26 @@ interface Persona {
       prompt += `\n`;
     });
   
-    // Step 3: Add instructions for simulation behavior
-    prompt += `\nSimulate a realistic and insightful conversation between these participants.\n`;
+    // Step 2: Moderator instructions
+    prompt += `\nThere is also a moderator named "Moderator". The moderator asks the questions and guides the discussion.\n`;
   
-    if (discussion_questions) {
-      prompt += `Use this guide to shape the conversation:\n${discussion_questions.join('\n')}\n`;
+    // Step 3: Guide the conversation
+    prompt += `\nUse the following discussion guide to structure the conversation:\n`;
+  
+    if (discussion_questions?.length) {
+      discussion_questions.forEach((q, i) => {
+        prompt += `${i + 1}. ${q}\n`;
+      });
     }
   
-    prompt += `\nStart the conversation with one participant making an opening remark.\n`;
+    // Step 4: Response formatting
+    prompt += `\nSimulate a realistic and insightful conversation, with natural back-and-forth between participants and moderator.\n`;
+    prompt += `Respond ONLY with a JSON array of message objects, where each object has:\n`;
+    prompt += `- "name": the speaker (either "Moderator" or one of the participant names)\n`;
+    prompt += `- "message": the text they speak\n`;
+    prompt += `Do not include any explanation, introduction, or closing text. Just the JSON array.\n`;
+  
+    prompt += `\nStart the conversation with the moderator initiating the discussion.\n`;
   
     return prompt;
   }

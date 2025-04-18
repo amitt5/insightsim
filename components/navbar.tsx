@@ -16,18 +16,18 @@ export function Navbar({ isAuthenticated = false }: { isAuthenticated?: boolean 
 
           {isAuthenticated && (
             <div className="ml-10 hidden space-x-4 md:flex">
-              <Link href="/dashboard" className="text-sm font-medium text-gray-700 hover:text-primary">
+              {/* <Link href="/dashboard" className="text-sm font-medium text-gray-700 hover:text-primary">
                 Dashboard
-              </Link>
+              </Link> */}
               <Link href="/simulations" className="text-sm font-medium text-gray-700 hover:text-primary">
                 Simulations
               </Link>
               <Link href="/personas" className="text-sm font-medium text-gray-700 hover:text-primary">
                 Personas
               </Link>
-              <Link href="/reports" className="text-sm font-medium text-gray-700 hover:text-primary">
+              {/* <Link href="/reports" className="text-sm font-medium text-gray-700 hover:text-primary">
                 Reports
-              </Link>
+              </Link> */}
             </div>
           )}
         </div>

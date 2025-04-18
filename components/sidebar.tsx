@@ -15,11 +15,11 @@ export function Sidebar({ className, activePath = "" }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const links = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    // { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/simulations", label: "Simulations", icon: MessageSquare },
     { href: "/personas", label: "Personas", icon: Users },
-    { href: "/reports", label: "Reports", icon: FileText },
-    { href: "/analytics", label: "Analytics", icon: BarChart },
+    // { href: "/reports", label: "Reports", icon: FileText },
+    // { href: "/analytics", label: "Analytics", icon: BarChart },
     { href: "/settings", label: "Settings", icon: Settings },
   ]
 
@@ -31,7 +31,7 @@ export function Sidebar({ className, activePath = "" }: SidebarProps) {
         className
       )}>
         <div className="flex h-16 items-center border-b px-4 justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link href="/simulations" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-r from-purple-500 to-violet-600">
               <span className="text-lg font-bold text-white">IS</span>
             </div>

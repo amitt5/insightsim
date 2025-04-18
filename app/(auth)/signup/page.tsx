@@ -127,8 +127,8 @@ export default function SignupPage() {
             variant: "default",
           });
           
-          // Redirect to login page
-          router.push("/login");
+          // Redirect to simulations page
+          router.push("/simulations");
         }
       } else {
         console.error('No auth user ID was returned from signup');

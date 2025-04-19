@@ -1,3 +1,5 @@
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+
 interface Persona {
     id: string;
     name: string;
@@ -12,20 +14,6 @@ interface Persona {
     discussion_questions?: string[]; // optional, could also be 'discussion_guide'
   }
 
-  interface Simulation1 {
-    id: string;
-    user_id: string;
-    study_title: string;
-    study_type: "focus-group" | "idi";
-    mode: "ai-both" | "human-mod";
-    topic?: string;
-    stimulus_media_url?: string;
-    discussion_questions: string[];
-    turn_based: boolean;
-    num_turns: number;
-    status: "Draft" | "Running" | "Completed";
-    created_at: string;
-  }
   
   export function prepareInitialPrompt(simulation: Simulation, personas: Persona[]) {
     const { study_title, topic, discussion_questions } = simulation;
@@ -68,7 +56,13 @@ interface Persona {
     prompt += `Do not include any explanation, introduction, or closing text. Just the JSON array.\n`;
   
     prompt += `\nStart the conversation with the moderator initiating the discussion.\n`;
-  
-    return prompt;
+    const messages: ChatCompletionMessageParam[] = [
+      {
+        role: 'system',
+        content: prompt
+      }
+    ];
+
+    return messages;
   }
   

@@ -7,7 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Download, UserCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { prepareInitialPrompt } from "@/utils/preparePrompt";
-
+import { buildMessagesForOpenAI } from "@/utils/buildMessagesForOpenAI";
+import { SimulationMessage } from "@/utils/types";
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 // Interface for the Simulation data
 interface Simulation {
   id: string;
@@ -42,15 +44,7 @@ interface SimulationResponse {
 }
 
 // Interface for simulation messages
-interface SimulationMessage {
-  id: string;
-  simulation_id: string;
-  sender_type: 'moderator' | 'participant';
-  sender_id: string | null;
-  message: string;
-  turn_number: number;
-  created_at: string;
-}
+
 
 // Interface for formatted message for display
 interface FormattedMessage {
@@ -74,6 +68,61 @@ export default function SimulationViewPage() {
   const [simulationMessages, setSimulationMessages] = useState<SimulationMessage[]>([])
   const [formattedMessages, setFormattedMessages] = useState<FormattedMessage[]>([])
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
+  const [newMessage, setNewMessage] = useState("")
+
+  // Mock data for discussion, insights, and themes (unchanged)
+  const discussion = [
+    {
+      speaker: "Moderator",
+      text: "Welcome everyone to our focus group on a new plant-based snack chip concept. Let's start by going around and sharing your initial impressions of the product image I just showed you.",
+      time: "00:00",
+    },
+    {
+      speaker: "Emma Chen",
+      text: "I like the packaging design - it clearly communicates that it's plant-based, which is important to me. The green color palette feels fresh and healthy.",
+      time: "00:45",
+    },
+    {
+      speaker: "David Kim",
+      text: "The shape looks interesting - are those ridges for better dipping? I'm curious about the texture and if it would hold up to thicker dips without breaking.",
+      time: "01:20",
+    },
+    {
+      speaker: "Sarah Johnson",
+      text: "I'm immediately checking the nutritional information. I see it's high in protein which is great, but I'm concerned about the sodium content for my kids.",
+      time: "01:55",
+    },
+    {
+      speaker: "Michael Rodriguez",
+      text: "My first thought is about price point. Premium plant-based snacks tend to be expensive. I'd need to know if the value matches the cost before trying it.",
+      time: "02:30",
+    },
+    {
+      speaker: "Moderator",
+      text: "Great insights. Now, how would each of you describe this product to a friend who hasn't seen it?",
+      time: "03:05",
+    },
+    {
+      speaker: "Emma Chen",
+      text: "I'd say it's a modern, eco-friendly chip alternative that doesn't compromise on flavor. The kind of snack you can feel good about eating during a busy workday.",
+      time: "03:40",
+    },
+    {
+      speaker: "David Kim",
+      text: "It's a tech-forward snack - using plant innovation to create something that looks like it has an interesting texture profile. I'd emphasize the uniqueness factor.",
+      time: "04:15",
+    },
+  ];
+
+  const insights = [
+    "Packaging clearly communicates plant-based nature, which resonates with health-conscious consumers",
+    "Texture and dipping functionality are important considerations for the product experience",
+    "Nutritional information is scrutinized, especially by family purchasers",
+    "Price sensitivity is high, even among premium snack buyers",
+    "Environmental messaging could be strengthened to appeal to eco-conscious consumers",
+  ];
+
+  const themes = ["Health", "Value", "Texture", "Innovation", "Sustainability"];
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -162,6 +211,8 @@ export default function SimulationViewPage() {
       });
       
       setFormattedMessages(formatted);
+      // return formatted;
+      return data.messages
     } catch (err: any) {
       console.error("Error fetching simulation messages:", err);
     } finally {
@@ -169,10 +220,12 @@ export default function SimulationViewPage() {
     }
   };
 
-  const runSimulation = async () => {
-    console.log('runSimulation', simulationData);
+  const runSimulation = async (customPrompt?: ChatCompletionMessageParam[]) => {
+    console.log('runSimulationCalled', simulationData);
     if(simulationData?.simulation && simulationData?.personas) {
-      const prompt = prepareInitialPrompt(simulationData?.simulation, simulationData?.personas);
+      const prompt = customPrompt 
+      ? customPrompt 
+      : prepareInitialPrompt(simulationData?.simulation, simulationData?.personas);
       console.log('prompt123', prompt, nameToPersonaIdMap);
     
       try {
@@ -182,7 +235,7 @@ export default function SimulationViewPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            prompt: prompt,
+            messages: prompt,
           }),
         });
         
@@ -197,15 +250,15 @@ export default function SimulationViewPage() {
           // Parse the response into messages
           
           const parsedMessages = parseSimulationResponse(data.reply);
-          // console.log('Parsed messages:', parsedMessages);
+          console.log('Parsed messages111:', parsedMessages);
           
           // Save the messages to the database
-          const saveResult = await saveMessagesToDatabase(parsedMessages);
+          // const saveResult = await saveMessagesToDatabase(parsedMessages);
           
-          // Fetch updated messages after saving
-          if (saveResult && simulationData.simulation.id) {
-            await fetchSimulationMessages(simulationData.simulation.id);
-          }
+          // // Fetch updated messages after saving
+          // if (saveResult && simulationData.simulation.id) {
+          //   await fetchSimulationMessages(simulationData.simulation.id);
+          // }
         }
       } catch (error) {
         console.error("Error running simulation:", error);
@@ -213,76 +266,64 @@ export default function SimulationViewPage() {
     }
   }
 
-  function extractJsonFromResponse(response: string): any[] {
-    try {
-      // Remove Markdown-style code block (e.g., ```json ... ```)
-      const cleaned = response
-        .trim()
-        .replace(/^```json\s*/i, '') // remove leading ```json
-        .replace(/^```\s*/i, '')     // or just ```
-        .replace(/```$/, '')         // remove trailing ```
-        .trim();
-  
-      return JSON.parse(cleaned);
-    } catch (error) {
-      console.error('Failed to parse OpenAI response as JSON:', error);
-      throw new Error('Invalid JSON format from OpenAI');
+  const sendMessage = async () => {
+    // this should 1st save the message to the database
+    // then fetch the messages from the database
+    // then build the messages for openai
+    // then send the messages to openai
+    // then save the response to the database
+    // then fetch the updated messages from the database
+    // then update the messages state
+    // then update the formatted messages state
+    console.log('sendMessage', newMessage, simulationMessages);
+
+    //1. save the message to the database
+    const modMessage = {
+      name: 'Moderator',
+      message: newMessage
     }
+    const saveResult = await saveMessagesToDatabase([modMessage]);
+    if (saveResult && simulationData?.simulation?.id) {
+      //2. fetch the messages from the database
+      const messageFetched = await fetchSimulationMessages(simulationData.simulation.id);
+      setNewMessage('');
+     
+      if(messageFetched) {
+         //3. build the messages for openai
+        const sample = {
+          messages: messageFetched,
+          personas: simulationData?.personas || []
+        }
+        const prompt = buildMessagesForOpenAI(sample);
+        console.log('prompt123',simulationMessages,formattedMessages, messageFetched, prompt);
+        
+        //4. send the messages to openai
+        runSimulation(prompt);
+        // const response = await fetch('/api/run-simulation', {
+        //   method: 'POST',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //   },
+        //   body: JSON.stringify({
+        //     prompt: prompt,
+        //   }),
+        // });
+        // if(response.ok) {
+        //   const data = await response.json();
+        //   console.log('response', data);
+        //   const parsedMessages = parseSimulationResponse(data.reply);
+        //   console.log('Parsed messages:', parsedMessages);
+        
+        //   //5. save the response to the database
+        //   // const saveResult = await saveMessagesToDatabase(data.reply);
+        //   // if (saveResult && simulationData.simulation.id) {
+        //   //   await fetchSimulationMessages(simulationData.simulation.id);
+        //   // }
+        // }
+      }
+    }
+    
   }
-
-  // Mock data for discussion, insights, and themes (unchanged)
-  const discussion = [
-    {
-      speaker: "Moderator",
-      text: "Welcome everyone to our focus group on a new plant-based snack chip concept. Let's start by going around and sharing your initial impressions of the product image I just showed you.",
-      time: "00:00",
-    },
-    {
-      speaker: "Emma Chen",
-      text: "I like the packaging design - it clearly communicates that it's plant-based, which is important to me. The green color palette feels fresh and healthy.",
-      time: "00:45",
-    },
-    {
-      speaker: "David Kim",
-      text: "The shape looks interesting - are those ridges for better dipping? I'm curious about the texture and if it would hold up to thicker dips without breaking.",
-      time: "01:20",
-    },
-    {
-      speaker: "Sarah Johnson",
-      text: "I'm immediately checking the nutritional information. I see it's high in protein which is great, but I'm concerned about the sodium content for my kids.",
-      time: "01:55",
-    },
-    {
-      speaker: "Michael Rodriguez",
-      text: "My first thought is about price point. Premium plant-based snacks tend to be expensive. I'd need to know if the value matches the cost before trying it.",
-      time: "02:30",
-    },
-    {
-      speaker: "Moderator",
-      text: "Great insights. Now, how would each of you describe this product to a friend who hasn't seen it?",
-      time: "03:05",
-    },
-    {
-      speaker: "Emma Chen",
-      text: "I'd say it's a modern, eco-friendly chip alternative that doesn't compromise on flavor. The kind of snack you can feel good about eating during a busy workday.",
-      time: "03:40",
-    },
-    {
-      speaker: "David Kim",
-      text: "It's a tech-forward snack - using plant innovation to create something that looks like it has an interesting texture profile. I'd emphasize the uniqueness factor.",
-      time: "04:15",
-    },
-  ];
-
-  const insights = [
-    "Packaging clearly communicates plant-based nature, which resonates with health-conscious consumers",
-    "Texture and dipping functionality are important considerations for the product experience",
-    "Nutritional information is scrutinized, especially by family purchasers",
-    "Price sensitivity is high, even among premium snack buyers",
-    "Environmental messaging could be strengthened to appeal to eco-conscious consumers",
-  ];
-
-  const themes = ["Health", "Value", "Texture", "Innovation", "Sustainability"];
 
   // Function to parse the simulation response
   const parseSimulationResponse = (responseString: string) => {
@@ -332,7 +373,7 @@ export default function SimulationViewPage() {
         sender_type: isModerator ? 'moderator' : 'participant',
         sender_id: senderId,
         message: msg.message,
-        turn_number: index + 1 // 1-indexed as specified
+        turn_number: index + 1 + simulationMessages?.length // 1-indexed as specified
       };
     });
     
@@ -485,10 +526,13 @@ export default function SimulationViewPage() {
               <div className="flex gap-2">
                 <input 
                   type="text" 
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type your message..."
                   className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
                 />
-                <Button onClick={runSimulation}>Send</Button>
+                {/* <Button onClick={runSimulation}>Run Simulation</Button> */}
+                <Button onClick={sendMessage}>Send</Button>
               </div>
             </div>
           </Card>

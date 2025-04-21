@@ -176,10 +176,15 @@ export default function SimulationViewPage() {
       
       if (data.error) {
         console.error("API error:", data.error);
-      } else if (data.messages.length === 0) {
-        console.log('data222', data);
+      } else if (data.messages.length === 0) { // in case of human moderator, we need to set the initial message
          // if no messages, set the initial message, later also add condition simulationData.simulation.mode === "human-mod"
         setInitialMessage();
+      } else {
+        // if there are messages, check how many times moderator has spoken and then set the new message to the next question
+        const moderatorMessages = data.messages.filter((msg: SimulationMessage) => msg.sender_type === 'moderator');
+        if(moderatorMessages.length) {
+          setNewMessage(simulationData?.simulation?.discussion_questions[moderatorMessages.length] || "");
+        }
       }
       
       // Store the raw messages

@@ -258,12 +258,12 @@ export default function SimulationViewPage() {
           console.log('Parsed messages111:', parsedMessages);
           
           // Save the messages to the database
-          // const saveResult = await saveMessagesToDatabase(parsedMessages);
+          const saveResult = await saveMessagesToDatabase(parsedMessages);
           
           // // Fetch updated messages after saving
-          // if (saveResult && simulationData.simulation.id) {
-          //   await fetchSimulationMessages(simulationData.simulation.id);
-          // }
+          if (saveResult && simulationData.simulation.id) {
+            await fetchSimulationMessages(simulationData.simulation.id);
+          }
         }
       } catch (error) {
         console.error("Error running simulation:", error);
@@ -281,7 +281,7 @@ export default function SimulationViewPage() {
     // then update the messages state
     // then update the formatted messages state
    
-    //1. save the message to the database
+    //1. save the moderator message to the database
     const modMessage = {
       name: 'Moderator',
       message: newMessage
@@ -302,7 +302,7 @@ export default function SimulationViewPage() {
         console.log('prompt123',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
         //4. send the messages to openai
-        // runSimulation(prompt);
+        runSimulation(prompt);
         // const response = await fetch('/api/run-simulation', {
         //   method: 'POST',
         //   headers: {
@@ -370,6 +370,7 @@ export default function SimulationViewPage() {
       const isModerator = msg.name.toLowerCase() === 'moderator';
       // Try to find persona ID using the full name first, then fallback to first name
       let senderId = null;
+      console.log('msg.name',index, isModerator, msg, msg.name, nameToPersonaIdMap);
       if (!isModerator) {
         // Check full name first
         if (nameToPersonaIdMap[msg.name]) {

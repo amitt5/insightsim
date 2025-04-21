@@ -70,7 +70,7 @@ export default function SimulationViewPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [newMessage, setNewMessage] = useState("")
   const [isEndingDiscussion, setIsEndingDiscussion] = useState(false)
-
+  const [isStartingDiscussion, setIsStartingDiscussion] = useState(false)
   // Mock data for discussion, insights, and themes (unchanged)
   const discussion = [
     {
@@ -304,27 +304,7 @@ export default function SimulationViewPage() {
         
         //4. send the messages to openai
         runSimulation(prompt);
-        // const response = await fetch('/api/run-simulation', {
-        //   method: 'POST',
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //   },
-        //   body: JSON.stringify({
-        //     prompt: prompt,
-        //   }),
-        // });
-        // if(response.ok) {
-        //   const data = await response.json();
-        //   console.log('response', data);
-        //   const parsedMessages = parseSimulationResponse(data.reply);
-        //   console.log('Parsed messages:', parsedMessages);
-        
-        //   //5. save the response to the database
-        //   // const saveResult = await saveMessagesToDatabase(data.reply);
-        //   // if (saveResult && simulationData.simulation.id) {
-        //   //   await fetchSimulationMessages(simulationData.simulation.id);
-        //   // }
-        // }
+        // rest of the steps handled in run simulation
       }
     }
     
@@ -415,13 +395,19 @@ export default function SimulationViewPage() {
     }
   };
 
+  const startDiscussion = async () => {
+    setIsStartingDiscussion(true);
+    runSimulation();
+
+  }
+
   const endDiscussion = async () => {
     setIsEndingDiscussion(true);
     try {
       // Send a final thank you message from the moderator
       const finalMessage = {
         name: 'Moderator',
-        message: "aaaaaaaa  Thank you all for your valuable participation and insights in today's discussion. Your feedback has been incredibly helpful. This concludes our session."
+        message: "Thank you all for your valuable participation and insights in today's discussion. Your feedback has been incredibly helpful. This concludes our session."
       };
       
       // Save the final message
@@ -584,8 +570,8 @@ export default function SimulationViewPage() {
                 )}
               </div>
             </CardContent>
-            <div className="p-4 border-t">
-              <div className="flex gap-2">
+            <div className="p-2 border-t">
+            { (simulationData?.simulation?.mode === "human-mod") &&<div className="flex gap-2 ">
                 <input 
                   type="text" 
                   value={newMessage}
@@ -600,14 +586,29 @@ export default function SimulationViewPage() {
                 >
                   Send
                 </Button>
+                
+              </div>}
+
+              { (formattedMessages.length > 0) &&<div className="mt-2">
+                
                 <Button 
                   variant="destructive"
                   onClick={endDiscussion}
                   disabled={simulation.status === 'Completed' || isEndingDiscussion}
                 >
-                  {isEndingDiscussion ? "Ending..." : "End Discussion"}
+                  {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
                 </Button>
-              </div>
+              </div>}
+
+             { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
+                <Button 
+                  onClick={startDiscussion}
+                  disabled={isStartingDiscussion}
+                >
+                  {isStartingDiscussion ? "Starting..." : "Start Discussion"}
+                </Button>
+              </div>}
+
             </div>
           </Card>
         </div>

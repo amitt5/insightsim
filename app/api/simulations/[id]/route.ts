@@ -68,3 +68,37 @@ export async function GET(
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
   }
 } 
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const supabase = createRouteHandlerClient({ cookies })
+  const { id } = params
+  const { data: simulation, error: simulationError } = await supabase
+    .from("simulations")
+    .select("*")
+    .eq("id", id)
+    .single()
+  if (simulationError) {
+    console.error("Error fetching simulation:", simulationError)
+    return NextResponse.json({ error: simulationError.message }, { status: 500 })
+  }
+  if (!simulation) {
+    return NextResponse.json({ error: "Simulation not found" }, { status: 404 })
+  }
+  if (simulation.status === 'Completed') {
+    return NextResponse.json({ error: "Simulation already completed" }, { status: 400 })
+  }
+  const { data: updatedSimulation, error: updateError } = await supabase
+    .from("simulations")
+    .update({ status: 'Completed' })
+    .eq("id", id)
+    .select()
+    .single()
+  if (updateError) {
+    console.error("Error updating simulation:", updateError)
+    return NextResponse.json({ error: updateError.message }, { status: 500 })
+  }
+  return NextResponse.json(updatedSimulation)
+}

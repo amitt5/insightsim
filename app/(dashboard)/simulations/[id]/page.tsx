@@ -69,6 +69,7 @@ export default function SimulationViewPage() {
   const [formattedMessages, setFormattedMessages] = useState<FormattedMessage[]>([])
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [newMessage, setNewMessage] = useState("")
+  const [isEndingDiscussion, setIsEndingDiscussion] = useState(false)
 
   // Mock data for discussion, insights, and themes (unchanged)
   const discussion = [
@@ -414,6 +415,53 @@ export default function SimulationViewPage() {
     }
   };
 
+  const endDiscussion = async () => {
+    setIsEndingDiscussion(true);
+    try {
+      // Send a final thank you message from the moderator
+      const finalMessage = {
+        name: 'Moderator',
+        message: "aaaaaaaa  Thank you all for your valuable participation and insights in today's discussion. Your feedback has been incredibly helpful. This concludes our session."
+      };
+      
+      // Save the final message
+      const saveResult = await saveMessagesToDatabase([finalMessage]);
+      
+      if (saveResult && simulationData?.simulation?.id) {
+        // Update the simulation status to completed
+        const response = await fetch(`/api/simulations/${simulationData.simulation.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: 'Completed'
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update simulation status');
+        }
+
+        // Fetch the final messages to update the UI
+        await fetchSimulationMessages(simulationData.simulation.id);
+        
+        // Update local simulation data
+        setSimulationData(prev => prev ? {
+          ...prev,
+          simulation: {
+            ...prev.simulation,
+            status: 'Completed'
+          }
+        } : null);
+      }
+    } catch (error) {
+      console.error('Error ending discussion:', error);
+    } finally {
+      setIsEndingDiscussion(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-[70vh]">Loading simulation data...</div>;
   }
@@ -544,9 +592,21 @@ export default function SimulationViewPage() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type your message..."
                   className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
+                  disabled={simulation.status === 'Completed'}
                 />
-                {/* <Button onClick={runSimulation}>Run Simulation</Button> */}
-                <Button onClick={sendMessage}>Send</Button>
+                <Button 
+                  onClick={sendMessage}
+                  disabled={!newMessage.trim() || simulation.status === 'Completed' || isLoadingMessages}
+                >
+                  Send
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={endDiscussion}
+                  disabled={simulation.status === 'Completed' || isEndingDiscussion}
+                >
+                  {isEndingDiscussion ? "Ending..." : "End Discussion"}
+                </Button>
               </div>
             </div>
           </Card>

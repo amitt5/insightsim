@@ -14,6 +14,7 @@ import { ArrowLeft, ArrowRight, Upload } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
+import { getRandomSimulation } from "@/utils/mockSimulations";
 
 export interface Simulation {
   id: string
@@ -140,6 +141,11 @@ export default function NewSimulationPage() {
     }
   };
 
+  const handlePlayingAround = () => {
+    const randomSimulation: any = getRandomSimulation();
+    console.log('handlePlayingAround',randomSimulation);
+    setSimulationData(randomSimulation);
+  };
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -174,6 +180,13 @@ export default function NewSimulationPage() {
               <CardDescription>Set up the basic information for your simulation</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+
+            <div className="space-y-2">
+              {/* here add a button "playing around" and add description "This is a test simulation for playing around with the platform" */}
+              <Button variant="default" onClick={handlePlayingAround}>Playing around</Button>
+              <p className="text-sm text-gray-500">Click this button to play around with the platform. This will create a simulation with a predefined topic and discussion questions. You can then run the simulation and see the results. Clicking it again will create a new simulation with a new topic and discussion questions. You can always change the topic and discussion questions.</p>
+            </div>
+
               <div className="space-y-2">
                 <Label htmlFor="studyTitle">Study Title</Label>
                 <Input 

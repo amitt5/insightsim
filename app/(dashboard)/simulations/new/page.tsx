@@ -50,7 +50,11 @@ export default function NewSimulationPage() {
   const { personas, loading, error } = usePersonas()
 
   const togglePersona = (id: string) => {
-    setSelectedPersonas((prev) => (prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [...prev, id]))
+    if(simulationData.study_type === 'focus-group') {
+      setSelectedPersonas((prev) => (prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [...prev, id]))
+    } else { // in case of in-depth interview, we only need one participant
+      setSelectedPersonas((prev) => (prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [id]))
+    }
   }
 
   const nextStep = () => {
@@ -221,11 +225,11 @@ export default function NewSimulationPage() {
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="ai-both" id="ai-both" />
-                    <Label htmlFor="ai-both">AI Moderator + AI Participants</Label>
+                    <Label htmlFor="ai-both">AI {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'} + AI {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'} </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="human-mod" id="human-mod" />
-                    <Label htmlFor="human-mod">Human Moderator + AI Participants</Label>
+                    <Label htmlFor="human-mod">Human {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'} + AI {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'} </Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -242,7 +246,7 @@ export default function NewSimulationPage() {
         {step === 2 && (
           <Card>
             <CardHeader>
-              <CardTitle>Select Participants</CardTitle>
+              <CardTitle>Select {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'}</CardTitle>
               <CardDescription>Choose AI personas to participate in your simulation</CardDescription>
             </CardHeader>
             <CardContent>

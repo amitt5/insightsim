@@ -161,7 +161,7 @@ export default function NewSimulationPage() {
                 {i}
               </div>
               <span className="mt-2 text-xs text-gray-500">
-                {i === 1 ? "Study Details" : i === 2 ? "Participants" : i === 3 ? "Discussion Guide" : "Settings"}
+                {i === 1 ? "Study Details" : i === 2 ? "Participants" : i === 3 ? "Discussion Guide" : "Summary"}
               </span>
             </div>
           ))}
@@ -326,11 +326,11 @@ export default function NewSimulationPage() {
         {step === 4 && (
           <Card>
             <CardHeader>
-              <CardTitle>Simulation Settings</CardTitle>
-              <CardDescription>Configure how your simulation will run</CardDescription>
+              <CardTitle>Simulation Summary</CardTitle>
+              {/* <CardDescription>Configure how your simulation will run</CardDescription> */}
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <Label htmlFor="turn-based">Turn-based simulation</Label>
                 <Switch 
                   id="turn-based" 
@@ -356,17 +356,17 @@ export default function NewSimulationPage() {
                     <SelectItem value="15">15 turns</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
 
-              <div className="rounded-md bg-gray-50 p-4">
-                <h3 className="mb-2 font-medium">Simulation Summary</h3>
+              {/* <div className="rounded-md bg-gray-50 p-4"> */}
                 <ul className="space-y-1 text-sm text-gray-600">
                   <li>Study Type: {simulationData.study_type === 'focus-group' ? 'Focus Group' : 'In-Depth Interview'}</li>
                   <li>Mode: {simulationData.mode === 'ai-both' ? 'AI Moderator + AI Participants' : 'Human Moderator + AI Participants'}</li>
                   <li>Participants: {selectedPersonas.length} selected</li>
                   <li>Topic: {simulationData.topic || 'Not specified'}</li>
+                  <li>Discussion Questions: {simulationData.discussion_questions}</li>
                 </ul>
-              </div>
+              {/* </div> */}
             </CardContent>
             <CardFooter className="justify-between">
               <Button variant="outline" onClick={prevStep}>

@@ -175,6 +175,10 @@ export default function SimulationViewPage() {
       
       if (data.error) {
         console.error("API error:", data.error);
+      } else if (data.messages.length === 0) {
+        console.log('data222', data);
+         // if no messages, set the initial message, later also add condition simulationData.simulation.mode === "human-mod"
+        setInitialMessage();
       }
       
       // Store the raw messages
@@ -211,6 +215,7 @@ export default function SimulationViewPage() {
       });
       
       setFormattedMessages(formatted);
+      
       // return formatted;
       return data.messages
     } catch (err: any) {
@@ -275,8 +280,7 @@ export default function SimulationViewPage() {
     // then fetch the updated messages from the database
     // then update the messages state
     // then update the formatted messages state
-    console.log('sendMessage', newMessage, simulationMessages);
-
+   
     //1. save the message to the database
     const modMessage = {
       name: 'Moderator',
@@ -295,10 +299,10 @@ export default function SimulationViewPage() {
           personas: simulationData?.personas || []
         }
         const prompt = buildMessagesForOpenAI(sample);
-        console.log('prompt123',simulationMessages,formattedMessages, messageFetched, prompt);
+        console.log('prompt123',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
         //4. send the messages to openai
-        runSimulation(prompt);
+        // runSimulation(prompt);
         // const response = await fetch('/api/run-simulation', {
         //   method: 'POST',
         //   headers: {
@@ -323,6 +327,15 @@ export default function SimulationViewPage() {
       }
     }
     
+  }
+
+  // function to set initial message in case of human moderator
+  const setInitialMessage = () => {
+    const initialMessage = {
+      name: 'Moderator',
+      message: "Welcome, everyone! Today, we're going to discuss "  + simulationData?.simulation?.topic + ". Let's start with our first question: " + simulationData?.simulation?.discussion_questions[0]
+    }
+    setNewMessage(initialMessage.message);
   }
 
   // Function to parse the simulation response

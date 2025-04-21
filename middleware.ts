@@ -42,7 +42,6 @@ export default async function middleware(req: NextRequest) {
     }
 
     // If the user is already logged in and trying to access login/signup pages, redirect to home
-    console.log('path111', path, data.session)
     if (data.session && (path === '/login' || path === '/signup')) {
       return NextResponse.redirect(new URL('/simulations', req.url))
     }

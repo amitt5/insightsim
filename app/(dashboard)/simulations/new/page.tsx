@@ -378,7 +378,17 @@ export default function NewSimulationPage() {
               {/* <div className="rounded-md bg-gray-50 p-4"> */}
                 <ul className="space-y-1 text-sm text-gray-600">
                   <li>Study Type: {simulationData.study_type === 'focus-group' ? 'Focus Group' : 'In-Depth Interview'}</li>
-                  <li>Mode: {simulationData.mode === 'ai-both' ? 'AI Moderator + AI Participants' : 'Human Moderator + AI Participants'}</li>
+                  <li>Study mode: {simulationData.mode === 'ai-both' ? 'AI' : 'Human'}</li>
+                  <li>Mode: {
+                  (simulationData.mode === 'ai-both' ? 
+                  'AI ' + (simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer') 
+                  : 
+                  'Human ' + (simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer') )
+                  + 
+                  ' + AI ' + (simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant')
+                  // + ' + AI' + simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant' : 'Human' + simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer' + ' + AI' + simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'
+                  }
+                  </li>
                   <li>Participants: {selectedPersonas.length} selected</li>
                   <li>Topic: {simulationData.topic || 'Not specified'}</li>
                   <li>Discussion Questions: {simulationData.discussion_questions}</li>

@@ -502,7 +502,7 @@ export default function SimulationViewPage() {
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span>{new Date(simulation.created_at).toLocaleDateString()}</span>
             <span>•</span>
-            <span>{simulation.mode === 'ai-both' ? 'AI Mod + AI Participants' : 'Human Mod + AI Participants'}</span>
+            <span>{simulation.mode === 'ai-both' ? 'AI ' + (simulation.study_type === 'focus-group'? 'Moderator': 'Interviewer') + ' + AI ' + (simulation.study_type === 'focus-group'? 'Participants': 'Participant') : 'Human ' + (simulation.study_type === 'focus-group'? 'Moderator': 'Interviewer') + ' + AI ' + (simulation.study_type === 'focus-group'? 'Participants': 'Participant')}</span>
             <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>{simulation.status}</Badge>
           </div>
         </div>
@@ -514,7 +514,7 @@ export default function SimulationViewPage() {
         <div className="col-span-3 overflow-auto">
           <Card className="h-full">
             <CardContent className="p-4">
-              <h2 className="font-semibold mb-4">Participants ({personas.length})</h2>
+              <h2 className="font-semibold mb-4"> {simulation.study_type === 'focus-group'? 'Participants': 'Participant'} {simulation.study_type === 'focus-group'?'(' + personas.length + ')': ''}</h2>
               {personas.length === 0 ? (
                 <div className="text-center py-4 text-gray-500">
                   No participants added to this simulation
@@ -559,7 +559,10 @@ export default function SimulationViewPage() {
                       </div>
                       <div className={`flex-1 ${message.speaker === "Moderator" ? "text-right" : ""}`}>
                         <div className={`flex items-center gap-2 ${message.speaker === "Moderator" ? "justify-end" : ""}`}>
-                          <span className="font-medium">{message.speaker}</span>
+                          <span className="font-medium"> { message.speaker === "Moderator" ? 
+                           (simulationData?.simulation?.study_type === 'focus-group'? 'Moderator': 'Interviewer') : message.speaker}
+                            {/* {message.speaker} */}
+                            </span>
                           <span className="text-xs text-gray-500">{message.time}</span>
                         </div>
                         <div className={`mt-1 inline-block rounded-lg px-4 py-2 ${

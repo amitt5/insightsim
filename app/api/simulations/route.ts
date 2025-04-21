@@ -5,11 +5,12 @@ import { NextResponse } from "next/server"
 export async function GET() {
   try {
     const supabase = createRouteHandlerClient({ cookies })
-    
+    const user = await supabase.auth.getUser()
     // Fetch simulations ordered by creation date (newest first)
     const { data: simulations, error: simulationsError } = await supabase
       .from("simulations")
       .select("*")
+      .eq("user_id", user?.data?.user?.id || "")
       .order("created_at", { ascending: false })
     
     if (simulationsError) {

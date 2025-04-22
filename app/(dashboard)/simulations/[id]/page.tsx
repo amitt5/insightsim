@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Download, UserCircle, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowLeft, Download, UserCircle } from "lucide-react"
 import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePrompt";
 import { buildMessagesForOpenAI } from "@/utils/buildMessagesForOpenAI";
 import { SimulationMessage } from "@/utils/types";
@@ -72,59 +72,7 @@ export default function SimulationViewPage() {
   const [newMessage, setNewMessage] = useState("")
   const [isEndingDiscussion, setIsEndingDiscussion] = useState(false)
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false)
-  // Mock data for discussion, insights, and themes (unchanged)
-  const discussion = [
-    {
-      speaker: "Moderator",
-      text: "Welcome everyone to our focus group on a new plant-based snack chip concept. Let's start by going around and sharing your initial impressions of the product image I just showed you.",
-      time: "00:00",
-    },
-    {
-      speaker: "Emma Chen",
-      text: "I like the packaging design - it clearly communicates that it's plant-based, which is important to me. The green color palette feels fresh and healthy.",
-      time: "00:45",
-    },
-    {
-      speaker: "David Kim",
-      text: "The shape looks interesting - are those ridges for better dipping? I'm curious about the texture and if it would hold up to thicker dips without breaking.",
-      time: "01:20",
-    },
-    {
-      speaker: "Sarah Johnson",
-      text: "I'm immediately checking the nutritional information. I see it's high in protein which is great, but I'm concerned about the sodium content for my kids.",
-      time: "01:55",
-    },
-    {
-      speaker: "Michael Rodriguez",
-      text: "My first thought is about price point. Premium plant-based snacks tend to be expensive. I'd need to know if the value matches the cost before trying it.",
-      time: "02:30",
-    },
-    {
-      speaker: "Moderator",
-      text: "Great insights. Now, how would each of you describe this product to a friend who hasn't seen it?",
-      time: "03:05",
-    },
-    {
-      speaker: "Emma Chen",
-      text: "I'd say it's a modern, eco-friendly chip alternative that doesn't compromise on flavor. The kind of snack you can feel good about eating during a busy workday.",
-      time: "03:40",
-    },
-    {
-      speaker: "David Kim",
-      text: "It's a tech-forward snack - using plant innovation to create something that looks like it has an interesting texture profile. I'd emphasize the uniqueness factor.",
-      time: "04:15",
-    },
-  ];
-
-  const insights = [
-    "Packaging clearly communicates plant-based nature, which resonates with health-conscious consumers",
-    "Texture and dipping functionality are important considerations for the product experience",
-    "Nutritional information is scrutinized, especially by family purchasers",
-    "Price sensitivity is high, even among premium snack buyers",
-    "Environmental messaging could be strengthened to appeal to eco-conscious consumers",
-  ];
-
-  const themes = ["Health", "Value", "Texture", "Innovation", "Sustainability"];
+  const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -160,6 +108,11 @@ export default function SimulationViewPage() {
   useEffect(() => {
     if (simulationData?.simulation?.id) {
       fetchSimulationMessages(simulationData.simulation.id);
+      
+      if(simulationData?.simulation?.status === "Completed") {
+        // Fetch summary and themes messages 
+        fetchSimulationSummaries();
+      }
     }
   }, [simulationData]);
 
@@ -233,10 +186,10 @@ export default function SimulationViewPage() {
   };
 
    // Function to fetch simulation messages
-   const fetchSummaries = async (simId: string) => {
+   const fetchSimulationSummaries = async () => {
     try {
       setIsLoadingSummaries(true);
-      const response = await fetch(`/api/simulation-summaries/${simId}`);
+      const response = await fetch(`/api/simulation-summaries/${simulationData?.simulation.id}`);
       
       if (!response.ok) {
         throw new Error(`Error fetching summaries: ${response.status}`);
@@ -249,6 +202,7 @@ export default function SimulationViewPage() {
       } else {
         // if there are messages, check how many times moderator has spoken and then set the new message to the next question
         console.log('summaries loaded', data);
+        setSimulationSummaries(data);
       }
       return data.messages
     } catch (err: any) {
@@ -472,53 +426,53 @@ export default function SimulationViewPage() {
   }
 
   const endDiscussion = async () => {
-    // setIsEndingDiscussion(true);
-    // try {
-    //   // Send a final thank you message from the moderator
-    //   const finalMessage = {
-    //     name: 'Moderator',
-    //     message: "Thank you all for your valuable participation and insights in today's discussion. Your feedback has been incredibly helpful. This concludes our session."
-    //   };
+    setIsEndingDiscussion(true);
+    try {
+      // Send a final thank you message from the moderator
+      const finalMessage = {
+        name: 'Moderator',
+        message: "Thank you all for your valuable participation and insights in today's discussion. Your feedback has been incredibly helpful. This concludes our session."
+      };
       
-    //   // Save the final message
-    //   const saveResult = await saveMessagesToDatabase([finalMessage]);
+      // Save the final message
+      const saveResult = await saveMessagesToDatabase([finalMessage]);
       
-    //   if (saveResult && simulationData?.simulation?.id) {
-    //     // Update the simulation status to completed
-    //     const response = await fetch(`/api/simulations/${simulationData.simulation.id}`, {
-    //       method: 'PATCH',
-    //       headers: {
-    //         'Content-Type': 'application/json',
-    //       },
-    //       body: JSON.stringify({
-    //         status: 'Completed'
-    //       }),
-    //     });
+      if (saveResult && simulationData?.simulation?.id) {
+        // Update the simulation status to completed
+        const response = await fetch(`/api/simulations/${simulationData.simulation.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: 'Completed'
+          }),
+        });
 
-    //     if (!response.ok) {
-    //       throw new Error('Failed to update simulation status');
-    //     }
+        if (!response.ok) {
+          throw new Error('Failed to update simulation status');
+        }
 
-    //     // Fetch the final messages to update the UI
-    //     await fetchSimulationMessages(simulationData.simulation.id);
+        // Fetch the final messages to update the UI
+        await fetchSimulationMessages(simulationData.simulation.id);
         
-    //     // Update local simulation data
-    //     setSimulationData(prev => prev ? {
-    //       ...prev,
-    //       simulation: {
-    //         ...prev.simulation,
-    //         status: 'Completed'
-    //       }
-    //     } : null);
-    //   }
+        // Update local simulation data
+        setSimulationData(prev => prev ? {
+          ...prev,
+          simulation: {
+            ...prev.simulation,
+            status: 'Completed'
+          }
+        } : null);
+      }
 
     
 
-    // } catch (error) {
-    //   console.error('Error ending discussion:', error);
-    // } finally {
-    //   setIsEndingDiscussion(false);
-    // }
+    } catch (error) {
+      console.error('Error ending discussion:', error);
+    } finally {
+      setIsEndingDiscussion(false);
+    }
 
     if(simulationData?.simulation && simulationMessages) {
     
@@ -553,8 +507,8 @@ export default function SimulationViewPage() {
           const saveResult = await saveSummaryToDatabase(parsedMessages);
           
           // Fetch summary and themes messages after saving
-          if (saveResult && simulationData.simulation.id) {
-            await fetchSummaries(simulationData.simulation.id);
+          if (saveResult && simulationData?.simulation?.id) {
+            await fetchSimulationSummaries();
           }
         }
       } catch (error) {
@@ -712,7 +666,7 @@ export default function SimulationViewPage() {
                 <Button 
                   variant="destructive"
                   onClick={endDiscussion}
-                  // disabled={simulation.status === 'Completed' || isEndingDiscussion}
+                  disabled={simulation.status === 'Completed' || isEndingDiscussion}
                 >
                   {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
                 </Button>
@@ -759,30 +713,30 @@ export default function SimulationViewPage() {
                 <TabsContent value="summary" className="flex-1 overflow-auto">
                   <h3 className="font-medium mb-3">Key Insights</h3>
                   <ul className="space-y-2">
-                    {insights.map((insight, i) => (
+                    {simulationSummaries?.summaries.map((insight, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">
                           {i + 1}
                         </span>
-                        <span className="text-sm">{insight}</span>
+                        <span className="text-sm">{insight.summary}</span>
                       </li>
                     ))}
                   </ul>
 
-                  <div className="mt-6">
+                  {/* <div className="mt-6">
                     <Button variant="outline" size="sm" className="gap-2">
                       <Download className="h-4 w-4" />
                       Download Report
-                    </Button>
-                  </div>
+                    </Button> uncomment me Amit
+                  </div> */}
                 </TabsContent>
 
                 <TabsContent value="themes" className="flex-1 overflow-auto">
                   <h3 className="font-medium mb-3">Emerging Themes</h3>
                   <div className="flex flex-wrap gap-2">
-                    {themes.map((theme, i) => (
+                    {simulationSummaries?.themes.map((theme, i) => (
                       <div key={i} className="rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-                        {theme}
+                        {theme.theme}
                       </div>
                     ))}
                   </div>

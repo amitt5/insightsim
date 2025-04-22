@@ -91,8 +91,9 @@ interface Persona {
   
     prompt += `\nPlease do the following:\n`;
     prompt += `1. Summarize the discussion into 3–5 bullet points (each bullet should be 1–2 sentences).\n`;
-    prompt += `2. Extract 4–6 key themes or insights that emerged (as short titles).\n`;
-  
+    prompt += `2. Extract 4–6 key themes or insights that emerged, as a plain text array..\n`;
+    prompt += `Each theme should be a maximum of 1–2 words (e.g., "Influencers", "Sustainability", "Pricing").\n`;
+
     prompt += `\nRespond in this JSON format:\n`;
     prompt += `{\n  "summary": ["Bullet point 1", "Bullet point 2", ...],\n  "themes": ["Theme 1", "Theme 2", ...]\n}\n`;
   

@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Download, UserCircle, ChevronLeft, ChevronRight } from "lucide-react"
-import { prepareInitialPrompt } from "@/utils/preparePrompt";
+import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePrompt";
 import { buildMessagesForOpenAI } from "@/utils/buildMessagesForOpenAI";
 import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
@@ -59,7 +59,7 @@ export default function SimulationViewPage() {
   const params = useParams(); // Use useParams() to get the business_id
   const simulationId = params.simulation_id as string;
 
-  const [activeTab, setActiveTab] = useState("transcript")
+  const [activeTab, setActiveTab] = useState("summary")
   const [isLeftPanelMinimized, setIsLeftPanelMinimized] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -68,6 +68,7 @@ export default function SimulationViewPage() {
   const [simulationMessages, setSimulationMessages] = useState<SimulationMessage[]>([])
   const [formattedMessages, setFormattedMessages] = useState<FormattedMessage[]>([])
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
+  const [isLoadingSummaries, setIsLoadingSummaries] = useState(false)
   const [newMessage, setNewMessage] = useState("")
   const [isEndingDiscussion, setIsEndingDiscussion] = useState(false)
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false)
@@ -223,6 +224,32 @@ export default function SimulationViewPage() {
       setFormattedMessages(formatted);
       
       // return formatted;
+      return data.messages
+    } catch (err: any) {
+      console.error("Error fetching simulation messages:", err);
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  };
+
+   // Function to fetch simulation messages
+   const fetchSummaries = async (simId: string) => {
+    try {
+      setIsLoadingSummaries(true);
+      const response = await fetch(`/api/simulation-summaries/${simId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching summaries: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error("API error:", data.error);
+      } else {
+        // if there are messages, check how many times moderator has spoken and then set the new message to the next question
+        console.log('summaries loaded', data);
+      }
       return data.messages
     } catch (err: any) {
       console.error("Error fetching simulation messages:", err);
@@ -400,6 +427,44 @@ export default function SimulationViewPage() {
     }
   };
 
+
+  // Function to save summary and themes to the database
+  const saveSummaryToDatabase = async (parsedMessages: {summary: string[], themes: string[]}) => {
+    if (!simulationData?.simulation?.id) {
+      console.error("Simulation ID is not available");
+      return;
+    }
+
+    const simulationId = simulationData.simulation.id;
+    
+    try {
+      const response = await fetch('/api/simulation-summaries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: {
+            simulation_id: simulationId,
+            summary: parsedMessages.summary,
+            themes: parsedMessages.themes
+          }
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error saving messages: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Summary and themes saved successfully:', data);
+      return data;
+    } catch (error) {
+      console.error("Error saving summary to database:", error);
+      return null;
+    }
+  };
+
   const startDiscussion = async () => {
     setIsStartingDiscussion(true);
     runSimulation();
@@ -407,49 +472,94 @@ export default function SimulationViewPage() {
   }
 
   const endDiscussion = async () => {
-    setIsEndingDiscussion(true);
-    try {
-      // Send a final thank you message from the moderator
-      const finalMessage = {
-        name: 'Moderator',
-        message: "Thank you all for your valuable participation and insights in today's discussion. Your feedback has been incredibly helpful. This concludes our session."
-      };
+    // setIsEndingDiscussion(true);
+    // try {
+    //   // Send a final thank you message from the moderator
+    //   const finalMessage = {
+    //     name: 'Moderator',
+    //     message: "Thank you all for your valuable participation and insights in today's discussion. Your feedback has been incredibly helpful. This concludes our session."
+    //   };
       
-      // Save the final message
-      const saveResult = await saveMessagesToDatabase([finalMessage]);
+    //   // Save the final message
+    //   const saveResult = await saveMessagesToDatabase([finalMessage]);
       
-      if (saveResult && simulationData?.simulation?.id) {
-        // Update the simulation status to completed
-        const response = await fetch(`/api/simulations/${simulationData.simulation.id}`, {
-          method: 'PATCH',
+    //   if (saveResult && simulationData?.simulation?.id) {
+    //     // Update the simulation status to completed
+    //     const response = await fetch(`/api/simulations/${simulationData.simulation.id}`, {
+    //       method: 'PATCH',
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //       },
+    //       body: JSON.stringify({
+    //         status: 'Completed'
+    //       }),
+    //     });
+
+    //     if (!response.ok) {
+    //       throw new Error('Failed to update simulation status');
+    //     }
+
+    //     // Fetch the final messages to update the UI
+    //     await fetchSimulationMessages(simulationData.simulation.id);
+        
+    //     // Update local simulation data
+    //     setSimulationData(prev => prev ? {
+    //       ...prev,
+    //       simulation: {
+    //         ...prev.simulation,
+    //         status: 'Completed'
+    //       }
+    //     } : null);
+    //   }
+
+    
+
+    // } catch (error) {
+    //   console.error('Error ending discussion:', error);
+    // } finally {
+    //   setIsEndingDiscussion(false);
+    // }
+
+    if(simulationData?.simulation && simulationMessages) {
+    
+      const prompt = prepareSummaryPrompt(simulationData?.simulation, simulationMessages);
+      console.log('prompt12345',simulationMessages,simulationData?.simulation, prompt, nameToPersonaIdMap);
+    
+      try {
+        const res = await fetch('/api/run-simulation', {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            status: 'Completed'
+            messages: prompt,
           }),
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to update simulation status');
-        }
-
-        // Fetch the final messages to update the UI
-        await fetchSimulationMessages(simulationData.simulation.id);
         
-        // Update local simulation data
-        setSimulationData(prev => prev ? {
-          ...prev,
-          simulation: {
-            ...prev.simulation,
-            status: 'Completed'
+        if (!res.ok) {
+          throw new Error(`Error running simulation: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        console.log('API response:', data);
+        
+        if (data.reply) {
+          // Parse the response into messages
+          
+          const parsedMessages = parseSimulationResponse(data.reply);
+          console.log('Parsed messages222:', parsedMessages);
+          
+          // Save the summary and themes to the database
+          const saveResult = await saveSummaryToDatabase(parsedMessages);
+          
+          // Fetch summary and themes messages after saving
+          if (saveResult && simulationData.simulation.id) {
+            await fetchSummaries(simulationData.simulation.id);
           }
-        } : null);
+        }
+      } catch (error) {
+        console.error("Error running simulation:", error);
       }
-    } catch (error) {
-      console.error('Error ending discussion:', error);
-    } finally {
-      setIsEndingDiscussion(false);
     }
   };
 
@@ -602,7 +712,7 @@ export default function SimulationViewPage() {
                 <Button 
                   variant="destructive"
                   onClick={endDiscussion}
-                  disabled={simulation.status === 'Completed' || isEndingDiscussion}
+                  // disabled={simulation.status === 'Completed' || isEndingDiscussion}
                 >
                   {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
                 </Button>
@@ -626,13 +736,13 @@ export default function SimulationViewPage() {
           <Card className="h-full">
             <CardContent className="p-4">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                <TabsList className="mb-4 grid w-full grid-cols-3">
-                  <TabsTrigger value="transcript">Transcript</TabsTrigger>
+                <TabsList className="mb-4 grid w-full grid-cols-2">
+                  {/* <TabsTrigger value="transcript">Transcript</TabsTrigger> */}
                   <TabsTrigger value="summary">Summary</TabsTrigger>
                   <TabsTrigger value="themes">Themes</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="transcript" className="flex-1 overflow-auto">
+                {/* <TabsContent value="transcript" className="flex-1 overflow-auto">
                   <div className="space-y-4">
                     {discussion.map((message, i) => (
                       <div key={i} className="border-b pb-2">
@@ -644,7 +754,7 @@ export default function SimulationViewPage() {
                       </div>
                     ))}
                   </div>
-                </TabsContent>
+                </TabsContent> */}
 
                 <TabsContent value="summary" className="flex-1 overflow-auto">
                   <h3 className="font-medium mb-3">Key Insights</h3>

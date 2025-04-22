@@ -12,7 +12,7 @@ import {
 import { UserCircle, Settings, LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 
 export function UserNav() {

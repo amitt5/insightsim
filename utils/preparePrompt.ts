@@ -1,4 +1,5 @@
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import { SimulationMessage } from "@/utils/types";
 
 interface Persona {
     id: string;
@@ -14,7 +15,6 @@ interface Persona {
     discussion_questions?: string[]; // optional, could also be 'discussion_guide'
   }
 
-  
   export function prepareInitialPrompt(simulation: Simulation, personas: Persona[]) {
     const { study_title, topic, discussion_questions } = simulation;
   
@@ -65,4 +65,43 @@ interface Persona {
 
     return messages;
   }
+
+  export function prepareSummaryPrompt(simulation:Simulation, transcript: SimulationMessage[]): ChatCompletionMessageParam[] {
+    const { study_title, topic, discussion_questions } = simulation;
   
+    let prompt = `You are a research assistant helping summarize a focus group discussion.\n`;
+    prompt += `The study is titled: "${study_title}".\n`;
+  
+    if (topic) {
+      prompt += `Topic background: ${topic}\n`;
+    }
+  
+    if (discussion_questions?.length) {
+      prompt += `\nDiscussion Questions:\n`;
+      discussion_questions.forEach((q, i) => {
+        prompt += `${i + 1}. ${q}\n`;
+      });
+    }
+  
+    prompt += `\nBelow is the full transcript of the discussion between the moderator and the participants:\n`;
+  
+    transcript.forEach(({ sender_type, message }) => {
+      prompt += `${sender_type}: ${message}\n`;
+    });
+  
+    prompt += `\nPlease do the following:\n`;
+    prompt += `1. Summarize the discussion into 3–5 bullet points (each bullet should be 1–2 sentences).\n`;
+    prompt += `2. Extract 4–6 key themes or insights that emerged (as short titles).\n`;
+  
+    prompt += `\nRespond in this JSON format:\n`;
+    prompt += `{\n  "summary": ["Bullet point 1", "Bullet point 2", ...],\n  "themes": ["Theme 1", "Theme 2", ...]\n}\n`;
+  
+    const messages: ChatCompletionMessageParam[] = [
+      {
+        role: 'system',
+        content: prompt
+      }
+    ];
+
+    return messages;
+  }

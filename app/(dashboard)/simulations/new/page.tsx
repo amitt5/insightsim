@@ -306,7 +306,8 @@ export default function NewSimulationPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Upload Media (optional)</Label>
+                <Label>Upload Media (coming soon!)</Label>
+                {/* <Label>Upload Media (optional)</Label> */}
                 <div className="flex h-32 cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-300 hover:bg-gray-50">
                   <div className="flex flex-col items-center space-y-2 text-center">
                     <Upload className="h-6 w-6 text-gray-400" />

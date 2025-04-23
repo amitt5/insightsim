@@ -1,6 +1,6 @@
 "use client"
 import type React from "react"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Menu, LogOut } from "lucide-react"
 import Link from "next/link"
@@ -86,12 +86,13 @@ export default function DashboardLayout({
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
                 <div className="py-4">
-                  <h2 className="text-lg font-semibold px-4 mb-4">Menu</h2>
                   <nav className="space-y-2">
-                    
                     {/* User section - visible on all screens */}
-                    <div className="px-4 py-2 mt-4">
+                    <div className="px-4 py-2">
                       <div className="text-sm text-gray-500">Signed in as</div>
                       <div className="text-sm font-medium">{userEmail}</div>
                     </div>

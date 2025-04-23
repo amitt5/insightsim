@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Download, UserCircle } from "lucide-react"
+import { ArrowLeft, Download, UserCircle, Menu } from "lucide-react"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePrompt";
 import { buildMessagesForOpenAI } from "@/utils/buildMessagesForOpenAI";
 import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import Link from "next/link";
 // Interface for the Simulation data
 interface Simulation {
   id: string;
@@ -73,6 +75,7 @@ export default function SimulationViewPage() {
   const [isEndingDiscussion, setIsEndingDiscussion] = useState(false)
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false)
   const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -555,150 +558,156 @@ export default function SimulationViewPage() {
   // console.log('Name to Persona ID Map:', nameToPersonaIdMap);
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-background">
+      {/* Main Content */}
+      <div className="container mx-auto p-4 space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/simulations">
           <ArrowLeft className="h-4 w-4" />
+              </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">{simulation.study_title}</h1>
+              <h1 className="text-2xl font-bold">{simulation.topic}</h1>
           <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span>{new Date(simulation.created_at).toLocaleDateString()}</span>
+                <span>{new Date(simulation.created_at).toLocaleDateString()}</span>
             <span>•</span>
-            <span>{simulation.mode === 'ai-both' ? 'AI ' + (simulation.study_type === 'focus-group'? 'Moderator': 'Interviewer') + ' + AI ' + (simulation.study_type === 'focus-group'? 'Participants': 'Participant') : 'Human ' + (simulation.study_type === 'focus-group'? 'Moderator': 'Interviewer') + ' + AI ' + (simulation.study_type === 'focus-group'? 'Participants': 'Participant')}</span>
+                <span>{simulation.mode === 'ai-both' ? 'AI ' + (simulation.study_type === 'focus-group'? 'Moderator': 'Interviewer') + ' + AI ' + (simulation.study_type === 'focus-group'? 'Participants': 'Participant') : 'Human ' + (simulation.study_type === 'focus-group'? 'Moderator': 'Interviewer') + ' + AI ' + (simulation.study_type === 'focus-group'? 'Participants': 'Participant')}</span>
             <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>{simulation.status}</Badge>
+              </div>
           </div>
         </div>
       </div>
 
-      {/* 3-Column Layout */}
-      <div className="grid grid-cols-12 gap-4 h-[calc(100vh-200px)]">
-        {/* Left Column - Participants */}
-        <div className="col-span-3 overflow-auto">
+        {/* Main Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* Participants Section - Full width on mobile, side column on desktop */}
+          <div className="col-span-1 lg:col-span-3">
           <Card className="h-full">
             <CardContent className="p-4">
-              <h2 className="font-semibold mb-4"> {simulation.study_type === 'focus-group'? 'Participants': 'Participant'} {simulation.study_type === 'focus-group'?'(' + personas.length + ')': ''}</h2>
-              {personas.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
-                  No participants added to this simulation
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {personas.map((participant) => (
-                    <div key={participant.id} className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <UserCircle className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">{participant.name}</h3>
-                        <p className="text-sm text-gray-500">
-                          {participant.age} • {participant.occupation}
-                        </p>
-                        <p className="mt-1 text-xs text-gray-600">{participant.bio}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Middle Column - Chat Window */}
-        <div className={`${isLeftPanelMinimized ? 'col-span-8' : 'col-span-6'} overflow-auto transition-all duration-300`}>
-          <Card className="h-full flex flex-col">
-            <CardContent className="p-4 flex-1 overflow-auto">
-              <h2 className="font-semibold mb-4">Discussion</h2>
-              <div className="space-y-6">
-                {formattedMessages.length === 0 ? (
+                <h2 className="font-semibold mb-4">{simulation.study_type === 'focus-group'? 'Participants': 'Participant'} {simulation.study_type === 'focus-group'?'(' + personas.length + ')': ''}</h2>
+                {personas.length === 0 ? (
                   <div className="text-center py-4 text-gray-500">
-                    {isLoadingMessages ? "Loading discussion..." : "No messages yet. Start the simulation to begin the discussion."}
+                    No participants added to this simulation
                   </div>
                 ) : (
-                  formattedMessages.map((message, i) => (
-                    <div key={i} className={`flex gap-4 ${message.speaker === "Moderator" ? "flex-row-reverse" : ""}`}>
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        {message.speaker === "Moderator" ? "M" : message.speaker[0]}
-                      </div>
-                      <div className={`flex-1 ${message.speaker === "Moderator" ? "text-right" : ""}`}>
-                        <div className={`flex items-center gap-2 ${message.speaker === "Moderator" ? "justify-end" : ""}`}>
-                          <span className="font-medium"> { message.speaker === "Moderator" ? 
-                           (simulationData?.simulation?.study_type === 'focus-group'? 'Moderator': 'Interviewer') : message.speaker}
-                            {/* {message.speaker} */}
-                            </span>
-                          <span className="text-xs text-gray-500">{message.time}</span>
-                        </div>
-                        <div className={`mt-1 inline-block rounded-lg px-4 py-2 ${
-                          message.speaker === "Moderator" 
-                            ? "bg-primary text-primary-foreground" 
-                            : "bg-muted"
-                        }`}>
-                          <p className="text-sm">{message.text}</p>
-                        </div>
-                      </div>
+              <div className="space-y-4">
+                    {personas.map((participant) => (
+                  <div key={participant.id} className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <UserCircle className="h-6 w-6" />
                     </div>
-                  ))
-                )}
+                    <div>
+                      <h3 className="font-medium">{participant.name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {participant.age} • {participant.occupation}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-600">{participant.bio}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
+                )}
             </CardContent>
-            <div className="p-2 border-t">
-            { (simulationData?.simulation?.mode === "human-mod") &&<div className="flex gap-2 ">
-                <input 
-                  type="text" 
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
-                  disabled={simulation.status === 'Completed'}
-                />
-                <Button 
-                  onClick={sendMessage}
-                  disabled={!newMessage.trim() || simulation.status === 'Completed' || isLoadingMessages}
-                >
-                  Send
-                </Button>
-                
-              </div>}
-
-              { (formattedMessages.length > 0) &&<div className="mt-2">
-                
-                <Button 
-                  variant="destructive"
-                  onClick={endDiscussion}
-                  disabled={simulation.status === 'Completed' || isEndingDiscussion}
-                >
-                  {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
-                </Button>
-              </div>}
-
-             { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
-                <Button 
-                  onClick={startDiscussion}
-                  disabled={isStartingDiscussion}
-                >
-                  {isStartingDiscussion ? "Starting..." : "Start Discussion"}
-                </Button>
-              </div>}
-
-            </div>
           </Card>
         </div>
 
-        {/* Right Column - Tabs */}
-        <div className="col-span-3 overflow-auto">
+          {/* Chat Window - Full width on mobile */}
+          <div className="col-span-1 lg:col-span-6">
+            <Card className="h-full flex flex-col">
+              <CardContent className="p-4 flex-1 overflow-auto">
+              <h2 className="font-semibold mb-4">Discussion</h2>
+              <div className="space-y-6">
+                  {formattedMessages.length === 0 ? (
+                    <div className="text-center py-4 text-gray-500">
+                      {isLoadingMessages ? "Loading discussion..." : "No messages yet. Start the simulation to begin the discussion."}
+                    </div>
+                  ) : (
+                    formattedMessages.map((message, i) => (
+                      <div key={i} className={`flex gap-4 ${message.speaker === "Moderator" ? "flex-row-reverse" : ""}`}>
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      {message.speaker === "Moderator" ? "M" : message.speaker[0]}
+                    </div>
+                        <div className={`flex-1 ${message.speaker === "Moderator" ? "text-right" : ""}`}>
+                          <div className={`flex items-center gap-2 ${message.speaker === "Moderator" ? "justify-end" : ""}`}>
+                            <span className="font-medium"> { message.speaker === "Moderator" ? 
+                             (simulationData?.simulation?.study_type === 'focus-group'? 'Moderator': 'Interviewer') : message.speaker}
+                              {/* {message.speaker} */}
+                              </span>
+                        <span className="text-xs text-gray-500">{message.time}</span>
+                          </div>
+                          <div className={`mt-1 inline-block rounded-lg px-4 py-2 ${
+                            message.speaker === "Moderator" 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-muted"
+                          }`}>
+                            <p className="text-sm">{message.text}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                    </div>
+              </CardContent>
+              <div className="p-2 border-t">
+              { (simulationData?.simulation?.mode === "human-mod") &&<div className="flex gap-2 ">
+                  <input 
+                    type="text" 
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
+                    disabled={simulation.status === 'Completed'}
+                  />
+                  <Button 
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || simulation.status === 'Completed' || isLoadingMessages}
+                  >
+                    Send
+                  </Button>
+                  
+                </div>}
+
+                { (formattedMessages.length > 0) &&<div className="mt-2">
+                  
+                  <Button 
+                    variant="destructive"
+                    onClick={endDiscussion}
+                    disabled={simulation.status === 'Completed' || isEndingDiscussion}
+                  >
+                    {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
+                  </Button>
+                </div>}
+
+               { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
+                  <Button 
+                    onClick={startDiscussion}
+                    disabled={isStartingDiscussion}
+                  >
+                    {isStartingDiscussion ? "Starting..." : "Start Discussion"}
+                  </Button>
+                </div>}
+
+              </div>
+          </Card>
+        </div>
+
+          {/* Summary Tabs - Full width on mobile */}
+          <div className="col-span-1 lg:col-span-3">
           <Card className="h-full">
             <CardContent className="p-4">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                <TabsList className="mb-4 grid w-full grid-cols-2">
-                  {/* <TabsTrigger value="transcript">Transcript</TabsTrigger> */}
+                  <TabsList className="mb-4 grid w-full grid-cols-2">
+                    {/* <TabsTrigger value="transcript">Transcript</TabsTrigger> */}
                   <TabsTrigger value="summary">Summary</TabsTrigger>
                   <TabsTrigger value="themes">Themes</TabsTrigger>
                 </TabsList>
 
-                {/* <TabsContent value="transcript" className="flex-1 overflow-auto">
+                  {/* <TabsContent value="transcript" className="flex-1 overflow-auto">
                   <div className="space-y-4">
-                    {discussion.map((message, i) => (
+                      {discussion.map((message, i) => (
                       <div key={i} className="border-b pb-2">
                         <div className="flex justify-between">
                           <span className="font-medium">{message.speaker}</span>
@@ -708,35 +717,35 @@ export default function SimulationViewPage() {
                       </div>
                     ))}
                   </div>
-                </TabsContent> */}
+                  </TabsContent> */}
 
                 <TabsContent value="summary" className="flex-1 overflow-auto">
                   <h3 className="font-medium mb-3">Key Insights</h3>
                   <ul className="space-y-2">
-                    {simulationSummaries?.summaries.map((insight, i) => (
+                      {simulationSummaries?.summaries.map((insight, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">
                           {i + 1}
                         </span>
-                        <span className="text-sm">{insight.summary}</span>
+                          <span className="text-sm">{insight.summary}</span>
                       </li>
                     ))}
                   </ul>
 
-                  {/* <div className="mt-6">
+                    {/* <div className="mt-6">
                     <Button variant="outline" size="sm" className="gap-2">
                       <Download className="h-4 w-4" />
                       Download Report
-                    </Button> uncomment me Amit
-                  </div> */}
+                      </Button> uncomment me Amit
+                    </div> */}
                 </TabsContent>
 
                 <TabsContent value="themes" className="flex-1 overflow-auto">
                   <h3 className="font-medium mb-3">Emerging Themes</h3>
                   <div className="flex flex-wrap gap-2">
-                    {simulationSummaries?.themes.map((theme, i) => (
+                      {simulationSummaries?.themes.map((theme, i) => (
                       <div key={i} className="rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-                        {theme.theme}
+                          {theme.theme}
                       </div>
                     ))}
                   </div>
@@ -744,6 +753,7 @@ export default function SimulationViewPage() {
               </Tabs>
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
     </div>

@@ -66,74 +66,95 @@ export default function SimulationsPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Simulations</h1>
-        <Link href="/simulations/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Simulation
-          </Button>
-        </Link>
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold">Simulations</h1>
+          <p className="text-gray-600">Manage your qualitative research simulations</p>
+        </div>
+        <Button asChild>
+          <Link href="/simulations/new">
+            <Plus className="h-4 w-4 mr-2" />
+            New
+          </Link>
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Simulations</CardTitle>
-          <CardDescription>Manage your qualitative research simulations</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">Loading simulations...</div>
-          ) : error ? (
-            <div className="text-center py-8 text-red-500">{error}</div>
-          ) : simulations.length === 0 ? (
-            <div className="text-center py-8">
-              No simulations found. Create your first simulation!
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Study Name</TableHead>
-                  <TableHead>Date Created</TableHead>
-                  <TableHead>Mode</TableHead>
-                  <TableHead>Participants</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {simulations.map((sim) => (
-                  <TableRow key={sim.id}>
-                    <TableCell className="font-medium">{sim.name}</TableCell>
-                    <TableCell>{sim.date}</TableCell>
-                    <TableCell>{sim.mode}</TableCell>
-                    <TableCell>{sim.participants}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          sim.status === "Completed" ? "default" : 
-                          sim.status === "Running" ? "outline" : "secondary"
-                        }
-                      >
-                        {sim.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Link href={`/simulations/${sim.id}`}>
-                        <Button variant="ghost" size="sm">
-                          View
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* Desktop view - table */}
+      <div className="hidden md:block">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left py-3 px-4">Study Name</th>
+              <th className="text-left py-3 px-4">Date Created</th>
+              <th className="text-left py-3 px-4">Mode</th>
+              <th className="text-left py-3 px-4">Participants</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-right py-3 px-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {simulations.map((simulation) => (
+              <tr key={simulation.id} className="border-b hover:bg-gray-50">
+                <td className="py-3 px-4">{simulation.name}</td>
+                <td className="py-3 px-4">{simulation.date}</td>
+                <td className="py-3 px-4">{simulation.mode}</td>
+                <td className="py-3 px-4">{simulation.participants}</td>
+                <td className="py-3 px-4">
+                  <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
+                    {simulation.status}
+                  </Badge>
+                </td>
+                <td className="py-3 px-4 text-right">
+                  <Button variant="ghost" asChild>
+                    <Link href={`/simulations/${simulation.id}`}>View</Link>
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile view - cards */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {simulations.map((simulation) => (
+          <Card key={simulation.id}>
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold">{simulation.name}</h3>
+                    <p className="text-sm text-gray-500">
+                      {simulation.date}
+                    </p>
+                  </div>
+                  <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
+                    {simulation.status}
+                  </Badge>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Mode</span>
+                    <span>{simulation.mode}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Participants</span>
+                    <span>{simulation.participants}</span>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t">
+                  <Button className="w-full" variant="outline" asChild>
+                    <Link href={`/simulations/${simulation.id}`}>View Details</Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
-  )
+  );
 }

@@ -6,6 +6,7 @@ import { Menu, LogOut } from "lucide-react"
 import Link from "next/link"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,22 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const supabase = createClientComponentClient()
+  const [userEmail, setUserEmail] = useState<string>("")
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) {
+        console.error('Error fetching user:', error)
+        return
+      }
+      if (session?.user?.email) {
+        setUserEmail(session.user.email)
+      }
+    }
+
+    getUser()
+  }, [supabase.auth])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -72,6 +89,13 @@ export default function DashboardLayout({
                 <div className="py-4">
                   <h2 className="text-lg font-semibold px-4 mb-4">Menu</h2>
                   <nav className="space-y-2">
+                    
+                    {/* User section - visible on all screens */}
+                    <div className="px-4 py-2 mt-4">
+                      <div className="text-sm text-gray-500">Signed in as</div>
+                      <div className="text-sm font-medium">{userEmail}</div>
+                    </div>
+
                     {/* Mobile-only navigation links */}
                     <div className="lg:hidden">
                       <Link 
@@ -92,12 +116,6 @@ export default function DashboardLayout({
                       >
                         Settings
                       </Link>
-                    </div>
-
-                    {/* User section - visible on all screens */}
-                    <div className="px-4 py-2 mt-4">
-                      <div className="text-sm text-gray-500">Signed in as</div>
-                      <div className="text-sm font-medium">user@example.com</div>
                     </div>
 
                     {/* Logout button - visible on all screens */}

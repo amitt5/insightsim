@@ -223,6 +223,7 @@ export default function NewCalibrationPage() {
                     persona={persona}
                     selected={selectedPersonas.includes(persona.id)}
                     onToggle={() => togglePersona(persona.id)}
+                    selectable={true}
                   />
                 ))}
               </div>

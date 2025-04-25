@@ -9,12 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Lightbulb, Check, X } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
+import { useParams } from "next/navigation"
 
-export default function CalibrationDetailPage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default function CalibrationDetailPage() {
+
+  const params = useParams(); // Use useParams() to get the id
   const [activeTab, setActiveTab] = useState("real")
   const [suggestions, setSuggestions] = useState([
     {

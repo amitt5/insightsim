@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -17,14 +17,25 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { Persona } from "@/utils/types"
 
 interface CreatePersonaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (newPersona: any) => void;
+  initialData?: Persona;
+  mode?: 'create' | 'edit';
+  hideTrigger?: boolean;
 }
 
-export function CreatePersonaDialog({ open, onOpenChange, onSuccess }: CreatePersonaDialogProps) {
+export function CreatePersonaDialog({ 
+  open, 
+  onOpenChange, 
+  onSuccess, 
+  initialData,
+  mode = 'create',
+  hideTrigger = false
+}: CreatePersonaDialogProps) {
   const { toast } = useToast();
   
   // State to store form values
@@ -39,6 +50,25 @@ export function CreatePersonaDialog({ open, onOpenChange, onSuccess }: CreatePer
     goal: "",
     attitude: "",
   });
+
+  // Update form data when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || "",
+        age: initialData.age?.toString() || "",
+        gender: initialData.gender || "",
+        occupation: initialData.occupation || "",
+        archetype: initialData.archetype || "",
+        bio: initialData.bio || "",
+        traits: Array.isArray(initialData.traits) 
+          ? initialData.traits.join(', ') 
+          : initialData.traits || "",
+        goal: initialData.goal || "",
+        attitude: initialData.attitude || "",
+      });
+    }
+  }, [initialData]);
 
   // Handle input changes
   const handleChange = (field: string, value: string) => {
@@ -58,54 +88,56 @@ export function CreatePersonaDialog({ open, onOpenChange, onSuccess }: CreatePer
 
     try {
       const response = await fetch('/api/personas', {
-        method: 'POST',
+        method: mode === 'create' ? 'POST' : 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(personaData),
+        body: JSON.stringify(mode === 'create' ? personaData : { ...personaData, id: initialData?.id }),
       });
       
       if (!response.ok) {
-        throw new Error('Failed to create persona');
+        throw new Error(`Failed to ${mode} persona`);
       }
       
-      // Get the newly created persona
-      const newPersona = await response.json();
+      // Get the persona
+      const updatedPersona = await response.json();
       
-      // Call the onSuccess callback with the newly created persona
+      // Call the onSuccess callback with the persona
       if (onSuccess) {
-        onSuccess(newPersona);
+        onSuccess(updatedPersona);
       }
       
       // Show success toast
       toast({
         title: "Success",
-        description: "Persona created successfully",
+        description: `Persona ${mode === 'create' ? 'created' : 'updated'} successfully`,
         duration: 3000,
       });
       
-      // Reset form fields
-      setFormData({
-        name: "",
-        age: "",
-        gender: "",
-        occupation: "",
-        archetype: "",
-        bio: "",
-        traits: "",
-        goal: "",
-        attitude: "",
-      });
+      // Reset form fields if in create mode
+      if (mode === 'create') {
+        setFormData({
+          name: "",
+          age: "",
+          gender: "",
+          occupation: "",
+          archetype: "",
+          bio: "",
+          traits: "",
+          goal: "",
+          attitude: "",
+        });
+      }
       
       // Close the dialog
       onOpenChange(false);
     } catch (err: any) {
-      console.error('Error creating persona:', err);
+      console.error(`Error ${mode}ing persona:`, err);
       
       // Show error toast
       toast({
         title: "Error",
-        description: err.message || "Failed to create persona",
+        description: err.message || `Failed to ${mode} persona`,
         variant: "destructive",
         duration: 5000,
       });
@@ -114,16 +146,22 @@ export function CreatePersonaDialog({ open, onOpenChange, onSuccess }: CreatePer
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Create New Persona
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            {mode === 'create' ? 'Create New Persona' : 'Edit Persona'}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col pb-0 pt-0">
         <DialogHeader className="px-6 pt-2 pb-2">
-          <DialogTitle>Create New Persona</DialogTitle>
-          <DialogDescription>Add a new AI participant persona for your simulations</DialogDescription>
+          <DialogTitle>{mode === 'create' ? 'Create New Persona' : 'Edit Persona'}</DialogTitle>
+          <DialogDescription>
+            {mode === 'create' 
+              ? 'Add a new AI participant persona for your simulations'
+              : 'Update the details of this persona'}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 px-6 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-300">
           <div className="grid grid-cols-2 gap-4">
@@ -227,7 +265,7 @@ export function CreatePersonaDialog({ open, onOpenChange, onSuccess }: CreatePer
         </div>
         <DialogFooter className="px-6 py-2 pb-1 border-t">
           <Button type="submit" onClick={handleSubmit}>
-            Save Persona
+            {mode === 'create' ? 'Create Persona' : 'Save Changes'}
           </Button>
         </DialogFooter>
       </DialogContent>

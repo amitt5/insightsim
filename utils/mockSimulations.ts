@@ -119,20 +119,8 @@ type Study = {
   
     import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
-interface Persona {
-    id: string;
-    name: string;
-    gender?: string;
-    occupation?: string;
-    bio?: string;
-  }
-  
-  interface Simulation {
-    study_title: string;
-    topic?: string;
-    discussion_questions?: string[]; // optional, could also be 'discussion_guide'
-  }
 
+  
   
   export function getRandomSimulation() {
   

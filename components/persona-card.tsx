@@ -1,84 +1,135 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { UserCircle } from "lucide-react"
-
-interface Persona {
-  id: string
-  name: string
-  age?: number
-  occupation?: string
-  traits?: string[] 
-  archetype?: string
-  gender?: string
-  bio?: string
-  goal?: string
-  attitude?: string
-}
+import { UserCircle, Pencil, Copy } from "lucide-react"
+import { Persona } from "@/utils/types"
+import { CreatePersonaDialog } from "./create-persona-dialog"
 
 interface PersonaCardProps {
   persona: Persona
   selected?: boolean
   onToggle?: () => void
   selectable?: boolean
+  onUpdate?: (updatedPersona: Persona) => void
 }
 
-export function PersonaCard({ persona, selected = false, onToggle, selectable = false }: PersonaCardProps) {
-  const traits: string[] = persona.traits || []
+export function PersonaCard({ 
+  persona, 
+  selected = false, 
+  onToggle, 
+  selectable = false,
+  onUpdate 
+}: PersonaCardProps) {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+  
+  // Ensure traits is always an array
+  const traits = Array.isArray(persona.traits) 
+    ? persona.traits 
+    : typeof persona.traits === 'string' 
+      ? persona.traits.split(',').map(t => t.trim())
+      : [];
 
   const cardClasses = `${selectable 
     ? `cursor-pointer transition-all hover:shadow-md ${selected ? "ring-2 ring-primary" : ""}`
     : ""} min-w-0 w-full`;
 
+  const handleEditSuccess = (updatedPersona: Persona) => {
+    if (onUpdate) {
+      onUpdate(updatedPersona);
+    }
+  };
+
   return (
-    <Card 
-      className={cardClasses}
-      onClick={selectable && onToggle ? onToggle : undefined}
-    >
-      <CardContent className="p-0">
-        <div className="bg-primary/10 p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary">
-              <UserCircle className="h-6 w-6" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-medium truncate">{persona.name}</h3>
-              <p className="text-sm flex items-center gap-1 flex-wrap">
-                {persona.gender && <span>{persona.gender}</span>}
-                {persona.age && <span>{persona.age}</span>}
-                {persona.occupation && <><span>•</span> <span className="truncate">{persona.occupation}</span></>}
-              </p>
+    <>
+      <Card 
+        className={cardClasses}
+        onClick={selectable && onToggle ? onToggle : undefined}
+      >
+        <CardContent className="p-0">
+          <div className="bg-primary/10 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary">
+                <UserCircle className="h-6 w-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-medium truncate">{persona.name}</h3>
+                <p className="text-sm flex items-center gap-1 flex-wrap">
+                  {persona.gender && <span>{persona.gender}</span>}
+                  {persona.age && <span>{persona.age}</span>}
+                  {persona.occupation && <><span>•</span> <span className="truncate">{persona.occupation}</span></>}
+                </p>
+              </div>
+              {persona.editable && (
+                <button 
+                  className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditDialogOpen(true);
+                  }}
+                >
+                  <Pencil className="h-4 w-4 text-primary" />
+                </button>
+              )}
+              <button
+                className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsDuplicateDialogOpen(true);
+                }}
+                title="Duplicate Persona"
+              >
+                <Copy className="h-4 w-4 text-primary" />
+              </button>
             </div>
           </div>
-        </div>
-        <div className="p-4">
-          {persona.archetype && <Badge className="mb-2">{persona.archetype}</Badge>}
-          {persona.bio && <p className="mb-3 text-sm text-gray-600 line-clamp-3">{persona.bio}</p>}
-          <div className="mb-2">
-            <span className="text-xs font-medium text-gray-500">TRAITS</span>
-            {traits && <div className="mt-1 flex flex-wrap gap-1">
-              {traits.map((trait, i) => (
-                <Badge key={i} variant="secondary" className="text-xs">
-                  {trait}
-                </Badge>
-              ))}
-            </div>}
-          </div>
-          {persona.goal && (
+          <div className="p-4">
+            {persona.archetype && <Badge className="mb-2">{persona.archetype}</Badge>}
+            {persona.bio && <p className="mb-3 text-sm text-gray-600 line-clamp-3">{persona.bio}</p>}
             <div className="mb-2">
-              <span className="text-xs font-medium text-gray-500">GOAL</span>
-              <p className="text-xs text-gray-600 line-clamp-2">{persona.goal}</p>
+              <span className="text-xs font-medium text-gray-500">TRAITS</span>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {traits.map((trait: string, i: number) => (
+                  <Badge key={i} variant="secondary" className="text-xs">
+                    {trait}
+                  </Badge>
+                ))}
+              </div>
             </div>
-          )}
-          {persona.attitude && (
-            <div>
-              <span className="text-xs font-medium text-gray-500">ATTITUDE</span>
-              <p className="text-xs text-gray-600 line-clamp-2">{persona.attitude}</p>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            {persona.goal && (
+              <div className="mb-2">
+                <span className="text-xs font-medium text-gray-500">GOAL</span>
+                <p className="text-xs text-gray-600 line-clamp-2">{persona.goal}</p>
+              </div>
+            )}
+            {persona.attitude && (
+              <div>
+                <span className="text-xs font-medium text-gray-500">ATTITUDE</span>
+                <p className="text-xs text-gray-600 line-clamp-2">{persona.attitude}</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <CreatePersonaDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        initialData={persona}
+        mode="edit"
+        onSuccess={handleEditSuccess}
+        hideTrigger={true}
+      />
+      <CreatePersonaDialog
+        open={isDuplicateDialogOpen}
+        onOpenChange={setIsDuplicateDialogOpen}
+        initialData={persona}
+        mode="create"
+        hideTrigger={true}
+        onSuccess={onUpdate}
+      />
+    </>
   )
 }

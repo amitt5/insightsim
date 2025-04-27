@@ -12,31 +12,9 @@ import { buildMessagesForOpenAI } from "@/utils/buildMessagesForOpenAI";
 import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import Link from "next/link";
+import { Persona,Simulation } from "@/utils/types";
 // Interface for the Simulation data
-interface Simulation {
-  id: string;
-  user_id: string;
-  study_title: string;
-  study_type: "focus-group" | "idi";
-  mode: "ai-both" | "human-mod";
-  topic?: string;
-  stimulus_media_url?: string;
-  discussion_questions: string[];
-  turn_based: boolean;
-  num_turns: number;
-  status: "Draft" | "Running" | "Completed";
-  created_at: string;
-}
 
-// Interface for Persona data
-interface Persona {
-  id: string;
-  name: string;
-  age: number;
-  occupation: string;
-  bio: string;
-  [key: string]: any; // For any additional fields
-}
 
 // Interface for the API response
 interface SimulationResponse {
@@ -44,9 +22,6 @@ interface SimulationResponse {
   personas: Persona[];
   error?: string;
 }
-
-// Interface for simulation messages
-
 
 // Interface for formatted message for display
 interface FormattedMessage {

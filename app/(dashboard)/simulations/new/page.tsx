@@ -15,21 +15,8 @@ import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { getRandomSimulation } from "@/utils/mockSimulations";
+import { Simulation } from "@/utils/types";
 
-export interface Simulation {
-  id: string
-  user_id: string
-  study_title: string
-  study_type: "focus-group" | "idi"
-  mode: "ai-both" | "human-mod"
-  topic?: string
-  stimulus_media_url?: string
-  discussion_questions: string[]
-  turn_based: boolean
-  num_turns: number
-  status: "Draft" | "Running" | "Completed"
-  created_at: string
-}
 
 export default function NewSimulationPage() {
   const [step, setStep] = useState(1)

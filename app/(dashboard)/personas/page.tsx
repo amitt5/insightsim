@@ -9,7 +9,7 @@ import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 
 export default function PersonasPage() {
   const [open, setOpen] = useState(false)
-  const { personas, loading, error } = usePersonas()
+  const { personas, loading, error, mutate } = usePersonas()
 
   const handleSavePersona = (personaData: any) => {
     console.log("Save persona:", personaData)
@@ -23,7 +23,6 @@ export default function PersonasPage() {
         <CreatePersonaDialog 
           open={open}
           onOpenChange={setOpen}
-          onSave={handleSavePersona}
         />
       </div>
 
@@ -40,7 +39,7 @@ export default function PersonasPage() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {personas.map((persona) => (
-                <PersonaCard key={persona.id} persona={persona} />
+                <PersonaCard key={persona.id} persona={persona} onUpdate={mutate} />
               ))}
             </div>
           )}

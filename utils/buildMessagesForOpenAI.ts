@@ -1,11 +1,5 @@
 // import { SimulationMessage, Persona } from "@/types";
-interface Persona {
-    id: string;
-    name: string;
-    gender?: string;
-    occupation?: string;
-    bio?: string;
-  }
+import { Persona } from "@/utils/types";
 import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 

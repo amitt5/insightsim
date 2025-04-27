@@ -60,4 +60,46 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const { supabase, userId } = await getSupabaseAndUser();
+    const personaData = await request.json();
+    if (!personaData.id) {
+      return NextResponse.json({ error: 'Persona id is required' }, { status: 400 });
+    }
+    // Only allow updating personas that belong to the user
+    const { data, error } = await supabase
+      .from('personas')
+      .update({
+        name: personaData.name,
+        age: personaData.age,
+        gender: personaData.gender,
+        occupation: personaData.occupation,
+        archetype: personaData.archetype,
+        bio: personaData.bio,
+        traits: personaData.traits,
+        goal: personaData.goal,
+        attitude: personaData.attitude,
+        editable: true
+      })
+      .eq('id', personaData.id)
+      .eq('user_id', userId)
+      .select();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    if (!data || data.length === 0) {
+      return NextResponse.json({ error: 'Persona not found or not editable' }, { status: 404 });
+    }
+    return NextResponse.json(data[0], { status: 200 });
+  } catch (error: any) {
+    console.error('Error updating persona:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to update persona' },
+      { status: 500 }
+    );
+  }
 } 

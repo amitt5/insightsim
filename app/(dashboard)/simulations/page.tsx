@@ -7,8 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Plus } from "lucide-react"
 import { useEffect, useState } from "react"
-import { Simulation } from "../simulations/new/page"
-
+import { Simulation } from "@/utils/types"
 // Interface for the API response
 interface SimulationsApiResponse {
   simulations: Simulation[];

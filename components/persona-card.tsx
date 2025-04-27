@@ -128,6 +128,7 @@ export function PersonaCard({
         initialData={persona}
         mode="create"
         hideTrigger={true}
+        onSuccess={onUpdate}
       />
     </>
   )

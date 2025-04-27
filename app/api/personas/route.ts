@@ -30,6 +30,11 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    const user = await supabase.auth.getUser()
+    const userId = user?.data?.user?.id
+    personaData.user_id = userId
+    personaData.editable = true
+
 
     // Insert the new persona into the database
     const { data, error } = await supabase

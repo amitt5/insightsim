@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { UserCircle } from "lucide-react"
+import { UserCircle, Pencil } from "lucide-react"
 import { Persona } from "@/utils/types";
 
 
@@ -58,6 +58,17 @@ export function PersonaCard({ persona, selected = false, onToggle, selectable = 
                 {persona.occupation && <><span>•</span> <span className="truncate">{persona.occupation}</span></>}
               </p>
             </div>
+            {persona.editable && (
+              <button 
+                className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // We'll handle the edit action in the next step
+                }}
+              >
+                <Pencil className="h-4 w-4 text-primary" />
+              </button>
+            )}
           </div>
         </div>
         <div className="p-4">

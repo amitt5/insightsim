@@ -1,13 +1,9 @@
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import { SimulationMessage } from "@/utils/types";
-import { Persona } from "@/utils/types";
+import { Persona, Simulation } from "@/utils/types";
 
   
-  interface Simulation {
-    study_title: string;
-    topic?: string;
-    discussion_questions?: string[]; // optional, could also be 'discussion_guide'
-  }
+
 
   export function prepareInitialPrompt(simulation: Simulation, personas: Persona[]) {
     const { study_title, topic, discussion_questions } = simulation;

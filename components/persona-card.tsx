@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { UserCircle, Pencil } from "lucide-react"
+import { UserCircle, Pencil, Copy } from "lucide-react"
 import { Persona } from "@/utils/types"
 import { CreatePersonaDialog } from "./create-persona-dialog"
 
@@ -72,6 +72,16 @@ export function PersonaCard({
                   <Pencil className="h-4 w-4 text-primary" />
                 </button>
               )}
+              <button
+                className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // We'll handle duplicate action in the next step
+                }}
+                title="Duplicate Persona"
+              >
+                <Copy className="h-4 w-4 text-primary" />
+              </button>
             </div>
           </div>
           <div className="p-4">

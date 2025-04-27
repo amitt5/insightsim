@@ -12,6 +12,7 @@ import { buildMessagesForOpenAI } from "@/utils/buildMessagesForOpenAI";
 import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import Link from "next/link";
+import { Persona } from "@/utils/types";
 // Interface for the Simulation data
 interface Simulation {
   id: string;
@@ -28,15 +29,6 @@ interface Simulation {
   created_at: string;
 }
 
-// Interface for Persona data
-interface Persona {
-  id: string;
-  name: string;
-  age: number;
-  occupation: string;
-  bio: string;
-  [key: string]: any; // For any additional fields
-}
 
 // Interface for the API response
 interface SimulationResponse {

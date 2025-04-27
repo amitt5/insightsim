@@ -9,11 +9,17 @@ export interface SimulationMessage {
     created_at: string;
 }
 
-
 export interface Persona {
-    id: string;
-    simulation_id: string;
-    name: string;
-    occupation: string;
+    id: string
+    name: string
+    age?: number
+    occupation?: string
+    traits?: string[] | string
+    archetype?: string
+    gender?: string
+    bio?: string
+    goal?: string
+    attitude?: string;
+    user_id?: string;
+    editable?: boolean;
 }
-

@@ -3,19 +3,8 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { UserCircle } from "lucide-react"
+import { Persona } from "@/utils/types";
 
-interface Persona {
-  id: string
-  name: string
-  age?: number
-  occupation?: string
-  traits?: string[] | string
-  archetype?: string
-  gender?: string
-  bio?: string
-  goal?: string
-  attitude?: string
-}
 
 interface PersonaCardProps {
   persona: Persona

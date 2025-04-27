@@ -119,13 +119,8 @@ type Study = {
   
     import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
-interface Persona {
-    id: string;
-    name: string;
-    gender?: string;
-    occupation?: string;
-    bio?: string;
-  }
+    import { Persona } from "@/utils/types";
+
   
   interface Simulation {
     study_title: string;

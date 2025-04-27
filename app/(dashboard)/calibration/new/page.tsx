@@ -12,6 +12,7 @@ import { PersonaCard } from "@/components/persona-card"
 import { ArrowLeft, ArrowRight, Upload, UserCircle } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
+import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 
 export default function NewCalibrationPage() {
   const [step, setStep] = useState(1)
@@ -19,6 +20,7 @@ export default function NewCalibrationPage() {
   const [participantMappings, setParticipantMappings] = useState<Record<string, string>>({})
   const [mappingNotes, setMappingNotes] = useState<Record<string, string>>({})
   const router = useRouter()
+  const [openPersonaModal, setOpenPersonaModal] = useState(false)
 
   // // Mock personas data
   const personas1 = [
@@ -178,6 +180,7 @@ export default function NewCalibrationPage() {
               <CardDescription>Provide the transcript from your real-world research</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              
               <div className="space-y-2">
                 <Label htmlFor="transcript">Transcript Text</Label>
                 <Textarea
@@ -223,6 +226,12 @@ export default function NewCalibrationPage() {
               <CardDescription>Choose AI personas to match your real-world participants</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 flex justify-end">
+                <CreatePersonaDialog
+                  open={openPersonaModal}
+                  onOpenChange={setOpenPersonaModal}
+                />
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {personas.map((persona) => (
                   <PersonaCard

@@ -9,7 +9,7 @@ interface Persona {
   name: string
   age?: number
   occupation?: string
-  traits?: string[] | string
+  traits?: string[] 
   archetype?: string
   gender?: string
   bio?: string
@@ -25,26 +25,7 @@ interface PersonaCardProps {
 }
 
 export function PersonaCard({ persona, selected = false, onToggle, selectable = false }: PersonaCardProps) {
-  // Process traits to handle various data formats
-  const processTraits = () => {
-    let traits: string[] = [];
-    if (Array.isArray(persona.traits)) {
-      traits = persona.traits;
-    } else if (typeof persona.traits === 'string') {
-      if (persona.traits.trim().startsWith('[')) {
-        try {
-          traits = JSON.parse(persona.traits);
-        } catch {
-          traits = persona.traits.split(',').map((t: string) => t.trim());
-        }
-      } else {
-        traits = persona.traits.split(',').map((t: string) => t.trim());
-      }
-    }
-    return traits;
-  };
-
-  const traits = processTraits();
+  const traits: string[] = persona.traits || []
 
   const cardClasses = `${selectable 
     ? `cursor-pointer transition-all hover:shadow-md ${selected ? "ring-2 ring-primary" : ""}`
@@ -76,13 +57,13 @@ export function PersonaCard({ persona, selected = false, onToggle, selectable = 
           {persona.bio && <p className="mb-3 text-sm text-gray-600 line-clamp-3">{persona.bio}</p>}
           <div className="mb-2">
             <span className="text-xs font-medium text-gray-500">TRAITS</span>
-            <div className="mt-1 flex flex-wrap gap-1">
+            {traits && <div className="mt-1 flex flex-wrap gap-1">
               {traits.map((trait, i) => (
                 <Badge key={i} variant="secondary" className="text-xs">
                   {trait}
                 </Badge>
               ))}
-            </div>
+            </div>}
           </div>
           {persona.goal && (
             <div className="mb-2">

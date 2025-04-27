@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PersonaCard } from "@/components/persona-card"
 import { ArrowLeft, ArrowRight, Upload, UserCircle } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
+import { usePersonas } from "@/lib/usePersonas"
 
 export default function NewCalibrationPage() {
   const [step, setStep] = useState(1)
@@ -19,8 +20,8 @@ export default function NewCalibrationPage() {
   const [mappingNotes, setMappingNotes] = useState<Record<string, string>>({})
   const router = useRouter()
 
-  // Mock personas data
-  const personas = [
+  // // Mock personas data
+  const personas1 = [
     {
       id: "1",
       name: "Emma Chen",
@@ -59,6 +60,9 @@ export default function NewCalibrationPage() {
     },
   ]
 
+  const { personas, loading, error } = usePersonas()
+
+
   // Mock real participants extracted from transcript
   const realParticipants = [
     { id: "p1", name: "Jennifer W.", gender: "Female", age: "30s", notes: "Mentioned having children" },
@@ -69,6 +73,7 @@ export default function NewCalibrationPage() {
   ]
 
   const togglePersona = (id: string) => {
+    console.log('togglePersona', personas)
     setSelectedPersonas((prev) => (prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [...prev, id]))
   }
 
@@ -95,8 +100,10 @@ export default function NewCalibrationPage() {
   }
 
   const getSelectedPersonas = () => {
-    return personas.filter((persona) => selectedPersonas.includes(persona.id))
+    return personas.filter((persona: any) => selectedPersonas.includes(persona.id))
   }
+
+  
 
   return (
     <div className="space-y-6">
@@ -252,7 +259,7 @@ export default function NewCalibrationPage() {
                 {/* Left column: Selected AI personas */}
                 <div className="space-y-4">
                   <h3 className="font-medium text-sm text-gray-500 uppercase tracking-wider">AI Personas</h3>
-                  {getSelectedPersonas().map((persona) => (
+                  {getSelectedPersonas().map((persona: any) => (
                     <div key={persona.id} className="rounded-md border p-4">
                       <div className="flex items-start gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -264,7 +271,7 @@ export default function NewCalibrationPage() {
                             {persona.age} • {persona.gender} • {persona.occupation}
                           </p>
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {persona.traits.map((trait, i) => (
+                            {persona.traits.map((trait: string, i: number) => (
                               <span
                                 key={i}
                                 className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800"

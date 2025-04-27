@@ -1,5 +1,23 @@
 import { useState, useEffect, useCallback } from "react";
 
+const processTraits = (traits: string | string[]) => {
+  let processedTraits: string[] = [];
+  if (Array.isArray(traits)) {
+    processedTraits = traits;
+  } else if (typeof traits === 'string') {
+    if (traits.trim().startsWith('[')) {
+      try {
+        processedTraits = JSON.parse(traits);
+      } catch {
+        processedTraits = traits.split(',').map((t: string) => t.trim());
+      }
+    } else {
+      processedTraits = traits.split(',').map((t: string) => t.trim());
+    }
+  }
+  return processedTraits;
+};
+
 export function usePersonas() {
   const [personas, setPersonas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,8 +30,14 @@ export function usePersonas() {
       const res = await fetch("/api/personas");
       if (!res.ok) throw new Error("Failed to fetch personas");
       const data = await res.json();
-      setPersonas(data);
-      return data;
+      // Process traits for each persona
+      const processedData = data.map((persona: any) => ({
+        ...persona,
+        traits: processTraits(persona.traits)
+      }));
+      setPersonas(processedData);
+      console.log('processedData', processedData)
+      return processedData;
     } catch (err: any) {
       setError(err.message || "Unknown error");
       return [];
@@ -21,6 +45,8 @@ export function usePersonas() {
       setLoading(false);
     }
   }, []);
+
+  
 
   // Mutate function to refresh data
   const mutate = useCallback(() => {

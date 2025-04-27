@@ -23,6 +23,7 @@ export function PersonaCard({
   onUpdate 
 }: PersonaCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   
   // Ensure traits is always an array
   const traits = Array.isArray(persona.traits) 
@@ -76,7 +77,7 @@ export function PersonaCard({
                 className="p-1 hover:bg-white/50 rounded-full transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // We'll handle duplicate action in the next step
+                  setIsDuplicateDialogOpen(true);
                 }}
                 title="Duplicate Persona"
               >
@@ -119,6 +120,13 @@ export function PersonaCard({
         initialData={persona}
         mode="edit"
         onSuccess={handleEditSuccess}
+        hideTrigger={true}
+      />
+      <CreatePersonaDialog
+        open={isDuplicateDialogOpen}
+        onOpenChange={setIsDuplicateDialogOpen}
+        initialData={persona}
+        mode="create"
         hideTrigger={true}
       />
     </>

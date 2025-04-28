@@ -21,58 +21,18 @@ export default function NewCalibrationPage() {
   const [mappingNotes, setMappingNotes] = useState<Record<string, string>>({})
   const router = useRouter()
   const [openPersonaModal, setOpenPersonaModal] = useState(false)
-
-  // // Mock personas data
-  const personas1 = [
-    {
-      id: "1",
-      name: "Emma Chen",
-      age: 34,
-      gender: "Female",
-      occupation: "Marketing Manager",
-      traits: ["Health-conscious", "Tech-savvy", "Budget-aware"],
-      archetype: "Busy Professional",
-    },
-    {
-      id: "2",
-      name: "David Kim",
-      age: 28,
-      gender: "Male",
-      occupation: "Software Developer",
-      traits: ["Early adopter", "Analytical", "Convenience-focused"],
-      archetype: "Tech Enthusiast",
-    },
-    {
-      id: "3",
-      name: "Sarah Johnson",
-      age: 42,
-      gender: "Female",
-      occupation: "Healthcare Administrator",
-      traits: ["Quality-focused", "Practical", "Family-oriented"],
-      archetype: "Careful Planner",
-    },
-    {
-      id: "4",
-      name: "Michael Rodriguez",
-      age: 31,
-      gender: "Male",
-      occupation: "Financial Analyst",
-      traits: ["Value-conscious", "Detail-oriented", "Skeptical"],
-      archetype: "Rational Buyer",
-    },
-  ]
-
   const { personas, loading, error } = usePersonas()
+  const [realParticipants, setRealParticipants] = useState<string[]>([])
 
 
   // Mock real participants extracted from transcript
-  const realParticipants = [
-    { id: "p1", name: "Jennifer W.", gender: "Female", age: "30s", notes: "Mentioned having children" },
-    { id: "p2", name: "Robert T.", gender: "Male", age: "20s", notes: "Tech background" },
-    { id: "p3", name: "Lisa M.", gender: "Female", age: "40s", notes: "Health-focused" },
-    { id: "p4", name: "Carlos G.", gender: "Male", age: "30s", notes: "Price-conscious" },
-    { id: "p5", name: "Aisha P.", gender: "Female", age: "20s", notes: "Mentioned social media" },
-  ]
+  // const realParticipants1 = [
+  //   { id: "p1", name: "Jennifer W.", gender: "Female", age: "30s", notes: "Mentioned having children" },
+  //   { id: "p2", name: "Robert T.", gender: "Male", age: "20s", notes: "Tech background" },
+  //   { id: "p3", name: "Lisa M.", gender: "Female", age: "40s", notes: "Health-focused" },
+  //   { id: "p4", name: "Carlos G.", gender: "Male", age: "30s", notes: "Price-conscious" },
+  //   { id: "p5", name: "Aisha P.", gender: "Female", age: "20s", notes: "Mentioned social media" },
+  // ]
 
   const togglePersona = (id: string) => {
     console.log('togglePersona', personas)
@@ -87,6 +47,32 @@ export default function NewCalibrationPage() {
     router.push("/calibration/1")
   }
 
+  const extractSpeakerNames = (transcript: string): string[] => {
+    const speakerRegex = /^([A-Z][a-zA-Z0-9 _-]{1,30}):/gm;
+    const namesSet = new Set<string>();
+  
+    let match;
+    while ((match = speakerRegex.exec(transcript)) !== null) {
+      const name = match[1].trim();
+      if (name.toLowerCase() !== 'moderator' && name.toLowerCase() !== 'facilitator') {
+        namesSet.add(name);
+      }
+    }
+    setRealParticipants(Array.from(namesSet));
+    console.log('namesSet',realParticipants, namesSet);
+    return Array.from(namesSet);
+  }
+
+  const extractParticipantNames = (participants: string) => {
+  
+    const participantsArray = participants
+    .split('\n')                    // Split the text by newlines
+    .map(name => name.trim())        // Trim spaces from each line
+    .filter(name => name.length > 0); // Remove empty lines
+    setRealParticipants(participantsArray);
+    console.log('namesSet11',participantsArray);
+  }
+  
   const handleParticipantMapping = (personaId: string, participantId: string) => {
     setParticipantMappings((prev) => ({
       ...prev,
@@ -188,8 +174,28 @@ export default function NewCalibrationPage() {
                   placeholder="Paste your transcript here..."
                   rows={15}
                   className="font-mono text-sm"
+                  onChange={(e) => {
+                    const names = extractSpeakerNames(e.target.value);
+                    console.log('names', names);
+                  }}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="participants">We detected participants</Label>
+                <Textarea
+                  id="participants"
+                  placeholder="Paste your participants here..."
+                  rows={5}
+                  value={realParticipants.map((participant) => participant).join('\n')}
+                  className="font-mono text-sm"
+                  onChange={(e) => {
+                    extractParticipantNames(e.target.value);
+                  }}
+                />
+              </div>
+
+
 
               <div className="flex items-center justify-center">
                 <span className="text-xs text-gray-500">— or —</span>
@@ -315,8 +321,8 @@ export default function NewCalibrationPage() {
                           </SelectTrigger>
                           <SelectContent>
                             {realParticipants.map((participant) => (
-                              <SelectItem key={participant.id} value={participant.id}>
-                                {participant.name} ({participant.gender}, {participant.age})
+                              <SelectItem key={participant} value={participant}>
+                                {participant}
                               </SelectItem>
                             ))}
                           </SelectContent>

@@ -7,7 +7,6 @@ import { Persona, Simulation } from "@/utils/types";
 
   export function prepareInitialPrompt(simulation: Simulation, personas: Persona[]) {
     const { study_title, topic, discussion_questions } = simulation;
-  
     let prompt = `You are simulating a focus group discussion.\n`;
     prompt += `The topic of the discussion is: "${study_title}".\n`;
   
@@ -17,12 +16,36 @@ import { Persona, Simulation } from "@/utils/types";
   
     // Step 1: Participants
     prompt += `\nThere are ${personas.length} participants:\n`;
-  
     personas.forEach((persona, index) => {
+      console.log('persona:' + index, persona);
       prompt += `Participant ${index + 1}: ${persona.name}`;
-      if (persona.gender) prompt += ` (${persona.gender})`;
-      if (persona.occupation) prompt += ` - occupation: ${persona.occupation}`;
-      if (persona.bio) prompt += ` - bio: ${persona.bio}`;
+      if (persona.gender) {
+        prompt += ` (${persona.gender})`;
+      }
+      if (persona.age) {
+        prompt += ` - age: ${persona.age}`;
+      }
+      if (persona.occupation) {
+        prompt += ` - occupation: ${persona.occupation}`;
+      }
+      if (persona.archetype) {
+        prompt += ` - archetype: ${persona.archetype}`;
+      }
+      if (persona.traits && persona.traits.length > 0) {
+        prompt += ` - traits: ${persona.traits.join(", ")}`;
+      }
+      if (persona.goal) {
+        prompt += ` - goal: ${persona.goal}`;
+      }
+      
+      if (persona.attitude) {
+        prompt += ` - attitude: ${persona.attitude}`;
+      }
+      
+      if (persona.bio) {
+        prompt += ` - bio: ${persona.bio}`;
+      }
+    
       prompt += `\n`;
     });
   

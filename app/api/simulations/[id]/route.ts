@@ -54,7 +54,10 @@ export async function GET(
       if (personaError) {
         console.error("Error fetching personas:", personaError)
       } else {
-        personas = personaData
+        personas = personaData.map((persona: any) => ({
+          ...persona,
+          traits: processTraits(persona.traits)
+        }));
       }
     }
     
@@ -68,6 +71,25 @@ export async function GET(
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
   }
 } 
+
+
+const processTraits = (traits: string | string[]) => {
+  let processedTraits: string[] = [];
+  if (Array.isArray(traits)) {
+    processedTraits = traits;
+  } else if (typeof traits === 'string') {
+    if (traits.trim().startsWith('[')) {
+      try {
+        processedTraits = JSON.parse(traits);
+      } catch {
+        processedTraits = traits.split(',').map((t: string) => t.trim());
+      }
+    } else {
+      processedTraits = traits.split(',').map((t: string) => t.trim());
+    }
+  }
+  return processedTraits;
+};
 
 export async function PATCH(
   request: Request,

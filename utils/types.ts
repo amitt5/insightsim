@@ -31,7 +31,7 @@ export interface Persona {
     name: string
     age?: number
     occupation?: string
-    traits?: string[] | string
+    traits?: string[]
     archetype?: string
     gender?: string
     bio?: string

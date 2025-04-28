@@ -260,6 +260,7 @@ export default function SimulationViewPage() {
       if(messageFetched) {
          //3. build the messages for openai
         const sample = {
+          simulation: simulationData?.simulation,
           messages: messageFetched,
           personas: simulationData?.personas || []
         }

@@ -198,41 +198,41 @@ export default function SimulationViewPage() {
       : prepareInitialPrompt(simulationData?.simulation, simulationData?.personas);
       console.log('prompt123', prompt, nameToPersonaIdMap);
     
-      try {
-        const res = await fetch('/api/run-simulation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: prompt,
-          }),
-        });
+      // try {
+      //   const res = await fetch('/api/run-simulation', {
+      //     method: 'POST',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //     },
+      //     body: JSON.stringify({
+      //       messages: prompt,
+      //     }),
+      //   });
         
-        if (!res.ok) {
-          throw new Error(`Error running simulation: ${res.status}`);
-        }
+      //   if (!res.ok) {
+      //     throw new Error(`Error running simulation: ${res.status}`);
+      //   }
         
-        const data = await res.json();
-        console.log('API response:', data);
+      //   const data = await res.json();
+      //   console.log('API response:', data);
         
-        if (data.reply) {
-          // Parse the response into messages
+      //   if (data.reply) {
+      //     // Parse the response into messages
           
-          const parsedMessages = parseSimulationResponse(data.reply);
-          console.log('Parsed messages111:', parsedMessages);
+      //     const parsedMessages = parseSimulationResponse(data.reply);
+      //     console.log('Parsed messages111:', parsedMessages);
           
-          // Save the messages to the database
-          const saveResult = await saveMessagesToDatabase(parsedMessages);
+      //     // Save the messages to the database
+      //     const saveResult = await saveMessagesToDatabase(parsedMessages);
           
-          // // Fetch updated messages after saving
-          if (saveResult && simulationData.simulation.id) {
-            await fetchSimulationMessages(simulationData.simulation.id);
-          }
-        }
-      } catch (error) {
-        console.error("Error running simulation:", error);
-      }
+      //     // // Fetch updated messages after saving
+      //     if (saveResult && simulationData.simulation.id) {
+      //       await fetchSimulationMessages(simulationData.simulation.id);
+      //     }
+      //   }
+      // } catch (error) {
+      //   console.error("Error running simulation:", error);
+      // }
     }
   }
 

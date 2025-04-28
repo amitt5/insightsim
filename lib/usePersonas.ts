@@ -1,3 +1,4 @@
+"use client"
 import { useState, useEffect, useCallback } from "react";
 
 const processTraits = (traits: string | string[]) => {

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Download, UserCircle, Menu } from "lucide-react"
+import { ArrowLeft, Download, UserCircle, Menu, Copy } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePrompt";
 import { buildMessagesForOpenAI } from "@/utils/buildMessagesForOpenAI";
@@ -496,6 +496,13 @@ export default function SimulationViewPage() {
     }
   };
 
+  const copyTranscript = () => {
+    if (!formattedMessages.length) return;
+    // Build the transcript string
+    const transcript = formattedMessages.map(m => `${m.speaker}: ${m.text}`).join("\n");
+    navigator.clipboard.writeText(transcript);
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-[70vh]">Loading simulation data...</div>;
   }
@@ -594,7 +601,18 @@ export default function SimulationViewPage() {
           <div className="col-span-1 lg:col-span-6">
             <Card className="h-full flex flex-col">
               <CardContent className="p-4 flex-1 overflow-auto">
-              <h2 className="font-semibold mb-4">Discussion</h2>
+              <h2 className="font-semibold mb-4 flex items-center gap-2">
+                Discussion
+                {simulationData?.simulation?.status === 'Completed' && (
+                  <button
+                    className="ml-2 p-1 rounded hover:bg-gray-100"
+                    title="Copy transcript"
+                    onClick={copyTranscript}
+                  >
+                    <Copy className="h-4 w-4 text-primary" />
+                  </button>
+                )}
+              </h2>
               <div className="space-y-6">
                   {formattedMessages.length === 0 ? (
                     <div className="text-center py-4 text-gray-500">

@@ -58,6 +58,14 @@ export function buildMessagesForOpenAI({
     systemPrompt += `\n`;
   });
 
+  if (discussion_questions) {
+    systemPrompt += `\nThe moderator has prepared the following discussion guide (questions may be asked in any order):\n`;
+    discussion_questions.forEach((q, idx) => {
+      if (q && q.trim() !== "") {
+        systemPrompt += `${idx + 1}. ${q.trim()}\n`;
+      }
+    });
+  }
 
   systemPrompt += `\nThe moderator is named "Moderator". They guide the discussion by asking questions.\n`;
   systemPrompt += `\nRespond ONLY as the participants (never the moderator), in JSON format:\n`;

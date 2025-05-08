@@ -152,11 +152,9 @@ export default function CalibrationDetailPage() {
         }
         
         const data = await response.json();
-        console.log('data111', data);
         if (data.error) {
           throw new Error(data.error);
         }
-        console.log('data111', data);
         setCalibrationSession(data.calibrationSession);
         setRealTranscript(parseTranscript(data?.calibrationSession?.transcript_text || ''))
         
@@ -191,7 +189,6 @@ interface TranscriptEntry {
  * @returns Array of structured transcript entries
  */
 function parseTranscript(transcriptText: string): TranscriptEntry[] {
-  console.log('transcriptText111', transcriptText)
   const lines = transcriptText.trim().split('\n');
   const entries: TranscriptEntry[] = [];
 
@@ -203,7 +200,6 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
       entries.push({ speaker, text });
     }
   }
-  console.log('entries111', entries)
   return entries;
 }
 

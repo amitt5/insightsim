@@ -2,7 +2,7 @@
 
 import { Label } from "@/components/ui/label"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -10,10 +10,12 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Lightbulb, Check, X } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { useParams } from "next/navigation"
+import { CalibrationSession } from "@/utils/types"
 
 export default function CalibrationDetailPage() {
 
   const params = useParams(); // Use useParams() to get the id
+  const calibrationId = params.calibration_id as string;
   const [activeTab, setActiveTab] = useState("real")
   const [suggestions, setSuggestions] = useState([
     {
@@ -50,54 +52,44 @@ export default function CalibrationDetailPage() {
       {
         speaker: "Moderator",
         text: "Welcome everyone to our focus group on plant-based snack options. Let's start by going around and sharing your current snacking habits.",
-        time: "00:00",
       },
       {
         speaker: "Participant 1",
         text: "I try to snack healthy but it's hard to find options that taste good and are actually nutritious. I end up eating a lot of nuts and dried fruit.",
-        time: "00:45",
       },
       {
         speaker: "Participant 2",
         text: "I'm always looking for new snacks to try. I like chips but I'm trying to cut down on processed foods. I've been experimenting with making my own veggie chips.",
-        time: "01:20",
       },
       {
         speaker: "Participant 3",
         text: "I have kids so I'm always checking nutrition labels. I want snacks that are healthy but that my kids will actually eat. It's a challenge.",
-        time: "01:55",
       },
       {
         speaker: "Participant 4",
         text: "I compare prices a lot. Some of these fancy health snacks are just too expensive for everyday consumption. I need something reasonably priced.",
-        time: "02:30",
       },
     ],
     aiTranscript: [
       {
         speaker: "Moderator",
         text: "Welcome everyone to our focus group on plant-based snack options. Let's start by going around and sharing your current snacking habits.",
-        time: "00:00",
       },
       {
         speaker: "Emma Chen",
         text: "I'm always on the go between meetings, so I need snacks that are convenient but still healthy. I try to avoid too much sugar and prefer options with protein.",
-        time: "00:45",
       },
       {
         speaker: "David Kim",
         text: "I'm interested in innovative snack options. I like trying new products, especially if they use technology in interesting ways, like novel protein sources or sustainable packaging.",
-        time: "01:20",
       },
       {
         speaker: "Sarah Johnson",
         text: "With three kids at home, I'm constantly looking at ingredient lists and nutrition facts. I want snacks that are wholesome but that my family will actually enjoy.",
-        time: "01:55",
       },
       {
         speaker: "Michael Rodriguez",
         text: "I always evaluate the cost-benefit of premium snacks. Some health foods are overpriced for what you get. I need to see clear value before spending extra.",
-        time: "02:30",
       },
     ],
     comparisonSummary: [
@@ -131,6 +123,8 @@ export default function CalibrationDetailPage() {
     ],
   }
 
+  const [calibrationSession, setCalibrationSession] = useState<CalibrationSession | null>(null)
+
   const handleAccept = (id: number) => {
     setSuggestions(suggestions.map((s) => (s.id === id ? { ...s, accepted: true, rejected: false } : s)))
   }
@@ -144,6 +138,75 @@ export default function CalibrationDetailPage() {
       suggestions.map((s) => (s.id === id ? { ...s, suggested: value, accepted: false, rejected: false } : s)),
     )
   }
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchCalibrationSessionData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/calibration_sessions/${params.id}`);
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('data111', data);
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        console.log('data111', data);
+        setCalibrationSession(data.calibrationSession);
+        setRealTranscript(parseTranscript(data?.calibrationSession?.transcript_text || ''))
+        
+        // setError(null);
+      } catch (err: any) {
+        console.error("Failed to fetch simulation:", err);
+        setError(err.message || "Failed to load simulation data");
+        setCalibrationSession(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCalibrationSessionData();
+  }, [calibrationId]);
+
+  const [realTranscript, setRealTranscript] = useState<TranscriptEntry[]>([])
+  const [aiTranscript, setAiTranscript] = useState<any[]>([])
+  const [comparisonSummary, setComparisonSummary] = useState<string[]>([])
+  const [personas, setPersonas] = useState<any[]>([])
+
+interface TranscriptEntry {
+  speaker: string;
+  text: string;
+}
+
+/**
+ * Parses a plain-text transcript into structured entries.
+ * Each line must follow the format: Speaker Name: text
+ *
+ * @param transcriptText - Raw transcript as a string
+ * @returns Array of structured transcript entries
+ */
+function parseTranscript(transcriptText: string): TranscriptEntry[] {
+  console.log('transcriptText111', transcriptText)
+  const lines = transcriptText.trim().split('\n');
+  const entries: TranscriptEntry[] = [];
+
+  for (const line of lines) {
+    const match = line.match(/^([^:]+):\s*(.+)$/);
+    if (match) {
+      const speaker = match[1].trim();
+      const text = match[2].trim();
+      entries.push({ speaker, text });
+    }
+  }
+  console.log('entries111', entries)
+  return entries;
+}
+
 
   return (
     <div className="space-y-6">
@@ -177,7 +240,7 @@ export default function CalibrationDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {calibration.realTranscript.map((message, i) => (
+                {realTranscript.map((message, i) => (
                   <div key={i} className="flex gap-4">
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                       {message.speaker === "Moderator" ? "M" : "P"}
@@ -185,7 +248,6 @@ export default function CalibrationDetailPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{message.speaker}</span>
-                        <span className="text-xs text-gray-500">{message.time}</span>
                       </div>
                       <p className="mt-1 text-gray-700">{message.text}</p>
                     </div>
@@ -212,7 +274,6 @@ export default function CalibrationDetailPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{message.speaker}</span>
-                        <span className="text-xs text-gray-500">{message.time}</span>
                       </div>
                       <p className="mt-1 text-gray-700">{message.text}</p>
                     </div>

@@ -83,6 +83,9 @@ export default function NewCalibrationPage() {
       ...prev,
       [personaId]: participantId,
     }))
+
+    setCalibrationSession({...calibrationSession, persona_mapping: {...calibrationSession.persona_mapping, [personaId]: participantId}})
+    console.log('handleParticipantMapping', calibrationSession)
   }
 
   const handleMappingNote = (personaId: string, note: string) => {
@@ -276,12 +279,11 @@ export default function NewCalibrationPage() {
               <CardDescription>Match each AI persona to a real participant from your transcript</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* Left column: Selected AI personas */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-sm text-gray-500 uppercase tracking-wider">AI Personas</h3>
-                  {getSelectedPersonas().map((persona: any) => (
-                    <div key={persona.id} className="rounded-md border p-4">
+              <div className="space-y-4">
+                {getSelectedPersonas().map((persona: any) => (
+                  <div key={persona.id} className="flex gap-4">
+                    {/* Left: AI Persona */}
+                    <div className="rounded-md border p-4 h-full flex-1 flex flex-col">
                       <div className="flex items-start gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                           <UserCircle className="h-6 w-6" />
@@ -304,20 +306,13 @@ export default function NewCalibrationPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-
-                {/* Right column: Mapping interface */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-sm text-gray-500 uppercase tracking-wider">Mapping</h3>
-                  {getSelectedPersonas().map((persona) => (
-                    <div key={persona.id} className="rounded-md border p-4">
-                      <div className="space-y-3">
+                    {/* Right: Mapping */}
+                    <div className="rounded-md border p-4 h-full flex-1 flex flex-col">
+                      <div className="space-y-3 flex-1 flex flex-col">
                         <div className="flex items-center justify-between">
                           <span className="font-medium">{persona.name}</span>
                           <span className="text-sm text-gray-500">maps to:</span>
                         </div>
-
                         <Select
                           value={participantMappings[persona.id] || ""}
                           onValueChange={(value) => handleParticipantMapping(persona.id, value)}
@@ -333,26 +328,11 @@ export default function NewCalibrationPage() {
                             ))}
                           </SelectContent>
                         </Select>
-
-                        {participantMappings[persona.id] && (
-                          <div className="pt-2">
-                            <Label htmlFor={`mapping-note-${persona.id}`} className="text-xs text-gray-500">
-                              Optional mapping notes:
-                            </Label>
-                            <Textarea
-                              id={`mapping-note-${persona.id}`}
-                              placeholder="e.g., matched by tone and age"
-                              className="mt-1 text-sm"
-                              rows={2}
-                              value={mappingNotes[persona.id] || ""}
-                              onChange={(e) => handleMappingNote(persona.id, e.target.value)}
-                            />
-                          </div>
-                        )}
+                       
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
             <CardFooter className="justify-between">

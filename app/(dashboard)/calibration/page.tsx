@@ -101,17 +101,7 @@ export default function CalibrationPage() {
         
         const data = await response.json();
         console.log('calibrationSessionsApiResponse', data);
-        // Map the API data to the view model
-        // const mappedSimulations = data.simulations.map(sim => ({
-        //   id: sim.id,
-        //   name: sim.study_title,
-        //   date: new Date(sim.created_at).toISOString().split('T')[0],
-        //   mode: sim.mode === 'ai-both' ? 'AI Mod + AI Participants' : 'Human Mod + AI Participants',
-        //   status: sim.status,
-        //   participants: data.participantCounts[sim.id] || 0
-        // }));
-        
-        setCalibrationSessions(data);
+        setCalibrationSessions(data.data);
         setError(null);
       } catch (err) {
         console.error("Failed to fetch simulations:", err);
@@ -135,7 +125,9 @@ export default function CalibrationPage() {
           </Button>
         </Link>
       </div>
-
+    {loading && <div>Loading...</div>}
+    {error && <div>{error}</div>}
+    {!loading && !error && calibrationSessions.length > 0 && (
       <Card>
         <CardHeader>
           <CardTitle>All Calibrations</CardTitle>
@@ -153,11 +145,12 @@ export default function CalibrationPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {calibrations.map((calibration) => (
+              {calibrationSessions.map((calibration) => (
                 <TableRow key={calibration.id}>
                   <TableCell className="font-medium">{calibration.title}</TableCell>
                   <TableCell>{calibration.topic}</TableCell>
-                  <TableCell>{calibration.date}</TableCell>
+                  <TableCell>{calibration.created_at?.slice(0, 10)}</TableCell>
+                  {/* <TableCell>date</TableCell> */}
                   <TableCell>
                     <Badge variant={getStatusBadge(calibration.status)}>{calibration.status}</Badge>
                   </TableCell>
@@ -168,6 +161,7 @@ export default function CalibrationPage() {
           </Table>
         </CardContent>
       </Card>
+    )}
     </div>
   )
 }

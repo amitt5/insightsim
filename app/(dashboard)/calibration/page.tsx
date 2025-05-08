@@ -1,9 +1,12 @@
+"use client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Eye, Play, BarChart2 } from "lucide-react"
+import { CalibrationSession } from "@/utils/types"
+import { useState, useEffect } from "react"
 
 export default function CalibrationPage() {
   // Mock data for calibrations
@@ -81,6 +84,45 @@ export default function CalibrationPage() {
       </div>
     )
   }
+
+  const [calibrationSessions, setCalibrationSessions] = useState<CalibrationSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCalibrationSessions = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/calibration_sessions');
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('calibrationSessionsApiResponse', data);
+        // Map the API data to the view model
+        // const mappedSimulations = data.simulations.map(sim => ({
+        //   id: sim.id,
+        //   name: sim.study_title,
+        //   date: new Date(sim.created_at).toISOString().split('T')[0],
+        //   mode: sim.mode === 'ai-both' ? 'AI Mod + AI Participants' : 'Human Mod + AI Participants',
+        //   status: sim.status,
+        //   participants: data.participantCounts[sim.id] || 0
+        // }));
+        
+        setCalibrationSessions(data);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch simulations:", err);
+        setError("Failed to load simulations. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchCalibrationSessions();
+  }, []);
 
   return (
     <div className="space-y-6">

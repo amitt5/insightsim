@@ -21,40 +21,45 @@ export default function NewCalibrationPage() {
     user_id: '' // This will be set when the user is authenticated
   })
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
-  const [participantMappings, setParticipantMappings] = useState<Record<string, string>>({})
-  const [mappingNotes, setMappingNotes] = useState<Record<string, string>>({})
   const router = useRouter()
   const [openPersonaModal, setOpenPersonaModal] = useState(false)
   const { personas, loading, error } = usePersonas()
   const [realParticipants, setRealParticipants] = useState<string[]>([])
 
-
-  // Mock real participants extracted from transcript
-  // const realParticipants1 = [
-  //   { id: "p1", name: "Jennifer W.", gender: "Female", age: "30s", notes: "Mentioned having children" },
-  //   { id: "p2", name: "Robert T.", gender: "Male", age: "20s", notes: "Tech background" },
-  //   { id: "p3", name: "Lisa M.", gender: "Female", age: "40s", notes: "Health-focused" },
-  //   { id: "p4", name: "Carlos G.", gender: "Male", age: "30s", notes: "Price-conscious" },
-  //   { id: "p5", name: "Aisha P.", gender: "Female", age: "20s", notes: "Mentioned social media" },
-  // ]
-
   const togglePersona = (id: string) => {
     setSelectedPersonas((prev) => (prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [...prev, id]))
     console.log('togglePersona', personas, selectedPersonas, calibrationSession)
+    setCalibrationSession({...calibrationSession, selected_persona_ids: selectedPersonas})
   }
 
   const nextStep = () => setStep((prev) => Math.min(prev + 1, 5))
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1))
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // In a real app, we would submit the form data here
-    router.push("/calibration/1")
+    console.log('handleSubmit', calibrationSession)
+    // create a new object with the calibrationSession object but with the transcript_participants property removed
+    let sendObject = {
+      ...calibrationSession,
+    }
+    delete sendObject.transcript_participants;
+    console.log('sendObject', sendObject)
+    // add code to call post request in api/calibration_sessions/create/route.ts
+    const response = await fetch('/api/calibration_sessions/create', {
+      method: 'POST',
+      body: JSON.stringify(sendObject)
+    })
+    if (response.ok) {
+      console.log('response', response)
+      router.push("/calibration/1")
+    }
+    // router.push("/calibration/1")
   }
 
   const extractSpeakerNames = (transcript: string): string[] => {
     const speakerRegex = /^([A-Z][a-zA-Z0-9 _-]{1,30}):/gm;
     const namesSet = new Set<string>();
-  
+
     let match;
     while ((match = speakerRegex.exec(transcript)) !== null) {
       const name = match[1].trim();
@@ -63,8 +68,7 @@ export default function NewCalibrationPage() {
       }
     }
     setRealParticipants(Array.from(namesSet));
-    setCalibrationSession({...calibrationSession, transcript_participants: Array.from(namesSet)});
-    console.log('namesSet',realParticipants, namesSet, calibrationSession, calibrationSession);
+    setCalibrationSession({ ...calibrationSession, transcript_text: transcript });
     return Array.from(namesSet);
   }
 
@@ -79,21 +83,10 @@ export default function NewCalibrationPage() {
   }
   
   const handleParticipantMapping = (personaId: string, participantId: string) => {
-    setParticipantMappings((prev) => ({
-      ...prev,
-      [personaId]: participantId,
-    }))
-
     setCalibrationSession({...calibrationSession, persona_mapping: {...calibrationSession.persona_mapping, [personaId]: participantId}})
     console.log('handleParticipantMapping', calibrationSession)
   }
 
-  const handleMappingNote = (personaId: string, note: string) => {
-    setMappingNotes((prev) => ({
-      ...prev,
-      [personaId]: note,
-    }))
-  }
 
   const getSelectedPersonas = () => {
     return personas.filter((persona: any) => selectedPersonas.includes(persona.id))
@@ -314,7 +307,7 @@ export default function NewCalibrationPage() {
                           <span className="text-sm text-gray-500">maps to:</span>
                         </div>
                         <Select
-                          value={participantMappings[persona.id] || ""}
+                          value={calibrationSession?.persona_mapping?.[persona.id] || ""}
                           onValueChange={(value) => handleParticipantMapping(persona.id, value)}
                         >
                           <SelectTrigger>
@@ -378,11 +371,11 @@ export default function NewCalibrationPage() {
               <div className="rounded-md bg-gray-50 p-4">
                 <h3 className="mb-2 font-medium">Calibration Summary</h3>
                 <ul className="space-y-1 text-sm text-gray-600">
-                  <li>Study Title: Plant-based Snack Focus Group</li>
-                  <li>Topic: Consumer preferences for plant-based snacks</li>
+                  <li>Study Title: {calibrationSession.title}</li>
+                  <li>Topic: {calibrationSession.topic}</li>
                   <li>Participants: {selectedPersonas.length} selected</li>
-                  <li>Participant Mappings: {Object.keys(participantMappings).length} mapped</li>
-                  <li>Transcript: 1,250 words</li>
+                  <li>Participant Mappings: {Object.keys(calibrationSession?.persona_mapping || {}).length} mapped</li>
+                  {/* <li>Transcript: {calibrationSession.transcript_text?.length} words</li> */}
                 </ul>
               </div>
             </CardContent>

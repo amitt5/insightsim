@@ -261,6 +261,16 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
               <CardDescription>Generated transcript from AI personas</CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Show button if aiTranscript is null or empty */}
+              {(!calibrationSession?.simulated_transcript) && (
+                <button
+                  className="mb-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+                  onClick={() => {/* TODO: implement generate transcript logic */}}
+                >
+                  Generate AI transcript
+                </button>
+              )}
+              {(calibrationSession?.simulated_transcript) &&
               <div className="space-y-6">
                 {calibration.aiTranscript.map((message, i) => (
                   <div key={i} className="flex gap-4">
@@ -275,7 +285,7 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
                     </div>
                   </div>
                 ))}
-              </div>
+              </div>}
             </CardContent>
           </Card>
         </TabsContent>

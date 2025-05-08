@@ -39,8 +39,8 @@ export default function NewCalibrationPage() {
   // ]
 
   const togglePersona = (id: string) => {
-    console.log('togglePersona', personas)
     setSelectedPersonas((prev) => (prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [...prev, id]))
+    console.log('togglePersona', personas, selectedPersonas, calibrationSession)
   }
 
   const nextStep = () => setStep((prev) => Math.min(prev + 1, 5))
@@ -63,8 +63,8 @@ export default function NewCalibrationPage() {
       }
     }
     setRealParticipants(Array.from(namesSet));
-    // setCalibrationSession({...calibrationSession, participants: Array.from(namesSet)});
-    console.log('namesSet',realParticipants, namesSet, calibrationSession);
+    setCalibrationSession({...calibrationSession, transcript_participants: Array.from(namesSet)});
+    console.log('namesSet',realParticipants, namesSet, calibrationSession, calibrationSession);
     return Array.from(namesSet);
   }
 

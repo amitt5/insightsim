@@ -32,6 +32,7 @@ export interface Simulation {
     notes?: string;
     transcript_text?: string;
     selected_persona_ids?: string[]; // UUID[]
+    transcript_participants?: string[];
     persona_mapping?: Record<string, string>; // e.g. { "Emma Chen": "persona_123" }
     simulated_transcript?: any; // could be JSON or a structured type
     comparison_summary?: string;

@@ -13,9 +13,13 @@ import { ArrowLeft, ArrowRight, Upload, UserCircle } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
-
+import { CalibrationSession } from "@/utils/types"
 export default function NewCalibrationPage() {
   const [step, setStep] = useState(1)
+  const [calibrationSession, setCalibrationSession] = useState<CalibrationSession>({
+    status: 'in_progress',
+    user_id: '' // This will be set when the user is authenticated
+  })
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
   const [participantMappings, setParticipantMappings] = useState<Record<string, string>>({})
   const [mappingNotes, setMappingNotes] = useState<Record<string, string>>({})
@@ -59,7 +63,8 @@ export default function NewCalibrationPage() {
       }
     }
     setRealParticipants(Array.from(namesSet));
-    console.log('namesSet',realParticipants, namesSet);
+    // setCalibrationSession({...calibrationSession, participants: Array.from(namesSet)});
+    console.log('namesSet',realParticipants, namesSet, calibrationSession);
     return Array.from(namesSet);
   }
 
@@ -137,17 +142,17 @@ export default function NewCalibrationPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="studyTitle">Study Title</Label>
-                <Input id="studyTitle" placeholder="e.g., Plant-based Snack Focus Group" />
+                <Input id="studyTitle" placeholder="e.g., Plant-based Snack Focus Group" onChange={(e) => setCalibrationSession({...calibrationSession, title: e.target.value})} />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="topic">Topic</Label>
-                <Input id="topic" placeholder="e.g., Consumer preferences for plant-based snacks" />
+                <Input id="topic" placeholder="e.g., Consumer preferences for plant-based snacks" onChange={(e) => setCalibrationSession({...calibrationSession, topic: e.target.value})} />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Optional Notes</Label>
-                <Textarea id="notes" placeholder="Add any additional context about the study..." rows={4} />
+                <Textarea id="notes" placeholder="Add any additional context about the study..." rows={4} onChange={(e) => setCalibrationSession({...calibrationSession, notes: e.target.value})} />
               </div>
             </CardContent>
             <CardFooter className="justify-end">
@@ -174,7 +179,8 @@ export default function NewCalibrationPage() {
                   placeholder="Paste your transcript here..."
                   rows={15}
                   className="font-mono text-sm"
-                  onChange={(e) => {
+                  onChange={(e) => { 
+                    setCalibrationSession({...calibrationSession, transcript_text: e.target.value})
                     const names = extractSpeakerNames(e.target.value);
                     console.log('names', names);
                   }}

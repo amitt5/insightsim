@@ -24,6 +24,22 @@ export interface Simulation {
     created_at: string;
   }
   
+  export interface CalibrationSession {
+    id?: string; // UUID
+    user_id: string;
+    title?: string;
+    topic?: string;
+    notes?: string;
+    transcript_text?: string;
+    selected_persona_ids?: string[]; // UUID[]
+    persona_mapping?: Record<string, string>; // e.g. { "Emma Chen": "persona_123" }
+    simulated_transcript?: any; // could be JSON or a structured type
+    comparison_summary?: string;
+    persona_feedback?: any; // structured feedback, or keep as `any` if freeform JSON
+    status: 'in_progress' | 'completed' | string;
+    created_at?: string; // ISO timestamp
+  }
+  
   
 
 export interface Persona {

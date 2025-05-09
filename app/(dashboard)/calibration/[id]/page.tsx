@@ -209,7 +209,7 @@ export default function CalibrationDetailPage() {
     });
     console.log('calibrationSession123', calibrationSession);
 
-    const response = await fetch(`/api/calibration_session/${calibrationSession?.id}`, {
+    const response = await fetch(`/api/calibration_sessions/${calibrationSession?.id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

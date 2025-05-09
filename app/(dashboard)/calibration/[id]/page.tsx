@@ -93,12 +93,83 @@ export default function CalibrationDetailPage() {
     runSimulation();
   }
 
-  const compareTranscripts = () => {
+  const compareTranscripts = async() => {
     console.log('compareTranscripts', calibrationSession)
 
     const prompt = buildPersonaImprovementPrompt(calibrationSession?.transcript_text || '',calibrationSession?.simulated_transcript || '', calibrationPersonas,calibrationSession?.persona_mapping || {} );
     console.log('prompt123', prompt);
+
+    const savedResponse = getSavedOpenAIResponse();
+    if (savedResponse) {
+      console.log("Loaded saved response:", savedResponse);
+    } else {
+      // Make the request to OpenAI and save the result
+      await makeOpenAIRequest(prompt);
+      // saveOpenAIResponse(response);
+    }
+
   }
+
+  const makeOpenAIRequest = async(prompt: any) => {
+    console.log('compareTranscripts', calibrationSession)
+
+
+    try {
+      const res = await fetch('/api/run-simulation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: prompt,
+        }),
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Error running simulation: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      console.log('API response:', data);
+      saveOpenAIResponse(data);
+      
+      if (data.reply) {
+        // Parse the response into messages
+        
+        const parsedResponse: any = parseSimulationResponse(data.reply);
+        console.log('Parsed messages111:', parsedResponse);
+        setCalibrationSession({
+          ...calibrationSession,
+          user_id: calibrationSession?.user_id || "",
+          comparison_summary: parsedResponse.transcript_differences,
+          status: "completed"
+        });
+        // setSimulatedTranscript(parsedMessages)
+        // formatAndSaveTranscript(parsedMessages)
+      }
+    } catch (error) {
+      console.error("Error running simulation:", error);
+    }
+  }
+
+  
+
+  const saveOpenAIResponse = (response: any) => {
+    if (typeof window !== "undefined") {
+      // Convert response to JSON and save to localStorage
+      localStorage.setItem('openAIResponse', JSON.stringify(response));
+    }
+  }
+
+  const getSavedOpenAIResponse = () => {
+    if (typeof window !== "undefined") {
+      const savedResponse = localStorage.getItem('openAIResponse');
+      return savedResponse ? JSON.parse(savedResponse) : null;
+    }
+    return null;
+  }
+
+
 
   const runSimulation = async () => {
     console.log('runSimulationCalled', calibrationSession);
@@ -143,13 +214,6 @@ export default function CalibrationDetailPage() {
           console.log('Parsed messages111:', parsedMessages);
           setSimulatedTranscript(parsedMessages)
           formatAndSaveTranscript(parsedMessages)
-          // Save the messages to the database
-          // const saveResult = await saveMessagesToDatabase(parsedMessages);
-          
-          // // // Fetch updated messages after saving
-          // if (saveResult && simulationData.simulation.id) {
-          //   await fetchSimulationMessages(simulationData.simulation.id);
-          // }
         }
       } catch (error) {
         console.error("Error running simulation:", error);

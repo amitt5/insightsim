@@ -11,7 +11,7 @@ import { ArrowLeft, Lightbulb, Check, X } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { useParams } from "next/navigation"
 import { CalibrationSession, Persona, Simulation } from "@/utils/types"
-import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePrompt";
+import { prepareInitialPrompt, buildPersonaImprovementPrompt } from "@/utils/preparePrompt";
 
 export default function CalibrationDetailPage() {
 
@@ -91,6 +91,13 @@ export default function CalibrationDetailPage() {
   const generateAiTranscript = () => {
     console.log('generateAiTranscript', calibration)
     runSimulation();
+  }
+
+  const compareTranscripts = () => {
+    console.log('compareTranscripts', calibrationSession)
+
+    const prompt = buildPersonaImprovementPrompt(calibrationSession?.transcript_text || '',calibrationSession?.simulated_transcript || '', calibrationPersonas,calibrationSession?.persona_mapping || {} );
+    console.log('prompt123', prompt);
   }
 
   const runSimulation = async () => {
@@ -374,82 +381,93 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
               <CardDescription>Analysis of differences between real and AI transcripts</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="mb-3 text-lg font-medium">Key Differences</h3>
-                  <ul className="space-y-2">
-                    {calibration.comparisonSummary.map((point, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">
-                          {i + 1}
-                        </span>
-                        <span>{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-8">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium">Suggested Persona Improvements</h3>
-                    <Button variant="outline" className="gap-2">
-                      <Lightbulb className="h-4 w-4" />
-                      Suggest Prompt Changes
-                    </Button>
+              {/* Show button if aiTranscript is null or empty */}
+              {(!calibrationSession?.comparison_summary) && (
+                <button
+                  className="mb-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+                  onClick={() => compareTranscripts()}
+                >
+                  Compare transcripts
+                </button>
+              )}
+              {/* {(calibrationSession?.comparison_summary) && */}
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="mb-3 text-lg font-medium">Key Differences</h3>
+                    <ul className="space-y-2">
+                      {calibration.comparisonSummary.map((point, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">
+                            {i + 1}
+                          </span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
-                  <div className="mt-4 space-y-4">
-                    {suggestions.map((suggestion) => (
-                      <div key={suggestion.id} className="rounded-md border p-4">
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className="font-medium">
-                            Original trait: <span className="text-gray-600">{suggestion.original}</span>
-                          </span>
-                          <div className="flex gap-2">
-                            <Button
-                              variant={suggestion.accepted ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => handleAccept(suggestion.id)}
-                              className="gap-1"
-                            >
-                              <Check className="h-3 w-3" />
-                              Accept
-                            </Button>
-                            <Button
-                              variant={suggestion.rejected ? "destructive" : "outline"}
-                              size="sm"
-                              onClick={() => handleReject(suggestion.id)}
-                              className="gap-1"
-                            >
-                              <X className="h-3 w-3" />
-                              Reject
-                            </Button>
+                  <div className="mt-8">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium">Suggested Persona Improvements</h3>
+                      <Button variant="outline" className="gap-2">
+                        <Lightbulb className="h-4 w-4" />
+                        Suggest Prompt Changes
+                      </Button>
+                    </div>
+
+                    <div className="mt-4 space-y-4">
+                      {suggestions.map((suggestion) => (
+                        <div key={suggestion.id} className="rounded-md border p-4">
+                          <div className="mb-2 flex items-center justify-between">
+                            <span className="font-medium">
+                              Original trait: <span className="text-gray-600">{suggestion.original}</span>
+                            </span>
+                            <div className="flex gap-2">
+                              <Button
+                                variant={suggestion.accepted ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleAccept(suggestion.id)}
+                                className="gap-1"
+                              >
+                                <Check className="h-3 w-3" />
+                                Accept
+                              </Button>
+                              <Button
+                                variant={suggestion.rejected ? "destructive" : "outline"}
+                                size="sm"
+                                onClick={() => handleReject(suggestion.id)}
+                                className="gap-1"
+                              >
+                                <X className="h-3 w-3" />
+                                Reject
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`suggestion-${suggestion.id}`}>Suggested improvement:</Label>
+                            <Textarea
+                              id={`suggestion-${suggestion.id}`}
+                              value={suggestion.suggested}
+                              onChange={(e) => handleSuggestedChange(suggestion.id, e.target.value)}
+                              className={
+                                suggestion.accepted
+                                  ? "border-green-500"
+                                  : suggestion.rejected
+                                    ? "border-red-300 line-through"
+                                    : ""
+                              }
+                            />
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`suggestion-${suggestion.id}`}>Suggested improvement:</Label>
-                          <Textarea
-                            id={`suggestion-${suggestion.id}`}
-                            value={suggestion.suggested}
-                            onChange={(e) => handleSuggestedChange(suggestion.id, e.target.value)}
-                            className={
-                              suggestion.accepted
-                                ? "border-green-500"
-                                : suggestion.rejected
-                                  ? "border-red-300 line-through"
-                                  : ""
-                            }
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
 
-                  <div className="mt-6 flex justify-end">
-                    <Button>Save Persona Updates</Button>
+                    <div className="mt-6 flex justify-end">
+                      <Button>Save Persona Updates</Button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              {/* } */}
             </CardContent>
           </Card>
         </TabsContent>

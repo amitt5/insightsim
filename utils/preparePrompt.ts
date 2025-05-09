@@ -3,7 +3,14 @@ import { SimulationMessage } from "@/utils/types";
 import { Persona, Simulation } from "@/utils/types";
 
   
+interface  TranscriptEntry  {
+  speaker: string;
+  text: string;
+};
 
+interface  PersonaMapping  {
+  [persona_id: string]: string; // persona_id → real participant name
+};
 
   export function prepareInitialPrompt(simulation: Simulation, personas: Persona[]) {
     const { study_title, topic, discussion_questions } = simulation;
@@ -119,3 +126,97 @@ import { Persona, Simulation } from "@/utils/types";
 
     return messages;
   }
+
+  export function buildPersonaImprovementPrompt(
+    realTranscriptText: string,
+    aiTranscriptText: string,
+    personas: Persona[],
+    persona_mapping: PersonaMapping
+  ): ChatCompletionMessageParam[] {
+    const systemPrompt: ChatCompletionMessageParam = {
+      role: 'system',
+      content:`
+      You are an expert qualitative researcher specializing in focus group analysis and AI persona development.
+      Your job is to:
+      1. Analyze the differences between a real focus group transcript and an AI-simulated version.
+      2. Evaluate how well each AI persona (defined with fields like name, age, occupation, traits, archetype, etc.) matched the behavior of their corresponding real participant.
+      3. Suggest edits to each AI persona to make them more realistic and better aligned with their intended real counterpart. Improvements can include traits, goals, attitudes, or bio.
+
+      You will receive:
+      - personas: A list of AI personas used in the simulation, each with fields like name, age, gender, occupation, traits, archetype, attitude, goal, bio, etc.
+      - persona_mapping: A mapping of persona IDs to the real participant names they were meant to represent.
+      - real_transcript: A list of transcript entries (speaker + text) from the real discussion.
+      - ai_transcript: A list of transcript entries (speaker + text) from the simulated discussion.
+
+      Return your analysis as a JSON object in the following structure:
+
+      {
+        "transcript_differences": [string], 
+        "persona_improvements": [
+          {
+            "persona_id": string,
+            "suggested_improvements": string
+          }
+        ]
+      }`
+    };
+  
+    const personasText = personas
+      .map((p) => {
+        return `Persona ID: ${p.id}
+        Name: ${p.name}
+        ${p.age ? `Age: ${p.age}` : ''}
+        ${p.gender ? `Gender: ${p.gender}` : ''}
+        ${p.occupation ? `Occupation: ${p.occupation}` : ''}
+        ${p.archetype ? `Archetype: ${p.archetype}` : ''}
+        ${p.traits?.length ? `Traits: ${p.traits.join(', ')}` : ''}
+        ${p.attitude ? `Attitude: ${p.attitude}` : ''}
+        ${p.goal ? `Goal: ${p.goal}` : ''}
+        ${p.bio ? `Bio: ${p.bio}` : ''}
+        `.trim();
+      })
+      .join('\n\n');
+  
+    const personaMappingText = Object.entries(persona_mapping)
+      .map(([personaId, realName]) => `Persona ID ${personaId} → Participant "${realName}"`)
+      .join('\n');
+
+  
+    const userPrompt: ChatCompletionMessageParam = {
+      role: 'user',
+      content: `
+    Below are details for your task:
+    
+    --- PERSONAS ---
+    ${personasText}
+    
+    --- PERSONA MAPPING (AI persona → real participant) ---
+    ${personaMappingText}
+    
+    --- REAL TRANSCRIPT ---
+    ${realTranscriptText}
+    
+    --- AI TRANSCRIPT ---
+    ${aiTranscriptText}
+    
+    Your task:
+    1. Analyze the differences between the AI and real transcripts.
+    2. Suggest persona improvements, especially where AI responses were off-mark compared to real responses.
+    
+    Please return a JSON object of this shape:
+    
+    {
+      "transcript_differences": string[], 
+      "persona_improvements": [
+        {
+          "persona_id": string,
+          "suggested_improvements": string
+        }
+      ]
+    }
+      `.trim(),
+    };
+  
+    return [systemPrompt, userPrompt];
+  }
+  

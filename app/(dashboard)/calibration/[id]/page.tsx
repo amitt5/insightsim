@@ -126,6 +126,7 @@ export default function CalibrationDetailPage() {
 
   const [calibrationSession, setCalibrationSession] = useState<CalibrationSession | null>(null)
   const [calibrationPersonas, setCalibrationPersonas] = useState<Persona[]>([])
+  const [simulatedTranscript, setSimulatedTranscript] = useState<any[]>([])
 
   const handleAccept = (id: number) => {
     setSuggestions(suggestions.map((s) => (s.id === id ? { ...s, accepted: true, rejected: false } : s)))
@@ -177,6 +178,7 @@ export default function CalibrationDetailPage() {
           
           const parsedMessages = parseSimulationResponse(data.reply);
           console.log('Parsed messages111:', parsedMessages);
+          setSimulatedTranscript(parsedMessages)
           formatAndSaveTranscript(parsedMessages)
           // Save the messages to the database
           // const saveResult = await saveMessagesToDatabase(parsedMessages);
@@ -193,14 +195,36 @@ export default function CalibrationDetailPage() {
   }
 
 
-  const formatAndSaveTranscript = (parsedMessages: any[]) => {
+  const formatAndSaveTranscript = async(parsedMessages: any[]) => {
     if (!parsedMessages.length) return;
     // Build the transcript string
     const transcript = parsedMessages.map(m => `${m.name}: ${m.message}`).join("\n");
     console.log('copyTranscript', parsedMessages);
     console.log('copyTranscript1', transcript);
-    // setCalibrationSession({...calibrationSession, simulated_transcript: transcript});
-    navigator.clipboard.writeText(transcript);
+    setCalibrationSession({
+      ...calibrationSession,
+      user_id: calibrationSession?.user_id || "",
+      simulated_transcript: transcript,
+      status: "completed"
+    });
+    console.log('calibrationSession123', calibrationSession);
+
+    const response = await fetch(`/api/calibration_session/${calibrationSession?.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...calibrationSession,
+        user_id: calibrationSession?.user_id || "",
+        simulated_transcript: transcript,
+        status: "completed"
+      }),
+    });
+    if (response.ok) {
+      console.log('response', response)
+    }
+
   };
 
   // Function to parse the simulation response

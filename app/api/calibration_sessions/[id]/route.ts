@@ -58,6 +58,36 @@ export async function GET(
   }
 } 
 
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies })
+    const { id } = params
+    const body = await request.json();
+
+    // Remove id from body if present to avoid updating the primary key
+    if ('id' in body) delete body.id;
+
+    const { data, error } = await supabase
+      .from("calibration_sessions")
+      .update(body)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating calibration session:", error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ calibrationSession: data })
+  } catch (error) {
+    console.error("Unexpected error in PATCH:", error)
+    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
+  }
+}
 
 const processTraits = (traits: string | string[]) => {
   let processedTraits: string[] = [];

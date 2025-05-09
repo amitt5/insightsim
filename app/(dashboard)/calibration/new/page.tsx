@@ -27,9 +27,15 @@ export default function NewCalibrationPage() {
   const [realParticipants, setRealParticipants] = useState<string[]>([])
 
   const togglePersona = (id: string) => {
-    setSelectedPersonas((prev) => (prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [...prev, id]))
-    console.log('togglePersona', personas, selectedPersonas, calibrationSession)
-    setCalibrationSession({...calibrationSession, selected_persona_ids: selectedPersonas})
+    // Calculate the new array first
+    const newSelectedPersonas = selectedPersonas.includes(id) 
+      ? selectedPersonas.filter(personaId => personaId !== id) 
+      : [...selectedPersonas, id];
+      
+    // Use it for both state updates
+    setSelectedPersonas(newSelectedPersonas);
+    console.log('togglePersona', personas, newSelectedPersonas, calibrationSession);
+    setCalibrationSession({...calibrationSession, selected_persona_ids: newSelectedPersonas});
   }
 
   const nextStep = () => setStep((prev) => Math.min(prev + 1, 5))

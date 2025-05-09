@@ -37,7 +37,6 @@ export function usePersonas() {
         traits: processTraits(persona.traits)
       }));
       setPersonas(processedData);
-      console.log('processedData', processedData)
       return processedData;
     } catch (err: any) {
       setError(err.message || "Unknown error");

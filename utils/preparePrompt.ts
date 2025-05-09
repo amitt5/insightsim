@@ -201,9 +201,9 @@ interface  PersonaMapping  {
     
     Your task:
     1. Analyze the differences between the AI and real transcripts.
-    2. Suggest persona improvements, especially where AI responses were off-mark compared to real responses.
+    2. For **each persona**, suggest improvements — even if differences are subtle or minor.
     
-    Please return a JSON object of this shape:
+    Return a JSON object of this shape:
     
     {
       "transcript_differences": string[], 

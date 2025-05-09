@@ -100,7 +100,6 @@ export default function CalibrationPage() {
         }
         
         const data = await response.json();
-        console.log('calibrationSessionsApiResponse', data);
         setCalibrationSessions(data.data);
         setError(null);
       } catch (err) {

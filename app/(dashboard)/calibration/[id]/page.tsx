@@ -144,8 +144,6 @@ export default function CalibrationDetailPage() {
           comparison_summary: parsedResponse.transcript_differences,
           status: "completed"
         });
-        // setSimulatedTranscript(parsedMessages)
-        // formatAndSaveTranscript(parsedMessages)
       }
     } catch (error) {
       console.error("Error running simulation:", error);
@@ -212,7 +210,7 @@ export default function CalibrationDetailPage() {
           
           const parsedMessages = parseSimulationResponse(data.reply);
           console.log('Parsed messages111:', parsedMessages);
-          setSimulatedTranscript(parsedMessages)
+          // setSimulatedTranscript(parsedMessages)
           formatAndSaveTranscript(parsedMessages)
         }
       } catch (error) {
@@ -250,6 +248,7 @@ export default function CalibrationDetailPage() {
     });
     if (response.ok) {
       console.log('response', response)
+      fetchCalibrationSessionData();
     }
 
   };
@@ -284,38 +283,35 @@ export default function CalibrationDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchCalibrationSessionData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/calibration_sessions/${params.id}`);
-        
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        setCalibrationSession(data.calibrationSession);
-        setCalibrationPersonas(data.personas);
-        setRealTranscript(parseTranscript(data?.calibrationSession?.transcript_text || ''))
-        if(data?.calibrationSession?.simulated_transcript) {
-          setSimulatedTranscript(parseTranscript(data?.calibrationSession?.simulated_transcript || ''))
-        }
-
-        
-        // setError(null);
-      } catch (err: any) {
-        console.error("Failed to fetch simulation:", err);
-        setError(err.message || "Failed to load simulation data");
-        setCalibrationSession(null);
-      } finally {
-        setIsLoading(false);
+  const fetchCalibrationSessionData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/calibration_sessions/${params.id}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
       }
-    };
-    
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      setCalibrationSession(data.calibrationSession);
+      setCalibrationPersonas(data.personas);
+      setRealTranscript(parseTranscript(data?.calibrationSession?.transcript_text || ''))
+      if(data?.calibrationSession?.simulated_transcript) {
+        setSimulatedTranscript(parseTranscript(data?.calibrationSession?.simulated_transcript || ''))
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch simulation:", err);
+      setError(err.message || "Failed to load simulation data");
+      setCalibrationSession(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCalibrationSessionData();
   }, [calibrationId]);
 
@@ -418,7 +414,7 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
                   Generate AI transcript
                 </button>
               )}
-              {(calibrationSession?.simulated_transcript) &&
+              {(simulatedTranscript && simulatedTranscript.length) &&
               <div className="space-y-6">
                 {simulatedTranscript.map((message, i) => (
                   <div key={i} className="flex gap-4">

@@ -49,50 +49,6 @@ export default function CalibrationDetailPage() {
     topic: "Plant-based snack preferences",
     date: "2025-04-15",
     status: "Ready to Compare",
-    realTranscript: [
-      {
-        speaker: "Moderator",
-        text: "Welcome everyone to our focus group on plant-based snack options. Let's start by going around and sharing your current snacking habits.",
-      },
-      {
-        speaker: "Participant 1",
-        text: "I try to snack healthy but it's hard to find options that taste good and are actually nutritious. I end up eating a lot of nuts and dried fruit.",
-      },
-      {
-        speaker: "Participant 2",
-        text: "I'm always looking for new snacks to try. I like chips but I'm trying to cut down on processed foods. I've been experimenting with making my own veggie chips.",
-      },
-      {
-        speaker: "Participant 3",
-        text: "I have kids so I'm always checking nutrition labels. I want snacks that are healthy but that my kids will actually eat. It's a challenge.",
-      },
-      {
-        speaker: "Participant 4",
-        text: "I compare prices a lot. Some of these fancy health snacks are just too expensive for everyday consumption. I need something reasonably priced.",
-      },
-    ],
-    aiTranscript: [
-      {
-        speaker: "Moderator",
-        text: "Welcome everyone to our focus group on plant-based snack options. Let's start by going around and sharing your current snacking habits.",
-      },
-      {
-        speaker: "Emma Chen",
-        text: "I'm always on the go between meetings, so I need snacks that are convenient but still healthy. I try to avoid too much sugar and prefer options with protein.",
-      },
-      {
-        speaker: "David Kim",
-        text: "I'm interested in innovative snack options. I like trying new products, especially if they use technology in interesting ways, like novel protein sources or sustainable packaging.",
-      },
-      {
-        speaker: "Sarah Johnson",
-        text: "With three kids at home, I'm constantly looking at ingredient lists and nutrition facts. I want snacks that are wholesome but that my family will actually enjoy.",
-      },
-      {
-        speaker: "Michael Rodriguez",
-        text: "I always evaluate the cost-benefit of premium snacks. Some health foods are overpriced for what you get. I need to see clear value before spending extra.",
-      },
-    ],
     comparisonSummary: [
       "AI personas accurately captured the health-consciousness theme but overemphasized professional contexts",
       "Real participants were more specific about their frustrations finding good options",
@@ -274,6 +230,10 @@ export default function CalibrationDetailPage() {
         setCalibrationSession(data.calibrationSession);
         setCalibrationPersonas(data.personas);
         setRealTranscript(parseTranscript(data?.calibrationSession?.transcript_text || ''))
+        if(data?.calibrationSession?.simulated_transcript) {
+          setSimulatedTranscript(parseTranscript(data?.calibrationSession?.simulated_transcript || ''))
+        }
+
         
         // setError(null);
       } catch (err: any) {
@@ -389,7 +349,7 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
               )}
               {(calibrationSession?.simulated_transcript) &&
               <div className="space-y-6">
-                {calibration.aiTranscript.map((message, i) => (
+                {simulatedTranscript.map((message, i) => (
                   <div key={i} className="flex gap-4">
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                       {message.speaker === "Moderator" ? "M" : message.speaker[0]}

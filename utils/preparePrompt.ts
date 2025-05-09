@@ -200,9 +200,14 @@ interface  PersonaMapping  {
     ${aiTranscriptText}
     
     Your task:
-    1. Analyze the differences between the AI and real transcripts.
-    2. For **each persona**, suggest improvements — even if differences are subtle or minor.
-    
+    1. Summarize key thematic differences between the AI and real transcripts. Focus on overall tone, specificity, emotional nuance, language style, and the kinds of examples given — rather than sentence-by-sentence comparison. Return 3–7 key points that would help improve how personas are written or simulated.
+    2. For each persona, **suggest concrete changes to the persona definition** (fields like "traits", "bio", "goals", etc.) based on how the real participant behaved in the transcript.  
+    Be **explicit** about what text should be **added**, **removed**, or **reworded**.  
+    Avoid vague instructions like "emphasize her skepticism"; instead, provide specific updates like:  
+    - "Add to traits": “cautious toward exaggerated marketing claims”  
+    - "Revise bio": “...frequently uses Facebook groups for health information”  
+    - "Update goal": “...seeks trustworthy product recommendations for her family”
+
     Return a JSON object of this shape:
     
     {

@@ -97,11 +97,13 @@ export default function CalibrationDetailPage() {
     console.log('compareTranscripts', calibrationSession)
 
     const prompt = buildPersonaImprovementPrompt(calibrationSession?.transcript_text || '',calibrationSession?.simulated_transcript || '', calibrationPersonas,calibrationSession?.persona_mapping || {} );
-    console.log('prompt123', prompt);
+    console.log('prompt-compareTranscripts', prompt);
 
     const savedResponse = getSavedOpenAIResponse();
     if (savedResponse) {
       console.log("Loaded saved response:", savedResponse);
+      const parsedSavedResponse: any = parseSimulationResponse(savedResponse.reply);
+      console.log('Parsed saved response:', parsedSavedResponse);
     } else {
       // Make the request to OpenAI and save the result
       await makeOpenAIRequest(prompt);

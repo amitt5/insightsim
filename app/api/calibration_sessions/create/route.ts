@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.from('calibration_sessions').insert({
       ...calibrationSession,
       user_id: userId
-    })
+    }).select()
     if (error) {
       console.error('Error creating calibration session:', error)
     }

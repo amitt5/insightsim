@@ -56,8 +56,13 @@ export default function NewCalibrationPage() {
       body: JSON.stringify(sendObject)
     })
     if (response.ok) {
-      console.log('response', response)
-      router.push("/calibration/1")
+      const result = await response.json();
+      if (result.data && result.data[0]?.id) {
+        router.push(`/calibration/${result.data[0].id}`);
+      } else {
+        console.error('No ID returned');
+        router.push("/calibration");
+      }
     }
     // router.push("/calibration/1")
   }

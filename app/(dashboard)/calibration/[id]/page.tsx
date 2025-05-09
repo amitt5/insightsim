@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Lightbulb, Check, X } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { useParams } from "next/navigation"
-import { CalibrationSession } from "@/utils/types"
+import { CalibrationSession, Persona, Simulation } from "@/utils/types"
+import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePrompt";
 
 export default function CalibrationDetailPage() {
 
@@ -124,10 +125,90 @@ export default function CalibrationDetailPage() {
   }
 
   const [calibrationSession, setCalibrationSession] = useState<CalibrationSession | null>(null)
+  const [calibrationPersonas, setCalibrationPersonas] = useState<Persona[]>([])
 
   const handleAccept = (id: number) => {
     setSuggestions(suggestions.map((s) => (s.id === id ? { ...s, accepted: true, rejected: false } : s)))
   }
+
+  const generateAiTranscript = () => {
+    console.log('generateAiTranscript', calibration)
+    runSimulation();
+  }
+
+  const runSimulation = async () => {
+    console.log('runSimulationCalled', calibrationSession);
+    if(calibrationSession && calibrationSession.title) {
+      const simulation : Simulation = {
+        id: calibrationSession.id || '',
+        study_title: calibrationSession.title,
+        study_type: "focus-group",
+        mode: "ai-both",
+        discussion_questions: [],
+        turn_based: true,
+        num_turns: 5,
+        user_id: calibrationSession.user_id || '',
+        status: "Running",
+        created_at: calibrationSession.created_at || ''
+      }
+      const prompt = prepareInitialPrompt(simulation, calibrationPersonas);
+      console.log('prompt123', prompt);
+    
+      // try {
+      //   const res = await fetch('/api/run-simulation', {
+      //     method: 'POST',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //     },
+      //     body: JSON.stringify({
+      //       messages: prompt,
+      //     }),
+      //   });
+        
+      //   if (!res.ok) {
+      //     throw new Error(`Error running simulation: ${res.status}`);
+      //   }
+        
+      //   const data = await res.json();
+      //   console.log('API response:', data);
+        
+      //   if (data.reply) {
+      //     // Parse the response into messages
+          
+      //     const parsedMessages = parseSimulationResponse(data.reply);
+      //     console.log('Parsed messages111:', parsedMessages);
+          
+      //     // Save the messages to the database
+      //     // const saveResult = await saveMessagesToDatabase(parsedMessages);
+          
+      //     // // // Fetch updated messages after saving
+      //     // if (saveResult && simulationData.simulation.id) {
+      //     //   await fetchSimulationMessages(simulationData.simulation.id);
+      //     // }
+      //   }
+      // } catch (error) {
+      //   console.error("Error running simulation:", error);
+      // }
+    }
+  }
+
+  // Function to parse the simulation response
+  const parseSimulationResponse = (responseString: string) => {
+    try {
+      // Remove the initial "=" and any whitespace if it exists
+      const cleanedString = responseString.trim()
+      .replace(/^```json\s*/i, '') // remove leading ```json
+      .replace(/^```\s*/i, '')     // or just ```
+      .replace(/```$/, '')
+      .replace(/^\s*=\s*/, '');
+      const parsed = JSON.parse(cleanedString);
+      // setMessages(parsed);
+      return parsed;
+    } catch (error) {
+      console.error("Error parsing simulation response:", error);
+      return [];
+    }
+  };
 
   const handleReject = (id: number) => {
     setSuggestions(suggestions.map((s) => (s.id === id ? { ...s, accepted: false, rejected: true } : s)))
@@ -156,6 +237,7 @@ export default function CalibrationDetailPage() {
           throw new Error(data.error);
         }
         setCalibrationSession(data.calibrationSession);
+        setCalibrationPersonas(data.personas);
         setRealTranscript(parseTranscript(data?.calibrationSession?.transcript_text || ''))
         
         // setError(null);
@@ -265,7 +347,7 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
               {(!calibrationSession?.simulated_transcript) && (
                 <button
                   className="mb-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
-                  onClick={() => {/* TODO: implement generate transcript logic */}}
+                  onClick={() => generateAiTranscript()}
                 >
                   Generate AI transcript
                 </button>

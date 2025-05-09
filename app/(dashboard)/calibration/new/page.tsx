@@ -146,10 +146,28 @@ export default function NewCalibrationPage() {
                 <Input id="topic" placeholder="e.g., Consumer preferences for plant-based snacks" onChange={(e) => setCalibrationSession({...calibrationSession, topic: e.target.value})} />
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="notes">Optional Notes</Label>
                 <Textarea id="notes" placeholder="Add any additional context about the study..." rows={4} onChange={(e) => setCalibrationSession({...calibrationSession, notes: e.target.value})} />
+              </div> */}
+
+              <div className="space-y-2">
+                <Label>Upload Media (coming soon!)</Label>
+                {/* <Label>Upload Media (optional)</Label> */}
+                <div className="flex h-32 cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-300 hover:bg-gray-50">
+                  <div className="flex flex-col items-center space-y-2 text-center">
+                    <Upload className="h-6 w-6 text-gray-400" />
+                    <span className="text-sm text-gray-500">Click to upload or drag and drop</span>
+                    <span className="text-xs text-gray-400">PNG, JPG, PDF up to 10MB</span>
+                  </div>
+                </div>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">Discussion Questions</Label>
+                <Textarea id="notes" placeholder="Discussion Questions about the study..." rows={4} onChange={(e) => setCalibrationSession({...calibrationSession, discussion_questions: e.target.value.split('\n')})} />
+              </div>
+
             </CardContent>
             <CardFooter className="justify-end">
               <Button onClick={nextStep}>

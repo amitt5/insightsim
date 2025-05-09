@@ -17,7 +17,7 @@ export interface Simulation {
     mode: "ai-both" | "human-mod";
     topic?: string;
     stimulus_media_url?: string;
-    discussion_questions: string[];
+    discussion_questions?: string[];
     turn_based: boolean;
     num_turns: number;
     status: "Draft" | "Running" | "Completed";
@@ -31,6 +31,8 @@ export interface Simulation {
     topic?: string;
     notes?: string;
     transcript_text?: string;
+    discussion_questions?: string[];
+    stimulus_media_url?: string;
     selected_persona_ids?: string[]; // UUID[]
     transcript_participants?: string[];
     persona_mapping?: Record<string, string>; // e.g. { "Emma Chen": "persona_123" }

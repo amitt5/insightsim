@@ -144,7 +144,7 @@ export default function CalibrationDetailPage() {
         study_title: calibrationSession.title,
         study_type: "focus-group",
         mode: "ai-both",
-        discussion_questions: [],
+        discussion_questions: calibrationSession.discussion_questions,
         turn_based: true,
         num_turns: 5,
         user_id: calibrationSession.user_id || '',
@@ -154,43 +154,54 @@ export default function CalibrationDetailPage() {
       const prompt = prepareInitialPrompt(simulation, calibrationPersonas);
       console.log('prompt123', prompt);
     
-      // try {
-      //   const res = await fetch('/api/run-simulation', {
-      //     method: 'POST',
-      //     headers: {
-      //       'Content-Type': 'application/json',
-      //     },
-      //     body: JSON.stringify({
-      //       messages: prompt,
-      //     }),
-      //   });
+      try {
+        const res = await fetch('/api/run-simulation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: prompt,
+          }),
+        });
         
-      //   if (!res.ok) {
-      //     throw new Error(`Error running simulation: ${res.status}`);
-      //   }
+        if (!res.ok) {
+          throw new Error(`Error running simulation: ${res.status}`);
+        }
         
-      //   const data = await res.json();
-      //   console.log('API response:', data);
+        const data = await res.json();
+        console.log('API response:', data);
         
-      //   if (data.reply) {
-      //     // Parse the response into messages
+        if (data.reply) {
+          // Parse the response into messages
           
-      //     const parsedMessages = parseSimulationResponse(data.reply);
-      //     console.log('Parsed messages111:', parsedMessages);
+          const parsedMessages = parseSimulationResponse(data.reply);
+          console.log('Parsed messages111:', parsedMessages);
+          formatAndSaveTranscript(parsedMessages)
+          // Save the messages to the database
+          // const saveResult = await saveMessagesToDatabase(parsedMessages);
           
-      //     // Save the messages to the database
-      //     // const saveResult = await saveMessagesToDatabase(parsedMessages);
-          
-      //     // // // Fetch updated messages after saving
-      //     // if (saveResult && simulationData.simulation.id) {
-      //     //   await fetchSimulationMessages(simulationData.simulation.id);
-      //     // }
-      //   }
-      // } catch (error) {
-      //   console.error("Error running simulation:", error);
-      // }
+          // // // Fetch updated messages after saving
+          // if (saveResult && simulationData.simulation.id) {
+          //   await fetchSimulationMessages(simulationData.simulation.id);
+          // }
+        }
+      } catch (error) {
+        console.error("Error running simulation:", error);
+      }
     }
   }
+
+
+  const formatAndSaveTranscript = (parsedMessages: any[]) => {
+    if (!parsedMessages.length) return;
+    // Build the transcript string
+    const transcript = parsedMessages.map(m => `${m.name}: ${m.message}`).join("\n");
+    console.log('copyTranscript', parsedMessages);
+    console.log('copyTranscript1', transcript);
+    // setCalibrationSession({...calibrationSession, simulated_transcript: transcript});
+    navigator.clipboard.writeText(transcript);
+  };
 
   // Function to parse the simulation response
   const parseSimulationResponse = (responseString: string) => {

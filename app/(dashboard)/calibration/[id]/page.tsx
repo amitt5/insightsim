@@ -192,7 +192,45 @@ export default function CalibrationDetailPage() {
     return null;
   }
 
-
+  const savePersonaImprovement = async(persona_improvements: PersonaImprovement[]) => {
+    console.log('savePersonaImprovement', persona_improvements)
+    
+    try {
+      // Prepare the data for API call
+      const improvementsToSave = persona_improvements.map(improvement => ({
+        persona_id: improvement.persona_id,
+        calibration_id: calibrationSession?.id,
+        updated_prompt: improvement.suggested_improvements
+      }));
+      
+      // Make the API call
+      const response = await fetch('/api/persona_versions/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(improvementsToSave),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save persona improvements');
+      }
+      
+      const result = await response.json();
+      console.log('Saved persona improvements:', result.data);
+      
+      // Optionally update UI or show success message
+      // setSuccessMessage('Persona improvements saved successfully');
+      
+      return result.data;
+    } catch (error) {
+      console.error('Error saving persona improvements:', error);
+      // Optionally show error in UI
+      // setErrorMessage('Failed to save persona improvements');
+      throw error;
+    }
+  }
 
   const runSimulation = async () => {
     console.log('runSimulationCalled', calibrationSession);
@@ -349,6 +387,13 @@ interface TranscriptEntry {
   speaker: string;
   text: string;
 }
+
+interface PersonaImprovement {
+  persona_id: string;
+  suggested_improvements: string;
+}
+
+
 
 /**
  * Parses a plain-text transcript into structured entries.

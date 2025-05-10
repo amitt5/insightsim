@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useParams } from "next/navigation"
 import { CalibrationSession, Persona, Simulation } from "@/utils/types"
 import { prepareInitialPrompt, buildPersonaImprovementPrompt } from "@/utils/preparePrompt";
+import { set } from "date-fns"
 
 export default function CalibrationDetailPage() {
 
@@ -104,12 +105,44 @@ export default function CalibrationDetailPage() {
       console.log("Loaded saved response:", savedResponse);
       const parsedSavedResponse: any = parseSimulationResponse(savedResponse.reply);
       console.log('Parsed saved response:', parsedSavedResponse);
+      saveComparisonSummary(parsedSavedResponse.transcript_differences);
     } else {
       // Make the request to OpenAI and save the result
       await makeOpenAIRequest(prompt);
       // saveOpenAIResponse(response);
     }
+    console.log('calibrationSession?.comparison_summary', calibrationSession?.comparison_summary)
+    calibrationSession?.comparison_summary?.map((point, i) => (
+      console.log('point', point)
+    ))
 
+  }
+
+  const saveComparisonSummary = async(transcript_differences: string[]) => {
+    console.log('savePersonaImprovement', calibrationSession)
+    // setCalibrationSession({
+    //   ...calibrationSession,
+    //   user_id: calibrationSession?.user_id || "",
+    //   comparison_summary: transcript_differences || [],
+    //   status: "completed"
+    // })
+
+    const response = await fetch(`/api/calibration_sessions/${calibrationSession?.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...calibrationSession,
+        user_id: calibrationSession?.user_id || "",
+        comparison_summary: transcript_differences || [],
+        status: "completed"
+      }),
+    });
+    if (response.ok) {
+      console.log('response', response)
+      fetchCalibrationSessionData();
+    }
   }
 
   const makeOpenAIRequest = async(prompt: any) => {
@@ -140,12 +173,7 @@ export default function CalibrationDetailPage() {
         
         const parsedResponse: any = parseSimulationResponse(data.reply);
         console.log('Parsed messages111:', parsedResponse);
-        setCalibrationSession({
-          ...calibrationSession,
-          user_id: calibrationSession?.user_id || "",
-          comparison_summary: parsedResponse.transcript_differences,
-          status: "completed"
-        });
+        saveComparisonSummary(parsedResponse.transcript_differences);
       }
     } catch (error) {
       console.error("Error running simulation:", error);
@@ -444,20 +472,20 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
             </CardHeader>
             <CardContent>
               {/* Show button if aiTranscript is null or empty */}
-              {(!calibrationSession?.comparison_summary) && (
+              {/* {(!calibrationSession?.comparison_summary) && ( */}
                 <button
                   className="mb-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
                   onClick={() => compareTranscripts()}
                 >
                   Compare transcripts
                 </button>
-              )}
-              {/* {(calibrationSession?.comparison_summary) && */}
+              {/* )} */}
+              {(calibrationSession?.comparison_summary && calibrationSession?.comparison_summary.length) &&
                 <div className="space-y-6">
                   <div>
                     <h3 className="mb-3 text-lg font-medium">Key Differences</h3>
                     <ul className="space-y-2">
-                      {calibration.comparisonSummary.map((point, i) => (
+                      {calibrationSession?.comparison_summary.map((point, i) => (
                         <li key={i} className="flex items-start gap-2">
                           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">
                             {i + 1}
@@ -529,7 +557,7 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
                     </div>
                   </div>
                 </div>
-              {/* } */}
+              }
             </CardContent>
           </Card>
         </TabsContent>

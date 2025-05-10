@@ -37,7 +37,7 @@ export interface Simulation {
     transcript_participants?: string[];
     persona_mapping?: Record<string, string>; // e.g. { "Emma Chen": "persona_123" }
     simulated_transcript?: any; // could be JSON or a structured type
-    comparison_summary?: string;
+    comparison_summary?: string[];
     persona_feedback?: any; // structured feedback, or keep as `any` if freeform JSON
     status: 'in_progress' | 'completed' | string;
     created_at?: string; // ISO timestamp

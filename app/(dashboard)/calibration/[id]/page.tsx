@@ -111,11 +111,6 @@ export default function CalibrationDetailPage() {
       await makeOpenAIRequest(prompt);
       // saveOpenAIResponse(response);
     }
-    console.log('calibrationSession?.comparison_summary', calibrationSession?.comparison_summary)
-    calibrationSession?.comparison_summary?.map((point, i) => (
-      console.log('point', point)
-    ))
-
   }
 
   const saveComparisonSummary = async(transcript_differences: string[]) => {

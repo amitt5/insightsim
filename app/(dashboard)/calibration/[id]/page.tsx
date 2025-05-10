@@ -106,6 +106,7 @@ export default function CalibrationDetailPage() {
       const parsedSavedResponse: any = parseSimulationResponse(savedResponse.reply);
       console.log('Parsed saved response:', parsedSavedResponse);
       saveComparisonSummary(parsedSavedResponse.transcript_differences);
+      savePersonaImprovement(parsedSavedResponse.persona_improvements);
     } else {
       // Make the request to OpenAI and save the result
       await makeOpenAIRequest(prompt);
@@ -169,6 +170,8 @@ export default function CalibrationDetailPage() {
         const parsedResponse: any = parseSimulationResponse(data.reply);
         console.log('Parsed messages111:', parsedResponse);
         saveComparisonSummary(parsedResponse.transcript_differences);
+        savePersonaImprovement(parsedResponse.persona_improvements);
+
       }
     } catch (error) {
       console.error("Error running simulation:", error);

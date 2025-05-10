@@ -13,6 +13,7 @@ import { useParams } from "next/navigation"
 import { CalibrationSession, Persona, Simulation } from "@/utils/types"
 import { prepareInitialPrompt, buildPersonaImprovementPrompt } from "@/utils/preparePrompt";
 import { set } from "date-fns"
+import { usePersonas } from "@/lib/usePersonas"
 
 export default function CalibrationDetailPage() {
 
@@ -42,7 +43,11 @@ export default function CalibrationDetailPage() {
       rejected: false,
     },
   ])
+  const { personas } = usePersonas()
 
+  const [realTranscript, setRealTranscript] = useState<TranscriptEntry[]>([])
+  // const [aiTranscript, setAiTranscript] = useState<any[]>([])
+  // const [comparisonSummary, setComparisonSummary] = useState<string[]>([])
   // Mock data
   const calibration = {
     id: params.id,
@@ -80,7 +85,7 @@ export default function CalibrationDetailPage() {
       },
     ],
   }
-
+  const [personaImprovements, setPersonaImprovements] = useState<PersonaImprovement[]>([]);
   const [calibrationSession, setCalibrationSession] = useState<CalibrationSession | null>(null)
   const [calibrationPersonas, setCalibrationPersonas] = useState<Persona[]>([])
   const [simulatedTranscript, setSimulatedTranscript] = useState<any[]>([])
@@ -203,7 +208,7 @@ export default function CalibrationDetailPage() {
       const improvementsToSave = persona_improvements.map(improvement => ({
         persona_id: improvement.persona_id,
         calibration_id: calibrationSession?.id,
-        updated_prompt: improvement.suggested_improvements
+        suggested_improvements: improvement.suggested_improvements
       }));
       
       // Make the API call
@@ -341,7 +346,7 @@ export default function CalibrationDetailPage() {
     setSuggestions(suggestions.map((s) => (s.id === id ? { ...s, accepted: false, rejected: true } : s)))
   }
 
-  const handleSuggestedChange = (id: number, value: string) => {
+  const handleSuggestedChange = (id: string, value: string) => {
     setSuggestions(
       suggestions.map((s) => (s.id === id ? { ...s, suggested: value, accepted: false, rejected: false } : s)),
     )
@@ -377,14 +382,37 @@ export default function CalibrationDetailPage() {
     }
   };
 
+
+  const fetchPersonaImprovements = async() => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/persona_versions/${params.id}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      console.log('Fetched persona improvements:', result.data);
+      setPersonaImprovements(result.data || []);
+    } catch (err: any) {
+      console.error("Failed to fetch persona improvements:", err);
+      setError(err.message || "Failed to load persona improvements");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   useEffect(() => {
     fetchCalibrationSessionData();
+    fetchPersonaImprovements();
   }, [calibrationId]);
 
-  const [realTranscript, setRealTranscript] = useState<TranscriptEntry[]>([])
-  const [aiTranscript, setAiTranscript] = useState<any[]>([])
-  const [comparisonSummary, setComparisonSummary] = useState<string[]>([])
-  const [personas, setPersonas] = useState<any[]>([])
 
 interface TranscriptEntry {
   speaker: string;
@@ -394,6 +422,8 @@ interface TranscriptEntry {
 interface PersonaImprovement {
   persona_id: string;
   suggested_improvements: string;
+  id?: string;
+  calibration_id?: string;
 }
 
 
@@ -549,46 +579,49 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
                     </div>
 
                     <div className="mt-4 space-y-4">
-                      {suggestions.map((suggestion) => (
-                        <div key={suggestion.id} className="rounded-md border p-4">
+                      {personaImprovements.map((personaImprovement) => (
+                        <div key={personaImprovement.id} className="rounded-md border p-4">
                           <div className="mb-2 flex items-center justify-between">
                             <span className="font-medium">
-                              Original trait: <span className="text-gray-600">{suggestion.original}</span>
+                              Persona: <span className="text-gray-600">
+                                {/* add code to get persona name using persona_id */}
+                                {personas.find((persona) => persona.id === personaImprovement.persona_id)?.name}
+                              </span>
                             </span>
-                            <div className="flex gap-2">
+                            {/* <div className="flex gap-2">
                               <Button
-                                variant={suggestion.accepted ? "default" : "outline"}
+                                variant={personaImprovement.accepted ? "default" : "outline"}
                                 size="sm"
-                                onClick={() => handleAccept(suggestion.id)}
+                                onClick={() => handleAccept(personaImprovement.id)}
                                 className="gap-1"
                               >
                                 <Check className="h-3 w-3" />
                                 Accept
                               </Button>
                               <Button
-                                variant={suggestion.rejected ? "destructive" : "outline"}
+                                variant={personaImprovement.rejected ? "destructive" : "outline"}
                                 size="sm"
-                                onClick={() => handleReject(suggestion.id)}
+                                onClick={() => handleReject(personaImprovement.id)}
                                 className="gap-1"
                               >
                                 <X className="h-3 w-3" />
                                 Reject
                               </Button>
-                            </div>
+                            </div> */}
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor={`suggestion-${suggestion.id}`}>Suggested improvement:</Label>
+                            <Label htmlFor={`suggestion-${personaImprovement.id}`}>Suggested improvement:</Label>
                             <Textarea
-                              id={`suggestion-${suggestion.id}`}
-                              value={suggestion.suggested}
-                              onChange={(e) => handleSuggestedChange(suggestion.id, e.target.value)}
-                              className={
-                                suggestion.accepted
-                                  ? "border-green-500"
-                                  : suggestion.rejected
-                                    ? "border-red-300 line-through"
-                                    : ""
-                              }
+                              id={`suggestion-${personaImprovement.id}`}
+                              value={personaImprovement.suggested_improvements}
+                              onChange={(e) => handleSuggestedChange(personaImprovement.id || '', e.target.value)}
+                              // className={
+                              //   personaImprovement.accepted
+                              //     ? "border-green-500"
+                              //     : personaImprovement.rejected
+                              //       ? "border-red-300 line-through"
+                              //       : ""
+                              // }
                             />
                           </div>
                         </div>

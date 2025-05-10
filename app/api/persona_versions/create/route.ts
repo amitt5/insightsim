@@ -16,9 +16,9 @@ export async function POST(request: Request) {
     
     // Validate each improvement has required fields
     for (const item of improvements) {
-      if (!item.persona_id || !item.calibration_id || !item.updated_prompt) {
+      if (!item.persona_id || !item.calibration_id || !item.suggested_improvements) {
         return NextResponse.json({ 
-          error: "Each item must include persona_id, calibration_id, and updated_prompt" 
+          error: "Each item must include persona_id, calibration_id, and suggested_improvements" 
         }, { status: 400 });
       }
     }

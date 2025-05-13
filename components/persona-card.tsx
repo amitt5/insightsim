@@ -3,9 +3,10 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { UserCircle, Pencil, Copy } from "lucide-react"
+import { UserCircle, Pencil, Copy, Trash } from "lucide-react"
 import { Persona } from "@/utils/types"
 import { CreatePersonaDialog } from "./create-persona-dialog"
+import { useToast } from "@/hooks/use-toast"
 
 interface PersonaCardProps {
   persona: Persona
@@ -22,6 +23,7 @@ export function PersonaCard({
   selectable = false,
   onUpdate 
 }: PersonaCardProps) {
+  const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   
@@ -29,7 +31,7 @@ export function PersonaCard({
   const traits = Array.isArray(persona.traits) 
     ? persona.traits 
     : typeof persona.traits === 'string' 
-      ? persona.traits.split(',').map(t => t.trim())
+      ? (persona.traits as string).split(',').map(t => t.trim())
       : [];
 
   const cardClasses = `${selectable 
@@ -39,6 +41,40 @@ export function PersonaCard({
   const handleEditSuccess = (updatedPersona: Persona) => {
     if (onUpdate) {
       onUpdate(updatedPersona);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete the persona "${persona.name}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/personas?id=${persona.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete persona');
+      }
+
+      toast({
+        title: "Success",
+        description: "Persona deleted successfully",
+        duration: 3000,
+      });
+
+      if (onUpdate) {
+        onUpdate(persona);
+      }
+    } catch (err: any) {
+      console.error('Error deleting persona:', err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to delete persona",
+        variant: "destructive",
+        duration: 5000,
+      });
     }
   };
 
@@ -63,15 +99,28 @@ export function PersonaCard({
                 </p>
               </div>
               {persona.editable && (
-                <button 
-                  className="p-1 hover:bg-white/50 rounded-full transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsEditDialogOpen(true);
-                  }}
-                >
-                  <Pencil className="h-4 w-4 text-primary" />
-                </button>
+                <>
+                  <button 
+                    className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditDialogOpen(true);
+                    }}
+                    title="Edit Persona"
+                  >
+                    <Pencil className="h-4 w-4 text-primary" />
+                  </button>
+                  <button 
+                    className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete();
+                    }}
+                    title="Delete Persona"
+                  >
+                    <Trash className="h-4 w-4 text-red-500" />
+                  </button>
+                </>
               )}
               <button
                 className="p-1 hover:bg-white/50 rounded-full transition-colors"

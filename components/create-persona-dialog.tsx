@@ -26,6 +26,8 @@ interface CreatePersonaDialogProps {
   initialData?: Persona;
   mode?: 'create' | 'edit';
   hideTrigger?: boolean;
+  onHideSystemPersonasChange?: (hide: boolean) => void;
+  hideSystemPersonas?: boolean;
 }
 
 export function CreatePersonaDialog({ 
@@ -34,7 +36,9 @@ export function CreatePersonaDialog({
   onSuccess, 
   initialData,
   mode = 'create',
-  hideTrigger = false
+  hideTrigger = false,
+  onHideSystemPersonasChange,
+  hideSystemPersonas = false
 }: CreatePersonaDialogProps) {
   const { toast } = useToast();
   
@@ -50,6 +54,14 @@ export function CreatePersonaDialog({
     goal: "",
     attitude: "",
   });
+  
+  // State for hiding system personas
+  const [hideSystemPersonasState, setHideSystemPersonasState] = useState(hideSystemPersonas);
+
+  // Update state when the prop changes
+  useEffect(() => {
+    setHideSystemPersonasState(hideSystemPersonas);
+  }, [hideSystemPersonas]);
 
   // Update form data when initialData changes
   useEffect(() => {
@@ -144,15 +156,38 @@ export function CreatePersonaDialog({
     }
   };
 
+  // Handle toggle change for hide system personas
+  const handleHideSystemPersonasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked;
+    setHideSystemPersonasState(isChecked);
+    if (onHideSystemPersonasChange) {
+      onHideSystemPersonasChange(isChecked);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {!hideTrigger && (
-        <DialogTrigger asChild>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            {mode === 'create' ? 'Create New Persona' : 'Edit Persona'}
-          </Button>
-        </DialogTrigger>
+        <div className="space-y-2">
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              {mode === 'create' ? 'Create New Persona' : 'Edit Persona'}
+            </Button>
+          </DialogTrigger>
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="hide-system-personas"
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              checked={hideSystemPersonasState}
+              onChange={handleHideSystemPersonasChange}
+            />
+            <label htmlFor="hide-system-personas" className="text-sm text-gray-700">
+              Hide system personas
+            </label>
+          </div>
+        </div>
       )}
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col pb-0 pt-0">
         <DialogHeader className="px-6 pt-2 pb-2">

@@ -10,11 +10,17 @@ import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 export default function PersonasPage() {
   const [open, setOpen] = useState(false)
   const { personas, loading, error, mutate } = usePersonas()
+  const [hideSystemPersonas, setHideSystemPersonas] = useState(false)
 
   const handleSavePersona = (personaData: any) => {
     console.log("Save persona:", personaData)
     // Here you would implement the save functionality
   }
+
+  // Filter personas based on hideSystemPersonas state
+  const filteredPersonas = hideSystemPersonas 
+    ? personas.filter(persona => persona.editable === true)
+    : personas;
 
   return (
     <div className="space-y-6">
@@ -23,6 +29,8 @@ export default function PersonasPage() {
         <CreatePersonaDialog 
           open={open}
           onOpenChange={setOpen}
+          onHideSystemPersonasChange={setHideSystemPersonas}
+          hideSystemPersonas={hideSystemPersonas}
         />
       </div>
 
@@ -38,7 +46,7 @@ export default function PersonasPage() {
             <div className="p-4 text-center text-red-500">{error}</div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {personas.map((persona) => (
+              {filteredPersonas.map((persona) => (
                 <PersonaCard key={persona.id} persona={persona} onUpdate={mutate} />
               ))}
             </div>

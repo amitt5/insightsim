@@ -22,6 +22,7 @@ export default function NewSimulationPage() {
   const [step, setStep] = useState(1)
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
   const [openPersonaModal, setOpenPersonaModal] = useState(false)
+  const [hideSystemPersonas, setHideSystemPersonas] = useState(false)
   const [simulationData, setSimulationData] = useState({
     study_title: "",
     study_type: "focus-group",
@@ -35,6 +36,11 @@ export default function NewSimulationPage() {
   
   const router = useRouter()
   const { personas, loading, error } = usePersonas()
+
+  // Filter personas based on hideSystemPersonas state
+  const filteredPersonas = hideSystemPersonas 
+    ? personas.filter(persona => persona.editable === true)
+    : personas;
 
   const togglePersona = (id: string) => {
     if(simulationData.study_type === 'focus-group') {
@@ -241,6 +247,8 @@ export default function NewSimulationPage() {
                 <CreatePersonaDialog
                   open={openPersonaModal}
                   onOpenChange={setOpenPersonaModal}
+                  onHideSystemPersonasChange={setHideSystemPersonas}
+                  hideSystemPersonas={hideSystemPersonas}
                 />
               </div>
 
@@ -250,7 +258,7 @@ export default function NewSimulationPage() {
                 <div className="p-4 text-center text-red-500">{error}</div>
               ) : (
                 <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                  {personas.map((persona) => (
+                  {filteredPersonas.map((persona) => (
                     <PersonaCard
                       key={persona.id}
                       persona={persona}

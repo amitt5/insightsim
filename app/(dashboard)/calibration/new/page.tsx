@@ -21,10 +21,16 @@ export default function NewCalibrationPage() {
     user_id: '' // This will be set when the user is authenticated
   })
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
+  const [hideSystemPersonas, setHideSystemPersonas] = useState(false)
   const router = useRouter()
   const [openPersonaModal, setOpenPersonaModal] = useState(false)
   const { personas, loading, error } = usePersonas()
   const [realParticipants, setRealParticipants] = useState<string[]>([])
+
+  // Filter personas based on hideSystemPersonas state
+  const filteredPersonas = hideSystemPersonas 
+    ? personas.filter(persona => persona.editable === true)
+    : personas;
 
   const togglePersona = (id: string) => {
     // Calculate the new array first
@@ -100,7 +106,7 @@ export default function NewCalibrationPage() {
 
 
   const getSelectedPersonas = () => {
-    return personas.filter((persona: any) => selectedPersonas.includes(persona.id))
+    return filteredPersonas.filter((persona: any) => selectedPersonas.includes(persona.id))
   }
 
   
@@ -267,10 +273,12 @@ export default function NewCalibrationPage() {
                 <CreatePersonaDialog
                   open={openPersonaModal}
                   onOpenChange={setOpenPersonaModal}
+                  onHideSystemPersonasChange={setHideSystemPersonas}
+                  hideSystemPersonas={hideSystemPersonas}
                 />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                {personas.map((persona) => (
+                {filteredPersonas.map((persona) => (
                   <PersonaCard
                     key={persona.id}
                     persona={persona}

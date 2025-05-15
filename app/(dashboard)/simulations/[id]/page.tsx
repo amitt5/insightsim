@@ -573,8 +573,25 @@ export default function SimulationViewPage() {
         <div>
               <h1 className="text-2xl font-bold">{simulation.topic}</h1>
               {simulation.stimulus_media_url && (
-                <div className="mt-4 mb-4">
-                  <MediaViewer url={simulation.stimulus_media_url} title="Stimulus Media" />
+                <div className="mt-4 mb-4 space-y-4">
+                  {/* Check if it's an array and render each media file */}
+                  {Array.isArray(simulation.stimulus_media_url) ? (
+                    simulation.stimulus_media_url.length > 0 ? (
+                      simulation.stimulus_media_url.map((url, index) => (
+                        <div key={index} className="mb-4">
+                          <MediaViewer 
+                            url={url} 
+                            title={`Stimulus Media ${simulation.stimulus_media_url && Array.isArray(simulation.stimulus_media_url) && simulation.stimulus_media_url.length > 1 ? (index + 1) : ''}`} 
+                          />
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No media attached to this simulation</p>
+                    )
+                  ) : (
+                    // Backward compatibility - handle single URL string
+                    <MediaViewer url={simulation.stimulus_media_url as string} title="Stimulus Media" />
+                  )}
                 </div>
               )}
           <div className="flex items-center gap-2 text-sm text-gray-500">

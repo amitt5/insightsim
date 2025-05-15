@@ -15,6 +15,15 @@ export async function POST(request: Request) {
     // Parse request body
     const requestData = await request.json()
     
+    // Handle media URLs - use the stimulus_media_url array directly as JSONB
+    const mediaUrls = requestData.stimulus_media_url || [];
+    
+    // Log the incoming data for debugging
+    console.log("Creating simulation with media:", {
+      mediaUrls: mediaUrls,
+      count: mediaUrls.length
+    });
+      
     // Create simulation record
     const { data: simulation, error } = await supabase.from("simulations").insert([
       {
@@ -23,7 +32,7 @@ export async function POST(request: Request) {
         study_type: requestData.study_type,
         mode: requestData.mode,
         topic: requestData.topic,
-        stimulus_media_url: requestData.stimulus_media_url,
+        stimulus_media_url: mediaUrls, // This is now a JSONB array, no need for string conversion
         discussion_questions: requestData.discussion_questions,
         turn_based: requestData.turn_based,
         num_turns: requestData.num_turns,

@@ -10,19 +10,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { PersonaCard } from "@/components/persona-card"
-import { ArrowLeft, ArrowRight, Upload } from "lucide-react"
+import { ArrowLeft, ArrowRight, Upload, X } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
-import { getRandomSimulation } from "@/utils/mockSimulations";
-import { Simulation } from "@/utils/types";
-
+import { getRandomSimulation } from "@/utils/mockSimulations"
+import { Simulation } from "@/utils/types"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { v4 as uuidv4 } from 'uuid'
+import { useToast } from "@/hooks/use-toast"
 
 export default function NewSimulationPage() {
+  const { toast } = useToast()
   const [step, setStep] = useState(1)
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
   const [openPersonaModal, setOpenPersonaModal] = useState(false)
   const [hideSystemPersonas, setHideSystemPersonas] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [fileError, setFileError] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
   const [simulationData, setSimulationData] = useState({
     study_title: "",
     study_type: "focus-group",
@@ -36,6 +43,7 @@ export default function NewSimulationPage() {
   
   const router = useRouter()
   const { personas, loading, error } = usePersonas()
+  const supabase = createClientComponentClient();
 
   // Filter personas based on hideSystemPersonas state
   const filteredPersonas = hideSystemPersonas 
@@ -92,16 +100,149 @@ export default function NewSimulationPage() {
     console.log('simulationData4', simulationData)
   };
 
+  // File handling functions
+  const validateFile = (file: File): boolean => {
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      setFileError('File type not supported. Please upload a PNG, JPG, or PDF file.');
+      return false;
+    }
+    
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > maxSize) {
+      setFileError('File is too large. Maximum size is 10MB.');
+      return false;
+    }
+    
+    setFileError(null);
+    return true;
+  };
+
+  // Handle file selection from input
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    if (validateFile(file)) {
+      setSelectedFile(file);
+      
+      // Create preview URL for images
+      if (file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+      } else {
+        // For PDFs, just show a placeholder or icon
+        setPreviewUrl(null);
+      }
+      
+      // Update simulationData with file name (we'll handle the actual upload later)
+      setSimulationData(prev => ({
+        ...prev,
+        stimulus_media_url: 'pending_upload', // This is just a placeholder until actual upload
+      }));
+    }
+  };
+
+  // Handle drag and drop
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    if (validateFile(file)) {
+      setSelectedFile(file);
+      
+      // Create preview URL for images
+      if (file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+      } else {
+        // For PDFs, just show a placeholder
+        setPreviewUrl(null);
+      }
+      
+      // Update simulationData with file name
+      setSimulationData(prev => ({
+        ...prev,
+        stimulus_media_url: 'pending_upload',
+      }));
+    }
+  };
+
+  // Handle file removal
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    
+    setSimulationData(prev => ({
+      ...prev,
+      stimulus_media_url: '',
+    }));
+  };
+
   // Function to save simulation to database
   const saveSimulation = async () => {
     try {
+      setIsUploading(true);
+      let mediaUrl = simulationData.stimulus_media_url;
+      
+      // If there's a file selected, upload it first
+      if (selectedFile && mediaUrl === 'pending_upload') {
+        // Create a unique file name to avoid collisions
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
+        const filePath = `simulation-media/${fileName}`;
+        
+        // Upload the file to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase
+          .storage
+          .from('simulation-media')
+          .upload(filePath, selectedFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+          
+        if (uploadError) {
+          throw new Error(`Error uploading file: ${uploadError.message}`);
+        }
+        
+        // Get the public URL for the uploaded file
+        const { data: { publicUrl } } = supabase
+          .storage
+          .from('simulation-media')
+          .getPublicUrl(filePath);
+          
+        // Set the media URL to the public URL
+        mediaUrl = publicUrl;
+        
+        toast({
+          title: "File uploaded successfully",
+          description: "Your file has been uploaded and attached to the simulation.",
+          duration: 3000,
+        });
+      }
+      
       // Parse discussion questions from text to array
       const discussionQuestionsArray = simulationData.discussion_questions
         .split('\n')
         .filter(line => line.trim() !== '')
         .map(line => line.trim());
 
-      // Call the API to create the simulation
+      // Call the API to create the simulation with the media URL
       const response = await fetch('/api/simulations/create', {
         method: 'POST',
         headers: {
@@ -109,6 +250,7 @@ export default function NewSimulationPage() {
         },
         body: JSON.stringify({
           ...simulationData,
+          stimulus_media_url: mediaUrl, // Updated URL from file upload
           discussion_questions: discussionQuestionsArray,
           num_turns: parseInt(simulationData.num_turns),
           personas: selectedPersonas,
@@ -119,22 +261,39 @@ export default function NewSimulationPage() {
 
       if (!response.ok) {
         console.error("Error creating simulation:", data.error);
-        alert(`Failed to create simulation: ${data.error}`);
+        toast({
+          title: "Error",
+          description: `Failed to create simulation: ${data.error}`,
+          variant: "destructive",
+          duration: 5000,
+        });
         return;
       }
 
       if (data.error) {
         console.warn("Warning:", data.error);
-        alert(data.error);
+        toast({
+          title: "Warning",
+          description: data.error,
+          variant: "destructive",
+          duration: 3000,
+        });
       }
 
       // Navigate to the simulation detail page
       if (data.simulation) {
         router.push(`/simulations/${data.simulation.id}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error:", error);
-      alert("An error occurred while creating the simulation.");
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred while creating the simulation.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -301,14 +460,63 @@ export default function NewSimulationPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Upload Media (coming soon!)</Label>
-                {/* <Label>Upload Media (optional)</Label> */}
-                <div className="flex h-32 cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-300 hover:bg-gray-50">
-                  <div className="flex flex-col items-center space-y-2 text-center">
-                    <Upload className="h-6 w-6 text-gray-400" />
-                    <span className="text-sm text-gray-500">Click to upload or drag and drop</span>
-                    <span className="text-xs text-gray-400">PNG, JPG, PDF up to 10MB</span>
-                  </div>
+                <Label>
+                  Upload Media 
+                  {fileError && <span className="text-red-500 text-xs ml-2">{fileError}</span>}
+                </Label>
+                <div 
+                  className={`flex h-32 cursor-pointer items-center justify-center rounded-md border border-dashed ${
+                    selectedFile ? 'border-primary' : 'border-gray-300'
+                  } hover:bg-gray-50`}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                >
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    onChange={handleFileSelect}
+                  />
+                  
+                  {selectedFile ? (
+                    <div className="flex flex-col items-center space-y-2 p-4 w-full">
+                      {previewUrl ? (
+                        // Show image preview
+                        <div className="relative h-20 w-full flex justify-center">
+                          <img src={previewUrl} alt="Preview" className="h-full object-contain" />
+                        </div>
+                      ) : (
+                        // Show PDF placeholder
+                        <div className="flex items-center justify-center">
+                          <span className="text-primary">
+                            {selectedFile.name.endsWith('.pdf') ? 'PDF Document' : 'File'}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between w-full">
+                        <span className="text-xs truncate max-w-[150px]">{selectedFile.name}</span>
+                        <button 
+                          type="button" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFile();
+                          }}
+                          className="text-red-500 hover:text-red-700 text-xs flex items-center"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center space-y-2 text-center">
+                      <Upload className="h-6 w-6 text-gray-400" />
+                      <span className="text-sm text-gray-500">Click to upload or drag and drop</span>
+                      <span className="text-xs text-gray-400">PNG, JPG, PDF up to 10MB</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -398,9 +606,9 @@ export default function NewSimulationPage() {
               </Button>
               <Button 
                 onClick={saveSimulation}
-                disabled={!simulationData.study_title || selectedPersonas.length === 0}
+                disabled={!simulationData.study_title || selectedPersonas.length === 0 || isUploading}
               >
-                Launch Simulation
+                {isUploading ? 'Uploading...' : 'Launch Simulation'}
               </Button>
             </CardFooter>
           </Card>

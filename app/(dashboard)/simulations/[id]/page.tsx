@@ -14,6 +14,10 @@ import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import Link from "next/link";
 import { Persona,Simulation } from "@/utils/types";
 import { logErrorNonBlocking } from "@/utils/errorLogger";
+import { MediaViewer } from "@/components/media-viewer";
+import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 // Interface for the Simulation data
 
 
@@ -568,6 +572,11 @@ export default function SimulationViewPage() {
         </Button>
         <div>
               <h1 className="text-2xl font-bold">{simulation.topic}</h1>
+              {simulation.stimulus_media_url && (
+                <div className="mt-4 mb-4">
+                  <MediaViewer url={simulation.stimulus_media_url} title="Stimulus Media" />
+                </div>
+              )}
           <div className="flex items-center gap-2 text-sm text-gray-500">
                 <span>{new Date(simulation.created_at).toLocaleDateString()}</span>
             <span>•</span>

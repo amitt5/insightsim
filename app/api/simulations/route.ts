@@ -10,7 +10,7 @@ export async function GET() {
     const { data: simulations, error: simulationsError } = await supabase
       .from("simulations")
       .select("*")
-      .eq("user_id", user?.data?.user?.id || "")
+      // .eq("user_id", user?.data?.user?.id || "")
       .order("created_at", { ascending: false })
     
     if (simulationsError) {

@@ -13,6 +13,7 @@ import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import Link from "next/link";
 import { Persona,Simulation } from "@/utils/types";
+import { logErrorNonBlocking } from "@/utils/errorLogger";
 // Interface for the Simulation data
 
 
@@ -115,7 +116,7 @@ export default function SimulationViewPage() {
         // if there are messages, check how many times moderator has spoken and then set the new message to the next question
         const moderatorMessages = data.messages.filter((msg: SimulationMessage) => msg.sender_type === 'moderator');
         if(moderatorMessages.length) {
-          setNewMessage(simulationData?.simulation?.discussion_questions[moderatorMessages.length] || "");
+          setNewMessage(simulationData?.simulation?.discussion_questions?.[moderatorMessages.length] || "");
         }
       }
       
@@ -279,7 +280,7 @@ export default function SimulationViewPage() {
   const setInitialMessage = () => {
     const initialMessage = {
       name: 'Moderator',
-      message: "Welcome, everyone! Today, we're going to discuss "  + simulationData?.simulation?.topic + ". Let's start with our first question: " + simulationData?.simulation?.discussion_questions[0]
+      message: "Welcome, everyone! Today, we're going to discuss "  + simulationData?.simulation?.topic + ". Let's start with our first question: " + simulationData?.simulation?.discussion_questions?.[0]
     }
     setNewMessage(initialMessage.message);
   }
@@ -298,6 +299,19 @@ export default function SimulationViewPage() {
       return parsed;
     } catch (error) {
       console.error("Error parsing simulation response:", error);
+      
+      // Log the error to our database
+      logErrorNonBlocking(
+        'simulation_parser',
+        error instanceof Error ? error : String(error),
+        responseString,
+        { 
+          simulation_id: simulationId,
+          page: 'simulation_detail'
+        },
+        params.user_id as string || undefined
+      );
+      
       return [];
     }
   };

@@ -15,6 +15,7 @@ import Link from "next/link";
 import { Persona,Simulation } from "@/utils/types";
 import { logErrorNonBlocking } from "@/utils/errorLogger";
 import { MediaViewer } from "@/components/media-viewer";
+import { MediaSlideshow } from "@/components/media-slideshow";
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -573,24 +574,22 @@ export default function SimulationViewPage() {
         <div>
               <h1 className="text-2xl font-bold">{simulation.topic}</h1>
               {simulation.stimulus_media_url && (
-                <div className="mt-4 mb-4 space-y-4">
-                  {/* Check if it's an array and render each media file */}
+                <div className="mt-4 mb-4">
                   {Array.isArray(simulation.stimulus_media_url) ? (
                     simulation.stimulus_media_url.length > 0 ? (
-                      simulation.stimulus_media_url.map((url, index) => (
-                        <div key={index} className="mb-4">
-                          <MediaViewer 
-                            url={url} 
-                            title={`Stimulus Media ${simulation.stimulus_media_url && Array.isArray(simulation.stimulus_media_url) && simulation.stimulus_media_url.length > 1 ? (index + 1) : ''}`} 
-                          />
-                        </div>
-                      ))
+                      <MediaSlideshow 
+                        urls={simulation.stimulus_media_url} 
+                        triggerLabel="View Stimulus"
+                      />
                     ) : (
                       <p className="text-sm text-gray-500">No media attached to this simulation</p>
                     )
                   ) : (
                     // Backward compatibility - handle single URL string
-                    <MediaViewer url={simulation.stimulus_media_url as string} title="Stimulus Media" />
+                    <MediaSlideshow 
+                      urls={[simulation.stimulus_media_url as string]} 
+                      triggerLabel="View Stimulus" 
+                    />
                   )}
                 </div>
               )}

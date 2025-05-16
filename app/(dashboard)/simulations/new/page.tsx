@@ -36,7 +36,7 @@ export default function NewSimulationPage() {
     mode: "ai-both",
     topic: "",
     stimulus_media_url: [] as string[],
-    discussion_questions: "1. What are your initial impressions of this product concept?\n2. How would you describe this product to a friend?\n3. What concerns, if any, would you have about trying this product?",
+    discussion_questions: "",
     turn_based: false,
     num_turns: "10",
   });

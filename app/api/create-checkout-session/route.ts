@@ -16,10 +16,12 @@ export async function POST() {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  console.log('user111', user)
+
   const { data: dbUser, error } = await supabase
     .from("users")
     .select("stripe_customer_id, email")
-    .eq("id", user.id)
+    .eq("user_id", user.id)
     .single();
 
   if (error || !dbUser) {

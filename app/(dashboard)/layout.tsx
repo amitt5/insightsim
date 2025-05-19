@@ -4,9 +4,8 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/co
 import { Button } from "@/components/ui/button"
 import { Menu, LogOut } from "lucide-react"
 import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function DashboardLayout({
   children,
@@ -14,27 +13,10 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const router = useRouter()
-  const supabase = createClientComponentClient()
-  const [userEmail, setUserEmail] = useState<string>("")
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error) {
-        console.error('Error fetching user:', error)
-        return
-      }
-      if (session?.user?.email) {
-        setUserEmail(session.user.email)
-      }
-    }
-
-    getUser()
-  }, [supabase.auth])
+  const { user, signOut } = useAuth()
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+    await signOut()
   }
 
   return (
@@ -100,7 +82,9 @@ export default function DashboardLayout({
                     {/* User section - visible on all screens */}
                     <div className="px-4 py-2">
                       <div className="text-sm text-gray-500">Signed in as</div>
-                      <div className="text-sm font-medium">{userEmail}</div>
+                      <div className="text-sm font-medium">
+                        {user?.email} {user?.role && `(${user.role})`}
+                      </div>
                     </div>
 
                     {/* Mobile-only navigation links */}

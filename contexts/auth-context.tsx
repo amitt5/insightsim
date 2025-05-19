@@ -8,6 +8,9 @@ import { useRouter } from 'next/navigation';
 type User = {
   id: string;
   email?: string;
+  role?: string;
+  first_name?: string;
+  last_name?: string;
 } | null;
 
 type AuthContextType = {
@@ -39,9 +42,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
+          // Fetch additional user data from the users table
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+
+          if (userError) {
+            console.error("Error fetching user data:", userError);
+          }
+
           setUser({
             id: session.user.id,
             email: session.user.email,
+            role: userData?.role,
+            first_name: userData?.first_name,
+            last_name: userData?.last_name,
           });
         } else {
           setUser(null);
@@ -58,11 +75,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (session?.user) {
+          // Fetch additional user data from the users table
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+
+          if (userError) {
+            console.error("Error fetching user data:", userError);
+          }
+
           setUser({
             id: session.user.id,
             email: session.user.email,
+            role: userData?.role,
+            first_name: userData?.first_name,
+            last_name: userData?.last_name,
           });
         } else {
           setUser(null);

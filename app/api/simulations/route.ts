@@ -5,13 +5,39 @@ import { NextResponse } from "next/server"
 export async function GET() {
   try {
     const supabase = createRouteHandlerClient({ cookies })
-    const user = await supabase.auth.getUser()
-    // Fetch simulations ordered by creation date (newest first)
-    const { data: simulations, error: simulationsError } = await supabase
+    
+    // Get the current session
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Fetch user's role from the users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (userError) {
+      console.error("Error fetching user role:", userError)
+      return NextResponse.json({ error: "Failed to fetch user role" }, { status: 500 })
+    }
+
+    // Build the query
+    let query = supabase
       .from("simulations")
       .select("*")
-      // .eq("user_id", user?.data?.user?.id || "")
       .order("created_at", { ascending: false })
+
+    // Only filter by user_id if the user is not an admin
+    if (userData?.role !== 'admin') {
+      query = query.eq("user_id", session.user.id)
+    }
+
+    // Execute the query
+    const { data: simulations, error: simulationsError } = await query
     
     if (simulationsError) {
       console.error("Error fetching simulations:", simulationsError)

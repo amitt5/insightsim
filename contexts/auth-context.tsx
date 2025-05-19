@@ -11,6 +11,7 @@ type User = {
   role?: string;
   first_name?: string;
   last_name?: string;
+  user_id?: string;
 } | null;
 
 type AuthContextType = {
@@ -92,6 +93,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             id: session.user.id,
             email: session.user.email,
             role: userData?.role,
+            user_id: userData?.user_id,
             first_name: userData?.first_name,
             last_name: userData?.last_name,
           });

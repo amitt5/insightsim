@@ -55,6 +55,9 @@ export async function POST() {
     ],
     success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/account?success=true`,
     cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/account?canceled=true`,
+    metadata: {
+      user_id: user.id, // 🔥 this is what webhook needs!
+    },
   });
 
   return NextResponse.json({ url: session.url })

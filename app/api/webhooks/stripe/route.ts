@@ -1,16 +1,22 @@
+// app/api/webhooks/stripe/route.ts
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { headers } from 'next/headers';
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-export async function POST(req: Request) {
-  const body = await req.text(); // raw body
-  const sig = (await headers()).get('stripe-signature') as string;
+// Required to read the raw body
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
-  let event;
+export async function POST(req: Request) {
+  const sig = req.headers.get('stripe-signature')!;
+  const body = await req.text();
+
+  let event: Stripe.Event;
 
   try {
     event = stripe.webhooks.constructEvent(
@@ -18,34 +24,37 @@ export async function POST(req: Request) {
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err);
+  } catch (err: any) {
+    console.error('Webhook signature verification failed:', err.message);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
-
+  console.log('event111', event)
+  // Only handle successful checkout session
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
-
+    console.log('session111', session)
     const userId = session.metadata?.user_id;
-
     if (!userId) {
-      console.error('No user ID in metadata');
-      return NextResponse.json({ error: 'Missing user ID' }, { status: 400 });
+      return NextResponse.json({ error: 'User ID missing in session metadata' }, { status: 400 });
     }
 
-    const supabase = createRouteHandlerClient({ cookies });
+    // Supabase client (Admin key)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY! // server-side admin key
+    );
 
     const { error } = await supabase
       .from('users')
       .update({ role: 'premium_basic' })
-      .eq('user_id', userId);
+      .eq('user_id', userId); // replace with your actual user ID field
 
     if (error) {
-      console.error('Failed to update user role:', error);
+      console.error('Error updating user role:', error);
       return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
     }
 
-    console.log(`User ${userId} upgraded to premium_basic`);
+    return NextResponse.json({ received: true });
   }
 
   return NextResponse.json({ received: true });

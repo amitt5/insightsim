@@ -151,7 +151,7 @@ export type ThemeColors = {
     const min = Math.min(r, g, b);
     
     // Calculate the lightness
-    const l = (max + min) / 2;
+    let l = (max + min) / 2;
     
     // Calculate the saturation
     let s = 0;

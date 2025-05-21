@@ -70,8 +70,28 @@ export function buildMessagesForOpenAI({
   systemPrompt += `\nThe moderator is named "Moderator". They guide the discussion by asking questions.\n`;
   systemPrompt += `\nRespond ONLY as the participants (never the moderator), in JSON format:\n`;
   systemPrompt += `[\n  { "name": "Participant Name", "message": "Their message." },\n  ...\n]\n`;
-  systemPrompt += `Respond with 2–4 participant messages in a natural back-and-forth.\n`;
+  systemPrompt += `Respond with 1–4 participant messages in a natural back-and-forth.\n`;
   systemPrompt += `Do not include explanations or markdown — only valid JSON.\n`;
+
+  systemPrompt += `
+    IMPORTANT INSTRUCTIONS:
+    - DO NOT include any moderator messages or names.
+    - DO NOT include any explanation, commentary, or markdown.
+    - DO NOT include text outside the JSON array.
+    - DO NOT wrap the response in triple backticks or say "Here is the response" or similar.
+    - ONLY return a valid JSON array of 1 to 4 participant messages.
+
+    RESPONSE FORMAT EXAMPLE:
+    [
+      { "name": "Participant Name", "message": "Their message." },
+      { "name": "Another Participant", "message": "Their response." }
+    ]
+
+    Strictly return ONLY valid JSON.
+
+    Make the conversation feel natural and realistic, as if participants are talking to each other in a group setting.
+
+    `;
 
   openAIMessages.push({
     role: "system",

@@ -281,6 +281,12 @@ export default function SimulationViewPage() {
     
   }
 
+  const sendMessageTest = async () => {
+    const message = `Michael Rodriguez: To identify macroeconomic trends, I usually rely on economic reports from government agencies, central banks, and reputable financial institutions. I look at indicators like GDP growth, inflation rates, employment numbers, and interest rates to understand the broader economic environment. Additionally, I pay attention to geopolitical events and global trade dynamics that could impact the sector or market I'm analyzing.;`
+    const parsedMessages = testParseSimulationResponse(message);
+    console.log('parsedMessages', parsedMessages);
+  }
+
   // function to set initial message in case of human moderator
   const setInitialMessage = () => {
     const initialMessage = {
@@ -303,6 +309,17 @@ export default function SimulationViewPage() {
       setMessages(parsed);
       return parsed;
     } catch (error) {
+
+      // --- Fallback single-speaker parser ---
+      const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
+      if (fallbackMatch) {
+        const [_, name, message] = fallbackMatch;
+        const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
+        setMessages(fallbackParsed);
+        return fallbackParsed;
+      }
+
+      // --- Log final error if both parsing strategies fail ---
       console.error("Error parsing simulation response:", error);
       
       // Log the error to our database
@@ -320,6 +337,35 @@ export default function SimulationViewPage() {
       return [];
     }
   };
+
+  // Function to parse the simulation response
+  const testParseSimulationResponse = (responseString: string) => {
+  try {
+    // Remove the initial "=" and any whitespace if it exists
+    const cleanedString = responseString.trim()
+    .replace(/^```json\s*/i, '') // remove leading ```json
+    .replace(/^```\s*/i, '')     // or just ```
+    .replace(/```$/, '')
+    .replace(/^\s*=\s*/, '');
+    const parsed = JSON.parse(cleanedString);
+    setMessages(parsed);
+    return parsed;
+  } catch (error) {
+     // --- Fallback single-speaker parser ---
+     const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
+     console.log('fallbackMatch', fallbackMatch);
+     if (fallbackMatch) {
+       const [_, name, message] = fallbackMatch;
+       const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
+       setMessages(fallbackParsed);
+       return fallbackParsed;
+     }
+
+     // --- Log final error if both parsing strategies fail ---
+    console.error("Error parsing simulation response:", error);
+    return [];
+  }
+};
 
   // Function to save messages to the database
   const saveMessagesToDatabase = async (parsedMessages: Array<{name: string, message: string}>) => {
@@ -700,6 +746,12 @@ export default function SimulationViewPage() {
                   >
                     Send
                   </Button>
+
+                  {/* <Button 
+                    onClick={sendMessageTest}
+                  >
+                    Send Test
+                  </Button> */}
                   
                 </div>}
 

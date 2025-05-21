@@ -6,14 +6,29 @@ async function getSupabaseAndUser() {
   const supabase = createRouteHandlerClient({ cookies })
   const user = await supabase.auth.getUser()
   const userId = user?.data?.user?.id
-  return { supabase, userId }
+  
+  // Get user role if user exists
+  let userData = null
+  if (userId) {
+    const { data } = await supabase.from('users').select('role').eq('id', userId).single()
+    userData = data
+  }
+  
+  return { supabase, userId, userData }
 }
 
 export async function GET() {
   try {
-    const { supabase, userId } = await getSupabaseAndUser()
+    const { supabase, userId, userData } = await getSupabaseAndUser()
     
-    const { data, error } = await supabase.from('personas').select('*').or(`user_id.eq.${userId},user_id.is.null`);
+    let query = supabase.from('personas').select('*')
+    
+    // Only filter by user_id if the user is not an admin
+    if (userData?.role !== 'admin') {
+      query = query.or(`user_id.eq.${userId},user_id.is.null`)
+    }
+    console.log('query111', query)
+    const { data, error } = await query
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

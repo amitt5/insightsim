@@ -1,36 +1,19 @@
 'use client'
 
 import { cn } from "@/lib/utils"
-import { cva, type VariantProps } from "class-variance-authority"
 import { forwardRef } from "react"
 
-// Enhanced card component with refined styling and states
-export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'primary' | 'secondary' | 'outline'
-}
-
-const cardVariants = cva(
-  "rounded-lg border transition-all duration-200",
-  {
-    variants: {
-      variant: {
-        default: "bg-card text-card-foreground shadow-sm hover:shadow",
-        primary: "bg-primary/5 border-primary/20 text-card-foreground shadow-sm hover:shadow",
-        secondary: "bg-secondary/5 border-secondary/20 text-card-foreground shadow-sm hover:shadow",
-        outline: "bg-background text-card-foreground border-border hover:border-primary/50 hover:shadow-sm",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-)
+// Enhanced card component with typography improvements
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant, ...props }, ref) => (
+  ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(cardVariants({ variant }), className)}
+      className={cn(
+        "rounded-lg border bg-card text-card-foreground shadow-sm",
+        className
+      )}
       {...props}
     />
   )

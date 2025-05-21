@@ -1,13 +1,15 @@
-import { ThemeProvider } from '@/contexts/theme-context';
+'use client'
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+import * as React from 'react'
+import { ThemeProvider as NextThemesProvider } from 'next-themes'
+import { ThemeProvider as CustomThemeProvider } from '@/contexts/theme-context'
+
+export function ThemeProvider({ children, ...props }: React.PropsWithChildren) {
   return (
-    <ThemeProvider>
-      {children}
-    </ThemeProvider>
-  );
+    <NextThemesProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
+      <CustomThemeProvider>
+        {children}
+      </CustomThemeProvider>
+    </NextThemesProvider>
+  )
 }

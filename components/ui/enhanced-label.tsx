@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils"
 import { forwardRef } from "react"
 
-// Enhanced label component with refined styling and states
+// Enhanced label component with typography improvements
 export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {}
 
 const Label = forwardRef<HTMLLabelElement, LabelProps>(
@@ -12,8 +12,6 @@ const Label = forwardRef<HTMLLabelElement, LabelProps>(
       ref={ref}
       className={cn(
         "typography-label text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-        "transition-colors duration-200",
-        "text-foreground/90 hover:text-foreground",
         className
       )}
       {...props}

@@ -1,28 +1,59 @@
-"use client"
-
-import * as React from "react"
-import * as ProgressPrimitive from "@radix-ui/react-progress"
+'use client'
 
 import { cn } from "@/lib/utils"
+import { forwardRef } from "react"
 
-const Progress = React.forwardRef<
-  React.ElementRef<typeof ProgressPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
->(({ className, value, ...props }, ref) => (
-  <ProgressPrimitive.Root
-    ref={ref}
-    className={cn(
-      "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
-      className
-    )}
-    {...props}
-  >
-    <ProgressPrimitive.Indicator
-      className="h-full w-full flex-1 bg-primary transition-all"
-      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-    />
-  </ProgressPrimitive.Root>
-))
-Progress.displayName = ProgressPrimitive.Root.displayName
+// Progress bar component with refined styling and animations
+export interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
+  value?: number;
+  max?: number;
+  variant?: 'default' | 'primary' | 'secondary';
+  size?: 'sm' | 'md' | 'lg';
+  showValue?: boolean;
+}
+
+const Progress = forwardRef<HTMLDivElement, ProgressProps>(
+  ({ className, value = 0, max = 100, variant = 'default', size = 'md', showValue = false, ...props }, ref) => {
+    const percentage = Math.min(Math.max(value, 0), max) / max * 100;
+    
+    const sizeClasses = {
+      sm: 'h-1',
+      md: 'h-2',
+      lg: 'h-3',
+    }
+    
+    const variantClasses = {
+      default: 'bg-muted-foreground/20 [&>div]:bg-foreground',
+      primary: 'bg-primary/20 [&>div]:bg-primary',
+      secondary: 'bg-secondary/20 [&>div]:bg-secondary',
+    }
+    
+    return (
+      <div className="w-full flex flex-col gap-1">
+        <div
+          ref={ref}
+          className={cn(
+            "w-full overflow-hidden rounded-full",
+            sizeClasses[size],
+            variantClasses[variant],
+            className
+          )}
+          {...props}
+        >
+          <div
+            className="h-full transition-all duration-500 ease-in-out"
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+        {showValue && (
+          <div className="text-xs text-muted-foreground text-right">
+            {Math.round(percentage)}%
+          </div>
+        )}
+      </div>
+    )
+  }
+)
+Progress.displayName = "Progress"
 
 export { Progress }

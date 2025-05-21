@@ -52,6 +52,46 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      // Enhanced typography scale
+      fontSize: {
+        xs: ['0.75rem', { lineHeight: '1rem' }],
+        sm: ['0.875rem', { lineHeight: '1.25rem' }],
+        base: ['1rem', { lineHeight: '1.5rem' }],
+        lg: ['1.125rem', { lineHeight: '1.75rem' }],
+        xl: ['1.25rem', { lineHeight: '1.75rem' }],
+        '2xl': ['1.5rem', { lineHeight: '2rem' }],
+        '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
+        '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
+        '5xl': ['3rem', { lineHeight: '1.16' }],
+        '6xl': ['3.75rem', { lineHeight: '1.1' }],
+      },
+      // Enhanced font weights
+      fontWeight: {
+        light: '300',
+        normal: '400',
+        medium: '500',
+        semibold: '600',
+        bold: '700',
+        extrabold: '800',
+      },
+      // Line height scale
+      lineHeight: {
+        none: '1',
+        tight: '1.16',
+        snug: '1.25',
+        normal: '1.5',
+        relaxed: '1.625',
+        loose: '2',
+      },
+      // Letter spacing scale
+      letterSpacing: {
+        tighter: '-0.05em',
+        tight: '-0.025em',
+        normal: '0em',
+        wide: '0.025em',
+        wider: '0.05em',
+        widest: '0.1em',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -100,6 +140,100 @@ const config: Config = {
         },
       }
       addUtilities(newUtilities, ['responsive', 'hover'])
+    },
+    // Typography utilities
+    function({ addUtilities }) {
+      const typographyUtilities = {
+        // Heading styles
+        '.typography-h1': {
+          fontSize: '3rem',
+          lineHeight: '1.16',
+          fontWeight: '700',
+          letterSpacing: '-0.025em',
+        },
+        '.typography-h2': {
+          fontSize: '2.25rem',
+          lineHeight: '1.16',
+          fontWeight: '700',
+          letterSpacing: '-0.025em',
+        },
+        '.typography-h3': {
+          fontSize: '1.875rem',
+          lineHeight: '1.25',
+          fontWeight: '600',
+        },
+        '.typography-h4': {
+          fontSize: '1.5rem',
+          lineHeight: '1.25',
+          fontWeight: '600',
+        },
+        '.typography-h5': {
+          fontSize: '1.25rem',
+          lineHeight: '1.5',
+          fontWeight: '600',
+        },
+        '.typography-h6': {
+          fontSize: '1.125rem',
+          lineHeight: '1.5',
+          fontWeight: '600',
+        },
+        
+        // Body text styles
+        '.typography-body-large': {
+          fontSize: '1.125rem',
+          lineHeight: '1.625',
+          fontWeight: '400',
+        },
+        '.typography-body': {
+          fontSize: '1rem',
+          lineHeight: '1.625',
+          fontWeight: '400',
+        },
+        '.typography-body-small': {
+          fontSize: '0.875rem',
+          lineHeight: '1.625',
+          fontWeight: '400',
+        },
+        
+        // UI text styles
+        '.typography-button-large': {
+          fontSize: '1rem',
+          lineHeight: '1',
+          fontWeight: '500',
+          letterSpacing: '0.025em',
+        },
+        '.typography-button': {
+          fontSize: '0.875rem',
+          lineHeight: '1',
+          fontWeight: '500',
+          letterSpacing: '0.025em',
+        },
+        '.typography-button-small': {
+          fontSize: '0.75rem',
+          lineHeight: '1',
+          fontWeight: '500',
+          letterSpacing: '0.025em',
+        },
+        '.typography-label': {
+          fontSize: '0.875rem',
+          lineHeight: '1.5',
+          fontWeight: '500',
+        },
+        '.typography-caption': {
+          fontSize: '0.75rem',
+          lineHeight: '1.5',
+          fontWeight: '400',
+        },
+        '.typography-overline': {
+          fontSize: '0.75rem',
+          lineHeight: '1.5',
+          fontWeight: '500',
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+        },
+      }
+      
+      addUtilities(typographyUtilities)
     },
   ],
 }

@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils"
 import { forwardRef } from "react"
 
-// Enhanced input component with refined styling and states
+// Enhanced input component with typography improvements
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {}
 
@@ -17,9 +17,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           "file:border-0 file:bg-transparent file:text-sm file:font-medium",
           "placeholder:text-muted-foreground",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          "hover:border-primary/50 focus:border-primary",
-          "transition-colors duration-200",
-          "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted/50",
+          "disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         ref={ref}

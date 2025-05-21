@@ -75,8 +75,74 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground typography-body;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Base typography styles for headings */
+  h1, .h1 {
+    @apply typography-h1 mb-6;
+  }
+  
+  h2, .h2 {
+    @apply typography-h2 mb-5;
+  }
+  
+  h3, .h3 {
+    @apply typography-h3 mb-4;
+  }
+  
+  h4, .h4 {
+    @apply typography-h4 mb-3;
+  }
+  
+  h5, .h5 {
+    @apply typography-h5 mb-2;
+  }
+  
+  h6, .h6 {
+    @apply typography-h6 mb-2;
+  }
+  
+  /* Paragraph spacing */
+  p {
+    @apply mb-4;
+  }
+  
+  /* List styling */
+  ul, ol {
+    @apply pl-6 mb-4;
+  }
+  
+  ul {
+    @apply list-disc;
+  }
+  
+  ol {
+    @apply list-decimal;
+  }
+  
+  /* Link styling */
+  a {
+    @apply text-primary hover:text-primary-light transition-colors;
+  }
+  
+  /* Small text */
+  small {
+    @apply typography-caption;
+  }
+  
+  /* Form element typography */
+  label {
+    @apply typography-label;
+  }
+  
+  input, select, textarea {
+    @apply typography-body;
+  }
+  
+  button {
+    @apply typography-button;
   }
 }
 
@@ -117,4 +183,54 @@
 /* Button hover effects */
 .button-hover {
   @apply transition-all hover:brightness-110;
+}
+
+/* Text truncation */
+.truncate-1 {
+  @apply overflow-hidden text-ellipsis whitespace-nowrap;
+}
+
+.truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Text alignment utilities */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+/* Typography spacing utilities */
+.prose {
+  @apply space-y-4;
+}
+
+.prose-lg {
+  @apply space-y-6;
+}
+
+.prose-sm {
+  @apply space-y-3;
+}
+
+/* Typography color utilities */
+.text-subtle {
+  @apply text-muted-foreground;
+}
+
+.text-emphasis {
+  @apply font-medium;
 }

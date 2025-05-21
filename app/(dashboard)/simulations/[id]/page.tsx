@@ -46,6 +46,8 @@ export default function SimulationViewPage() {
   const [isLeftPanelMinimized, setIsLeftPanelMinimized] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showErrorPopup, setShowErrorPopup] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
   const [simulationData, setSimulationData] = useState<SimulationResponse | null>(null)
   const [messages, setMessages] = useState<Array<{name: string, message: string}>>([])
   const [simulationMessages, setSimulationMessages] = useState<SimulationMessage[]>([])
@@ -309,7 +311,6 @@ export default function SimulationViewPage() {
       setMessages(parsed);
       return parsed;
     } catch (error) {
-
       // --- Fallback single-speaker parser ---
       const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
       if (fallbackMatch) {
@@ -333,6 +334,10 @@ export default function SimulationViewPage() {
         },
         params.user_id as string || undefined
       );
+
+      // Show error popup instead of chat message
+      setErrorMessage("We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment.");
+      setShowErrorPopup(true);
       
       return [];
     }
@@ -351,6 +356,10 @@ export default function SimulationViewPage() {
     setMessages(parsed);
     return parsed;
   } catch (error) {
+
+    // Show error popup instead of chat message
+    setErrorMessage("We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment.");
+    setShowErrorPopup(true);
      // --- Fallback single-speaker parser ---
      const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
      console.log('fallbackMatch', fallbackMatch);
@@ -360,6 +369,12 @@ export default function SimulationViewPage() {
        setMessages(fallbackParsed);
        return fallbackParsed;
      }
+
+     // Show user-friendly error message
+     setMessages([{
+      name: "System",
+      message: "We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment."
+    }]);
 
      // --- Log final error if both parsing strategies fail ---
     console.error("Error parsing simulation response:", error);
@@ -607,6 +622,19 @@ export default function SimulationViewPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Error Popup */}
+      {showErrorPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-2">Connection Error</h3>
+            <p className="text-gray-600 mb-4">{errorMessage}</p>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowErrorPopup(false)}>Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="container mx-auto p-4 space-y-4">
       {/* Header */}

@@ -48,6 +48,7 @@ export default function SimulationViewPage() {
   const [error, setError] = useState<string | null>(null)
   const [showErrorPopup, setShowErrorPopup] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [isSimulationRunning, setIsSimulationRunning] = useState(false)
   const [simulationData, setSimulationData] = useState<SimulationResponse | null>(null)
   const [messages, setMessages] = useState<Array<{name: string, message: string}>>([])
   const [simulationMessages, setSimulationMessages] = useState<SimulationMessage[]>([])
@@ -207,6 +208,7 @@ export default function SimulationViewPage() {
       console.log('prompt123', prompt, nameToPersonaIdMap);
     
       try {
+        setIsSimulationRunning(true);
         const res = await fetch('/api/run-simulation', {
           method: 'POST',
           headers: {
@@ -240,6 +242,8 @@ export default function SimulationViewPage() {
         }
       } catch (error) {
         console.error("Error running simulation:", error);
+      } finally {
+        setIsSimulationRunning(false);
       }
     }
   }
@@ -732,31 +736,51 @@ export default function SimulationViewPage() {
                       {isLoadingMessages ? "Loading discussion..." : "No messages yet. Start the simulation to begin the discussion."}
                     </div>
                   ) : (
-                    formattedMessages.map((message, i) => (
-                      <div key={i} className={`flex gap-4 ${message.speaker === "Moderator" ? "flex-row-reverse" : ""}`}>
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      {message.speaker === "Moderator" ? "M" : message.speaker[0]}
-                    </div>
-                        <div className={`flex-1 ${message.speaker === "Moderator" ? "text-right" : ""}`}>
-                          <div className={`flex items-center gap-2 ${message.speaker === "Moderator" ? "justify-end" : ""}`}>
-                            <span className="font-medium"> { message.speaker === "Moderator" ? 
-                             (simulationData?.simulation?.study_type === 'focus-group'? 'Moderator': 'Interviewer') : message.speaker}
-                              {/* {message.speaker} */}
-                              </span>
-                        <span className="text-xs text-gray-500">{message.time}</span>
+                    <>
+                      {formattedMessages.map((message, i) => (
+                        <div key={i} className={`flex gap-4 ${message.speaker === "Moderator" ? "flex-row-reverse" : ""}`}>
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            {message.speaker === "Moderator" ? "M" : message.speaker[0]}
                           </div>
-                          <div className={`mt-1 inline-block rounded-lg px-4 py-2 ${
-                            message.speaker === "Moderator" 
-                              ? "bg-primary text-primary-foreground" 
-                              : "bg-muted"
-                          }`}>
-                            <p className="text-sm">{message.text}</p>
+                          <div className={`flex-1 ${message.speaker === "Moderator" ? "text-right" : ""}`}>
+                            <div className={`flex items-center gap-2 ${message.speaker === "Moderator" ? "justify-end" : ""}`}>
+                              <span className="font-medium"> { message.speaker === "Moderator" ? 
+                               (simulationData?.simulation?.study_type === 'focus-group'? 'Moderator': 'Interviewer') : message.speaker}
+                                </span>
+                              <span className="text-xs text-gray-500">{message.time}</span>
+                            </div>
+                            <div className={`mt-1 inline-block rounded-lg px-4 py-2 ${
+                              message.speaker === "Moderator" 
+                                ? "bg-primary text-primary-foreground" 
+                                : "bg-muted"
+                            }`}>
+                              <p className="text-sm">{message.text}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                      {isSimulationRunning && (
+                        <div className="flex gap-4">
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            AI
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">AI Assistant</span>
+                            </div>
+                            <div className="mt-1 inline-block rounded-lg px-4 py-2 bg-muted">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-primary rounded-full animate-bounce" />
+                                <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                                <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
-                    </div>
+                </div>
               </CardContent>
               <div className="p-2 border-t">
               { (simulationData?.simulation?.mode === "human-mod") &&<div className="flex gap-2 ">

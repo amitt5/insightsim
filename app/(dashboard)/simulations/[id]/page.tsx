@@ -93,9 +93,9 @@ export default function SimulationViewPage() {
 
   // Call fetchSimulationMessages when simulation data is loaded
   useEffect(() => {
+    console.log('simulationData111', simulationData);
     if (simulationData?.simulation?.id) {
       fetchSimulationMessages(simulationData.simulation.id);
-      
       if(simulationData?.simulation?.status === "Completed") {
         // Fetch summary and themes messages 
         fetchSimulationSummaries();
@@ -276,7 +276,7 @@ export default function SimulationViewPage() {
           messages: messageFetched,
           personas: simulationData?.personas || []
         }
-        const prompt = buildMessagesForOpenAI(sample);
+        const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type);
         console.log('prompt123',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
         //4. send the messages to openai

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
+import { use } from 'react';
 
 async function getSupabaseAndUser() {
   const supabase = createRouteHandlerClient({ cookies })
@@ -13,21 +14,37 @@ async function getSupabaseAndUser() {
     const { data } = await supabase.from('users').select('role').eq('id', userId).single()
     userData = data
   }
+  console.log('query1112',userId, userData)
   
   return { supabase, userId, userData }
 }
 
 export async function GET() {
   try {
-    const { supabase, userId, userData } = await getSupabaseAndUser()
+    const { supabase, userId } = await getSupabaseAndUser()
+     // Get the current session
+     const { data: { session } } = await supabase.auth.getSession()
     
+    
+    // Fetch user's role from the users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('user_id', session?.user?.id)
+      .single()
+
+    if (userError) {
+      console.error("Error fetching user role:", userError)
+      return NextResponse.json({ error: "Failed to fetch user role" }, { status: 500 })
+    }
+
     let query = supabase.from('personas').select('*')
     
     // Only filter by user_id if the user is not an admin
     if (userData?.role !== 'admin') {
       query = query.or(`user_id.eq.${userId},user_id.is.null`)
     }
-    console.log('query111', query)
+    console.log('query111',userId, userData, query)
     const { data, error } = await query
 
     if (error) {

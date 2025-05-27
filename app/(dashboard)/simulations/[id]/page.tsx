@@ -359,8 +359,19 @@ export default function SimulationViewPage() {
       return parsed;
     } catch (error) {
       // --- Fallback single-speaker parser ---
+      console.log('error in parsing', error, responseString);
+      const match = responseString.trim().match(/^([^:]+):\s*([\s\S]+)$/);
+      if (match) {
+        const [, name, message] = match;
+        const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
+        setMessages(fallbackParsed);
+        return fallbackParsed;
+      }
+      
       const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
+      console.log('error in parsing-fallbackMatch', fallbackMatch);
       if (fallbackMatch) {
+        console.log('error in parsing-fallbackMatch-if', fallbackMatch);
         const [_, name, message] = fallbackMatch;
         const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
         setMessages(fallbackParsed);

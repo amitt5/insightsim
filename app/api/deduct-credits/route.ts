@@ -89,8 +89,8 @@ export async function POST(request: Request) {
     // Calculate total tokens and credits to deduct
     const modelKey = model as keyof typeof CREDIT_RATES
     const creditsToDeduct = 
-    (input_tokens / 1000) * CREDIT_RATES[modelKey].input + 
-    (output_tokens / 1000) * CREDIT_RATES[modelKey].output
+    (input_tokens / 100) * CREDIT_RATES[modelKey].input + 
+    (output_tokens / 100) * CREDIT_RATES[modelKey].output
 
     // Fetch current user credits
     const { data: userCredits, error: fetchError } = await supabase
@@ -131,6 +131,22 @@ export async function POST(request: Request) {
         { error: 'Failed to update user credits' },
         { status: 500 }
       )
+    }
+
+    const { error: logError } = await supabase
+    .from('model_usage_logs')
+    .insert([{
+      user_id: userId,
+      model,
+      input_tokens,
+      output_tokens,
+      credits_deducted: creditsToDeduct,
+      created_at: new Date().toISOString()
+    }])
+
+    if (logError) {
+      console.error('Error inserting usage log:', logError)
+      // Do not return error to user — log silently
     }
 
     return NextResponse.json({

@@ -880,7 +880,7 @@ export default function SimulationViewPage() {
                   </Button>
                   {availableCredits !== null && (
                     <span className="text-sm text-gray-500">
-                      Available credits: {availableCredits}
+                      Available credits: {availableCredits.toFixed(2)}
                     </span>
                   )}
                 </div>}

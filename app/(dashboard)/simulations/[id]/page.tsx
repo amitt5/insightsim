@@ -19,6 +19,8 @@ import { MediaSlideshow } from "@/components/media-slideshow";
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { TiktokenModel } from "@dqbd/tiktoken";
+import { getTokenCount } from "@/utils/openai";
 // Interface for the Simulation data
 
 
@@ -61,7 +63,9 @@ export default function SimulationViewPage() {
   const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [availableCredits, setAvailableCredits] = useState<number | null>(null)
-
+  const [inputTokenCount, setInputTokenCount] = useState<number | null>(null)
+  const [outputTokenCount, setOutputTokenCount] = useState<number | null>(null)
+  const [modelInUse, setModelInUse] = useState<TiktokenModel>('gpt-4o-mini')
   useEffect(() => {
     const fetchSimulationData = async () => {
       try {
@@ -207,7 +211,8 @@ export default function SimulationViewPage() {
       ? customPrompt 
       : prepareInitialPrompt(simulationData?.simulation, simulationData?.personas);
       console.log('prompt123', prompt, nameToPersonaIdMap);
-    
+      const inputTokenCount = getTokenCount(modelInUse, JSON.stringify(prompt));
+      setInputTokenCount(inputTokenCount);
       try {
         setIsSimulationRunning(true);
         const res = await fetch('/api/run-simulation', {
@@ -229,9 +234,10 @@ export default function SimulationViewPage() {
         
         if (data.reply) {
           // Parse the response into messages
-          
+          const outputTokenCount = getTokenCount(modelInUse, data.reply);
+          setOutputTokenCount(outputTokenCount);
           const parsedMessages = parseSimulationResponse(data.reply);
-          console.log('Parsed messages111:', parsedMessages);
+          console.log('Parsed messages111:',inputTokenCount, outputTokenCount, parsedMessages);
           
           // Save the messages to the database
           const saveResult = await saveMessagesToDatabase(parsedMessages);

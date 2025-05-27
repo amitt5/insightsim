@@ -235,6 +235,11 @@ export default function SimulationViewPage() {
 
   const runSimulation = async (customPrompt?: ChatCompletionMessageParam[]) => {
     console.log('runSimulationCalled', simulationData);
+    if (availableCredits && availableCredits < 10) {
+      setErrorMessage("You have low credit balance. Please purchase more credits to continue.");
+      setShowErrorPopup(true);
+      return;
+    }
     if(simulationData?.simulation && simulationData?.personas) {
       const prompt = customPrompt 
       ? customPrompt 
@@ -885,7 +890,7 @@ export default function SimulationViewPage() {
                       Available credits: {availableCredits.toFixed(2)}
                     </span>
                   )}
-                  
+
                 { (formattedMessages.length > 0) &&<div className="mt-2 flex items-center gap-4">
                   <Button 
                     variant="destructive"

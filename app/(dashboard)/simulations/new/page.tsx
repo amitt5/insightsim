@@ -70,7 +70,7 @@ export default function NewSimulationPage() {
       ...prev,
       [field]: e.target.value
     }));
-    console.log('simulationData1', simulationData)
+    // console.log('simulationData1', simulationData)
   };
 
   // Handle select changes

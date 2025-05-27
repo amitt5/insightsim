@@ -19,8 +19,8 @@ import { MediaSlideshow } from "@/components/media-slideshow";
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { encoding_for_model } from "@dqbd/tiktoken";
-
+import { TiktokenModel } from "@dqbd/tiktoken";
+import { getTokenCount } from "@/utils/openai";
 // Interface for the Simulation data
 
 
@@ -62,6 +62,38 @@ export default function SimulationViewPage() {
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false)
   const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [availableCredits, setAvailableCredits] = useState<number | null>(null)
+  const [inputTokenCount, setInputTokenCount] = useState<number | null>(null)
+  const [outputTokenCount, setOutputTokenCount] = useState<number | null>(null)
+  const [modelInUse, setModelInUse] = useState<TiktokenModel>('gpt-4o-mini')
+
+  // Add new function for deducting credits
+  const deductCredits = async (inputTokens: number, outputTokens: number) => {
+    try {
+      const deductResponse = await fetch('/api/deduct-credits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
+          model: modelInUse
+        }),
+      });
+
+      if (!deductResponse.ok) {
+        throw new Error(`Error deducting credits: ${deductResponse.status}`);
+      }
+
+      const deductData = await deductResponse.json();
+      setAvailableCredits(deductData.remaining_credits);
+      return deductData;
+    } catch (error) {
+      console.error("Error deducting credits:", error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -208,7 +240,8 @@ export default function SimulationViewPage() {
       ? customPrompt 
       : prepareInitialPrompt(simulationData?.simulation, simulationData?.personas);
       console.log('prompt123', prompt, nameToPersonaIdMap);
-    
+      const inputTokenCount = getTokenCount(modelInUse, JSON.stringify(prompt));
+      setInputTokenCount(inputTokenCount);
       try {
         setIsSimulationRunning(true);
         const res = await fetch('/api/run-simulation', {
@@ -230,9 +263,17 @@ export default function SimulationViewPage() {
         
         if (data.reply) {
           // Parse the response into messages
-          
+          const outputTokenCount = getTokenCount(modelInUse, data.reply);
+          setOutputTokenCount(outputTokenCount);
           const parsedMessages = parseSimulationResponse(data.reply);
-          console.log('Parsed messages111:', parsedMessages);
+          console.log('Parsed messages111:',inputTokenCount, outputTokenCount, parsedMessages);
+          
+          // Deduct credits
+          try {
+            await deductCredits(inputTokenCount, outputTokenCount);
+          } catch (error) {
+            console.error("Failed to deduct credits:", error);
+          }
           
           // Save the messages to the database
           const saveResult = await saveMessagesToDatabase(parsedMessages);
@@ -331,8 +372,19 @@ export default function SimulationViewPage() {
       return parsed;
     } catch (error) {
       // --- Fallback single-speaker parser ---
+      console.log('error in parsing', error, responseString);
+      const match = responseString.trim().match(/^([^:]+):\s*([\s\S]+)$/);
+      if (match) {
+        const [, name, message] = match;
+        const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
+        setMessages(fallbackParsed);
+        return fallbackParsed;
+      }
+      
       const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
+      console.log('error in parsing-fallbackMatch', fallbackMatch);
       if (fallbackMatch) {
+        console.log('error in parsing-fallbackMatch-if', fallbackMatch);
         const [_, name, message] = fallbackMatch;
         const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
         setMessages(fallbackParsed);
@@ -602,6 +654,26 @@ export default function SimulationViewPage() {
     navigator.clipboard.writeText(transcript);
   };
 
+  // Add new function to fetch credits
+  const fetchUserCredits = async () => {
+    try {
+      const response = await fetch(`/api/deduct-credits?user_id=${params.user_id}`);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('setAvailableCredits',data);
+      setAvailableCredits(data.available_credits);
+    } catch (err) {
+      console.error("Failed to fetch user credits:", err);
+    }
+  };
+
+  // Add credits fetch to initial load
+  useEffect(() => {
+      fetchUserCredits();
+  }, [params.user_id]);
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-[70vh]">Loading simulation data...</div>;
   }
@@ -822,8 +894,7 @@ export default function SimulationViewPage() {
                   
                 </div>}
 
-                { (formattedMessages.length > 0) &&<div className="mt-2">
-                  
+                { (formattedMessages.length > 0) &&<div className="mt-2 flex items-center gap-4">
                   <Button 
                     variant="destructive"
                     onClick={endDiscussion}
@@ -831,6 +902,11 @@ export default function SimulationViewPage() {
                   >
                     {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
                   </Button>
+                  {availableCredits !== null && (
+                    <span className="text-sm text-gray-500">
+                      Available credits: {availableCredits.toFixed(2)}
+                    </span>
+                  )}
                 </div>}
 
                { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
@@ -842,6 +918,7 @@ export default function SimulationViewPage() {
                   </Button>
                 </div>}
 
+                
               </div>
           </Card>
         </div>

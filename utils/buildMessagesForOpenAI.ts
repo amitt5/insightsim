@@ -55,7 +55,7 @@ export function buildMessagesForOpenAI({
 
   // Emphasize depth requirement EARLY
   if (study_type === "idi") {
-    systemPrompt += `IMPORTANT: Respond with a long, detailed, descriptive message of at least 50–100 words per participant. Be reflective and realistic in tone.\n`;
+    systemPrompt += `IMPORTANT: Respond with a long, detailed, descriptive message of at least 50–200 words per participant. Be reflective and realistic in tone.\n`;
   } else {
     systemPrompt += `Respond with 1–4 participant messages in a natural back-and-forth. Make each message realistic and contextually aware.\n`;
   }

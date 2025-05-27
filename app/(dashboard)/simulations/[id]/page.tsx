@@ -20,7 +20,16 @@ import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { TiktokenModel } from "@dqbd/tiktoken";
+import { CREDIT_RATES } from '@/utils/openai'
 import { getTokenCount } from "@/utils/openai";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 // Interface for the Simulation data
 
 
@@ -45,7 +54,6 @@ export default function SimulationViewPage() {
   const simulationId = params.simulation_id as string;
 
   const [activeTab, setActiveTab] = useState("summary")
-  const [isLeftPanelMinimized, setIsLeftPanelMinimized] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showErrorPopup, setShowErrorPopup] = useState(false)
@@ -256,6 +264,7 @@ export default function SimulationViewPage() {
           },
           body: JSON.stringify({
             messages: prompt,
+            model: modelInUse,
           }),
         });
         
@@ -886,10 +895,27 @@ export default function SimulationViewPage() {
                   
                 </div>}
                 {availableCredits !== null && (
+                  <div className="flex items-center gap-4">
+                    <Select
+                      value={modelInUse}
+                      onValueChange={(value: TiktokenModel) => setModelInUse(value)}
+                    >
+                      <SelectTrigger className="w-[280px]">
+                        <SelectValue placeholder="Select model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(CREDIT_RATES).map(([model, rates]) => (
+                          <SelectItem key={model} value={model}>
+                            {model} ({rates.usage})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <span className="text-sm text-gray-500">
                       Available credits: {availableCredits.toFixed(2)}
                     </span>
-                  )}
+                  </div>
+                )}
 
                 { (formattedMessages.length > 0) &&<div className="mt-2 flex items-center gap-4">
                   <Button 

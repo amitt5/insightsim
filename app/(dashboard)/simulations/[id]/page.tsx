@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ModelSelectorWithCredits } from '@/components/ModelSelectorWithCredits';
 
 // Interface for the Simulation data
 
@@ -896,26 +897,11 @@ export default function SimulationViewPage() {
                 </div>}
                 {availableCredits !== null && (
                   <div className="flex flex-col gap-2 mt-2">
-                    <div className="flex items-center gap-4 p-3 rounded-md bg-muted/50 border border-muted">
-                      <Select
-                        value={modelInUse}
-                        onValueChange={(value: TiktokenModel) => setModelInUse(value)}
-                      >
-                        <SelectTrigger className="w-[280px]">
-                          <SelectValue placeholder="Select model" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(CREDIT_RATES).map(([model, rates]) => (
-                            <SelectItem key={model} value={model}>
-                              {model} ({rates.usage})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <span className="text-sm text-gray-500">
-                        Available credits: {availableCredits.toFixed(2)}
-                      </span>
-                    </div>
+                    <ModelSelectorWithCredits
+                      modelInUse={modelInUse}
+                      setModelInUse={setModelInUse}
+                      availableCredits={availableCredits}
+                    />
                     {formattedMessages.length > 0 && (
                       <Button
                         className="mt-2"

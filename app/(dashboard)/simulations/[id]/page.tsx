@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ModelSelectorWithCredits } from '@/components/ModelSelectorWithCredits';
+import { useCredits } from "@/hooks/useCredits"; // adjust path as needed
 
 // Interface for the Simulation data
 
@@ -71,38 +72,12 @@ export default function SimulationViewPage() {
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false)
   const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [availableCredits, setAvailableCredits] = useState<number | null>(null)
+  // const [availableCredits, setAvailableCredits] = useState<number | null>(null)
   const [inputTokenCount, setInputTokenCount] = useState<number | null>(null)
   const [outputTokenCount, setOutputTokenCount] = useState<number | null>(null)
   const [modelInUse, setModelInUse] = useState<TiktokenModel>('gpt-4o-mini')
 
-  // Add new function for deducting credits
-  const deductCredits = async (inputTokens: number, outputTokens: number) => {
-    try {
-      const deductResponse = await fetch('/api/deduct-credits', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input_tokens: inputTokens,
-          output_tokens: outputTokens,
-          model: modelInUse
-        }),
-      });
-
-      if (!deductResponse.ok) {
-        throw new Error(`Error deducting credits: ${deductResponse.status}`);
-      }
-
-      const deductData = await deductResponse.json();
-      setAvailableCredits(deductData.remaining_credits);
-      return deductData;
-    } catch (error) {
-      console.error("Error deducting credits:", error);
-      throw error;
-    }
-  };
+  const { availableCredits, setAvailableCredits, fetchUserCredits, deductCredits } = useCredits();
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -285,7 +260,7 @@ export default function SimulationViewPage() {
           
           // Deduct credits
           try {
-            await deductCredits(inputTokenCount, outputTokenCount);
+            await deductCredits(inputTokenCount || 0, outputTokenCount || 0, modelInUse);
           } catch (error) {
             console.error("Failed to deduct credits:", error);
           }
@@ -655,23 +630,7 @@ export default function SimulationViewPage() {
     const transcript = formattedMessages.map(m => `${m.speaker}: ${m.text}`).join("\n");
     navigator.clipboard.writeText(transcript);
   };
-
-  // Add new function to fetch credits
-  const fetchUserCredits = async () => {
-    try {
-      const response = await fetch(`/api/deduct-credits?user_id=${params.user_id}`);
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('setAvailableCredits',data);
-      setAvailableCredits(data.available_credits);
-    } catch (err) {
-      console.error("Failed to fetch user credits:", err);
-    }
-  };
-
-  // Add credits fetch to initial load
+  
   useEffect(() => {
       fetchUserCredits();
   }, [params.user_id]);

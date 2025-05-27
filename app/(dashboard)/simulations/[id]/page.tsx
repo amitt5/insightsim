@@ -19,6 +19,8 @@ import { MediaSlideshow } from "@/components/media-slideshow";
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { encoding_for_model } from "@dqbd/tiktoken";
+
 // Interface for the Simulation data
 
 
@@ -277,10 +279,23 @@ export default function SimulationViewPage() {
           personas: simulationData?.personas || []
         }
         const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type);
-        console.log('prompt123',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
+        const promptString = JSON.stringify(prompt);
+        console.log('prompt1111',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
+        const enc1 = encoding_for_model("gpt-4o-mini");
+        const enc2 = encoding_for_model("gpt-4.1-mini");
+        const enc3 = encoding_for_model("gpt-4.1");
+
+        const inputTokens1 = enc1.encode(promptString).length;
+        const inputTokens2 = enc2.encode(promptString).length;
+        const inputTokens3 = enc3.encode(promptString).length;
+
+        // const outputText = "Response returned by the model";
+        // const outputTokens = enc.encode(outputText).length;
+
+        console.log('inputTokens',inputTokens1,inputTokens2,inputTokens3);
         //4. send the messages to openai
-        runSimulation(prompt);
+        // runSimulation(prompt);
         // rest of the steps handled in run simulation
       }
     }

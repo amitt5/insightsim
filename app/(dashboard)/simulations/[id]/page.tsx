@@ -880,7 +880,12 @@ export default function SimulationViewPage() {
                   </Button> */}
                   
                 </div>}
-
+                {availableCredits !== null && (
+                    <span className="text-sm text-gray-500">
+                      Available credits: {availableCredits.toFixed(2)}
+                    </span>
+                  )}
+                  
                 { (formattedMessages.length > 0) &&<div className="mt-2 flex items-center gap-4">
                   <Button 
                     variant="destructive"
@@ -889,11 +894,7 @@ export default function SimulationViewPage() {
                   >
                     {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
                   </Button>
-                  {availableCredits !== null && (
-                    <span className="text-sm text-gray-500">
-                      Available credits: {availableCredits.toFixed(2)}
-                    </span>
-                  )}
+                 
                 </div>}
 
                { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">

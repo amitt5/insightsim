@@ -895,40 +895,41 @@ export default function SimulationViewPage() {
                   
                 </div>}
                 {availableCredits !== null && (
-                  <div className="flex items-center gap-4">
-                    <Select
-                      value={modelInUse}
-                      onValueChange={(value: TiktokenModel) => setModelInUse(value)}
-                    >
-                      <SelectTrigger className="w-[280px]">
-                        <SelectValue placeholder="Select model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(CREDIT_RATES).map(([model, rates]) => (
-                          <SelectItem key={model} value={model}>
-                            {model} ({rates.usage})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <span className="text-sm text-gray-500">
-                      Available credits: {availableCredits.toFixed(2)}
-                    </span>
+                  <div className="flex flex-col gap-2 mt-2">
+                    <div className="flex items-center gap-4 p-3 rounded-md bg-muted/50 border border-muted">
+                      <Select
+                        value={modelInUse}
+                        onValueChange={(value: TiktokenModel) => setModelInUse(value)}
+                      >
+                        <SelectTrigger className="w-[280px]">
+                          <SelectValue placeholder="Select model" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(CREDIT_RATES).map(([model, rates]) => (
+                            <SelectItem key={model} value={model}>
+                              {model} ({rates.usage})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className="text-sm text-gray-500">
+                        Available credits: {availableCredits.toFixed(2)}
+                      </span>
+                    </div>
+                    {formattedMessages.length > 0 && (
+                      <Button
+                        className="mt-2"
+                        variant="destructive"
+                        onClick={endDiscussion}
+                        disabled={simulation.status === 'Completed' || isEndingDiscussion}
+                      >
+                        {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
+                      </Button>
+                    )}
                   </div>
                 )}
 
-                { (formattedMessages.length > 0) &&<div className="mt-2 flex items-center gap-4">
-                  <Button 
-                    variant="destructive"
-                    onClick={endDiscussion}
-                    disabled={simulation.status === 'Completed' || isEndingDiscussion}
-                  >
-                    {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
-                  </Button>
-                 
-                </div>}
-
-               { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
+                { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
                   <Button 
                     onClick={startDiscussion}
                     disabled={isStartingDiscussion}

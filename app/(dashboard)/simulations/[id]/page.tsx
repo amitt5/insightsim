@@ -66,6 +66,35 @@ export default function SimulationViewPage() {
   const [inputTokenCount, setInputTokenCount] = useState<number | null>(null)
   const [outputTokenCount, setOutputTokenCount] = useState<number | null>(null)
   const [modelInUse, setModelInUse] = useState<TiktokenModel>('gpt-4o-mini')
+
+  // Add new function for deducting credits
+  const deductCredits = async (inputTokens: number, outputTokens: number) => {
+    try {
+      const deductResponse = await fetch('/api/deduct-credits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
+          model: modelInUse
+        }),
+      });
+
+      if (!deductResponse.ok) {
+        throw new Error(`Error deducting credits: ${deductResponse.status}`);
+      }
+
+      const deductData = await deductResponse.json();
+      setAvailableCredits(deductData.remaining_credits);
+      return deductData;
+    } catch (error) {
+      console.error("Error deducting credits:", error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     const fetchSimulationData = async () => {
       try {
@@ -238,6 +267,13 @@ export default function SimulationViewPage() {
           setOutputTokenCount(outputTokenCount);
           const parsedMessages = parseSimulationResponse(data.reply);
           console.log('Parsed messages111:',inputTokenCount, outputTokenCount, parsedMessages);
+          
+          // Deduct credits
+          try {
+            await deductCredits(inputTokenCount, outputTokenCount);
+          } catch (error) {
+            console.error("Failed to deduct credits:", error);
+          }
           
           // Save the messages to the database
           const saveResult = await saveMessagesToDatabase(parsedMessages);

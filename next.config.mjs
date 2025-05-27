@@ -27,6 +27,13 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  webpack(config) {
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true, // ✅ Add this line to enable WASM
+    };
+    return config;
+  },
 }
 
 if (userConfig) {

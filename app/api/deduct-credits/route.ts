@@ -9,16 +9,68 @@ const CREDIT_RATES = {
     'gpt-4.1': { input: 1.0, output: 4.0 },
   } as const
 
+async function getSupabaseAndUser() {
+    const supabase = createRouteHandlerClient({ cookies })
+    const user = await supabase.auth.getUser()
+    const userId = user?.data?.user?.id
+    return { supabase, userId }
+}
+
+export async function GET() {
+  try {
+    const { supabase, userId } = await getSupabaseAndUser()
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      )
+    }
+
+    const { data: userCredits, error: fetchError } = await supabase
+      .from('user_credits')
+      .select('credits')
+      .eq('user_id', userId)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching user credits:', fetchError)
+      return NextResponse.json(
+        { error: 'Failed to fetch user credits' },
+        { status: 500 }
+      )
+    }
+
+    if (!userCredits) {
+      return NextResponse.json(
+        { error: 'User credits not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({
+      available_credits: userCredits.credits
+    })
+
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
 
 export async function POST(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const { supabase, userId } = await getSupabaseAndUser()
+
     const body = await request.json()
     
-    const { user_id, input_tokens, output_tokens, model } = body
+    const { input_tokens, output_tokens, model } = body
 
     // Validate required fields
-    if (!user_id || typeof input_tokens !== 'number' || typeof output_tokens !== 'number' || !model ||
+    if (!userId || typeof input_tokens !== 'number' || typeof output_tokens !== 'number' || !model ||
         !(model in CREDIT_RATES)) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -44,7 +96,7 @@ export async function POST(request: Request) {
     const { data: userCredits, error: fetchError } = await supabase
       .from('user_credits')
       .select('credits')
-      .eq('user_id', user_id)
+      .eq('user_id', userId)
       .single()
 
     if (fetchError) {
@@ -69,7 +121,7 @@ export async function POST(request: Request) {
         credits: userCredits.credits - creditsToDeduct,
         updated_at: new Date().toISOString()
       })
-      .eq('user_id', user_id)
+      .eq('user_id', userId)
       .select('credits')
       .single()
 

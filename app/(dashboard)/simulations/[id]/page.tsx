@@ -60,6 +60,7 @@ export default function SimulationViewPage() {
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false)
   const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [availableCredits, setAvailableCredits] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -587,6 +588,26 @@ export default function SimulationViewPage() {
     navigator.clipboard.writeText(transcript);
   };
 
+  // Add new function to fetch credits
+  const fetchUserCredits = async () => {
+    try {
+      const response = await fetch(`/api/deduct-credits?user_id=${params.user_id}`);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('setAvailableCredits',data);
+      setAvailableCredits(data.available_credits);
+    } catch (err) {
+      console.error("Failed to fetch user credits:", err);
+    }
+  };
+
+  // Add credits fetch to initial load
+  useEffect(() => {
+      fetchUserCredits();
+  }, [params.user_id]);
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-[70vh]">Loading simulation data...</div>;
   }
@@ -807,8 +828,7 @@ export default function SimulationViewPage() {
                   
                 </div>}
 
-                { (formattedMessages.length > 0) &&<div className="mt-2">
-                  
+                { (formattedMessages.length > 0) &&<div className="mt-2 flex items-center gap-4">
                   <Button 
                     variant="destructive"
                     onClick={endDiscussion}
@@ -816,6 +836,11 @@ export default function SimulationViewPage() {
                   >
                     {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
                   </Button>
+                  {availableCredits !== null && (
+                    <span className="text-sm text-gray-500">
+                      Available credits: {availableCredits}
+                    </span>
+                  )}
                 </div>}
 
                { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
@@ -827,6 +852,7 @@ export default function SimulationViewPage() {
                   </Button>
                 </div>}
 
+                
               </div>
           </Card>
         </div>

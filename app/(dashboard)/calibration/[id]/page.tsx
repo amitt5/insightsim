@@ -203,7 +203,7 @@ export default function CalibrationDetailPage() {
         }
 
         const parsedResponse: any = parseSimulationResponse(data.reply);
-        console.log('Parsed messages111:', parsedResponse);
+        console.log('Parsed messages:', parsedResponse);
         saveComparisonSummary(parsedResponse.transcript_differences);
         savePersonaImprovement(parsedResponse.persona_improvements);
 

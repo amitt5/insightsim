@@ -1,7 +1,7 @@
 "use client"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
-export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], model: string = 'gpt-4o-mini'): Promise<{ reply: string }> {
+export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], model: string = 'gpt-4o-mini'): Promise<{ reply: string, usage: any, creditInfo: { remaining_credits: number, credits_deducted: number } }> {
     try {
         const response = await fetch('/api/run-simulation', {
             method: 'POST',
@@ -35,12 +35,18 @@ export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], mod
             }),
         });
 
+        let creditInfo = { remaining_credits: 0, credits_deducted: 0 };
         if (!deductResponse.ok) {
             console.error('Failed to deduct credits:', await deductResponse.json());
             // Continue with the response even if credit deduction fails
+        } else {
+            creditInfo = await deductResponse.json();
         }
 
-        return data;
+        return {
+            ...data,
+            creditInfo
+        };
     } catch (error) {
         console.error('Error in runSimulationAPI:', error);
         throw error;

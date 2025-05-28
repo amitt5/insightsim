@@ -20,7 +20,18 @@ import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { TiktokenModel } from "@dqbd/tiktoken";
+import { CREDIT_RATES } from '@/utils/openai'
 import { getTokenCount } from "@/utils/openai";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ModelSelectorWithCredits } from '@/components/ModelSelectorWithCredits';
+import { useCredits } from "@/hooks/useCredits"; // adjust path as needed
+
 // Interface for the Simulation data
 
 
@@ -45,7 +56,6 @@ export default function SimulationViewPage() {
   const simulationId = params.simulation_id as string;
 
   const [activeTab, setActiveTab] = useState("summary")
-  const [isLeftPanelMinimized, setIsLeftPanelMinimized] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showErrorPopup, setShowErrorPopup] = useState(false)
@@ -62,38 +72,12 @@ export default function SimulationViewPage() {
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false)
   const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [availableCredits, setAvailableCredits] = useState<number | null>(null)
+  // const [availableCredits, setAvailableCredits] = useState<number | null>(null)
   const [inputTokenCount, setInputTokenCount] = useState<number | null>(null)
   const [outputTokenCount, setOutputTokenCount] = useState<number | null>(null)
   const [modelInUse, setModelInUse] = useState<TiktokenModel>('gpt-4o-mini')
 
-  // Add new function for deducting credits
-  const deductCredits = async (inputTokens: number, outputTokens: number) => {
-    try {
-      const deductResponse = await fetch('/api/deduct-credits', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input_tokens: inputTokens,
-          output_tokens: outputTokens,
-          model: modelInUse
-        }),
-      });
-
-      if (!deductResponse.ok) {
-        throw new Error(`Error deducting credits: ${deductResponse.status}`);
-      }
-
-      const deductData = await deductResponse.json();
-      setAvailableCredits(deductData.remaining_credits);
-      return deductData;
-    } catch (error) {
-      console.error("Error deducting credits:", error);
-      throw error;
-    }
-  };
+  const { availableCredits, setAvailableCredits, fetchUserCredits, deductCredits } = useCredits();
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -235,6 +219,11 @@ export default function SimulationViewPage() {
 
   const runSimulation = async (customPrompt?: ChatCompletionMessageParam[]) => {
     console.log('runSimulationCalled', simulationData);
+    if (availableCredits && availableCredits < 10) {
+      setErrorMessage("You have low credit balance. Please purchase more credits to continue.");
+      setShowErrorPopup(true);
+      return;
+    }
     if(simulationData?.simulation && simulationData?.personas) {
       const prompt = customPrompt 
       ? customPrompt 
@@ -251,6 +240,7 @@ export default function SimulationViewPage() {
           },
           body: JSON.stringify({
             messages: prompt,
+            model: modelInUse,
           }),
         });
         
@@ -270,7 +260,7 @@ export default function SimulationViewPage() {
           
           // Deduct credits
           try {
-            await deductCredits(inputTokenCount, outputTokenCount);
+            await deductCredits(inputTokenCount || 0, outputTokenCount || 0, modelInUse);
           } catch (error) {
             console.error("Failed to deduct credits:", error);
           }
@@ -653,23 +643,7 @@ export default function SimulationViewPage() {
     const transcript = formattedMessages.map(m => `${m.speaker}: ${m.text}`).join("\n");
     navigator.clipboard.writeText(transcript);
   };
-
-  // Add new function to fetch credits
-  const fetchUserCredits = async () => {
-    try {
-      const response = await fetch(`/api/deduct-credits?user_id=${params.user_id}`);
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('setAvailableCredits',data);
-      setAvailableCredits(data.available_credits);
-    } catch (err) {
-      console.error("Failed to fetch user credits:", err);
-    }
-  };
-
-  // Add credits fetch to initial load
+  
   useEffect(() => {
       fetchUserCredits();
   }, [params.user_id]);
@@ -893,23 +867,27 @@ export default function SimulationViewPage() {
                   </Button> */}
                   
                 </div>}
+                {availableCredits !== null && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    <ModelSelectorWithCredits
+                      modelInUse={modelInUse}
+                      setModelInUse={setModelInUse}
+                      availableCredits={availableCredits}
+                    />
+                    {formattedMessages.length > 0 && (
+                      <Button
+                        className="mt-2"
+                        variant="destructive"
+                        onClick={endDiscussion}
+                        disabled={simulation.status === 'Completed' || isEndingDiscussion}
+                      >
+                        {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
+                      </Button>
+                    )}
+                  </div>
+                )}
 
-                { (formattedMessages.length > 0) &&<div className="mt-2 flex items-center gap-4">
-                  <Button 
-                    variant="destructive"
-                    onClick={endDiscussion}
-                    disabled={simulation.status === 'Completed' || isEndingDiscussion}
-                  >
-                    {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
-                  </Button>
-                  {availableCredits !== null && (
-                    <span className="text-sm text-gray-500">
-                      Available credits: {availableCredits.toFixed(2)}
-                    </span>
-                  )}
-                </div>}
-
-               { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
+                { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
                   <Button 
                     onClick={startDiscussion}
                     disabled={isStartingDiscussion}

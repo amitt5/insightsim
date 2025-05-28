@@ -14,11 +14,21 @@ import { CalibrationSession, Persona, Simulation } from "@/utils/types"
 import { prepareInitialPrompt, buildPersonaImprovementPrompt } from "@/utils/preparePrompt";
 import { set } from "date-fns"
 import { usePersonas } from "@/lib/usePersonas"
+import { ModelSelectorWithCredits } from '@/components/ModelSelectorWithCredits';
+import { TiktokenModel } from "tiktoken";
+import { getTokenCount } from "@/utils/openai";
+import { useCredits } from "@/hooks/useCredits"; // adjust path as needed
 
 export default function CalibrationDetailPage() {
 
   const params = useParams(); // Use useParams() to get the id
   const calibrationId = params.calibration_id as string;
+  const [modelInUse, setModelInUse] = useState<TiktokenModel>('gpt-4o-mini')
+  const [inputTokenCount, setInputTokenCount] = useState<number | null>(null)
+  const [outputTokenCount, setOutputTokenCount] = useState<number | null>(null)
+  
+  const { availableCredits, setAvailableCredits, fetchUserCredits, deductCredits } = useCredits();
+
   const [activeTab, setActiveTab] = useState("real")
   const [suggestions, setSuggestions] = useState([
     {
@@ -99,6 +109,13 @@ export default function CalibrationDetailPage() {
     runSimulation();
   }
 
+ 
+
+  // Add credits fetch to initial load
+  useEffect(() => {
+      fetchUserCredits();
+  }, [params.user_id]);
+
   const compareTranscripts = async() => {
     console.log('compareTranscripts', calibrationSession)
 
@@ -149,6 +166,8 @@ export default function CalibrationDetailPage() {
   const makeOpenAIRequest = async(prompt: any) => {
     console.log('compareTranscripts', calibrationSession)
 
+    const inputTokenCount = getTokenCount(modelInUse, JSON.stringify(prompt));
+    setInputTokenCount(inputTokenCount);
 
     try {
       const res = await fetch('/api/run-simulation', {
@@ -158,6 +177,7 @@ export default function CalibrationDetailPage() {
         },
         body: JSON.stringify({
           messages: prompt,
+          model: modelInUse,
         }),
       });
       
@@ -172,8 +192,18 @@ export default function CalibrationDetailPage() {
       if (data.reply) {
         // Parse the response into messages
         
+        const outputTokenCount = getTokenCount(modelInUse, data.reply);
+        setOutputTokenCount(outputTokenCount);
+
+        // Deduct credits
+        try {
+          await deductCredits(inputTokenCount || 0, outputTokenCount || 0, modelInUse);
+        } catch (error) {
+          console.error("Failed to deduct credits:", error);
+        }
+
         const parsedResponse: any = parseSimulationResponse(data.reply);
-        console.log('Parsed messages111:', parsedResponse);
+        console.log('Parsed messages:', parsedResponse);
         saveComparisonSummary(parsedResponse.transcript_differences);
         savePersonaImprovement(parsedResponse.persona_improvements);
 
@@ -348,7 +378,7 @@ export default function CalibrationDetailPage() {
 
   const handleSuggestedChange = (id: string, value: string) => {
     setSuggestions(
-      suggestions.map((s) => (s.id === id ? { ...s, suggested: value, accepted: false, rejected: false } : s)),
+      suggestions.map((s) => (s.id === Number(id) ? { ...s, suggested: value, accepted: false, rejected: false } : s)),
     )
   }
   const [isLoading, setIsLoading] = useState(true)
@@ -550,8 +580,13 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
                   className="mb-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
                   onClick={() => compareTranscripts()}
                 >
-                  Compare transcripts
+                  Compare transcripts 
                 </button>
+                <ModelSelectorWithCredits
+                  modelInUse={modelInUse}
+                  setModelInUse={setModelInUse}
+                  availableCredits={availableCredits}
+                />
               {/* )} */}
               {(calibrationSession?.comparison_summary && calibrationSession?.comparison_summary.length) &&
                 <div className="space-y-6">

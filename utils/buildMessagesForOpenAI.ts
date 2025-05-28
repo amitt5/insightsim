@@ -55,7 +55,7 @@ export function buildMessagesForOpenAI({
 
   // Emphasize depth requirement EARLY
   if (study_type === "idi") {
-    systemPrompt += `IMPORTANT: Respond with a long, detailed, descriptive message of at least 50–200 words per participant. Be reflective and realistic in tone.\n`;
+    // systemPrompt += `IMPORTANT: Respond with a long, detailed, descriptive message of at least 50–200 words per participant. Be reflective and realistic in tone.\n`;
   } else {
     systemPrompt += `Respond with 1–4 participant messages in a natural back-and-forth. Make each message realistic and contextually aware.\n`;
   }
@@ -75,7 +75,6 @@ Strictly follow these rules:
 - DO NOT include text outside the JSON array.
 - DO NOT wrap the response in triple backticks or say "Here is the response".
 - ONLY return a valid JSON array of 1 to 4 participant messages.
-- Each participant message MUST be elaborate, descriptive, and realistic, with at least 150–200 words.
 
 To guide you, here is an example of the expected format and depth:
 

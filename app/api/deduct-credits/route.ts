@@ -1,13 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-
-// Define credit rates per 1000 tokens for different models
-const CREDIT_RATES = {
-    'gpt-4o-mini': { input: 0.075, output: 0.3 },
-    'gpt-4.1-mini': { input: 0.2, output: 0.8 },
-    'gpt-4.1': { input: 1.0, output: 4.0 },
-  } as const
+import { CREDIT_RATES } from '@/utils/openai'
 
 async function getSupabaseAndUser() {
     const supabase = createRouteHandlerClient({ cookies })

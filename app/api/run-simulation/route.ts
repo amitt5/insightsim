@@ -9,11 +9,11 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
+    const { messages, model } = await req.json();
     console.log('prompt123', messages);
     // Call OpenAI
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: model,
       messages,
       temperature: 0.9,
       max_tokens: 3000,

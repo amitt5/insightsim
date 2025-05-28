@@ -230,6 +230,7 @@ export default function SimulationViewPage() {
         setIsSimulationRunning(true);
         const data = await runSimulationAPI(prompt, modelInUse);
         console.log('API response:', data);
+        setAvailableCredits(data.creditInfo.remaining_credits);
         
         if (data.reply) {
           // Parse the response into messages
@@ -557,6 +558,7 @@ export default function SimulationViewPage() {
       try {
         const data = await runSimulationAPI(prompt);
         console.log('API response:', data);
+        setAvailableCredits(data.creditInfo.remaining_credits);
         
         if (data.reply) {
           // Parse the response into messages

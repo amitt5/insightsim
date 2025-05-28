@@ -165,6 +165,7 @@ export default function CalibrationDetailPage() {
     try {
       const data = await runSimulationAPI(prompt, modelInUse);
       console.log('API response:', data);
+      setAvailableCredits(data.creditInfo.remaining_credits);
      
       saveOpenAIResponse(data);
       

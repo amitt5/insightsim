@@ -19,9 +19,7 @@ import { MediaSlideshow } from "@/components/media-slideshow";
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { TiktokenModel } from "@dqbd/tiktoken";
 import { CREDIT_RATES } from '@/utils/openai'
-import { getTokenCount } from "@/utils/openai";
 import {
   Select,
   SelectContent,
@@ -31,6 +29,7 @@ import {
 } from "@/components/ui/select"
 import { ModelSelectorWithCredits } from '@/components/ModelSelectorWithCredits';
 import { useCredits } from "@/hooks/useCredits"; // adjust path as needed
+import { runSimulationAPI } from '@/utils/api';
 
 // Interface for the Simulation data
 
@@ -53,7 +52,7 @@ interface FormattedMessage {
 
 export default function SimulationViewPage() {
   const params = useParams(); // Use useParams() to get the business_id
-  const simulationId = params.simulation_id as string;
+  const simulationId = params.id as string;
 
   const [activeTab, setActiveTab] = useState("summary")
   const [isLoading, setIsLoading] = useState(true)
@@ -73,11 +72,9 @@ export default function SimulationViewPage() {
   const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   // const [availableCredits, setAvailableCredits] = useState<number | null>(null)
-  const [inputTokenCount, setInputTokenCount] = useState<number | null>(null)
-  const [outputTokenCount, setOutputTokenCount] = useState<number | null>(null)
-  const [modelInUse, setModelInUse] = useState<TiktokenModel>('gpt-4o-mini')
+  const [modelInUse, setModelInUse] = useState<string>('gpt-4o-mini')
 
-  const { availableCredits, setAvailableCredits, fetchUserCredits, deductCredits } = useCredits();
+  const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -229,41 +226,15 @@ export default function SimulationViewPage() {
       ? customPrompt 
       : prepareInitialPrompt(simulationData?.simulation, simulationData?.personas);
       console.log('prompt123', prompt, nameToPersonaIdMap);
-      const inputTokenCount = getTokenCount(modelInUse, JSON.stringify(prompt));
-      setInputTokenCount(inputTokenCount);
       try {
         setIsSimulationRunning(true);
-        const res = await fetch('/api/run-simulation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: prompt,
-            model: modelInUse,
-          }),
-        });
-        
-        if (!res.ok) {
-          throw new Error(`Error running simulation: ${res.status}`);
-        }
-        
-        const data = await res.json();
+        const data = await runSimulationAPI(prompt, modelInUse);
         console.log('API response:', data);
         
         if (data.reply) {
           // Parse the response into messages
-          const outputTokenCount = getTokenCount(modelInUse, data.reply);
-          setOutputTokenCount(outputTokenCount);
           const parsedMessages = parseSimulationResponse(data.reply);
-          console.log('Parsed messages111:',inputTokenCount, outputTokenCount, parsedMessages);
-          
-          // Deduct credits
-          try {
-            await deductCredits(inputTokenCount || 0, outputTokenCount || 0, modelInUse);
-          } catch (error) {
-            console.error("Failed to deduct credits:", error);
-          }
+          console.log('Parsed messages111:', parsedMessages);
           
           // Save the messages to the database
           const saveResult = await saveMessagesToDatabase(parsedMessages);
@@ -310,23 +281,10 @@ export default function SimulationViewPage() {
           personas: simulationData?.personas || []
         }
         const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type);
-        const promptString = JSON.stringify(prompt);
         console.log('prompt1111',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
-        const enc1 = encoding_for_model("gpt-4o-mini");
-        const enc2 = encoding_for_model("gpt-4.1-mini");
-        const enc3 = encoding_for_model("gpt-4.1");
-
-        const inputTokens1 = enc1.encode(promptString).length;
-        const inputTokens2 = enc2.encode(promptString).length;
-        const inputTokens3 = enc3.encode(promptString).length;
-
-        // const outputText = "Response returned by the model";
-        // const outputTokens = enc.encode(outputText).length;
-
-        console.log('inputTokens',inputTokens1,inputTokens2,inputTokens3);
         //4. send the messages to openai
-        // runSimulation(prompt);
+        runSimulation(prompt);
         // rest of the steps handled in run simulation
       }
     }
@@ -586,8 +544,6 @@ export default function SimulationViewPage() {
         } : null);
       }
 
-    
-
     } catch (error) {
       console.error('Error ending discussion:', error);
     } finally {
@@ -595,31 +551,15 @@ export default function SimulationViewPage() {
     }
 
     if(simulationData?.simulation && simulationMessages) {
-    
       const prompt = prepareSummaryPrompt(simulationData?.simulation, simulationMessages);
       console.log('prompt12345',simulationMessages,simulationData?.simulation, prompt, nameToPersonaIdMap);
     
       try {
-        const res = await fetch('/api/run-simulation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: prompt,
-          }),
-        });
-        
-        if (!res.ok) {
-          throw new Error(`Error running simulation: ${res.status}`);
-        }
-        
-        const data = await res.json();
+        const data = await runSimulationAPI(prompt);
         console.log('API response:', data);
         
         if (data.reply) {
           // Parse the response into messages
-          
           const parsedMessages = parseSimulationResponse(data.reply);
           console.log('Parsed messages222:', parsedMessages);
           

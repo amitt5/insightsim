@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { TiktokenModel } from "@dqbd/tiktoken";
+// import { TiktokenModel } from "@dqbd/tiktoken";
 
 export function useCredits(initialCredits: number | null = null) {
   const [availableCredits, setAvailableCredits] = useState<number | null>(initialCredits);
@@ -18,7 +18,7 @@ export function useCredits(initialCredits: number | null = null) {
   }, []);
 
   const deductCredits = useCallback(
-    async (inputTokens: number, outputTokens: number, model: TiktokenModel) => {
+    async (inputTokens: number, outputTokens: number, model: string) => {
       try {
         const deductResponse = await fetch('/api/deduct-credits', {
           method: 'POST',

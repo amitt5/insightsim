@@ -1,5 +1,4 @@
 import OpenAI from 'openai';
-import { encoding_for_model, TiktokenModel } from "@dqbd/tiktoken";
 
 export function openai() {
     return new OpenAI({
@@ -7,12 +6,12 @@ export function openai() {
     });
 }
 
-export function getTokenCount(model: TiktokenModel, text: string) {
-    const enc = encoding_for_model(model);
-    const tokens = enc.encode(text).length;
-    enc.free();
-    return tokens;
-}
+// export function getTokenCount(model: TiktokenModel, text: string) {
+//     const enc = encoding_for_model(model);
+//     const tokens = enc.encode(text).length;
+//     enc.free();
+//     return tokens;
+// }
 
 // Define credit rates per 1000 tokens for different models
 export const CREDIT_RATES = {

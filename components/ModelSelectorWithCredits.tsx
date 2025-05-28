@@ -1,4 +1,3 @@
-import { TiktokenModel } from "@dqbd/tiktoken";
 import { CREDIT_RATES } from '@/utils/openai';
 import {
   Select,
@@ -10,8 +9,8 @@ import {
 import React from "react";
 
 interface ModelSelectorWithCreditsProps {
-  modelInUse: TiktokenModel;
-  setModelInUse: (model: TiktokenModel) => void;
+  modelInUse: string;
+  setModelInUse: (model: string) => void;
   availableCredits: number | null;
 }
 
@@ -19,7 +18,7 @@ export const ModelSelectorWithCredits: React.FC<ModelSelectorWithCreditsProps> =
   <div className="flex items-center gap-4 p-3 rounded-md bg-muted/50 border border-muted">
     <Select
       value={modelInUse}
-      onValueChange={(value: TiktokenModel) => setModelInUse(value)}
+      onValueChange={(value: string) => setModelInUse(value)}
     >
       <SelectTrigger className="w-[280px]">
         <SelectValue placeholder="Select model" />

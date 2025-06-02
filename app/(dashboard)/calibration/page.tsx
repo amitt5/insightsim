@@ -126,6 +126,12 @@ export default function CalibrationPage() {
       </div>
     {loading && <div>Loading...</div>}
     {error && <div>{error}</div>}
+    {(!loading && !error && calibrationSessions.length === 0) && (
+      <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+        <p className="text-lg font-medium mb-2">No calibrations found.</p>
+        <p className="mb-4">Click <span className="font-semibold">New Calibration</span> to get started.</p>
+      </div>
+    )}
     {!loading && !error && calibrationSessions.length > 0 && (
       <Card>
         <CardHeader>

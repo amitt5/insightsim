@@ -43,8 +43,19 @@ export async function GET(request: Request) {
 
           if (profileError) {
             console.error('Error creating user profile:', profileError);
-            // Continue with redirect even if profile creation fails
-            // The user can complete their profile later
+          } else {
+            // Create initial credits for the new user
+            const { error: creditsError } = await supabase
+              .from('user_credits')
+              .insert({
+                user_id: user.id,
+                credits: 500,
+                updated_at: new Date().toISOString()
+              });
+
+            if (creditsError) {
+              console.error('Error creating initial credits:', creditsError);
+            }
           }
         }
       } catch (error) {

@@ -73,6 +73,8 @@ export default function SimulationViewPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   // const [availableCredits, setAvailableCredits] = useState<number | null>(null)
   const [modelInUse, setModelInUse] = useState<string>('gpt-4o-mini')
+  const [showInstructionBox, setShowInstructionBox] = useState(false)
+  const [userInstruction, setUserInstruction] = useState("")
 
   const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
@@ -590,6 +592,12 @@ export default function SimulationViewPage() {
       fetchUserCredits();
   }, [params.user_id]);
 
+  // Save instruction handler (expand as needed)
+  const saveInstruction = () => {
+    setShowInstructionBox(false);
+    // You can add logic here to use userInstruction in your LLM prompt
+  }
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-[70vh]">Loading simulation data...</div>;
   }
@@ -801,14 +809,37 @@ export default function SimulationViewPage() {
                   >
                     Send
                   </Button>
-
-                  {/* <Button 
-                    onClick={sendMessageTest}
-                  >
-                    Send Test
-                  </Button> */}
-                  
                 </div>}
+
+                {/* AI Instruction Box */}
+                { (simulationData?.simulation?.mode === "human-mod") && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      className="text-xs text-primary underline hover:text-primary/80 focus:outline-none"
+                      onClick={() => setShowInstructionBox(v => !v)}
+                    >
+                      {showInstructionBox ? "Hide AI instruction box" : "Not happy with the response? Instruct AI to improve its replies."}
+                    </button>
+                    {showInstructionBox && (
+                      <div className="mt-2 flex flex-col gap-2">
+                        <textarea
+                          className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          rows={2}
+                          placeholder="E.g. Be more concise, use simpler language, ask more follow-up questions..."
+                          value={userInstruction}
+                          onChange={e => setUserInstruction(e.target.value)}
+                        />
+                        <div className="flex justify-end">
+                          <Button size="sm" variant="secondary" onClick={saveInstruction}>
+                            Save Instruction
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {availableCredits !== null && (
                   <div className="flex flex-col gap-2 mt-2">
                     <ModelSelectorWithCredits

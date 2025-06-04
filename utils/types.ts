@@ -22,6 +22,7 @@ export interface Simulation {
     num_turns: number;
     status: "Draft" | "Running" | "Completed";
     created_at: string;
+    user_instructions?: string;
   }
   
   export interface CalibrationSession {

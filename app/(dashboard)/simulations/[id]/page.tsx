@@ -117,6 +117,10 @@ export default function SimulationViewPage() {
         // Fetch summary and themes messages 
         fetchSimulationSummaries();
       }
+      // Set userInstruction from simulation data if available
+      if (simulationData.simulation.user_instructions) {
+        setUserInstruction(simulationData.simulation.user_instructions);
+      }
     }
   }, [simulationData]);
 
@@ -283,7 +287,7 @@ export default function SimulationViewPage() {
           messages: messageFetched,
           personas: simulationData?.personas || []
         }
-        const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type);
+        const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction);
         console.log('prompt1111',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
         //4. send the messages to openai
@@ -593,8 +597,20 @@ export default function SimulationViewPage() {
   }, [params.user_id]);
 
   // Save instruction handler (expand as needed)
-  const saveInstruction = () => {
+  const saveInstruction = async () => {
     setShowInstructionBox(false);
+    if (!simulationData?.simulation?.id) return;
+    try {
+      await fetch(`/api/simulations/${simulationData.simulation.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_instructions: userInstruction }),
+      });
+    } catch (error) {
+      console.error('Failed to save user instruction:', error);
+    }
     // You can add logic here to use userInstruction in your LLM prompt
   }
 

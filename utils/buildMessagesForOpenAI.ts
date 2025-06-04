@@ -12,7 +12,7 @@ export function buildMessagesForOpenAI({
   simulation: Simulation,
   messages: SimulationMessage[],
   personas: Persona[],
-}, study_type: string) {
+}, study_type: string, userInstruction?: string) {
   const { study_title, topic, discussion_questions } = simulation;
   const personaMap = Object.fromEntries(personas.map(p => [p.id, p.name]));
 
@@ -53,10 +53,16 @@ export function buildMessagesForOpenAI({
 
   systemPrompt += `\nThe moderator is named "Moderator". They guide the discussion by asking questions.\n\n`;
 
+
+  // Add user instruction if provided (NEW SECTION)
+  if (userInstruction?.trim()) {
+    systemPrompt += `USER INSTRUCTION (MUST FOLLOW):\n${userInstruction.trim()}\n\n`;
+  }
+
   // Emphasize depth requirement EARLY
   if (study_type === "idi") {
     // systemPrompt += `IMPORTANT: Respond with a short message. Max 10 words\n`;
-    systemPrompt += `IMPORTANT: Respond with a long, detailed, descriptive message of at least 50–200 words per participant. Be reflective and realistic in tone.\n`;
+    // systemPrompt += `IMPORTANT: Respond with a long, detailed, descriptive message of at least 50–200 words per participant. Be reflective and realistic in tone.\n`;
   } else {
     systemPrompt += `Respond with 1–4 participant messages in a natural back-and-forth. Make each message realistic and contextually aware.\n`;
   }

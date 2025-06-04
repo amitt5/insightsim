@@ -109,12 +109,15 @@ export async function PATCH(
   if (!simulation) {
     return NextResponse.json({ error: "Simulation not found" }, { status: 404 })
   }
-  if (simulation.status === 'Completed') {
-    return NextResponse.json({ error: "Simulation already completed" }, { status: 400 })
-  }
+  // Parse the request body for fields to update
+  const body = await request.json();
+  // Optionally, prevent updates if already completed (unless you want to allow updating user_instructions after completion)
+  // if (simulation.status === 'Completed') {
+  //   return NextResponse.json({ error: "Simulation already completed" }, { status: 400 })
+  // }
   const { data: updatedSimulation, error: updateError } = await supabase
     .from("simulations")
-    .update({ status: 'Completed' })
+    .update(body)
     .eq("id", id)
     .select()
     .single()

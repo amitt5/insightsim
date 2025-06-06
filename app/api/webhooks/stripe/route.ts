@@ -1,61 +1,56 @@
-// app/api/webhooks/stripe/route.ts
-import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-// Required to read the raw body
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-export async function POST(req: Request) {
-  const sig = req.headers.get('stripe-signature')!;
+export async function POST(req: NextRequest) {
+  console.log("🔥 Webhook received!");
+  
   const body = await req.text();
+  const signature = req.headers.get("stripe-signature")!;
 
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
-  } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message);
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
-  }
-  console.log('event111', event)
-  // Only handle successful checkout session
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session;
-    console.log('session111', session)
-    const userId = session.metadata?.user_id;
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID missing in session metadata' }, { status: 400 });
-    }
-
-    // Supabase client (Admin key)
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY! // server-side admin key
-    );
-
-    const { error } = await supabase
-      .from('users')
-      .update({ role: 'premium_basic' })
-      .eq('user_id', userId); // replace with your actual user ID field
-
-    if (error) {
-      console.error('Error updating user role:', error);
-      return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
-    }
-
-    return NextResponse.json({ received: true });
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err);
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  const supabase = createRouteHandlerClient({ cookies });
+
+  switch (event.type) {
+    case "checkout.session.completed":
+      console.log("✅ Checkout session completed");
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.metadata?.user_id;
+      
+      if (userId && session.subscription) {
+        await supabase
+          .from("users")
+          .update({
+            subscription_id: session.subscription,
+            subscription_status: "active",
+          })
+          .eq("user_id", userId);
+        console.log("✅ User subscription updated to active");
+      }
+      break;
+
+    case "invoice.payment_succeeded":
+      console.log("✅ Payment succeeded");
+      break;
+
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted":
+      console.log("✅ Subscription updated/deleted");
+      break;
+  }
+
+  console.log("✅ Webhook processed successfully");
   return NextResponse.json({ received: true });
 }

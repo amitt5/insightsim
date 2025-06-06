@@ -6,59 +6,79 @@ import { cookies } from "next/headers";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST() {
-  const supabase = createRouteHandlerClient({ cookies });
+  try {
+    console.log("🔥 Starting checkout session creation");
+    
+    const supabase = createRouteHandlerClient({ cookies });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
+    if (!user) {
+      console.log("❌ User not authenticated");
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
 
-  console.log('user111', user)
+    console.log("✅ User authenticated:", user.id);
 
-  const { data: dbUser, error } = await supabase
-    .from("users")
-    .select("stripe_customer_id, email")
-    .eq("user_id", user.id)
-    .single();
+    const { data: dbUser, error } = await supabase
+      .from("users")
+      .select("stripe_customer_id, email")
+      .eq("user_id", user.id)
+      .single();
 
-  if (error || !dbUser) {
-    return NextResponse.json({ error: "User not found in DB" }, { status: 400 });
-  }
+    if (error) {
+      console.log("❌ Database error:", error);
+      return NextResponse.json({ error: "User not found in DB" }, { status: 400 });
+    }
 
-  let customerId = dbUser.stripe_customer_id;
+    if (!dbUser) {
+      console.log("❌ No user found in database");
+      return NextResponse.json({ error: "User not found in DB" }, { status: 400 });
+    }
 
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: dbUser.email,
-      metadata: { supabase_uid: user.id },
+    console.log("✅ Database user found:", dbUser);
+
+    let customerId = dbUser.stripe_customer_id;
+
+    if (!customerId) {
+      console.log("🔄 Creating new Stripe customer");
+      const customer = await stripe.customers.create({
+        email: dbUser.email,
+        metadata: { supabase_uid: user.id },
+      });
+
+      customerId = customer.id;
+      console.log("✅ Stripe customer created:", customerId);
+
+      await supabase
+        .from("users")
+        .update({ stripe_customer_id: customerId })
+        .eq("user_id", user.id);
+    }
+
+    console.log("🔄 Creating checkout session");
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer: customerId,
+      line_items: [
+        {
+          price: "price_1RX4auGgTkMKNSdseu5fg9LU",
+          quantity: 1,
+        },
+      ],
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/account?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/account?canceled=true`,
+      metadata: {
+        user_id: user.id,
+      },
     });
 
-    customerId = customer.id;
-
-    await supabase
-      .from("users")
-      .update({ stripe_customer_id: customerId })
-      .eq("id", user.id);
+    console.log("✅ Checkout session created:", session.id);
+    return NextResponse.json({ url: session.url });
+  } catch (error) {
+    console.error("❌ Error in create-checkout-session:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    customer: customerId,
-    line_items: [
-      {
-        price: "price_1RQUCoIrmrN5n2Ted3o42POX", // Replace with actual price ID
-        quantity: 1,
-      },
-    ],
-    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/account?success=true`,
-    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/account?canceled=true`,
-    metadata: {
-      user_id: user.id, // 🔥 this is what webhook needs!
-    },
-  });
-
-  return NextResponse.json({ url: session.url })
 }

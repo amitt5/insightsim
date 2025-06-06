@@ -192,6 +192,54 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* Who Is This Product For Section */}
+        <section className="py-20 bg-gray-50 border-t">
+          <div className="container max-w-5xl mx-auto">
+            <h2 className="mb-2 text-center text-3xl font-bold">Who Is InsightSim For?</h2>
+            <p className="mb-10 text-center text-gray-500 text-lg">Our platform is designed for professionals who need deep qualitative insights without the traditional time and cost constraints.</p>
+            <div className="grid gap-8 md:grid-cols-3">
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+                <span className="text-4xl mb-4">🔍</span>
+                <h3 className="mb-2 text-xl font-semibold text-center">Qualitative Researchers</h3>
+                <p className="text-gray-600 text-center">Run more studies in less time. Test discussion guides, validate findings, and explore new research directions without recruiting delays.</p>
+              </div>
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+                <span className="text-4xl mb-4">💡</span>
+                <h3 className="mb-2 text-xl font-semibold text-center">Insight Managers</h3>
+                <p className="text-gray-600 text-center">Get consumer feedback on demand. Quickly test concepts, messaging, and product ideas before investing in full-scale research.</p>
+              </div>
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+                <span className="text-4xl mb-4">👤</span>
+                <h3 className="mb-2 text-xl font-semibold text-center">User Researchers</h3>
+                <p className="text-gray-600 text-center">Simulate user feedback sessions for early designs and prototypes. Identify usability issues and preference patterns faster.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Loom Video Demo Section */}
+        <section className="py-20 bg-white border-t">
+          <div className="container max-w-3xl mx-auto flex flex-col items-center">
+            <h2 className="mb-2 text-center text-3xl font-bold">See How InsightSim Works</h2>
+            <p className="mb-10 text-center text-gray-500 text-lg">Watch a quick demo of how to run your first AI-powered focus group</p>
+            <div className="w-full flex justify-center mb-8">
+              <div className="w-full max-w-2xl aspect-video rounded-lg overflow-hidden shadow bg-gray-100 flex items-center justify-center">
+                <iframe
+                  src="https://www.loom.com/embed/3f2acb20d33541ea8236200f080f3c8b"
+                  title="InsightSim Demo Video"
+                  allow="autoplay; fullscreen"
+                  frameBorder="0"
+                  className="w-full h-full min-h-[320px]"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </div>
+            <Button size="lg" className="mt-2" asChild>
+              <Link href="/signup">Try It Yourself</Link>
+            </Button>
+          </div>
+        </section>
       </main>
 
       <footer className="border-t bg-white py-8">

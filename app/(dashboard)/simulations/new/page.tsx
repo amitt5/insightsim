@@ -19,6 +19,7 @@ import { Simulation } from "@/utils/types"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { v4 as uuidv4 } from 'uuid'
 import { useToast } from "@/hooks/use-toast"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 
 export default function NewSimulationPage() {
   const { toast } = useToast()
@@ -421,10 +422,24 @@ export default function NewSimulationPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end">
-              <Button onClick={nextStep}>
-                Continue
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button onClick={nextStep}
+                        disabled={!simulationData.study_title}>
+                        Continue
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!simulationData.study_title && (
+                    <TooltipContent side="top">
+                      Add a study title to proceed
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </CardFooter>
           </Card>
         )}
@@ -468,10 +483,29 @@ export default function NewSimulationPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <Button onClick={nextStep}>
-                Continue
+              {/* <Button onClick={nextStep}>
+                Continue11
                 <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              </Button> */}
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button onClick={nextStep}
+                        disabled={selectedPersonas.length === 0}>
+                        Continue
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {(selectedPersonas.length === 0) && (
+                    <TooltipContent side="top">
+                      Select at least one participant to proceed
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </CardFooter>
           </Card>
         )}

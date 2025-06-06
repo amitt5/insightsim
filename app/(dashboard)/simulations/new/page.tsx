@@ -43,7 +43,7 @@ export default function NewSimulationPage() {
   });
   
   const router = useRouter()
-  const { personas, loading, error } = usePersonas()
+  const { personas, loading, error, mutate } = usePersonas()
   const supabase = createClientComponentClient();
 
   // Filter personas based on hideSystemPersonas state
@@ -457,6 +457,7 @@ export default function NewSimulationPage() {
                   onOpenChange={setOpenPersonaModal}
                   onHideSystemPersonasChange={setHideSystemPersonas}
                   hideSystemPersonas={hideSystemPersonas}
+                  onSuccess={mutate}
                 />
               </div>
 
@@ -473,6 +474,7 @@ export default function NewSimulationPage() {
                       selected={selectedPersonas.includes(persona.id)}
                       onToggle={() => togglePersona(persona.id)}
                       selectable={true}
+                      onUpdate={mutate}
                     />
                   ))}
                 </div>

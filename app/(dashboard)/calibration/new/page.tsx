@@ -24,7 +24,7 @@ export default function NewCalibrationPage() {
   const [hideSystemPersonas, setHideSystemPersonas] = useState(false)
   const router = useRouter()
   const [openPersonaModal, setOpenPersonaModal] = useState(false)
-  const { personas, loading, error } = usePersonas()
+  const { personas, loading, error, mutate } = usePersonas()
   const [realParticipants, setRealParticipants] = useState<string[]>([])
 
   // Filter personas based on hideSystemPersonas state
@@ -275,6 +275,7 @@ export default function NewCalibrationPage() {
                   onOpenChange={setOpenPersonaModal}
                   onHideSystemPersonasChange={setHideSystemPersonas}
                   hideSystemPersonas={hideSystemPersonas}
+                  onSuccess={mutate}
                 />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -285,6 +286,7 @@ export default function NewCalibrationPage() {
                     selected={selectedPersonas.includes(persona.id)}
                     onToggle={() => togglePersona(persona.id)}
                     selectable={true}
+                    onUpdate={mutate}
                   />
                 ))}
               </div>

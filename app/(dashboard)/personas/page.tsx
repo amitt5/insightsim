@@ -31,6 +31,7 @@ export default function PersonasPage() {
           onOpenChange={setOpen}
           onHideSystemPersonasChange={setHideSystemPersonas}
           hideSystemPersonas={hideSystemPersonas}
+          onSuccess={mutate}
         />
       </div>
 

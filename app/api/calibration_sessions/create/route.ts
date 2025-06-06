@@ -4,11 +4,11 @@ import { NextResponse } from "next/server"
 
 
 async function getSupabaseAndUser() {
-    const supabase = createRouteHandlerClient({ cookies })
-    const user = await supabase.auth.getUser()
-    const userId = user?.data?.user?.id
-    return { supabase, userId }
-  }
+  const supabase = createRouteHandlerClient({ cookies })
+  const user = await supabase.auth.getUser()
+  const userId = user?.data?.user?.id
+  return { supabase, userId }
+}
   
 
 export async function POST(request: Request) {

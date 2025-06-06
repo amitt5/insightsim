@@ -114,11 +114,11 @@ export default function CalibrationPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Real vs AI Calibration</h1>
+    <div className="space-y-6 px-2 sm:px-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">Real vs AI Calibration</h1>
         <Link href="/calibration/new">
-          <Button>
+          <Button className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             New Calibration
           </Button>
@@ -126,6 +126,12 @@ export default function CalibrationPage() {
       </div>
     {loading && <div>Loading...</div>}
     {error && <div>{error}</div>}
+    {(!loading && !error && calibrationSessions.length === 0) && (
+      <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+        <p className="text-lg font-medium mb-2">No calibrations found.</p>
+        <p className="mb-4">Click <span className="font-semibold">New Calibration</span> to get started.</p>
+      </div>
+    )}
     {!loading && !error && calibrationSessions.length > 0 && (
       <Card>
         <CardHeader>
@@ -133,31 +139,47 @@ export default function CalibrationPage() {
           <CardDescription>Compare real research transcripts with AI simulations to improve accuracy</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Study Title</TableHead>
-                <TableHead>Topic</TableHead>
-                <TableHead>Date Uploaded</TableHead>
-                <TableHead>Calibration Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {calibrationSessions.map((calibration) => (
-                <TableRow key={calibration.id}>
-                  <TableCell className="font-medium">{calibration.title}</TableCell>
-                  <TableCell>{calibration.topic}</TableCell>
-                  <TableCell>{calibration.created_at?.slice(0, 10)}</TableCell>
-                  {/* <TableCell>date</TableCell> */}
-                  <TableCell>
-                    <Badge variant={getStatusBadge(calibration.status)}>{calibration.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">{renderActions(calibration)}</TableCell>
+          {/* Desktop Table */}
+          <div className="hidden sm:block w-full overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Study Title</TableHead>
+                  <TableHead>Topic</TableHead>
+                  <TableHead>Date Uploaded</TableHead>
+                  <TableHead>Calibration Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {calibrationSessions.map((calibration) => (
+                  <TableRow key={calibration.id}>
+                    <TableCell className="font-medium">{calibration.title}</TableCell>
+                    <TableCell>{calibration.topic}</TableCell>
+                    <TableCell>{calibration.created_at?.slice(0, 10)}</TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadge(calibration.status)}>{calibration.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">{renderActions(calibration)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {/* Mobile Card List */}
+          <div className="sm:hidden space-y-4">
+            {calibrationSessions.map((calibration) => (
+              <div key={calibration.id} className="border rounded-lg p-4 flex flex-col gap-2 shadow-sm bg-card">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-base">{calibration.title}</span>
+                  <Badge variant={getStatusBadge(calibration.status)}>{calibration.status}</Badge>
+                </div>
+                <div className="text-sm text-muted-foreground">{calibration.topic}</div>
+                <div className="text-xs text-muted-foreground">Uploaded: {calibration.created_at?.slice(0, 10)}</div>
+                <div className="flex justify-end gap-2 mt-2">{renderActions(calibration)}</div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     )}

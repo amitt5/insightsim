@@ -14,11 +14,17 @@ import { CalibrationSession, Persona, Simulation } from "@/utils/types"
 import { prepareInitialPrompt, buildPersonaImprovementPrompt } from "@/utils/preparePrompt";
 import { set } from "date-fns"
 import { usePersonas } from "@/lib/usePersonas"
+import { ModelSelectorWithCredits } from '@/components/ModelSelectorWithCredits';
+import { useCredits } from "@/hooks/useCredits"; // adjust path as needed
+import { runSimulationAPI } from '@/utils/api';
 
 export default function CalibrationDetailPage() {
 
   const params = useParams(); // Use useParams() to get the id
   const calibrationId = params.calibration_id as string;
+  const [modelInUse, setModelInUse] = useState<string>('gpt-4o-mini')
+  const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
+
   const [activeTab, setActiveTab] = useState("real")
   const [suggestions, setSuggestions] = useState([
     {
@@ -99,6 +105,13 @@ export default function CalibrationDetailPage() {
     runSimulation();
   }
 
+ 
+
+  // Add credits fetch to initial load
+  useEffect(() => {
+      fetchUserCredits();
+  }, [params.user_id]);
+
   const compareTranscripts = async() => {
     console.log('compareTranscripts', calibrationSession)
 
@@ -149,34 +162,19 @@ export default function CalibrationDetailPage() {
   const makeOpenAIRequest = async(prompt: any) => {
     console.log('compareTranscripts', calibrationSession)
 
-
     try {
-      const res = await fetch('/api/run-simulation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: prompt,
-        }),
-      });
-      
-      if (!res.ok) {
-        throw new Error(`Error running simulation: ${res.status}`);
-      }
-      
-      const data = await res.json();
+      const data = await runSimulationAPI(prompt, modelInUse);
       console.log('API response:', data);
+      setAvailableCredits(data.creditInfo.remaining_credits);
+     
       saveOpenAIResponse(data);
       
       if (data.reply) {
         // Parse the response into messages
-        
         const parsedResponse: any = parseSimulationResponse(data.reply);
-        console.log('Parsed messages111:', parsedResponse);
+        console.log('Parsed messages:', parsedResponse);
         saveComparisonSummary(parsedResponse.transcript_differences);
         savePersonaImprovement(parsedResponse.persona_improvements);
-
       }
     } catch (error) {
       console.error("Error running simulation:", error);
@@ -242,6 +240,11 @@ export default function CalibrationDetailPage() {
 
   const runSimulation = async () => {
     console.log('runSimulationCalled', calibrationSession);
+    if (availableCredits && availableCredits < 10) {
+      setErrorMessage("You have low credit balance. Please purchase more credits to continue.");
+      setShowErrorPopup(true);
+      return;
+    }
     if(calibrationSession && calibrationSession.title) {
       const simulation : Simulation = {
         id: calibrationSession.id || '',
@@ -259,26 +262,15 @@ export default function CalibrationDetailPage() {
       console.log('prompt123', prompt);
     
       try {
-        const res = await fetch('/api/run-simulation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: prompt,
-          }),
-        });
-        
-        if (!res.ok) {
-          throw new Error(`Error running simulation: ${res.status}`);
-        }
-        
-        const data = await res.json();
+        const data = await runSimulationAPI(prompt, modelInUse);
         console.log('API response:', data);
-        
+        console.log('Simulation reply:', data.reply);
+        console.log('Token usage:', data.usage);
+        console.log('Credits remaining:', data.creditInfo.remaining_credits);
+        console.log('Credits deducted:', data.creditInfo.credits_deducted);
+        setAvailableCredits(data.creditInfo.remaining_credits);
         if (data.reply) {
           // Parse the response into messages
-          
           const parsedMessages = parseSimulationResponse(data.reply);
           console.log('Parsed messages111:', parsedMessages);
           // setSimulatedTranscript(parsedMessages)
@@ -348,11 +340,13 @@ export default function CalibrationDetailPage() {
 
   const handleSuggestedChange = (id: string, value: string) => {
     setSuggestions(
-      suggestions.map((s) => (s.id === id ? { ...s, suggested: value, accepted: false, rejected: false } : s)),
+      suggestions.map((s) => (s.id === Number(id) ? { ...s, suggested: value, accepted: false, rejected: false } : s)),
     )
   }
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showErrorPopup, setShowErrorPopup] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
 
   const fetchCalibrationSessionData = async () => {
     try {
@@ -550,8 +544,13 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
                   className="mb-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
                   onClick={() => compareTranscripts()}
                 >
-                  Compare transcripts
+                  Compare transcripts 
                 </button>
+                <ModelSelectorWithCredits
+                  modelInUse={modelInUse}
+                  setModelInUse={setModelInUse}
+                  availableCredits={availableCredits}
+                />
               {/* )} */}
               {(calibrationSession?.comparison_summary && calibrationSession?.comparison_summary.length) &&
                 <div className="space-y-6">

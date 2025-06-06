@@ -19,6 +19,18 @@ import { MediaSlideshow } from "@/components/media-slideshow";
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { CREDIT_RATES } from '@/utils/openai'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ModelSelectorWithCredits } from '@/components/ModelSelectorWithCredits';
+import { useCredits } from "@/hooks/useCredits"; // adjust path as needed
+import { runSimulationAPI } from '@/utils/api';
+
 // Interface for the Simulation data
 
 
@@ -40,12 +52,14 @@ interface FormattedMessage {
 
 export default function SimulationViewPage() {
   const params = useParams(); // Use useParams() to get the business_id
-  const simulationId = params.simulation_id as string;
+  const simulationId = params.id as string;
 
   const [activeTab, setActiveTab] = useState("summary")
-  const [isLeftPanelMinimized, setIsLeftPanelMinimized] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showErrorPopup, setShowErrorPopup] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+  const [isSimulationRunning, setIsSimulationRunning] = useState(false)
   const [simulationData, setSimulationData] = useState<SimulationResponse | null>(null)
   const [messages, setMessages] = useState<Array<{name: string, message: string}>>([])
   const [simulationMessages, setSimulationMessages] = useState<SimulationMessage[]>([])
@@ -57,6 +71,12 @@ export default function SimulationViewPage() {
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false)
   const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  // const [availableCredits, setAvailableCredits] = useState<number | null>(null)
+  const [modelInUse, setModelInUse] = useState<string>('gpt-4o-mini')
+  const [showInstructionBox, setShowInstructionBox] = useState(false)
+  const [userInstruction, setUserInstruction] = useState("")
+
+  const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -90,12 +110,16 @@ export default function SimulationViewPage() {
 
   // Call fetchSimulationMessages when simulation data is loaded
   useEffect(() => {
+    console.log('simulationData111', simulationData);
     if (simulationData?.simulation?.id) {
       fetchSimulationMessages(simulationData.simulation.id);
-      
       if(simulationData?.simulation?.status === "Completed") {
         // Fetch summary and themes messages 
         fetchSimulationSummaries();
+      }
+      // Set userInstruction from simulation data if available
+      if (simulationData.simulation.user_instructions) {
+        setUserInstruction(simulationData.simulation.user_instructions);
       }
     }
   }, [simulationData]);
@@ -198,33 +222,24 @@ export default function SimulationViewPage() {
 
   const runSimulation = async (customPrompt?: ChatCompletionMessageParam[]) => {
     console.log('runSimulationCalled', simulationData);
+    if (availableCredits && availableCredits < 10) {
+      setErrorMessage("You have low credit balance. Please purchase more credits to continue.");
+      setShowErrorPopup(true);
+      return;
+    }
     if(simulationData?.simulation && simulationData?.personas) {
       const prompt = customPrompt 
       ? customPrompt 
       : prepareInitialPrompt(simulationData?.simulation, simulationData?.personas);
       console.log('prompt123', prompt, nameToPersonaIdMap);
-    
       try {
-        const res = await fetch('/api/run-simulation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: prompt,
-          }),
-        });
-        
-        if (!res.ok) {
-          throw new Error(`Error running simulation: ${res.status}`);
-        }
-        
-        const data = await res.json();
+        setIsSimulationRunning(true);
+        const data = await runSimulationAPI(prompt, modelInUse);
         console.log('API response:', data);
+        setAvailableCredits(data.creditInfo.remaining_credits);
         
         if (data.reply) {
           // Parse the response into messages
-          
           const parsedMessages = parseSimulationResponse(data.reply);
           console.log('Parsed messages111:', parsedMessages);
           
@@ -238,6 +253,8 @@ export default function SimulationViewPage() {
         }
       } catch (error) {
         console.error("Error running simulation:", error);
+      } finally {
+        setIsSimulationRunning(false);
       }
     }
   }
@@ -270,8 +287,8 @@ export default function SimulationViewPage() {
           messages: messageFetched,
           personas: simulationData?.personas || []
         }
-        const prompt = buildMessagesForOpenAI(sample);
-        console.log('prompt123',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
+        const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction);
+        console.log('prompt1111',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
         //4. send the messages to openai
         runSimulation(prompt);
@@ -279,6 +296,12 @@ export default function SimulationViewPage() {
       }
     }
     
+  }
+
+  const sendMessageTest = async () => {
+    const message = `Michael Rodriguez: To identify macroeconomic trends, I usually rely on economic reports from government agencies, central banks, and reputable financial institutions. I look at indicators like GDP growth, inflation rates, employment numbers, and interest rates to understand the broader economic environment. Additionally, I pay attention to geopolitical events and global trade dynamics that could impact the sector or market I'm analyzing.;`
+    const parsedMessages = testParseSimulationResponse(message);
+    console.log('parsedMessages', parsedMessages);
   }
 
   // function to set initial message in case of human moderator
@@ -303,6 +326,27 @@ export default function SimulationViewPage() {
       setMessages(parsed);
       return parsed;
     } catch (error) {
+      // --- Fallback single-speaker parser ---
+      console.log('error in parsing', error, responseString);
+      const match = responseString.trim().match(/^([^:]+):\s*([\s\S]+)$/);
+      if (match) {
+        const [, name, message] = match;
+        const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
+        setMessages(fallbackParsed);
+        return fallbackParsed;
+      }
+      
+      const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
+      console.log('error in parsing-fallbackMatch', fallbackMatch);
+      if (fallbackMatch) {
+        console.log('error in parsing-fallbackMatch-if', fallbackMatch);
+        const [_, name, message] = fallbackMatch;
+        const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
+        setMessages(fallbackParsed);
+        return fallbackParsed;
+      }
+
+      // --- Log final error if both parsing strategies fail ---
       console.error("Error parsing simulation response:", error);
       
       // Log the error to our database
@@ -316,10 +360,53 @@ export default function SimulationViewPage() {
         },
         params.user_id as string || undefined
       );
+
+      // Show error popup instead of chat message
+      setErrorMessage("We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment.");
+      setShowErrorPopup(true);
       
       return [];
     }
   };
+
+  // Function to parse the simulation response
+  const testParseSimulationResponse = (responseString: string) => {
+  try {
+    // Remove the initial "=" and any whitespace if it exists
+    const cleanedString = responseString.trim()
+    .replace(/^```json\s*/i, '') // remove leading ```json
+    .replace(/^```\s*/i, '')     // or just ```
+    .replace(/```$/, '')
+    .replace(/^\s*=\s*/, '');
+    const parsed = JSON.parse(cleanedString);
+    setMessages(parsed);
+    return parsed;
+  } catch (error) {
+
+    // Show error popup instead of chat message
+    setErrorMessage("We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment.");
+    setShowErrorPopup(true);
+     // --- Fallback single-speaker parser ---
+     const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
+     console.log('fallbackMatch', fallbackMatch);
+     if (fallbackMatch) {
+       const [_, name, message] = fallbackMatch;
+       const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
+       setMessages(fallbackParsed);
+       return fallbackParsed;
+     }
+
+     // Show user-friendly error message
+     setMessages([{
+      name: "System",
+      message: "We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment."
+    }]);
+
+     // --- Log final error if both parsing strategies fail ---
+    console.error("Error parsing simulation response:", error);
+    return [];
+  }
+};
 
   // Function to save messages to the database
   const saveMessagesToDatabase = async (parsedMessages: Array<{name: string, message: string}>) => {
@@ -464,8 +551,6 @@ export default function SimulationViewPage() {
         } : null);
       }
 
-    
-
     } catch (error) {
       console.error('Error ending discussion:', error);
     } finally {
@@ -473,31 +558,16 @@ export default function SimulationViewPage() {
     }
 
     if(simulationData?.simulation && simulationMessages) {
-    
       const prompt = prepareSummaryPrompt(simulationData?.simulation, simulationMessages);
       console.log('prompt12345',simulationMessages,simulationData?.simulation, prompt, nameToPersonaIdMap);
     
       try {
-        const res = await fetch('/api/run-simulation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: prompt,
-          }),
-        });
-        
-        if (!res.ok) {
-          throw new Error(`Error running simulation: ${res.status}`);
-        }
-        
-        const data = await res.json();
+        const data = await runSimulationAPI(prompt);
         console.log('API response:', data);
+        setAvailableCredits(data.creditInfo.remaining_credits);
         
         if (data.reply) {
           // Parse the response into messages
-          
           const parsedMessages = parseSimulationResponse(data.reply);
           console.log('Parsed messages222:', parsedMessages);
           
@@ -521,6 +591,28 @@ export default function SimulationViewPage() {
     const transcript = formattedMessages.map(m => `${m.speaker}: ${m.text}`).join("\n");
     navigator.clipboard.writeText(transcript);
   };
+  
+  useEffect(() => {
+      fetchUserCredits();
+  }, [params.user_id]);
+
+  // Save instruction handler (expand as needed)
+  const saveInstruction = async () => {
+    setShowInstructionBox(false);
+    if (!simulationData?.simulation?.id) return;
+    try {
+      await fetch(`/api/simulations/${simulationData.simulation.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_instructions: userInstruction }),
+      });
+    } catch (error) {
+      console.error('Failed to save user instruction:', error);
+    }
+    // You can add logic here to use userInstruction in your LLM prompt
+  }
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-[70vh]">Loading simulation data...</div>;
@@ -561,6 +653,19 @@ export default function SimulationViewPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Error Popup */}
+      {showErrorPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-2">Connection Error</h3>
+            <p className="text-gray-600 mb-4">{errorMessage}</p>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowErrorPopup(false)}>Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="container mx-auto p-4 space-y-4">
       {/* Header */}
@@ -658,31 +763,51 @@ export default function SimulationViewPage() {
                       {isLoadingMessages ? "Loading discussion..." : "No messages yet. Start the simulation to begin the discussion."}
                     </div>
                   ) : (
-                    formattedMessages.map((message, i) => (
-                      <div key={i} className={`flex gap-4 ${message.speaker === "Moderator" ? "flex-row-reverse" : ""}`}>
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      {message.speaker === "Moderator" ? "M" : message.speaker[0]}
-                    </div>
-                        <div className={`flex-1 ${message.speaker === "Moderator" ? "text-right" : ""}`}>
-                          <div className={`flex items-center gap-2 ${message.speaker === "Moderator" ? "justify-end" : ""}`}>
-                            <span className="font-medium"> { message.speaker === "Moderator" ? 
-                             (simulationData?.simulation?.study_type === 'focus-group'? 'Moderator': 'Interviewer') : message.speaker}
-                              {/* {message.speaker} */}
-                              </span>
-                        <span className="text-xs text-gray-500">{message.time}</span>
+                    <>
+                      {formattedMessages.map((message, i) => (
+                        <div key={i} className={`flex gap-4 ${message.speaker === "Moderator" ? "flex-row-reverse" : ""}`}>
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            {message.speaker === "Moderator" ? "M" : message.speaker[0]}
                           </div>
-                          <div className={`mt-1 inline-block rounded-lg px-4 py-2 ${
-                            message.speaker === "Moderator" 
-                              ? "bg-primary text-primary-foreground" 
-                              : "bg-muted"
-                          }`}>
-                            <p className="text-sm">{message.text}</p>
+                          <div className={`flex-1 ${message.speaker === "Moderator" ? "text-right" : ""}`}>
+                            <div className={`flex items-center gap-2 ${message.speaker === "Moderator" ? "justify-end" : ""}`}>
+                              <span className="font-medium"> { message.speaker === "Moderator" ? 
+                               (simulationData?.simulation?.study_type === 'focus-group'? 'Moderator': 'Interviewer') : message.speaker}
+                                </span>
+                              <span className="text-xs text-gray-500">{message.time}</span>
+                            </div>
+                            <div className={`mt-1 inline-block rounded-lg px-4 py-2 ${
+                              message.speaker === "Moderator" 
+                                ? "bg-primary text-primary-foreground" 
+                                : "bg-muted"
+                            }`}>
+                              <p className="text-sm">{message.text}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                      {isSimulationRunning && (
+                        <div className="flex gap-4">
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            AI
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">AI Assistant</span>
+                            </div>
+                            <div className="mt-1 inline-block rounded-lg px-4 py-2 bg-muted">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-primary rounded-full animate-bounce" />
+                                <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                                <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
-                    </div>
+                </div>
               </CardContent>
               <div className="p-2 border-t">
               { (simulationData?.simulation?.mode === "human-mod") &&<div className="flex gap-2 ">
@@ -700,21 +825,58 @@ export default function SimulationViewPage() {
                   >
                     Send
                   </Button>
-                  
                 </div>}
 
-                { (formattedMessages.length > 0) &&<div className="mt-2">
-                  
-                  <Button 
-                    variant="destructive"
-                    onClick={endDiscussion}
-                    disabled={simulation.status === 'Completed' || isEndingDiscussion}
-                  >
-                    {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
-                  </Button>
-                </div>}
+                {/* AI Instruction Box */}
+                { (simulationData?.simulation?.mode === "human-mod") && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      className="text-xs text-primary underline hover:text-primary/80 focus:outline-none"
+                      onClick={() => setShowInstructionBox(v => !v)}
+                    >
+                      {showInstructionBox ? "Hide AI instruction box" : "Not happy with the response? Instruct AI to improve its replies."}
+                    </button>
+                    {showInstructionBox && (
+                      <div className="mt-2 flex flex-col gap-2">
+                        <textarea
+                          className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          rows={2}
+                          placeholder="E.g. Be more concise, use simpler language, ask more follow-up questions..."
+                          value={userInstruction}
+                          onChange={e => setUserInstruction(e.target.value)}
+                        />
+                        <div className="flex justify-end">
+                          <Button size="sm" variant="secondary" onClick={saveInstruction}>
+                            Save Instruction
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-               { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
+                {availableCredits !== null && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    <ModelSelectorWithCredits
+                      modelInUse={modelInUse}
+                      setModelInUse={setModelInUse}
+                      availableCredits={availableCredits}
+                    />
+                    {formattedMessages.length > 0 && (
+                      <Button
+                        className="mt-2"
+                        variant="destructive"
+                        onClick={endDiscussion}
+                        disabled={simulation.status === 'Completed' || isEndingDiscussion}
+                      >
+                        {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
                   <Button 
                     onClick={startDiscussion}
                     disabled={isStartingDiscussion}
@@ -723,6 +885,7 @@ export default function SimulationViewPage() {
                   </Button>
                 </div>}
 
+                
               </div>
           </Card>
         </div>

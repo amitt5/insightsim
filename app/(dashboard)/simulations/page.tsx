@@ -74,46 +74,54 @@ export default function SimulationsPage() {
         <Button asChild>
           <Link href="/simulations/new">
             <Plus className="h-4 w-4 mr-2" />
-            New
+            New Simulation
           </Link>
         </Button>
       </div>
 
       {/* Desktop view - table */}
-      <div className="hidden md:block">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b">
-              <th className="text-left py-3 px-4">Study Name</th>
-              <th className="text-left py-3 px-4">Date Created</th>
-              <th className="text-left py-3 px-4">Mode</th>
-              <th className="text-left py-3 px-4">Participants</th>
-              <th className="text-left py-3 px-4">Status</th>
-              <th className="text-right py-3 px-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {simulations.map((simulation) => (
-              <tr key={simulation.id} className="border-b hover:bg-gray-50">
-                <td className="py-3 px-4">{simulation.name}</td>
-                <td className="py-3 px-4">{simulation.date}</td>
-                <td className="py-3 px-4">{simulation.mode}</td>
-                <td className="py-3 px-4">{simulation.participants}</td>
-                <td className="py-3 px-4">
-                  <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
-                    {simulation.status}
-                  </Badge>
-                </td>
-                <td className="py-3 px-4 text-right">
-                  <Button variant="ghost" asChild>
-                    <Link href={`/simulations/${simulation.id}`}>View</Link>
-                  </Button>
-                </td>
+      {(!loading && !error && simulations.length === 0) && (
+        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+          <p className="text-lg font-medium mb-2">No simulations found.</p>
+          <p className="mb-4">Click <span className="font-semibold">New Simulation</span> to get started.</p>
+        </div>
+      )}
+      {!loading && !error && simulations.length > 0 && (
+        <div className="hidden md:block">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-3 px-4">Study Name</th>
+                <th className="text-left py-3 px-4">Date Created</th>
+                <th className="text-left py-3 px-4">Mode</th>
+                <th className="text-left py-3 px-4">Participants</th>
+                <th className="text-left py-3 px-4">Status</th>
+                <th className="text-right py-3 px-4">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {simulations.map((simulation) => (
+                <tr key={simulation.id} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4">{simulation.name}</td>
+                  <td className="py-3 px-4">{simulation.date}</td>
+                  <td className="py-3 px-4">{simulation.mode}</td>
+                  <td className="py-3 px-4">{simulation.participants}</td>
+                  <td className="py-3 px-4">
+                    <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
+                      {simulation.status}
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    <Button variant="ghost" asChild>
+                      <Link href={`/simulations/${simulation.id}`}>View</Link>
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Mobile view - cards */}
       <div className="grid grid-cols-1 gap-4 md:hidden">

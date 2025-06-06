@@ -1,20 +1,70 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
 
   if (code) {
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createRouteHandlerClient({ cookies });
     
     // Exchange the code for a session
-    await supabase.auth.exchangeCodeForSession(code);
+    const { data: { session }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+    console.log("Session data777:", session);
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+      return NextResponse.redirect(`${requestUrl.origin}/login?error=Could not authenticate user`);
+    }
+
+    if (session?.user) {
+      try {
+        // Check if user profile already exists
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (!existingUser) {
+          // Get user info from the session
+          const { user } = session;
+          
+          // Create user profile in public.users
+          const { error: profileError } = await supabase
+            .from('users')
+            .insert({
+              user_id: user.id,
+              email: user.email,
+              first_name: user.user_metadata?.full_name?.split(' ')[0] || '',
+              last_name: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+              role: 'researcher',
+            });
+
+          if (profileError) {
+            console.error('Error creating user profile:', profileError);
+          } else {
+            // Create initial credits for the new user
+            const { error: creditsError } = await supabase
+              .from('user_credits')
+              .insert({
+                user_id: user.id,
+                credits: 500,
+                updated_at: new Date().toISOString()
+              });
+
+            if (creditsError) {
+              console.error('Error creating initial credits:', creditsError);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error in profile creation:', error);
+        // Continue with redirect even if profile creation fails
+      }
+    }
   }
 
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL('/simulations', request.url));
+  return NextResponse.redirect(`${requestUrl.origin}/simulations`);
 } 

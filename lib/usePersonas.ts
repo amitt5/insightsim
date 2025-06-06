@@ -36,6 +36,15 @@ export function usePersonas() {
         ...persona,
         traits: processTraits(persona.traits)
       }));
+      // sort personas by user_id
+      // handle case if user_id is null
+      processedData.sort((a: any, b: any) => {
+        if (a.user_id === null) return 1;
+        if (b.user_id === null) return -1;
+        return a.user_id.localeCompare(b.user_id);
+      });
+      // sort personas by created_at date
+      processedData.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setPersonas(processedData);
       return processedData;
     } catch (err: any) {

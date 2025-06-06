@@ -3,7 +3,10 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { CheckCircle, ChevronDown } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { gsap } from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+gsap.registerPlugin(ScrollTrigger)
 
 export default function LandingPage() {
   // FAQ data (flattened, not grouped)
@@ -64,6 +67,371 @@ export default function LandingPage() {
 
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  // GSAP Animations
+  useEffect(() => {
+    // Animate headline parts
+    const headlineParts = document.querySelectorAll('.hero-title-part');
+    gsap.from(headlineParts, {
+      y: 30,
+      opacity: 0,
+      duration: 0.8,
+      stagger: 0.3,
+      ease: "power3.out"
+    });
+
+    // Animate subtitle
+    gsap.from('.hero-subtitle', {
+      y: 20,
+      opacity: 0,
+      duration: 0.8,
+      delay: 1.2,
+      ease: "power2.out"
+    });
+
+    // Animate CTA buttons
+    gsap.from('.hero-buttons .button', {
+      scale: 0.9,
+      opacity: 0,
+      duration: 0.6,
+      delay: 1.5,
+      stagger: 0.2,
+      ease: "back.out(1.7)"
+    });
+  }, []);
+
+  useEffect(() => {
+    // Animate feature icons
+    const featureIcons = document.querySelectorAll('.feature-icon');
+    featureIcons.forEach((icon) => {
+      gsap.from(icon, {
+        scrollTrigger: {
+          trigger: icon,
+          start: "top 80%",
+          toggleActions: "play none none none"
+        },
+        scale: 0,
+        opacity: 0,
+        duration: 0.7,
+        ease: "elastic.out(1, 0.5)"
+      });
+    });
+
+    // Animate feature text
+    const featureTexts = document.querySelectorAll('.feature-content');
+    featureTexts.forEach((text) => {
+      gsap.from(text, {
+        scrollTrigger: {
+          trigger: text,
+          start: "top 85%",
+          toggleActions: "play none none none"
+        },
+        y: 20,
+        opacity: 0,
+        duration: 0.5,
+        delay: 0.3,
+        ease: "power2.out"
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    // Animate quote icons
+    gsap.from('.quote-icon', {
+      scrollTrigger: {
+        trigger: '.testimonials-section',
+        start: "top 70%",
+        toggleActions: "play none none none"
+      },
+      scale: 0,
+      opacity: 0,
+      duration: 0.6,
+      stagger: 0.2,
+      ease: "back.out(1.7)"
+    });
+
+    // Animate testimonial cards
+    const testimonialCards = document.querySelectorAll('.testimonial-card');
+    testimonialCards.forEach((card, index) => {
+      gsap.from(card, {
+        scrollTrigger: {
+          trigger: card,
+          start: "top 85%",
+          toggleActions: "play none none none"
+        },
+        y: 40,
+        opacity: 0,
+        duration: 0.7,
+        delay: 0.1 * index,
+        ease: "power3.out"
+      });
+    });
+
+    // Add hover effects to testimonial cards
+    testimonialCards.forEach((card) => {
+      card.addEventListener('mouseenter', () => {
+        gsap.to(card, {
+          y: -10,
+          boxShadow: "0 22px 45px rgba(0, 0, 0, 0.1)",
+          duration: 0.3,
+          ease: "power2.out"
+        });
+      });
+      card.addEventListener('mouseleave', () => {
+        gsap.to(card, {
+          y: 0,
+          boxShadow: "0 15px 30px rgba(0, 0, 0, 0.05)",
+          duration: 0.3,
+          ease: "power2.out"
+        });
+      });
+    });
+  }, []);
+
+  // 4. Comparison Table Animation
+  useEffect(() => {
+    // Animate section title
+    gsap.from('.comparison-title', {
+      scrollTrigger: {
+        trigger: '.comparison-section',
+        start: "top 75%",
+        toggleActions: "play none none none"
+      },
+      y: 30,
+      opacity: 0,
+      duration: 0.6,
+      ease: "power2.out"
+    });
+
+    // Animate table rows
+    const tableRows = document.querySelectorAll('.comparison-table tr');
+    tableRows.forEach((row, index) => {
+      if (index === 0) return;
+      gsap.from(row, {
+        scrollTrigger: {
+          trigger: row,
+          start: "top 90%",
+          toggleActions: "play none none none"
+        },
+        opacity: 0,
+        y: 15,
+        duration: 0.4,
+        delay: 0.1 * index,
+        ease: "power1.out"
+      });
+    });
+
+    // Animate checkmarks and X marks
+    gsap.from('.comparison-table .checkmark', {
+      scrollTrigger: {
+        trigger: '.comparison-table',
+        start: "top 80%",
+        toggleActions: "play none none none"
+      },
+      scale: 0,
+      opacity: 0,
+      duration: 0.4,
+      stagger: 0.1,
+      ease: "back.out(1.7)"
+    });
+    gsap.from('.comparison-table .x-mark', {
+      scrollTrigger: {
+        trigger: '.comparison-table',
+        start: "top 80%",
+        toggleActions: "play none none none"
+      },
+      scale: 0,
+      opacity: 0,
+      duration: 0.4,
+      stagger: 0.1,
+      delay: 0.3,
+      ease: "back.out(1.7)"
+    });
+  }, []);
+
+  // 5. FAQ Section Animation
+  useEffect(() => {
+    gsap.from('.faq-title', {
+      scrollTrigger: {
+        trigger: '.faq-section',
+        start: "top 75%",
+        toggleActions: "play none none none"
+      },
+      y: 30,
+      opacity: 0,
+      duration: 0.6,
+      ease: "power2.out"
+    });
+    const faqItems = document.querySelectorAll('.faq-item');
+    faqItems.forEach((item, index) => {
+      gsap.from(item, {
+        scrollTrigger: {
+          trigger: item,
+          start: "top 90%",
+          toggleActions: "play none none none"
+        },
+        y: 20,
+        opacity: 0,
+        duration: 0.5,
+        delay: 0.1 * index,
+        ease: "power2.out"
+      });
+    });
+    // Accordion click animations
+    faqItems.forEach((item) => {
+      const question = item.querySelector('.faq-question');
+      const arrow = item.querySelector('.faq-arrow');
+      const answer = item.querySelector('.faq-answer');
+      if (question) {
+        question.addEventListener('click', () => {
+          const isOpen = item.classList.contains('open');
+          if (arrow) {
+            gsap.to(arrow, {
+              rotation: isOpen ? 0 : 180,
+              duration: 0.3,
+              ease: "power2.inOut"
+            });
+          }
+          if (answer) {
+            if (isOpen) {
+              gsap.to(answer, {
+                height: 0,
+                opacity: 0,
+                duration: 0.3,
+                ease: "power2.inOut",
+                onComplete: () => {
+                  item.classList.remove('open');
+                }
+              });
+            } else {
+              item.classList.add('open');
+              gsap.fromTo(answer, 
+                { height: 0, opacity: 0 },
+                { height: "auto", opacity: 1, duration: 0.5, ease: "power2.inOut" }
+              );
+            }
+          }
+        });
+      }
+    });
+  }, []);
+
+  // 6. Demo Video Section Animation
+  useEffect(() => {
+    gsap.from('.demo-section-title', {
+      scrollTrigger: {
+        trigger: '.demo-section',
+        start: "top 75%",
+        toggleActions: "play none none none"
+      },
+      y: 30,
+      opacity: 0,
+      duration: 0.6,
+      ease: "power2.out"
+    });
+    gsap.from('.video-container', {
+      scrollTrigger: {
+        trigger: '.video-container',
+        start: "top 80%",
+        toggleActions: "play none none none"
+      },
+      scale: 0.95,
+      opacity: 0,
+      duration: 0.8,
+      ease: "power3.out"
+    });
+    gsap.from('.play-button', {
+      scrollTrigger: {
+        trigger: '.video-container',
+        start: "top 80%",
+        toggleActions: "play none none none"
+      },
+      scale: 0,
+      opacity: 0,
+      duration: 0.6,
+      delay: 0.3,
+      ease: "back.out(1.7)"
+    });
+    gsap.to('.play-button', {
+      scale: 1.1,
+      repeat: -1,
+      yoyo: true,
+      duration: 1.2,
+      ease: "power1.inOut"
+    });
+    gsap.from('.try-it-button', {
+      scrollTrigger: {
+        trigger: '.try-it-button',
+        start: "top 90%",
+        toggleActions: "play none none none"
+      },
+      y: 20,
+      opacity: 0,
+      duration: 0.6,
+      delay: 0.5,
+      ease: "power3.out"
+    });
+  }, []);
+
+  // 7. Navigation and Logo Animation
+  useEffect(() => {
+    gsap.from('.logo', {
+      x: -20,
+      opacity: 0,
+      duration: 0.6,
+      ease: "power2.out"
+    });
+    gsap.from('.nav-items .nav-item', {
+      y: -20,
+      opacity: 0,
+      duration: 0.5,
+      stagger: 0.1,
+      ease: "power2.out"
+    });
+    gsap.from('.auth-buttons .button', {
+      x: 20,
+      opacity: 0,
+      duration: 0.5,
+      stagger: 0.1,
+      delay: 0.3,
+      ease: "power2.out"
+    });
+    // Button hover effects
+    const buttons = document.querySelectorAll('.button');
+    buttons.forEach((button) => {
+      button.addEventListener('mouseenter', () => {
+        gsap.to(button, {
+          scale: 1.05,
+          duration: 0.2,
+          ease: "power1.out"
+        });
+      });
+      button.addEventListener('mouseleave', () => {
+        gsap.to(button, {
+          scale: 1,
+          duration: 0.2,
+          ease: "power1.out"
+        });
+      });
+    });
+  }, []);
+
+  // 8. Floating Elements Animation
+  useEffect(() => {
+    const floatingElements = document.querySelectorAll('.floating-element');
+    floatingElements.forEach((element, index) => {
+      gsap.to(element, {
+        y: "random(-8, 8)",
+        x: "random(-5, 5)",
+        rotation: "random(-3, 3)",
+        duration: "random(3, 5)",
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+        delay: index * 0.2
+      });
+    });
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -74,19 +442,21 @@ export default function LandingPage() {
           <div className="container">
             <div className="mx-auto max-w-3xl text-center">
               <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-                AI-Powered Focus Groups. <span className="text-primary">Real Insights.</span> No Waiting.
+                <span className="hero-title-part block">AI-Powered Focus Groups.</span>
+                <span className="hero-title-part accent block text-primary">Real Insights.</span>
+                <span className="hero-title-part block">No Waiting.</span>
               </h1>
-              <p className="mb-10 text-xl text-gray-600">
+              <p className="mb-10 text-xl text-gray-600 hero-subtitle">
                 Run simulated qualitative research with intelligent AI personas and moderators.
               </p>
-              <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <div className="flex flex-col items-center justify-center gap-4 sm:flex-row hero-buttons">
                 <Link href="/signup">
-                  <Button size="lg" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto button">
                     Try for Free
                   </Button>
                 </Link>
                 <Link href="#features">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto button">
                     Learn More
                   </Button>
                 </Link>
@@ -98,29 +468,33 @@ export default function LandingPage() {
         {/* Features Section */}
         <section id="features" className="bg-gray-50 py-20">
           <div className="container">
-            <h2 className="mb-12 text-center text-3xl font-bold">Why InsightSim?</h2>
+            <h2 className="mb-12 text-center text-3xl font-bold feature-content">Why InsightSim?</h2>
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
               {[
                 {
                   title: "AI Participants",
                   description: "Domain-specific personas trained to simulate real consumer behavior",
+                  icon: <CheckCircle className="h-6 w-6 feature-icon" />,
                 },
                 {
                   title: "Flexible Moderation",
                   description: "Choose between AI or human-led moderation for your research",
+                  icon: <CheckCircle className="h-6 w-6 feature-icon" />,
                 },
                 {
                   title: "Results in Minutes",
                   description: "Get qualitative insights in minutes, not weeks",
+                  icon: <CheckCircle className="h-6 w-6 feature-icon" />,
                 },
                 {
                   title: "Cost-Effective",
                   description: "Reduce research costs while maintaining quality insights",
+                  icon: <CheckCircle className="h-6 w-6 feature-icon" />,
                 },
               ].map((feature, i) => (
-                <div key={i} className="rounded-lg bg-white p-6 shadow-sm">
+                <div key={i} className="rounded-lg bg-white p-6 shadow-sm feature-content">
                   <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <CheckCircle className="h-6 w-6" />
+                    {feature.icon}
                   </div>
                   <h3 className="mb-2 text-xl font-medium">{feature.title}</h3>
                   <p className="text-gray-600">{feature.description}</p>
@@ -131,14 +505,13 @@ export default function LandingPage() {
         </section>
 
         {/* Comparison Section */}
-        <section className="py-20">
+        <section className="py-20 comparison-section">
           <div className="container">
-            <h2 className="mb-2 text-center text-3xl font-bold">Why not just use ChatGPT?</h2>
+            <h2 className="mb-2 text-center text-3xl font-bold comparison-title">Why not just use ChatGPT?</h2>
             <p className="mb-12 text-center text-lg text-gray-600">
               InsightSim is purpose-built for qualitative research
             </p>
-
-            <div className="mx-auto max-w-3xl overflow-hidden rounded-lg border">
+            <div className="mx-auto max-w-3xl overflow-hidden rounded-lg border animate-element comparison-table">
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-50">
@@ -154,10 +527,14 @@ export default function LandingPage() {
                     { name: "Domain-trained personas", insightSim: true, chatGpt: false },
                     { name: "Exportable reports", insightSim: true, chatGpt: false },
                   ].map((feature, i) => (
-                    <tr key={i} className="border-t">
+                    <tr key={i} className="border-t animate-element">
                       <td className="p-4">{feature.name}</td>
-                      <td className="p-4 text-center text-primary">{feature.insightSim ? "✓" : "✗"}</td>
-                      <td className="p-4 text-center text-gray-500">{feature.chatGpt ? "✓" : "✗"}</td>
+                      <td className="p-4 text-center text-primary">
+                        {feature.insightSim ? <span className="checkmark">✓</span> : <span className="x-mark">✗</span>}
+                      </td>
+                      <td className="p-4 text-center text-gray-500">
+                        {feature.chatGpt ? <span className="checkmark">✓</span> : <span className="x-mark">✗</span>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -167,26 +544,24 @@ export default function LandingPage() {
         </section>
 
         {/* FAQ Section (styled like screenshot) */}
-        <section className="py-20 bg-white border-t">
+        <section className="py-20 bg-white border-t faq-section">
           <div className="container max-w-4xl mx-auto">
-            <h2 className="mb-2 text-center text-3xl font-bold">Frequently Asked Questions</h2>
+            <h2 className="mb-2 text-center text-3xl font-bold faq-title">Frequently Asked Questions</h2>
             <p className="mb-10 text-center text-gray-500 text-lg">Everything you need to know about InsightSim</p>
             <div className="bg-white rounded-lg shadow-sm divide-y">
               {faqList.map((item, idx) => (
-                <div key={item.q}>
+                <div key={item.q} className={`faq-item${openFaq === idx ? ' open' : ''} animate-element`}>
                   <button
-                    className="w-full flex items-center justify-between py-5 px-6 text-left text-lg font-medium focus:outline-none hover:bg-gray-50 transition"
+                    className="w-full flex items-center justify-between py-5 px-6 text-left text-lg font-medium focus:outline-none hover:bg-gray-50 transition faq-question"
                     onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
                     aria-expanded={openFaq === idx}
                   >
                     <span>{item.q}</span>
-                    <ChevronDown className={`h-5 w-5 transition-transform ${openFaq === idx ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-5 w-5 transition-transform faq-arrow${openFaq === idx ? ' rotate-180' : ''}`} />
                   </button>
-                  {openFaq === idx && (
-                    <div className="px-6 pb-6 text-gray-700 text-base animate-fade-in">
-                      {item.a}
-                    </div>
-                  )}
+                  <div className="px-6 pb-6 text-gray-700 text-base animate-fade-in faq-answer" style={{ display: openFaq === idx ? 'block' : 'none', height: openFaq === idx ? 'auto' : 0, overflow: 'hidden' }}>
+                    {item.a}
+                  </div>
                 </div>
               ))}
             </div>
@@ -219,12 +594,12 @@ export default function LandingPage() {
         </section>
 
         {/* Loom Video Demo Section */}
-        <section className="py-20 bg-white border-t">
+        <section className="py-20 bg-white border-t demo-section">
           <div className="container max-w-3xl mx-auto flex flex-col items-center">
-            <h2 className="mb-2 text-center text-3xl font-bold">See How InsightSim Works</h2>
+            <h2 className="mb-2 text-center text-3xl font-bold demo-section-title">See How InsightSim Works</h2>
             <p className="mb-10 text-center text-gray-500 text-lg">Watch a quick demo of how to run your first AI-powered focus group</p>
             <div className="w-full flex justify-center mb-8">
-              <div className="w-full max-w-2xl aspect-video rounded-lg overflow-hidden shadow bg-gray-100 flex items-center justify-center">
+              <div className="w-full max-w-2xl aspect-video rounded-lg overflow-hidden shadow bg-gray-100 flex items-center justify-center video-container animate-element">
                 <iframe
                   src="https://www.loom.com/embed/3f2acb20d33541ea8236200f080f3c8b"
                   title="InsightSim Demo Video"
@@ -233,21 +608,26 @@ export default function LandingPage() {
                   className="w-full h-full min-h-[320px]"
                   allowFullScreen
                 ></iframe>
+                {/* Play button overlay for animation (optional, visually hidden since Loom has its own) */}
+                <div className="play-button absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-white rounded-full p-4 shadow-lg cursor-pointer" style={{ pointerEvents: 'none', opacity: 0 }}>
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="currentColor" opacity="0.2"/><polygon points="13,10 24,16 13,22" fill="currentColor"/></svg>
+                </div>
               </div>
             </div>
-            <Button size="lg" className="mt-2" asChild>
+            <Button size="lg" className="mt-2 try-it-button animate-element" asChild>
               <Link href="/signup">Try It Yourself</Link>
             </Button>
           </div>
         </section>
 
         {/* Review Section */}
-        <section className="py-20 bg-gray-50 border-t">
+        <section className="py-20 bg-gray-50 border-t testimonials-section">
           <div className="container max-w-5xl mx-auto">
             <h2 className="mb-12 text-center text-3xl font-bold">What Our Users Say</h2>
             <div className="grid gap-8 md:grid-cols-3">
               {/* Review 1 */}
-              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center testimonial-card">
+                <svg className="h-8 w-8 text-primary mb-4 quote-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m2 7H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v11a2 2 0 01-2 2z" /></svg>
                 <p className="text-gray-700 text-center mb-4">InsightSim has cut our research timeline in half. We can now test concepts and get directional insights before committing to full studies.</p>
                 <div className="flex items-center gap-3 mt-4">
                   <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Sarah Chen" className="h-10 w-10 rounded-full object-cover border" />
@@ -258,7 +638,8 @@ export default function LandingPage() {
                 </div>
               </div>
               {/* Review 2 */}
-              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center testimonial-card">
+                <svg className="h-8 w-8 text-primary mb-4 quote-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m2 7H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v11a2 2 0 01-2 2z" /></svg>
                 <p className="text-gray-700 text-center mb-4">The AI personas are surprisingly nuanced. They capture the complexity of real consumers and provide insights that feel authentic and actionable.</p>
                 <div className="flex items-center gap-3 mt-4">
                   <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Michael Johnson" className="h-10 w-10 rounded-full object-cover border" />
@@ -269,7 +650,8 @@ export default function LandingPage() {
                 </div>
               </div>
               {/* Review 3 */}
-              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center testimonial-card">
+                <svg className="h-8 w-8 text-primary mb-4 quote-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m2 7H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v11a2 2 0 01-2 2z" /></svg>
                 <p className="text-gray-700 text-center mb-4">We use InsightSim to pressure-test our discussion guides before real sessions. It's improved our moderator effectiveness and research quality.</p>
                 <div className="flex items-center gap-3 mt-4">
                   <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Aisha Patel" className="h-10 w-10 rounded-full object-cover border" />
@@ -307,6 +689,24 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Global CSS for smooth animations and reduced motion */}
+      <style jsx global>{`
+        html {
+          scroll-behavior: smooth;
+        }
+        .animate-element {
+          will-change: transform, opacity;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+          }
+        }
+      `}</style>
     </div>
   )
 }

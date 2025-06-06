@@ -240,6 +240,48 @@ export default function LandingPage() {
             </Button>
           </div>
         </section>
+
+        {/* Review Section */}
+        <section className="py-20 bg-gray-50 border-t">
+          <div className="container max-w-5xl mx-auto">
+            <h2 className="mb-12 text-center text-3xl font-bold">What Our Users Say</h2>
+            <div className="grid gap-8 md:grid-cols-3">
+              {/* Review 1 */}
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+                <p className="text-gray-700 text-center mb-4">InsightSim has cut our research timeline in half. We can now test concepts and get directional insights before committing to full studies.</p>
+                <div className="flex items-center gap-3 mt-4">
+                  <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Sarah Chen" className="h-10 w-10 rounded-full object-cover border" />
+                  <div>
+                    <div className="font-semibold">Sarah Chen</div>
+                    <div className="text-xs text-gray-500">Research Director, Consumer Goods Inc.</div>
+                  </div>
+                </div>
+              </div>
+              {/* Review 2 */}
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+                <p className="text-gray-700 text-center mb-4">The AI personas are surprisingly nuanced. They capture the complexity of real consumers and provide insights that feel authentic and actionable.</p>
+                <div className="flex items-center gap-3 mt-4">
+                  <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Michael Johnson" className="h-10 w-10 rounded-full object-cover border" />
+                  <div>
+                    <div className="font-semibold">Michael Johnson</div>
+                    <div className="text-xs text-gray-500">UX Research Lead, TechApp</div>
+                  </div>
+                </div>
+              </div>
+              {/* Review 3 */}
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+                <p className="text-gray-700 text-center mb-4">We use InsightSim to pressure-test our discussion guides before real sessions. It's improved our moderator effectiveness and research quality.</p>
+                <div className="flex items-center gap-3 mt-4">
+                  <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Aisha Patel" className="h-10 w-10 rounded-full object-cover border" />
+                  <div>
+                    <div className="font-semibold">Aisha Patel</div>
+                    <div className="text-xs text-gray-500">Qualitative Researcher, Market Insights Group</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="border-t bg-white py-8">

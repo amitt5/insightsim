@@ -1,9 +1,69 @@
+"use client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
-import { CheckCircle } from "lucide-react"
+import { CheckCircle, ChevronDown } from "lucide-react"
+import { useState } from "react"
 
 export default function LandingPage() {
+  // FAQ data (flattened, not grouped)
+  const faqList = [
+    {
+      q: "What is InsightSim?",
+      a: "InsightSim is an AI-powered qualitative research platform that simulates focus groups and in-depth interviews using intelligent personas.",
+    },
+    {
+      q: "Who is InsightSim for?",
+      a: "Researchers, UX professionals, and product teams who want faster insights without the need for participant recruitment every time.",
+    },
+    {
+      q: "Do I need technical expertise to use it?",
+      a: "No. InsightSim is built for researchers. Calibration is user-friendly, and we offer demos and support to help you through it.",
+    },
+    {
+      q: "How are the AI personas created?",
+      a: "You can use presets or define your own personas by specifying demographic, behavioral, and attitudinal traits.",
+    },
+    {
+      q: "Can I reuse personas across simulations?",
+      a: "Yes. Personas are reusable across studies for concept testing, brand tracking, or iterative design.",
+    },
+    {
+      q: "How are simulations different from surveys?",
+      a: "Surveys collect structured responses. Simulations offer rich dialogue—capturing reactions, hesitations, and ideas in context.",
+    },
+    {
+      q: "How can I improve the quality of results?",
+      a: "InsightSim lets you calibrate personas with transcripts or insights from real research. The more calibration you do, the more realistic the AI behavior becomes. Watch a demo or request a walkthrough—it's slightly technical but very doable with support.",
+    },
+    {
+      q: "What is calibration, and how does it work?",
+      a: "You upload past research, and InsightSim adjusts the persona's dialogue behavior to match real-world patterns—making responses more authentic.",
+    },
+    {
+      q: "Can I combine AI and human moderators?",
+      a: "Yes. Use full AI moderation or guide conversations yourself. InsightSim also learns from your moderating style over time.",
+    },
+    {
+      q: "Can I simulate both FGDs and IDIs?",
+      a: "Absolutely. Run small-group discussions or 1:1 interviews depending on your research needs.",
+    },
+    {
+      q: "Can I test multiple audience segments?",
+      a: "Yes. You can create personas for multiple target groups and simulate sessions with each of them.",
+    },
+    {
+      q: "Is there a free trial?",
+      a: "Yes, we offer a limited trial where you can run one simulation and explore the features.",
+    },
+    {
+      q: "What kind of support do you offer?",
+      a: "Email support, documentation, live demos, and help with calibration if you're working with custom data.",
+    },
+  ];
+
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -102,6 +162,33 @@ export default function LandingPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section (styled like screenshot) */}
+        <section className="py-20 bg-white border-t">
+          <div className="container max-w-4xl mx-auto">
+            <h2 className="mb-2 text-center text-3xl font-bold">Frequently Asked Questions</h2>
+            <p className="mb-10 text-center text-gray-500 text-lg">Everything you need to know about InsightSim</p>
+            <div className="bg-white rounded-lg shadow-sm divide-y">
+              {faqList.map((item, idx) => (
+                <div key={item.q}>
+                  <button
+                    className="w-full flex items-center justify-between py-5 px-6 text-left text-lg font-medium focus:outline-none hover:bg-gray-50 transition"
+                    onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                    aria-expanded={openFaq === idx}
+                  >
+                    <span>{item.q}</span>
+                    <ChevronDown className={`h-5 w-5 transition-transform ${openFaq === idx ? 'rotate-180' : ''}`} />
+                  </button>
+                  {openFaq === idx && (
+                    <div className="px-6 pb-6 text-gray-700 text-base animate-fade-in">
+                      {item.a}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </section>

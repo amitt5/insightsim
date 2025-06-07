@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { PersonaCard } from "@/components/persona-card"
-import { ArrowLeft, ArrowRight, Upload, X, FileIcon } from "lucide-react"
+import { ArrowLeft, ArrowRight, Upload, X, FileIcon, Sparkles, Loader2 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
@@ -20,6 +20,8 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { v4 as uuidv4 } from 'uuid'
 import { useToast } from "@/hooks/use-toast"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
+import { runSimulationAPI } from "@/utils/api"
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 
 export default function NewSimulationPage() {
   const { toast } = useToast()
@@ -41,6 +43,7 @@ export default function NewSimulationPage() {
     turn_based: false,
     num_turns: "10",
   });
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   
   const router = useRouter()
   const { personas, loading, error, mutate } = usePersonas()
@@ -337,6 +340,12 @@ export default function NewSimulationPage() {
     console.log('handlePlayingAround',randomSimulation);
     setSimulationData(randomSimulation);
   };
+
+  // Function to build OpenAI prompt for discussion questions
+  function buildDiscussionQuestionsPrompt(studyTitle: string, topic: string) {
+    return `\nYou are an expert qualitative researcher. \nGiven the following study title and topic, suggest 5-7 insightful, open-ended discussion questions that a moderator could use in a focus group or in-depth interview.\n\nStudy Title: "${studyTitle}"\nTopic/Stimulus: "${topic}"\n\nList the questions as a numbered list, phrased as a moderator would ask them.`.trim();
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -611,7 +620,66 @@ export default function NewSimulationPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="questions">Discussion Questions</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="questions">Discussion Questions</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="p-0 h-6 w-6 bg-transparent border-none cursor-pointer"
+                          tabIndex={-1}
+                          disabled={isGeneratingQuestions}
+                          onClick={async () => {
+                            if (isGeneratingQuestions) return;
+                            setIsGeneratingQuestions(true);
+                            try {
+                              const prompt = buildDiscussionQuestionsPrompt(
+                                simulationData.study_title,
+                                simulationData.topic
+                              );
+                              const messages: ChatCompletionMessageParam[] = [
+                                { role: "system", content: prompt }
+                              ];
+                              const result = await runSimulationAPI(messages);
+                              // Parse the response: expect a numbered list
+                              let questions = result.reply || "";
+                              // Remove markdown, trim, etc.
+                              questions = questions.replace(/```[a-z]*[\s\S]*?```/g, "").trim();
+                              // If it's a numbered list, split into lines
+                              let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+                              // Remove leading numbers if present
+                              lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
+                              // Join as textarea value (one per line)
+                              setSimulationData(prev => ({
+                                ...prev,
+                                discussion_questions: lines.join("\n")
+                              }));
+                            } catch (err) {
+                              toast({
+                                title: "Error",
+                                description: "Failed to generate questions. Please try again.",
+                                variant: "destructive",
+                                duration: 5000,
+                              });
+                            } finally {
+                              setIsGeneratingQuestions(false);
+                            }
+                          }}
+                        >
+                          {isGeneratingQuestions ? (
+                            <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4 text-primary" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        Generate discussion questions with AI
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Textarea
                   id="questions"
                   placeholder="Enter your discussion questions here..."

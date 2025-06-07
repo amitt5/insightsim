@@ -142,6 +142,8 @@ export default function SimulationViewPage() {
          // if no messages, set the initial message, later also add condition simulationData.simulation.mode === "human-mod"
         setInitialMessage();
       } else {
+        // sort messages by created_at date
+        data.messages.sort((a: SimulationMessage, b: SimulationMessage) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         // if there are messages, check how many times moderator has spoken and then set the new message to the next question
         const moderatorMessages = data.messages.filter((msg: SimulationMessage) => msg.sender_type === 'moderator');
         if(moderatorMessages.length) {
@@ -810,25 +812,19 @@ export default function SimulationViewPage() {
                 </div>
               </CardContent>
               <div className="p-2 border-t">
-              { (simulationData?.simulation?.mode === "human-mod") &&<div className="flex gap-2 ">
-                  <input 
-                    type="text" 
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
-                    disabled={simulation.status === 'Completed'}
-                  />
+
+              { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
                   <Button 
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim() || simulation.status === 'Completed' || isLoadingMessages}
+                    onClick={startDiscussion}
+                    disabled={isStartingDiscussion}
                   >
-                    Send
+                    {isStartingDiscussion ? "Starting..." : "Start Discussion"}
                   </Button>
                 </div>}
 
-                {/* AI Instruction Box */}
-                { (simulationData?.simulation?.mode === "human-mod") && (
+                 {/* AI Instruction Box */}
+                 {formattedMessages.length > 0 && (
+                //  { (simulationData?.simulation?.mode === "human-mod") && (
                   <div className="mt-2">
                     <button
                       type="button"
@@ -856,6 +852,28 @@ export default function SimulationViewPage() {
                   </div>
                 )}
 
+                { ((simulationData?.simulation?.mode === "human-mod") || (formattedMessages.length > 0)) &&
+                <div className="mt-2 flex gap-2 ">
+                {/* { (simulationData?.simulation?.mode === "human-mod") &&<div className="flex gap-2 "> */}
+                {/* formattedMessages.length > 0 && */}
+                  <input 
+                    type="text" 
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
+                    disabled={simulation.status === 'Completed'}
+                  />
+                  <Button 
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || simulation.status === 'Completed' || isLoadingMessages}
+                  >
+                    Send
+                  </Button>
+                </div>}
+
+               
+
                 {availableCredits !== null && (
                   <div className="flex flex-col gap-2 mt-2">
                     <ModelSelectorWithCredits
@@ -876,14 +894,6 @@ export default function SimulationViewPage() {
                   </div>
                 )}
 
-                { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
-                  <Button 
-                    onClick={startDiscussion}
-                    disabled={isStartingDiscussion}
-                  >
-                    {isStartingDiscussion ? "Starting..." : "Start Discussion"}
-                  </Button>
-                </div>}
 
                 
               </div>

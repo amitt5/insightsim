@@ -258,61 +258,71 @@ export function CreatePersonaDialog({
 
           <div className="space-y-2">
             <Label htmlFor="occupation">Occupation</Label>
-            <div className="flex items-center gap-2">
+            <div className="relative">
               <Input 
                 id="occupation" 
                 value={formData.occupation}
                 onChange={(e) => handleChange("occupation", e.target.value)}
                 required
+                className="pr-10"
               />
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleChange("occupation", pickRandom(OCCUPATION_EXAMPLES))}
-                      tabIndex={-1}
-                    >
-                      <Sparkles className="h-4 w-4 text-primary" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    Generate a random occupation with AI
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("occupation", pickRandom(OCCUPATION_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random occupation with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="archetype">Archetype</Label>
-            <div className="flex items-center gap-2">
+            <div className="relative">
               <Input 
                 id="archetype" 
                 placeholder="e.g., Budget Buyer, Trendsetter" 
                 value={formData.archetype}
                 onChange={(e) => handleChange("archetype", e.target.value)}
+                className="pr-10"
               />
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleChange("archetype", pickRandom(ARCHETYPE_EXAMPLES))}
-                      tabIndex={-1}
-                    >
-                      <Sparkles className="h-4 w-4 text-primary" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    Generate a random archetype with AI
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("archetype", pickRandom(ARCHETYPE_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random archetype with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           </div>
 
@@ -338,61 +348,71 @@ export function CreatePersonaDialog({
 
           <div className="space-y-2">
             <Label htmlFor="persona_goal">Persona Goal</Label>
-            <div className="flex items-center gap-2">
+            <div className="relative">
               <Input 
                 id="persona_goal" 
                 placeholder="What is this persona trying to achieve?" 
                 value={formData.goal}
                 onChange={(e) => handleChange("goal", e.target.value)}
+                className="pr-10"
               />
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleChange("goal", pickRandom(GOAL_EXAMPLES))}
-                      tabIndex={-1}
-                    >
-                      <Sparkles className="h-4 w-4 text-primary" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    Generate a random persona goal with AI
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("goal", pickRandom(GOAL_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random persona goal with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="attitude">Attitude Toward Topic</Label>
-            <div className="flex items-center gap-2">
+            <div className="relative">
               <Input 
                 id="attitude" 
                 placeholder="Initial bias or opinion" 
                 value={formData.attitude}
                 onChange={(e) => handleChange("attitude", e.target.value)}
+                className="pr-10"
               />
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleChange("attitude", pickRandom(ATTITUDE_EXAMPLES))}
-                      tabIndex={-1}
-                    >
-                      <Sparkles className="h-4 w-4 text-primary" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    Generate a random attitude with AI
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("attitude", pickRandom(ATTITUDE_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random attitude with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           </div>
         </div>

@@ -16,7 +16,7 @@ export function Sidebar({ className, activePath = "" }: SidebarProps) {
 
   const links = [
     // { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/simulations", label: "Simulations", icon: MessageSquare },
+    { href: "/simulations", label: "Simulations11", icon: MessageSquare },
     { href: "/personas", label: "Personas", icon: Users },
     // { href: "/reports", label: "Reports", icon: FileText },
     // { href: "/analytics", label: "Analytics", icon: BarChart },

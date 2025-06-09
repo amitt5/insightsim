@@ -62,6 +62,12 @@ export default function DashboardLayout({
               Calibration
             </Link>
             <Link 
+              href="/surveys"
+              className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
+            >
+              Surveys
+            </Link>
+            <Link 
               href="/settings"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >

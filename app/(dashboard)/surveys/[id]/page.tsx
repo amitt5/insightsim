@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Plus, Trash2 } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { ArrowLeft, Plus, Trash2, X } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Survey } from "@/utils/types"
 
 interface SurveyPageProps {
   params: {
@@ -17,8 +19,17 @@ interface SurveyPageProps {
 export default function SurveyPage({ params }: SurveyPageProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState(1)
-  const [surveyName, setSurveyName] = useState("Product Feedback - Alpha Testers")
-  const [surveyDescription, setSurveyDescription] = useState("Gather feedback from our alpha testing group to improve the product before beta release.")
+  
+  // Initialize survey with minimum properties
+  const [survey, setSurvey] = useState<Survey>({
+    id: params.id,
+    status: 'BRIEFING' as any,
+    current_step: 1,
+    productName: "Product Feedback - Alpha Testers",
+    productDescription: "Gather feedback from our alpha testing group to improve the product before beta release.",
+    keyFeatures: [],
+    primaryBenefit: ""
+  })
 
   const tabs = [
     { id: 1, name: "Product Details", label: "Product Details" },
@@ -28,6 +39,38 @@ export default function SurveyPage({ params }: SurveyPageProps) {
     { id: 5, name: "Sample Design", label: "Sample Design" }
   ]
 
+  // Handle input changes
+  const handleInputChange = (field: keyof Survey) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setSurvey(prev => ({
+      ...prev,
+      [field]: e.target.value
+    }))
+  }
+
+  // Handle adding a new feature
+  const addFeature = () => {
+    setSurvey(prev => ({
+      ...prev,
+      keyFeatures: [...(prev.keyFeatures || []), ""]
+    }))
+  }
+
+  // Handle updating a feature
+  const updateFeature = (index: number, value: string) => {
+    setSurvey(prev => ({
+      ...prev,
+      keyFeatures: prev.keyFeatures?.map((feature, i) => i === index ? value : feature) || []
+    }))
+  }
+
+  // Handle removing a feature
+  const removeFeature = (index: number) => {
+    setSurvey(prev => ({
+      ...prev,
+      keyFeatures: prev.keyFeatures?.filter((_, i) => i !== index) || []
+    }))
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -35,7 +78,7 @@ export default function SurveyPage({ params }: SurveyPageProps) {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <h1 className="text-3xl font-bold">{surveyName}</h1>
+        <h1 className="text-3xl font-bold">{survey.productName}</h1>
         <Badge variant="secondary">Active</Badge>
       </div>
 
@@ -67,8 +110,76 @@ export default function SurveyPage({ params }: SurveyPageProps) {
               <CardDescription>Define the product or service being researched</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center py-8 text-gray-500">
-                Product Details content will be added here
+              <div className="space-y-2">
+                <Label htmlFor="productName">Product Name</Label>
+                <Input
+                  id="productName"
+                  value={survey.productName || ""}
+                  onChange={handleInputChange('productName')}
+                  placeholder="Enter product name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="productDescription">Product Description</Label>
+                <Textarea
+                  id="productDescription"
+                  value={survey.productDescription || ""}
+                  onChange={handleInputChange('productDescription')}
+                  placeholder="Describe your product or service"
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Key Features</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addFeature}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Feature
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {survey.keyFeatures?.map((feature, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={feature}
+                        onChange={(e) => updateFeature(index, e.target.value)}
+                        placeholder={`Feature ${index + 1}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFeature(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {(!survey.keyFeatures || survey.keyFeatures.length === 0) && (
+                    <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded">
+                      No features added yet. Click "Add Feature" to get started.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="primaryBenefit">Primary Benefit</Label>
+                <Textarea
+                  id="primaryBenefit"
+                  value={survey.primaryBenefit || ""}
+                  onChange={handleInputChange('primaryBenefit')}
+                  placeholder="What is the main benefit or value proposition of your product?"
+                  rows={2}
+                />
               </div>
             </CardContent>
           </Card>

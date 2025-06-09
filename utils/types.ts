@@ -71,14 +71,6 @@ export enum StudyStatus {
   ANALYSIS_COMPLETE = 'ANALYSIS_COMPLETE'
 }
 
-export enum ObjectiveType {
-  CONCEPT_TESTING = 'CONCEPT_TESTING',
-  PRICING_RESEARCH = 'PRICING_RESEARCH',
-  MARKET_SIZING = 'MARKET_SIZING',
-  COMPETITIVE_ANALYSIS = 'COMPETITIVE_ANALYSIS',
-  CUSTOMER_JOURNEY = 'CUSTOMER_JOURNEY'
-}
-
 export enum QuestionType {
   MULTIPLE_CHOICE = 'MULTIPLE_CHOICE',
   RATING_SCALE = 'RATING_SCALE',
@@ -151,7 +143,6 @@ export interface Survey {
   
   // Research Objective
   objective?: string;
-  objectiveType?: ObjectiveType;
   successMetrics?: string[];
   objectiveConfirmed?: boolean;
   

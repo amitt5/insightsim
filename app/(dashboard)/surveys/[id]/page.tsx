@@ -71,6 +71,39 @@ export default function SurveyPage({ params }: SurveyPageProps) {
     }))
   }
 
+  // Handle adding a new success metric
+  const addSuccessMetric = () => {
+    setSurvey(prev => ({
+      ...prev,
+      successMetrics: [...(prev.successMetrics || []), ""]
+    }))
+  }
+
+  // Handle updating a success metric
+  const updateSuccessMetric = (index: number, value: string) => {
+    setSurvey(prev => ({
+      ...prev,
+      successMetrics: prev.successMetrics?.map((metric, i) => i === index ? value : metric) || []
+    }))
+  }
+
+  // Handle removing a success metric
+  const removeSuccessMetric = (index: number) => {
+    setSurvey(prev => ({
+      ...prev,
+      successMetrics: prev.successMetrics?.filter((_, i) => i !== index) || []
+    }))
+  }
+
+  // Handle Save & Continue
+  const handleSaveAndContinue = () => {
+    // Save logic would go here (API call)
+    // For now, just navigate to next tab
+    if (activeTab < 5) {
+      setActiveTab(activeTab + 1)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -192,8 +225,58 @@ export default function SurveyPage({ params }: SurveyPageProps) {
               <CardDescription>Define the goals and objectives of your research</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center py-8 text-gray-500">
-                Research Objective content will be added here
+              <div className="space-y-2">
+                <Label htmlFor="objective">Study Objective</Label>
+                <Textarea
+                  id="objective"
+                  value={survey.objective || ""}
+                  onChange={handleInputChange('objective')}
+                  placeholder="What is the main objective of this study? What do you want to learn or understand?"
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Success Metrics</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addSuccessMetric}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Metric
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {survey.successMetrics?.map((metric, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={metric}
+                        onChange={(e) => updateSuccessMetric(index, e.target.value)}
+                        placeholder={`Success metric ${index + 1}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeSuccessMetric(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {(!survey.successMetrics || survey.successMetrics.length === 0) && (
+                    <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded">
+                      No success metrics added yet. Click "Add Metric" to get started.
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500">
+                  Define what results or outcomes would make this study successful (e.g., "80% positive feedback on concept", "Identify top 3 pain points")
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -244,7 +327,7 @@ export default function SurveyPage({ params }: SurveyPageProps) {
         {/* Action Buttons */}
         <div className="flex justify-end gap-4 mt-6">
           <Button variant="outline">Save Draft</Button>
-          <Button>Save & Continue</Button>
+          <Button onClick={handleSaveAndContinue}>Save & Continue</Button>
         </div>
       </div>
     </div>

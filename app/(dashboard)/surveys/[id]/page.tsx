@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Plus, Trash2, X } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Survey } from "@/utils/types"
@@ -28,7 +29,10 @@ export default function SurveyPage({ params }: SurveyPageProps) {
     productName: "Product Feedback - Alpha Testers",
     productDescription: "Gather feedback from our alpha testing group to improve the product before beta release.",
     keyFeatures: [],
-    primaryBenefit: ""
+    primaryBenefit: "",
+    locations: [],
+    marketType: "",
+    competitorContext: ""
   })
 
   const tabs = [
@@ -92,6 +96,38 @@ export default function SurveyPage({ params }: SurveyPageProps) {
     setSurvey(prev => ({
       ...prev,
       successMetrics: prev.successMetrics?.filter((_, i) => i !== index) || []
+    }))
+  }
+
+  // Handle adding a new location
+  const addLocation = () => {
+    setSurvey(prev => ({
+      ...prev,
+      locations: [...(prev.locations || []), ""]
+    }))
+  }
+
+  // Handle updating a location
+  const updateLocation = (index: number, value: string) => {
+    setSurvey(prev => ({
+      ...prev,
+      locations: prev.locations?.map((location, i) => i === index ? value : location) || []
+    }))
+  }
+
+  // Handle removing a location
+  const removeLocation = (index: number) => {
+    setSurvey(prev => ({
+      ...prev,
+      locations: prev.locations?.filter((_, i) => i !== index) || []
+    }))
+  }
+
+  // Handle select changes
+  const handleSelectChange = (field: keyof Survey) => (value: string) => {
+    setSurvey(prev => ({
+      ...prev,
+      [field]: value
     }))
   }
 
@@ -289,8 +325,78 @@ export default function SurveyPage({ params }: SurveyPageProps) {
               <CardDescription>Specify the geographic scope and locations for your research</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center py-8 text-gray-500">
-                Location content will be added here
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Target Locations</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addLocation}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Location
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {survey.locations?.map((location, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={location}
+                        onChange={(e) => updateLocation(index, e.target.value)}
+                        placeholder="e.g., New York City, United States, Global"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeLocation(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {(!survey.locations || survey.locations.length === 0) && (
+                    <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded">
+                      No locations added yet. Click "Add Location" to get started.
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500">
+                  Add cities, countries, regions, or specify "Global" for worldwide research
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="marketType">Market Type</Label>
+                <Select 
+                  value={survey.marketType || ""} 
+                  onValueChange={handleSelectChange('marketType')}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select market type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="offline">Offline</SelectItem>
+                    <SelectItem value="mix">Mix (Online + Offline)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="competitorContext">Competitor Context</Label>
+                <Textarea
+                  id="competitorContext"
+                  value={survey.competitorContext || ""}
+                  onChange={handleInputChange('competitorContext')}
+                  placeholder="Who do you see as your main competitors? Describe the competitive landscape..."
+                  rows={4}
+                />
+                <p className="text-sm text-gray-500">
+                  Identify key competitors and describe how they position themselves in the market
+                </p>
               </div>
             </CardContent>
           </Card>

@@ -1,7 +1,12 @@
+"use client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Plus } from "lucide-react"
+import { useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { useRouter } from "next/navigation"
 
 const fakeSurveys = [
   { id: 1, name: "Brand Awareness Q2 2024", created_at: "2024-06-01", sample_size: 500, status: "Draft" },
@@ -9,18 +14,47 @@ const fakeSurveys = [
   { id: 3, name: "Pricing Sensitivity Study", created_at: "2024-05-10", sample_size: 1000, status: "Completed" },
 ]
 
-export default function SurveysPage()  {
+export default function SurveyListPage() {
+  const [open, setOpen] = useState(false)
+  const [surveyName, setSurveyName] = useState("")
+  const router = useRouter()
+
+  const handleCreate = () => {
+    // In real app, create survey in DB and get new id
+    setOpen(false)
+    setSurveyName("")
+    router.push("/surveys/2")
+  }
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Surveys</h1>
-        <Button asChild>
-          <Link href="#">
-            <Plus className="h-4 w-4 mr-2" />
-            New Survey
-          </Link>
+        <Button onClick={() => setOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Survey
         </Button>
       </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Survey</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <Input
+              placeholder="Enter survey name"
+              value={surveyName}
+              onChange={e => setSurveyName(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={handleCreate} disabled={!surveyName.trim()}>
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Desktop view - table */}
       <div className="hidden md:block">
         <table className="w-full">

@@ -615,7 +615,7 @@ export default function LandingPage() {
               </div>
 
               {/* Process Flow */}
-              <div className="grid gap-8 md:grid-cols-4 mb-16">
+              <div className="grid gap-8 md:grid-cols-5 mb-16">
                 {/* Step 1: Plan */}
                 <div className="text-center">
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">

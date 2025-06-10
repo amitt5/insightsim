@@ -77,28 +77,8 @@ export default function SimulationViewPage() {
   const [userInstruction, setUserInstruction] = useState("")
   const [showFollowUpQuestions, setShowFollowUpQuestions] = useState(false)
   const [isLoadingFollowUpQuestions, setIsLoadingFollowUpQuestions] = useState(false)
-  const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([])
-
+  const [followUpQuestions, setFollowUpQuestions] = useState<{question: string}[]>([])
   const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
-
-  // Hardcoded follow-up questions for now
-  const hardcodedQuestions = [
-    "Can you elaborate more on that point?",
-    "What specific examples can you share about this?",
-    "How does this compare to your previous experiences?",
-    "What concerns do you have about this approach?",
-    "Can you walk us through your decision-making process?",
-    "What would convince you to change your mind on this?",
-    "How important is this factor in your overall evaluation?",
-    "What questions do you still have about this topic?",
-    "Can you help us understand why you feel that way?",
-    "What would be the ideal solution from your perspective?",
-    "How does this impact your daily routine or workflow?",
-    "What alternatives have you considered?",
-    "Can you describe what success would look like to you?",
-    "What barriers do you see in implementing this?",
-    "How do you think others in your situation would react?"
-  ]
 
   // Function to handle follow-up questions
   const handleFollowUpQuestions = async () => {
@@ -113,19 +93,20 @@ export default function SimulationViewPage() {
       const prompt = buildFollowUpQuestionsPrompt(sample)
       console.log('prompt', prompt);
       const data = await runSimulationAPI(prompt, modelInUse);
-      console.log('data', data);
+      // console.log('data', data);
       const parsedMessages = parseSimulationResponse(data.reply);
-      console.log('parsedMessages-amit', parsedMessages);
+      // console.log('parsedMessages-amit', parsedMessages);
       // // save messages to database
       // const saveResult = await saveMessagesToDatabase(parsedMessages);
       // console.log('saveResult', saveResult);
       // Simulate API call with delay
-      setTimeout(() => {
-        // Select 3 random questions
-        const shuffled = hardcodedQuestions.sort(() => 0.5 - Math.random())
-        setFollowUpQuestions(shuffled.slice(0, 3))
-        setIsLoadingFollowUpQuestions(false)
-      }, 1500) // 1.5 second delay
+      setFollowUpQuestions(parsedMessages)
+      // setTimeout(() => {
+      //   // Select 3 random questions
+      //   const shuffled = hardcodedQuestions.sort(() => 0.5 - Math.random())
+      //   setFollowUpQuestions(shuffled.slice(0, 3))
+      setIsLoadingFollowUpQuestions(false)
+      // }, 1500) // 1.5 second delay
     } else {
       setShowFollowUpQuestions(false)
       setFollowUpQuestions([])
@@ -925,14 +906,14 @@ export default function SimulationViewPage() {
                         ) : (
                           <div className="space-y-2">
                             <p className="text-xs text-gray-500">Click on a question to add it to your message:</p>
-                            {followUpQuestions.map((question, index) => (
+                            {followUpQuestions.map((questionObj, index) => (
                               <button
                                 key={index}
                                 type="button"
                                 className="w-full text-left p-2 text-xs border border-gray-200 rounded hover:bg-gray-50 hover:border-primary transition-colors"
-                                onClick={() => setNewMessage(question)}
+                                onClick={() => setNewMessage(questionObj.question)}
                               >
-                                {question}
+                                {questionObj.question}
                               </button>
                             ))}
                           </div>

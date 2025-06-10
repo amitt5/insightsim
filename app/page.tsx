@@ -728,6 +728,123 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Key Features & Benefits Section */}
+        <section className="py-20 bg-gray-50">
+          <div className="container">
+            <div className="mx-auto max-w-6xl">
+              {/* Section Header */}
+              <div className="text-center mb-16">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
+                  Key Features & Benefits
+                </h2>
+                <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                  Professional-grade research simulation tools designed for market researchers, UX researchers, and insight managers
+                </p>
+              </div>
+
+              {/* Features Grid */}
+              <div className="grid gap-8 md:grid-cols-3">
+                {/* AI Personas */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">AI Personas: Realistic participant simulation</h3>
+                  <ul className="text-gray-600 space-y-2 mb-4">
+                    <li>• Create diverse, authentic participants that match your target demographics</li>
+                    <li>• Calibrate personas using your existing research data for more accurate responses</li>
+                  </ul>
+                  <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Coming Soon - June</span>
+                </div>
+
+                {/* Discussion Guide Testing */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Discussion Guide Testing: Validate questions before field</h3>
+                  <ul className="text-gray-600 space-y-2">
+                    <li>• Test question flow and identify weak spots before expensive recruitment</li>
+                    <li>• Get AI-powered suggestions for follow-up questions during simulations</li>
+                  </ul>
+                </div>
+
+                {/* Multiple Scenarios */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Multiple Scenarios: Test different participant mixes</h3>
+                  <ul className="text-gray-600 space-y-2">
+                    <li>• Run the same study with different demographic combinations</li>
+                    <li>• Compare responses across various audience segments instantly</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Stacked Upcoming Features */}
+              <div className="mt-8 space-y-8">
+                {/* Qual-to-Quant Validation */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 flex flex-col md:flex-row items-start md:items-center">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 md:mb-0 md:mr-6">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <h3 className="text-xl font-semibold text-gray-900 mr-2">Qual-to-Quant Validation: Test patterns with simulated surveys</h3>
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Coming Soon - June</span>
+                    </div>
+                    <ul className="text-gray-600 space-y-2">
+                      <li>• Validate qualitative findings through simulated quantitative studies</li>
+                      <li>• Bridge the gap between exploratory insights and statistical validation</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Smart Research Integration */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 flex flex-col md:flex-row items-start md:items-center">
+                  <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4 md:mb-0 md:mr-6">
+                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <h3 className="text-xl font-semibold text-gray-900 mr-2">Smart Research Integration</h3>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">Roadmap</span>
+                    </div>
+                    <ul className="text-gray-600 space-y-2">
+                      <li>• Feed existing research into the system for better question suggestions</li>
+                      <li>• Leverage past studies to generate more realistic participant responses</li>
+                      <li>• Build on your research history for continuously improving simulations</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom CTA */}
+              <div className="text-center mt-16">
+                <p className="text-lg text-gray-600 mb-6">
+                  Ready to enhance your research process with professional-grade AI simulation?
+                </p>
+                <Link href="/signup">
+                  <Button size="lg" className="px-8">
+                    Start Free Trial
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Features Section */}
         <section id="features" className="bg-gray-50 py-20">

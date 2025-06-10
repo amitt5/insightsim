@@ -510,6 +510,225 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Problem Statement Section */}
+        <section className="py-20 bg-gray-50">
+          <div className="container">
+            <div className="mx-auto max-w-6xl">
+              {/* Main Problem Headline */}
+              <div className="text-center mb-16">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
+                  The Challenge: Expensive research failures, untested discussion guides, and missed insights
+                </h2>
+                <p className="text-lg text-gray-600 italic max-w-4xl mx-auto">
+                  Sound familiar? You're not alone. 73% of researchers report that time constraints force them to make methodology compromises that impact data quality.
+                </p>
+              </div>
+
+              {/* Three Pain Points Grid */}
+              <div className="grid gap-8 md:grid-cols-3 mb-12">
+                {/* Market Researchers */}
+                <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+                      <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900">Wasted Research Budgets</h3>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Every failed study costs thousands in recruitment, incentives, and time. One poorly designed discussion guide can derail an entire project, leaving clients frustrated and budgets blown.
+                  </p>
+                  <ul className="text-sm text-gray-500 space-y-2">
+                    <li>• Untested questions that don't generate insights</li>
+                    <li>• Recruitment challenges for specific demographics</li>
+                    <li>• Last-minute guide changes that compromise data quality</li>
+                    <li>• Pressure to deliver actionable insights from flawed methodology</li>
+                  </ul>
+                </div>
+
+                {/* UX Researchers */}
+                <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
+                      <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900">Delayed Product Decisions</h3>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Waiting weeks for user research while product deadlines loom. By the time insights arrive, the market opportunity may have passed.
+                  </p>
+                  <ul className="text-sm text-gray-500 space-y-2">
+                    <li>• Sprint cycles that can't wait for traditional research timelines</li>
+                    <li>• Limited research budgets for early-stage concept testing</li>
+                    <li>• Difficulty recruiting specific user segments quickly</li>
+                    <li>• Stakeholder pressure for immediate user feedback</li>
+                  </ul>
+                </div>
+
+                {/* Insight Managers */}
+                <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                      <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900">Missed Strategic Opportunities</h3>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Critical business decisions made without proper research validation. Competitors move faster while you're still planning your methodology.
+                  </p>
+                  <ul className="text-sm text-gray-500 space-y-2">
+                    <li>• Board meetings demanding insights you don't have yet</li>
+                    <li>• Campaign launches based on assumptions, not data</li>
+                    <li>• Seasonal opportunities missed due to research lead times</li>
+                    <li>• Team credibility questioned when insights come too late</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Closing CTA */}
+              <div className="text-center">
+                <p className="text-xl text-gray-700 font-medium">
+                  What if you could test your approach, refine your questions, and validate your hypotheses before investing in expensive fieldwork?
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Solution Overview Section */}
+        <section className="py-20 bg-white">
+          <div className="container">
+            <div className="mx-auto max-w-6xl">
+              {/* Section Header */}
+              <div className="text-center mb-16">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
+                  How InsightSim Enhances Your Research Process
+                </h2>
+                <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                  Don't replace your research—enhance it. Test, refine, and validate your approach before investing in expensive fieldwork.
+                </p>
+              </div>
+
+              {/* Process Flow */}
+              <div className="grid gap-8 md:grid-cols-4 mb-16">
+                {/* Step 1: Plan */}
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">1. Plan</h3>
+                  <p className="text-gray-600 text-sm">
+                    Create your discussion guide, define objectives, and set up AI personas that match your target audience
+                  </p>
+                </div>
+
+                {/* Arrow */}
+                <div className="hidden md:flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+
+                {/* Step 2: Simulate */}
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">2. Simulate</h3>
+                  <p className="text-gray-600 text-sm">
+                    Run realistic focus groups with AI participants. Test different scenarios and participant mixes instantly
+                  </p>
+                </div>
+
+                {/* Arrow */}
+                <div className="hidden md:flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+
+                {/* Step 3: Refine */}
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">3. Refine</h3>
+                  <p className="text-gray-600 text-sm">
+                    Identify weak questions, optimize your guide, and sharpen your hypotheses based on simulation insights
+                  </p>
+                </div>
+              </div>
+
+              {/* Final Step - Execute Real Research */}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-8 text-center">
+                <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">4. Execute Real Research</h3>
+                <p className="text-lg text-gray-600 mb-4">
+                  Launch your field research with confidence, knowing your methodology is tested and your questions are optimized
+                </p>
+                <p className="text-sm text-gray-500 italic">
+                  InsightSim prepares you for success—it doesn't replace the real insights only human participants can provide
+                </p>
+              </div>
+
+              {/* Benefits Grid */}
+              <div className="grid gap-6 md:grid-cols-3 mt-16">
+                <div className="text-center p-6">
+                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Reduce Research Failures</h4>
+                  <p className="text-sm text-gray-600">
+                    Test your discussion guides before expensive field research. Catch weak questions early and optimize for better insights.
+                  </p>
+                </div>
+
+                <div className="text-center p-6">
+                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Accelerate Decision Making</h4>
+                  <p className="text-sm text-gray-600">
+                    Get directional insights instantly. No more waiting weeks for recruitment—test concepts and validate approaches immediately.
+                  </p>
+                </div>
+
+                <div className="text-center p-6">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Seize Strategic Opportunities</h4>
+                  <p className="text-sm text-gray-600">
+                    Move faster than competitors. Get preliminary insights for board meetings and campaign planning while preparing for comprehensive research.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
         {/* Features Section */}
         <section id="features" className="bg-gray-50 py-20">
           <div className="container">

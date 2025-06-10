@@ -439,7 +439,7 @@ export default function LandingPage() {
 
       <main className="flex-1 pt-16">
         {/* Hero Section */}
-        <section className="py-20">
+        <section className="min-h-screen flex items-center justify-center py-20">
           <div className="container">
             <div className="mx-auto max-w-3xl text-center">
               <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
@@ -487,7 +487,7 @@ export default function LandingPage() {
 
 
         {/* Who Is This Product For Section */}
-        <section className="py-20 bg-gray-50 border-t">
+        <section className="min-h-screen flex items-center justify-center py-20 bg-gray-50 border-t">
           <div className="container max-w-5xl mx-auto">
             <h2 className="mb-2 text-center text-3xl font-bold">Who Is InsightSim For?</h2>
             <p className="mb-10 text-center text-gray-500 text-lg">Our platform is designed for professionals who need deep qualitative insights without the traditional time and cost constraints.</p>
@@ -512,7 +512,7 @@ export default function LandingPage() {
         </section>
 
         {/* Problem Statement Section */}
-        <section className="py-20 bg-gray-50">
+        <section className="min-h-screen flex items-center justify-center py-20 bg-gray-50">
           <div className="container">
             <div className="mx-auto max-w-6xl">
               {/* Main Problem Headline */}
@@ -602,7 +602,7 @@ export default function LandingPage() {
         </section>
 
         {/* Solution Overview Section */}
-        <section className="py-12 bg-white">
+        <section className="min-h-screen flex items-center justify-center py-12 bg-white">
           <div className="container">
             <div className="mx-auto max-w-6xl">
               {/* Section Header */}
@@ -856,7 +856,7 @@ export default function LandingPage() {
         </section>
 
         {/* Loom Video Demo Section */}
-        <section className="py-20 bg-white border-t demo-section">
+        <section className="min-h-screen flex items-center justify-center py-20 bg-white border-t demo-section">
           <div className="container max-w-3xl mx-auto flex flex-col items-center">
             <h2 className="mb-2 text-center text-3xl font-bold demo-section-title">See How InsightSim Works</h2>
             <p className="mb-10 text-center text-gray-500 text-lg">Watch a quick demo of how to run your first AI-powered focus group</p>
@@ -883,7 +883,7 @@ export default function LandingPage() {
         </section>
 
         {/* Use Cases Section */}
-        <section className="py-20 bg-white">
+        <section className="min-h-screen flex items-center justify-center py-20 bg-white">
           <div className="container">
             <div className="mx-auto max-w-6xl">
               {/* Section Header */}
@@ -1032,427 +1032,427 @@ export default function LandingPage() {
         </section>
 
         {/* Social Proof & Testimonials Section */}
-<section className="py-20 bg-gray-50">
-  <div className="container">
-    <div className="mx-auto max-w-6xl">
-      {/* Section Header */}
-      <div className="text-center mb-16">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
-          Trusted by Research Professionals
-        </h2>
-        <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-          See how market researchers and UX professionals are enhancing their research process with InsightSim
-        </p>
-      </div>
+ <section className="min-h-screen flex items-center justify-center py-20 bg-gray-50">
+   <div className="container">
+     <div className="mx-auto max-w-6xl">
+       {/* Section Header */}
+       <div className="text-center mb-16">
+         <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
+           Trusted by Research Professionals
+         </h2>
+         <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+           See how market researchers and UX professionals are enhancing their research process with InsightSim
+         </p>
+       </div>
 
-      {/* Usage Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
-        <div className="text-center">
-          <p className="text-3xl font-bold text-primary mb-2">500+</p>
-          <p className="text-sm text-gray-600">Active Researchers</p>
-        </div>
-        <div className="text-center">
-          <p className="text-3xl font-bold text-primary mb-2">2,500+</p>
-          <p className="text-sm text-gray-600">Simulations Completed</p>
-        </div>
-        <div className="text-center">
-          <p className="text-3xl font-bold text-primary mb-2">85%</p>
-          <p className="text-sm text-gray-600">Improved Discussion Guides</p>
-        </div>
-        <div className="text-center">
-          <p className="text-3xl font-bold text-primary mb-2">$180K</p>
-          <p className="text-sm text-gray-600">Research Budget Saved</p>
-        </div>
-      </div>
+       {/* Usage Statistics */}
+       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
+         <div className="text-center">
+           <p className="text-3xl font-bold text-primary mb-2">500+</p>
+           <p className="text-sm text-gray-600">Active Researchers</p>
+         </div>
+         <div className="text-center">
+           <p className="text-3xl font-bold text-primary mb-2">2,500+</p>
+           <p className="text-sm text-gray-600">Simulations Completed</p>
+         </div>
+         <div className="text-center">
+           <p className="text-3xl font-bold text-primary mb-2">85%</p>
+           <p className="text-sm text-gray-600">Improved Discussion Guides</p>
+         </div>
+         <div className="text-center">
+           <p className="text-3xl font-bold text-primary mb-2">$180K</p>
+           <p className="text-sm text-gray-600">Research Budget Saved</p>
+         </div>
+       </div>
 
-      {/* Testimonials Grid */}
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-16">
-        {/* Testimonial 1 */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center mb-4">
-            <img src="https://randomuser.me/api/portraits/women/32.jpg" alt="Sarah Mitchell" className="w-12 h-12 rounded-full object-cover border mr-3" />
-            <div>
-              <p className="font-semibold text-gray-900">Sarah Mitchell</p>
-              <p className="text-sm text-gray-600">Senior Research Manager</p>
-              <p className="text-sm text-gray-500">Insights & Co.</p>
-            </div>
-          </div>
-          <p className="text-gray-700 text-sm">
-            "InsightSim saved us from a costly research failure. We caught three problematic questions in our discussion guide that would have compromised our entire automotive study. The AI personas gave us realistic responses that helped refine our approach."
-          </p>
-        </div>
+       {/* Testimonials Grid */}
+       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-16">
+         {/* Testimonial 1 */}
+         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+           <div className="flex items-center mb-4">
+             <img src="https://randomuser.me/api/portraits/women/32.jpg" alt="Sarah Mitchell" className="w-12 h-12 rounded-full object-cover border mr-3" />
+             <div>
+               <p className="font-semibold text-gray-900">Sarah Mitchell</p>
+               <p className="text-sm text-gray-600">Senior Research Manager</p>
+               <p className="text-sm text-gray-500">Insights & Co.</p>
+             </div>
+           </div>
+           <p className="text-gray-700 text-sm">
+             "InsightSim saved us from a costly research failure. We caught three problematic questions in our discussion guide that would have compromised our entire automotive study. The AI personas gave us realistic responses that helped refine our approach."
+           </p>
+         </div>
 
-        {/* Testimonial 2 */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center mb-4">
-            <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="Marcus Rodriguez" className="w-12 h-12 rounded-full object-cover border mr-3" />
-            <div>
-              <p className="font-semibold text-gray-900">Marcus Rodriguez</p>
-              <p className="text-sm text-gray-600">UX Research Lead</p>
-              <p className="text-sm text-gray-500">TechFlow Solutions</p>
-            </div>
-          </div>
-          <p className="text-gray-700 text-sm">
-            "Perfect for rapid concept validation. When stakeholders need quick insights for sprint planning, InsightSim gives us directional data while we plan comprehensive user research. It's become essential to our workflow."
-          </p>
-        </div>
+         {/* Testimonial 2 */}
+         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+           <div className="flex items-center mb-4">
+             <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="Marcus Rodriguez" className="w-12 h-12 rounded-full object-cover border mr-3" />
+             <div>
+               <p className="font-semibold text-gray-900">Marcus Rodriguez</p>
+               <p className="text-sm text-gray-600">UX Research Lead</p>
+               <p className="text-sm text-gray-500">TechFlow Solutions</p>
+             </div>
+           </div>
+           <p className="text-gray-700 text-sm">
+             "Perfect for rapid concept validation. When stakeholders need quick insights for sprint planning, InsightSim gives us directional data while we plan comprehensive user research. It's become essential to our workflow."
+           </p>
+         </div>
 
-        {/* Testimonial 3 */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center mb-4">
-            <img src="https://randomuser.me/api/portraits/women/29.jpg" alt="Jennifer Chen" className="w-12 h-12 rounded-full object-cover border mr-3" />
-            <div>
-              <p className="font-semibold text-gray-900">Jennifer Chen</p>
-              <p className="text-sm text-gray-600">Director of Consumer Insights</p>
-              <p className="text-sm text-gray-500">BrandScope Analytics</p>
-            </div>
-          </div>
-          <p className="text-gray-700 text-sm">
-            "We use InsightSim to train junior researchers on moderation techniques. They practice with challenging personas before their first real focus group. It's dramatically improved our team's confidence and skills."
-          </p>
-        </div>
-      </div>
+         {/* Testimonial 3 */}
+         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+           <div className="flex items-center mb-4">
+             <img src="https://randomuser.me/api/portraits/women/29.jpg" alt="Jennifer Chen" className="w-12 h-12 rounded-full object-cover border mr-3" />
+             <div>
+               <p className="font-semibold text-gray-900">Jennifer Chen</p>
+               <p className="text-sm text-gray-600">Director of Consumer Insights</p>
+               <p className="text-sm text-gray-500">BrandScope Analytics</p>
+             </div>
+           </div>
+           <p className="text-gray-700 text-sm">
+             "We use InsightSim to train junior researchers on moderation techniques. They practice with challenging personas before their first real focus group. It's dramatically improved our team's confidence and skills."
+           </p>
+         </div>
+       </div>
 
-      {/* Company Logos */}
-      <div className="text-center">
-        <p className="text-sm text-gray-500 mb-6">Trusted by research teams at:</p>
-        <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
-          <div className="bg-gray-200 rounded px-6 py-3">
-            <span className="text-gray-600 font-semibold">Insights & Co.</span>
-          </div>
-          <div className="bg-gray-200 rounded px-6 py-3">
-            <span className="text-gray-600 font-semibold">TechFlow Solutions</span>
-          </div>
-          <div className="bg-gray-200 rounded px-6 py-3">
-            <span className="text-gray-600 font-semibold">BrandScope Analytics</span>
-          </div>
-          <div className="bg-gray-200 rounded px-6 py-3">
-            <span className="text-gray-600 font-semibold">Research Dynamics</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+       {/* Company Logos */}
+       <div className="text-center">
+         <p className="text-sm text-gray-500 mb-6">Trusted by research teams at:</p>
+         <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
+           <div className="bg-gray-200 rounded px-6 py-3">
+             <span className="text-gray-600 font-semibold">Insights & Co.</span>
+           </div>
+           <div className="bg-gray-200 rounded px-6 py-3">
+             <span className="text-gray-600 font-semibold">TechFlow Solutions</span>
+           </div>
+           <div className="bg-gray-200 rounded px-6 py-3">
+             <span className="text-gray-600 font-semibold">BrandScope Analytics</span>
+           </div>
+           <div className="bg-gray-200 rounded px-6 py-3">
+             <span className="text-gray-600 font-semibold">Research Dynamics</span>
+           </div>
+         </div>
+       </div>
+     </div>
+   </div>
+ </section>
 
-{/* Pricing Section */}
-<section className="py-20 bg-white">
-  <div className="container">
-    <div className="mx-auto max-w-6xl">
-      {/* Section Header */}
-      <div className="text-center mb-16">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
-          Simple, Transparent Pricing
-        </h2>
-        <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-          Choose the plan that fits your research needs. Start free, upgrade as you grow.
-        </p>
-      </div>
+ {/* Pricing Section */}
+ <section className="py-20 bg-white">
+   <div className="container">
+     <div className="mx-auto max-w-6xl">
+       {/* Section Header */}
+       <div className="text-center mb-16">
+         <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
+           Simple, Transparent Pricing
+         </h2>
+         <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+           Choose the plan that fits your research needs. Start free, upgrade as you grow.
+         </p>
+       </div>
 
-      {/* Pricing Cards */}
-      <div className="grid gap-8 md:grid-cols-3">
-        {/* Free Trial */}
-        <div className="bg-white rounded-xl p-8 border-2 border-gray-200 relative">
-          <div className="text-center mb-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Free Trial</h3>
-            <p className="text-gray-600 text-sm mb-4">Perfect for trying InsightSim</p>
-            <div className="mb-4">
-              <span className="text-3xl font-bold text-gray-900">$0</span>
-              <span className="text-gray-600">/14 days</span>
-            </div>
-            <p className="text-xs text-green-600 font-medium">No credit card required</p>
-          </div>
-          <ul className="space-y-3 mb-8">
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              3 simulations included
-            </li>
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Up to 5 AI participants per session
-            </li>
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Basic discussion guide templates
-            </li>
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Email support
-            </li>
-          </ul>
-          <Link href="/signup">
-            <Button className="w-full" variant="outline">
-              Start Free Trial
-            </Button>
-          </Link>
-        </div>
+       {/* Pricing Cards */}
+       <div className="grid gap-8 md:grid-cols-3">
+         {/* Free Trial */}
+         <div className="bg-white rounded-xl p-8 border-2 border-gray-200 relative">
+           <div className="text-center mb-6">
+             <h3 className="text-xl font-semibold text-gray-900 mb-2">Free Trial</h3>
+             <p className="text-gray-600 text-sm mb-4">Perfect for trying InsightSim</p>
+             <div className="mb-4">
+               <span className="text-3xl font-bold text-gray-900">$0</span>
+               <span className="text-gray-600">/14 days</span>
+             </div>
+             <p className="text-xs text-green-600 font-medium">No credit card required</p>
+           </div>
+           <ul className="space-y-3 mb-8">
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               3 simulations included
+             </li>
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Up to 5 AI participants per session
+             </li>
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Basic discussion guide templates
+             </li>
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Email support
+             </li>
+           </ul>
+           <Link href="/signup">
+             <Button className="w-full" variant="outline">
+               Start Free Trial
+             </Button>
+           </Link>
+         </div>
 
-        {/* Professional */}
-        <div className="bg-white rounded-xl p-8 border-2 border-primary relative">
-          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-            <span className="bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">Most Popular</span>
-          </div>
-          <div className="text-center mb-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Professional</h3>
-            <p className="text-gray-600 text-sm mb-4">For individual researchers</p>
-            <div className="mb-4">
-              <span className="text-3xl font-bold text-gray-900">$49</span>
-              <span className="text-gray-600">/month</span>
-            </div>
-            <p className="text-xs text-gray-500">Billed monthly or annually</p>
-          </div>
-          <ul className="space-y-3 mb-8">
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Unlimited simulations
-            </li>
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Up to 8 AI participants per session
-            </li>
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Advanced persona customization
-            </li>
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Export to PDF, Word, Excel
-            </li>
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Priority email support
-            </li>
-          </ul>
-          <Link href="/signup">
-            <Button className="w-full">
-              Start Professional Plan
-            </Button>
-          </Link>
-        </div>
+         {/* Professional */}
+         <div className="bg-white rounded-xl p-8 border-2 border-primary relative">
+           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+             <span className="bg-primary text-white px-3 py-1 rounded-full text-xs font-medium">Most Popular</span>
+           </div>
+           <div className="text-center mb-6">
+             <h3 className="text-xl font-semibold text-gray-900 mb-2">Professional</h3>
+             <p className="text-gray-600 text-sm mb-4">For individual researchers</p>
+             <div className="mb-4">
+               <span className="text-3xl font-bold text-gray-900">$49</span>
+               <span className="text-gray-600">/month</span>
+             </div>
+             <p className="text-xs text-gray-500">Billed monthly or annually</p>
+           </div>
+           <ul className="space-y-3 mb-8">
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Unlimited simulations
+             </li>
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Up to 8 AI participants per session
+             </li>
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Advanced persona customization
+             </li>
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Export to PDF, Word, Excel
+             </li>
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Priority email support
+             </li>
+           </ul>
+           <Link href="/signup">
+             <Button className="w-full">
+               Start Professional Plan
+             </Button>
+           </Link>
+         </div>
 
-        {/* Enterprise */}
-        <div className="bg-white rounded-xl p-8 border-2 border-gray-200 relative">
-          <div className="text-center mb-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Enterprise</h3>
-            <p className="text-gray-600 text-sm mb-4">For teams and agencies</p>
-            <div className="mb-4">
-              <span className="text-3xl font-bold text-gray-900">$149</span>
-              <span className="text-gray-600">/month</span>
-            </div>
-            <p className="text-xs text-gray-500">Up to 10 team members</p>
-          </div>
-          <ul className="space-y-3 mb-8">
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Everything in Professional
-            </li>
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Team collaboration features
-            </li>
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Shared persona libraries
-            </li>
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Advanced analytics & reporting
-            </li>
-            <li className="flex items-center text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Phone & chat support
-            </li>
-          </ul>
-          <Link href="/contact">
-            <Button className="w-full" variant="outline">
-              Contact Sales
-            </Button>
-          </Link>
-        </div>
-      </div>
+         {/* Enterprise */}
+         <div className="bg-white rounded-xl p-8 border-2 border-gray-200 relative">
+           <div className="text-center mb-6">
+             <h3 className="text-xl font-semibold text-gray-900 mb-2">Enterprise</h3>
+             <p className="text-gray-600 text-sm mb-4">For teams and agencies</p>
+             <div className="mb-4">
+               <span className="text-3xl font-bold text-gray-900">$149</span>
+               <span className="text-gray-600">/month</span>
+             </div>
+             <p className="text-xs text-gray-500">Up to 10 team members</p>
+           </div>
+           <ul className="space-y-3 mb-8">
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Everything in Professional
+             </li>
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Team collaboration features
+             </li>
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Shared persona libraries
+             </li>
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Advanced analytics & reporting
+             </li>
+             <li className="flex items-center text-sm text-gray-600">
+               <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+               </svg>
+               Phone & chat support
+             </li>
+           </ul>
+           <Link href="/contact">
+             <Button className="w-full" variant="outline">
+               Contact Sales
+             </Button>
+           </Link>
+         </div>
+       </div>
 
-      {/* Bottom Note */}
-      <div className="text-center mt-12">
-        <p className="text-sm text-gray-500">
-          All plans include secure data handling and GDPR compliance. Need custom features? 
-          <Link href="/contact" className="text-primary hover:underline ml-1">Contact us</Link>
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
+       {/* Bottom Note */}
+       <div className="text-center mt-12">
+         <p className="text-sm text-gray-500">
+           All plans include secure data handling and GDPR compliance. Need custom features? 
+           <Link href="/contact" className="text-primary hover:underline ml-1">Contact us</Link>
+         </p>
+       </div>
+     </div>
+   </div>
+ </section>
 
-{/* FAQ Section */}
-<section className="py-20 bg-gray-50">
-  <div className="container">
-    <div className="mx-auto max-w-4xl">
-      {/* Section Header */}
-      <div className="text-center mb-16">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
-          Frequently Asked Questions
-        </h2>
-        <p className="text-lg text-gray-600">
-          Everything you need to know about InsightSim and how it enhances your research process
-        </p>
-      </div>
+ {/* FAQ Section */}
+ <section className="py-20 bg-gray-50">
+   <div className="container">
+     <div className="mx-auto max-w-4xl">
+       {/* Section Header */}
+       <div className="text-center mb-16">
+         <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
+           Frequently Asked Questions
+         </h2>
+         <p className="text-lg text-gray-600">
+           Everything you need to know about InsightSim and how it enhances your research process
+         </p>
+       </div>
 
-      {/* FAQ Items */}
-      <div className="space-y-4">
-        {/* FAQ 1 */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <button
-            className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
-            onClick={() => setOpenNewFaq(openNewFaq === 0 ? null : 0)}
-            aria-expanded={openNewFaq === 0}
-          >
-            <h3 className="text-lg font-semibold text-gray-900">
-              Does this replace real research?
-            </h3>
-            <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 0 ? 'rotate-180' : ''}`} />
-          </button>
-          {openNewFaq === 0 && (
-            <div className="px-6 pb-6 text-gray-600">
-              No, InsightSim enhances your research process—it doesn't replace it. Think of it as a testing ground for your methodology. Use it to refine discussion guides, test hypotheses, and validate your approach before investing in expensive fieldwork. The insights are directional and help you prepare for more effective real research with human participants.
-            </div>
-          )}
-        </div>
+       {/* FAQ Items */}
+       <div className="space-y-4">
+         {/* FAQ 1 */}
+         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+           <button
+             className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
+             onClick={() => setOpenNewFaq(openNewFaq === 0 ? null : 0)}
+             aria-expanded={openNewFaq === 0}
+           >
+             <h3 className="text-lg font-semibold text-gray-900">
+               Does this replace real research?
+             </h3>
+             <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 0 ? 'rotate-180' : ''}`} />
+           </button>
+           {openNewFaq === 0 && (
+             <div className="px-6 pb-6 text-gray-600">
+               No, InsightSim enhances your research process—it doesn't replace it. Think of it as a testing ground for your methodology. Use it to refine discussion guides, test hypotheses, and validate your approach before investing in expensive fieldwork. The insights are directional and help you prepare for more effective real research with human participants.
+             </div>
+           )}
+         </div>
 
-        {/* FAQ 2 */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <button
-            className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
-            onClick={() => setOpenNewFaq(openNewFaq === 1 ? null : 1)}
-            aria-expanded={openNewFaq === 1}
-          >
-            <h3 className="text-lg font-semibold text-gray-900">
-              How accurate are the AI responses?
-            </h3>
-            <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 1 ? 'rotate-180' : ''}`} />
-          </button>
-          {openNewFaq === 1 && (
-            <div className="px-6 pb-6 text-gray-600">
-              Our AI personas are trained on extensive research data and behavioral patterns to provide realistic responses. While they can't replicate the full complexity of human behavior, they're excellent for identifying weak questions, testing discussion flow, and exploring different scenarios. We recommend using insights as directional guidance to inform your real research design.
-            </div>
-          )}
-        </div>
+         {/* FAQ 2 */}
+         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+           <button
+             className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
+             onClick={() => setOpenNewFaq(openNewFaq === 1 ? null : 1)}
+             aria-expanded={openNewFaq === 1}
+           >
+             <h3 className="text-lg font-semibold text-gray-900">
+               How accurate are the AI responses?
+             </h3>
+             <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 1 ? 'rotate-180' : ''}`} />
+           </button>
+           {openNewFaq === 1 && (
+             <div className="px-6 pb-6 text-gray-600">
+               Our AI personas are trained on extensive research data and behavioral patterns to provide realistic responses. While they can't replicate the full complexity of human behavior, they're excellent for identifying weak questions, testing discussion flow, and exploring different scenarios. We recommend using insights as directional guidance to inform your real research design.
+             </div>
+           )}
+         </div>
 
-        {/* FAQ 3 */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <button
-            className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
-            onClick={() => setOpenNewFaq(openNewFaq === 2 ? null : 2)}
-            aria-expanded={openNewFaq === 2}
-          >
-            <h3 className="text-lg font-semibold text-gray-900">
-              What about data privacy and security?
-            </h3>
-            <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 2 ? 'rotate-180' : ''}`} />
-          </button>
-          {openNewFaq === 2 && (
-            <div className="px-6 pb-6 text-gray-600">
-              We take data security seriously. All simulation data is encrypted in transit and at rest. We're GDPR compliant and never share your research content with third parties. Your discussion guides, personas, and simulation results remain completely private to your account. We also offer enterprise-grade security features for larger teams.
-            </div>
-          )}
-        </div>
+         {/* FAQ 3 */}
+         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+           <button
+             className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
+             onClick={() => setOpenNewFaq(openNewFaq === 2 ? null : 2)}
+             aria-expanded={openNewFaq === 2}
+           >
+             <h3 className="text-lg font-semibold text-gray-900">
+               What about data privacy and security?
+             </h3>
+             <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 2 ? 'rotate-180' : ''}`} />
+           </button>
+           {openNewFaq === 2 && (
+             <div className="px-6 pb-6 text-gray-600">
+               We take data security seriously. All simulation data is encrypted in transit and at rest. We're GDPR compliant and never share your research content with third parties. Your discussion guides, personas, and simulation results remain completely private to your account. We also offer enterprise-grade security features for larger teams.
+             </div>
+           )}
+         </div>
 
-        {/* FAQ 4 */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <button
-            className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
-            onClick={() => setOpenNewFaq(openNewFaq === 3 ? null : 3)}
-            aria-expanded={openNewFaq === 3}
-          >
-            <h3 className="text-lg font-semibold text-gray-900">
-              Can I export results and integrate with my workflow?
-            </h3>
-            <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 3 ? 'rotate-180' : ''}`} />
-          </button>
-          {openNewFaq === 3 && (
-            <div className="px-6 pb-6 text-gray-600">
-              Yes! You can export simulation transcripts, insights summaries, and participant responses in multiple formats including PDF, Word, and Excel. This makes it easy to share findings with stakeholders, include in research proposals, or integrate with your existing analysis tools. Enterprise plans include additional integration options.
-            </div>
-          )}
-        </div>
+         {/* FAQ 4 */}
+         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+           <button
+             className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
+             onClick={() => setOpenNewFaq(openNewFaq === 3 ? null : 3)}
+             aria-expanded={openNewFaq === 3}
+           >
+             <h3 className="text-lg font-semibold text-gray-900">
+               Can I export results and integrate with my workflow?
+             </h3>
+             <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 3 ? 'rotate-180' : ''}`} />
+           </button>
+           {openNewFaq === 3 && (
+             <div className="px-6 pb-6 text-gray-600">
+               Yes! You can export simulation transcripts, insights summaries, and participant responses in multiple formats including PDF, Word, and Excel. This makes it easy to share findings with stakeholders, include in research proposals, or integrate with your existing analysis tools. Enterprise plans include additional integration options.
+             </div>
+           )}
+         </div>
 
-        {/* FAQ 5 */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <button
-            className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
-            onClick={() => setOpenNewFaq(openNewFaq === 4 ? null : 4)}
-            aria-expanded={openNewFaq === 4}
-          >
-            <h3 className="text-lg font-semibold text-gray-900">
-              How do I integrate this into my current research workflow?
-            </h3>
-            <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 4 ? 'rotate-180' : ''}`} />
-          </button>
-          {openNewFaq === 4 && (
-            <div className="px-6 pb-6 text-gray-600">
-              InsightSim fits naturally into your existing process. Use it in the planning phase to test discussion guides, during proposal development to provide directional insights, or for training junior researchers. Many users run simulations before client presentations to anticipate questions and refine their approach. It's designed to complement, not disrupt, your established methodology.
-            </div>
-          )}
-        </div>
+         {/* FAQ 5 */}
+         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+           <button
+             className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
+             onClick={() => setOpenNewFaq(openNewFaq === 4 ? null : 4)}
+             aria-expanded={openNewFaq === 4}
+           >
+             <h3 className="text-lg font-semibold text-gray-900">
+               How do I integrate this into my current research workflow?
+             </h3>
+             <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 4 ? 'rotate-180' : ''}`} />
+           </button>
+           {openNewFaq === 4 && (
+             <div className="px-6 pb-6 text-gray-600">
+               InsightSim fits naturally into your existing process. Use it in the planning phase to test discussion guides, during proposal development to provide directional insights, or for training junior researchers. Many users run simulations before client presentations to anticipate questions and refine their approach. It's designed to complement, not disrupt, your established methodology.
+             </div>
+           )}
+         </div>
 
-        {/* FAQ 6 */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <button
-            className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
-            onClick={() => setOpenNewFaq(openNewFaq === 5 ? null : 5)}
-            aria-expanded={openNewFaq === 5}
-          >
-            <h3 className="text-lg font-semibold text-gray-900">
-              What types of research studies can I simulate?
-            </h3>
-            <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 5 ? 'rotate-180' : ''}`} />
-          </button>
-          {openNewFaq === 5 && (
-            <div className="px-6 pb-6 text-gray-600">
-              InsightSim supports focus groups, in-depth interviews, and concept testing scenarios. You can simulate various participant demographics, test different discussion guide approaches, and explore multiple hypotheses. Coming soon: quantitative survey simulation to validate qualitative findings and persona calibration using your existing research data.
-            </div>
-          )}
-        </div>
-      </div>
+         {/* FAQ 6 */}
+         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+           <button
+             className="w-full flex items-center justify-between py-6 px-6 text-left focus:outline-none hover:bg-gray-50 transition"
+             onClick={() => setOpenNewFaq(openNewFaq === 5 ? null : 5)}
+             aria-expanded={openNewFaq === 5}
+           >
+             <h3 className="text-lg font-semibold text-gray-900">
+               What types of research studies can I simulate?
+             </h3>
+             <ChevronDown className={`h-5 w-5 transition-transform ${openNewFaq === 5 ? 'rotate-180' : ''}`} />
+           </button>
+           {openNewFaq === 5 && (
+             <div className="px-6 pb-6 text-gray-600">
+               InsightSim supports focus groups, in-depth interviews, and concept testing scenarios. You can simulate various participant demographics, test different discussion guide approaches, and explore multiple hypotheses. Coming soon: quantitative survey simulation to validate qualitative findings and persona calibration using your existing research data.
+             </div>
+           )}
+         </div>
+       </div>
 
-      {/* Bottom CTA */}
-      <div className="text-center mt-12">
-        <p className="text-gray-600 mb-4">Still have questions?</p>
-        <Link href="/contact">
-          <Button variant="outline">
-            Contact Support
-          </Button>
-        </Link>
-      </div>
-    </div>
-  </div>
-</section>
+       {/* Bottom CTA */}
+       <div className="text-center mt-12">
+         <p className="text-gray-600 mb-4">Still have questions?</p>
+         <Link href="/contact">
+           <Button variant="outline">
+             Contact Support
+           </Button>
+         </Link>
+       </div>
+     </div>
+   </div>
+ </section>
 
 
 
@@ -1569,50 +1569,6 @@ export default function LandingPage() {
           </div>
         </section> */}
 
-        {/* Review Section */}
-        <section className="py-20 bg-gray-50 border-t testimonials-section">
-          <div className="container max-w-5xl mx-auto">
-            <h2 className="mb-12 text-center text-3xl font-bold">What Our Users Say</h2>
-            <div className="grid gap-8 md:grid-cols-3">
-              {/* Review 1 */}
-              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center testimonial-card">
-                <svg className="h-8 w-8 text-primary mb-4 quote-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m2 7H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v11a2 2 0 01-2 2z" /></svg>
-                <p className="text-gray-700 text-center mb-4">InsightSim has cut our research timeline in half. We can now test concepts and get directional insights before committing to full studies.</p>
-                <div className="flex items-center gap-3 mt-4">
-                  <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Sarah Chen" className="h-10 w-10 rounded-full object-cover border" />
-                  <div>
-                    <div className="font-semibold">Sarah Chen</div>
-                    <div className="text-xs text-gray-500">Research Director, Consumer Goods Inc.</div>
-                  </div>
-                </div>
-              </div>
-              {/* Review 2 */}
-              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center testimonial-card">
-                <svg className="h-8 w-8 text-primary mb-4 quote-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m2 7H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v11a2 2 0 01-2 2z" /></svg>
-                <p className="text-gray-700 text-center mb-4">The AI personas are surprisingly nuanced. They capture the complexity of real consumers and provide insights that feel authentic and actionable.</p>
-                <div className="flex items-center gap-3 mt-4">
-                  <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Michael Johnson" className="h-10 w-10 rounded-full object-cover border" />
-                  <div>
-                    <div className="font-semibold">Michael Johnson</div>
-                    <div className="text-xs text-gray-500">UX Research Lead, TechApp</div>
-                  </div>
-                </div>
-              </div>
-              {/* Review 3 */}
-              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center testimonial-card">
-                <svg className="h-8 w-8 text-primary mb-4 quote-icon" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m2 7H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v11a2 2 0 01-2 2z" /></svg>
-                <p className="text-gray-700 text-center mb-4">We use InsightSim to pressure-test our discussion guides before real sessions. It's improved our moderator effectiveness and research quality.</p>
-                <div className="flex items-center gap-3 mt-4">
-                  <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Aisha Patel" className="h-10 w-10 rounded-full object-cover border" />
-                  <div>
-                    <div className="font-semibold">Aisha Patel</div>
-                    <div className="text-xs text-gray-500">Qualitative Researcher, Market Insights Group</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       <footer className="border-t bg-white py-8">

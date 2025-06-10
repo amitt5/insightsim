@@ -730,7 +730,7 @@ export default function LandingPage() {
         </section>
 
         {/* Key Features & Benefits Section */}
-        <section className="py-20 bg-gray-50">
+        <section id="features" className="py-20 bg-gray-50">
           <div className="container">
             <div className="mx-auto max-w-6xl">
               {/* Section Header */}
@@ -856,7 +856,7 @@ export default function LandingPage() {
         </section>
 
         {/* Loom Video Demo Section */}
-        <section className="min-h-screen flex items-center justify-center py-20 bg-white border-t demo-section">
+        <section id="demo" className="min-h-screen flex items-center justify-center py-20 bg-white border-t demo-section">
           <div className="container max-w-3xl mx-auto flex flex-col items-center">
             <h2 className="mb-2 text-center text-3xl font-bold demo-section-title">See How InsightSim Works</h2>
             <p className="mb-10 text-center text-gray-500 text-lg">Watch a quick demo of how to run your first AI-powered focus group</p>
@@ -1136,7 +1136,7 @@ export default function LandingPage() {
  </section>
 
  {/* Pricing Section */}
- <section className="py-20 bg-white">
+ <section id="pricing" className="py-20 bg-white">
    <div className="container">
      <div className="mx-auto max-w-6xl">
        {/* Section Header */}
@@ -1311,7 +1311,7 @@ export default function LandingPage() {
  </section>
 
  {/* FAQ Section */}
- <section className="py-20 bg-gray-50">
+ <section id="faq" className="py-20 bg-gray-50">
    <div className="container">
      <div className="mx-auto max-w-4xl">
        {/* Section Header */}
@@ -1453,121 +1453,6 @@ export default function LandingPage() {
      </div>
    </div>
  </section>
-
-
-
-
-
-
-
-
-
-
-
-
-        {/* Features Section */}
-        {/* <section id="features" className="bg-gray-50 py-20">
-          <div className="container">
-            <h2 className="mb-12 text-center text-3xl font-bold feature-content">Why InsightSim?</h2>
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-              {[
-                {
-                  title: "AI Participants",
-                  description: "Domain-specific personas trained to simulate real consumer behavior",
-                  icon: <CheckCircle className="h-6 w-6 feature-icon" />,
-                },
-                {
-                  title: "Flexible Moderation",
-                  description: "Choose between AI or human-led moderation for your research",
-                  icon: <CheckCircle className="h-6 w-6 feature-icon" />,
-                },
-                {
-                  title: "Results in Minutes",
-                  description: "Get qualitative insights in minutes, not weeks",
-                  icon: <CheckCircle className="h-6 w-6 feature-icon" />,
-                },
-                {
-                  title: "Cost-Effective",
-                  description: "Reduce research costs while maintaining quality insights",
-                  icon: <CheckCircle className="h-6 w-6 feature-icon" />,
-                },
-              ].map((feature, i) => (
-                <div key={i} className="rounded-lg bg-white p-6 shadow-sm feature-content">
-                  <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    {feature.icon}
-                  </div>
-                  <h3 className="mb-2 text-xl font-medium">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section> */}
-
-        {/* Comparison Section */}
-        {/* <section className="py-20 comparison-section">
-          <div className="container">
-            <h2 className="mb-2 text-center text-3xl font-bold comparison-title">Why not just use ChatGPT?</h2>
-            <p className="mb-12 text-center text-lg text-gray-600">
-              InsightSim is purpose-built for qualitative research
-            </p>
-            <div className="mx-auto max-w-3xl overflow-hidden rounded-lg border animate-element comparison-table">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="p-4 text-left">Feature</th>
-                    <th className="p-4 text-center">InsightSim</th>
-                    <th className="p-4 text-center">ChatGPT</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { name: "Multi-agent memory", insightSim: true, chatGpt: false },
-                    { name: "Project management", insightSim: true, chatGpt: false },
-                    { name: "Domain-trained personas", insightSim: true, chatGpt: false },
-                    { name: "Exportable reports", insightSim: true, chatGpt: false },
-                  ].map((feature, i) => (
-                    <tr key={i} className="border-t animate-element">
-                      <td className="p-4">{feature.name}</td>
-                      <td className="p-4 text-center text-primary">
-                        {feature.insightSim ? <span className="checkmark">✓</span> : <span className="x-mark">✗</span>}
-                      </td>
-                      <td className="p-4 text-center text-gray-500">
-                        {feature.chatGpt ? <span className="checkmark">✓</span> : <span className="x-mark">✗</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section> */}
-
-
-        {/* FAQ Section (styled like screenshot) */}
-        {/* <section className="py-20 bg-white border-t faq-section">
-          <div className="container max-w-4xl mx-auto">
-            <h2 className="mb-2 text-center text-3xl font-bold faq-title">Frequently Asked Questions</h2>
-            <p className="mb-10 text-center text-gray-500 text-lg">Everything you need to know about InsightSim</p>
-            <div className="bg-white rounded-lg shadow-sm divide-y">
-              {faqList.map((item, idx) => (
-                <div key={item.q} className={`faq-item${openFaq === idx ? ' open' : ''} animate-element`}>
-                  <button
-                    className="w-full flex items-center justify-between py-5 px-6 text-left text-lg font-medium focus:outline-none hover:bg-gray-50 transition faq-question"
-                    onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                    aria-expanded={openFaq === idx}
-                  >
-                    <span>{item.q}</span>
-                    <ChevronDown className={`h-5 w-5 transition-transform faq-arrow${openFaq === idx ? ' rotate-180' : ''}`} />
-                  </button>
-                  <div className="px-6 pb-6 text-gray-700 text-base animate-fade-in faq-answer" style={{ display: openFaq === idx ? 'block' : 'none', height: openFaq === idx ? 'auto' : 0, overflow: 'hidden' }}>
-                    {item.a}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section> */}
 
       </main>
 

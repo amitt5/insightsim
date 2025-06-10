@@ -4,10 +4,16 @@ import { Button } from "@/components/ui/button"
 import { UserCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 
-export function Navbar({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
+interface NavbarProps {
+  isAuthenticated?: boolean
+}
+
+export function Navbar({ isAuthenticated = false }: NavbarProps) {
   const [isVisible, setIsVisible] = useState(true)
   const [isAtTop, setIsAtTop] = useState(true)
   const [isHovering, setIsHovering] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [lastScrollY, setLastScrollY] = useState(0)
 
   useEffect(() => {
     let scrollTimer: NodeJS.Timeout
@@ -94,6 +100,17 @@ export function Navbar({ isAuthenticated = false }: { isAuthenticated?: boolean 
     }
   }
 
+  // Smooth scroll function
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId)
+    if (section) {
+      section.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }
+  }
+
   return (
     <nav 
       className={`fixed top-0 left-0 right-0 z-50 border-b bg-white transition-transform duration-300 ease-in-out ${
@@ -125,6 +142,36 @@ export function Navbar({ isAuthenticated = false }: { isAuthenticated?: boolean 
               {/* <Link href="/reports" className="text-sm font-medium text-gray-700 hover:text-primary">
                 Reports
               </Link> */}
+            </div>
+          )}
+
+          {/* Navigation Links for Landing Page */}
+          {!isAuthenticated && (
+            <div className="ml-10 hidden space-x-6 md:flex">
+              <button 
+                onClick={() => scrollToSection('features')}
+                className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"
+              >
+                Features
+              </button>
+              <button 
+                onClick={() => scrollToSection('demo')}
+                className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"
+              >
+                Demo
+              </button>
+              <button 
+                onClick={() => scrollToSection('pricing')}
+                className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"
+              >
+                Pricing
+              </button>
+              <button 
+                onClick={() => scrollToSection('faq')}
+                className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"
+              >
+                FAQ
+              </button>
             </div>
           )}
         </div>

@@ -789,60 +789,83 @@ export default function LandingPage() {
               </div>
 
               {/* Stacked Upcoming Features */}
-              <div className="mt-8 space-y-8">
-                {/* Qual-to-Quant Validation */}
-                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 flex flex-col md:flex-row items-start md:items-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 md:mb-0 md:mr-6">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="flex items-center mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900 mr-2">Qual-to-Quant Validation: Test patterns with simulated surveys</h3>
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Coming Soon - June</span>
+              <div className="mt-8">
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  {/* <h3 className="text-xl font-semibold text-gray-900 mb-6">Coming Soon</h3> */}
+                  
+                  <div className="space-y-6">
+                    {/* Qual-to-Quant Validation */}
+                    <div className="flex flex-col md:flex-row items-start md:items-center">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 md:mb-0 md:mr-6">
+                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2">
+                          <h4 className="text-lg font-semibold text-gray-900 mr-2">Qual-to-Quant Validation: Test patterns with simulated surveys</h4>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Coming Soon - June</span>
+                        </div>
+                        <ul className="text-gray-600 space-y-1">
+                          <li>• Validate qualitative findings through simulated quantitative studies</li>
+                          <li>• Bridge the gap between exploratory insights and statistical validation</li>
+                        </ul>
+                      </div>
                     </div>
-                    <ul className="text-gray-600 space-y-2">
-                      <li>• Validate qualitative findings through simulated quantitative studies</li>
-                      <li>• Bridge the gap between exploratory insights and statistical validation</li>
-                    </ul>
+
+                    {/* Divider */}
+                    <div className="border-t border-gray-200"></div>
+
+                    {/* Smart Research Integration */}
+                    <div className="flex flex-col md:flex-row items-start md:items-center">
+                      <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4 md:mb-0 md:mr-6">
+                        <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2">
+                          <h4 className="text-lg font-semibold text-gray-900 mr-2">Smart Research Integration</h4>
+                          <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">Roadmap</span>
+                        </div>
+                        <ul className="text-gray-600 space-y-1">
+                          <li>• Feed existing research into the system for better question suggestions</li>
+                          <li>• Leverage past studies to generate more realistic participant responses</li>
+                          <li>• Build on your research history for continuously improving simulations</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Smart Research Integration */}
-                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 flex flex-col md:flex-row items-start md:items-center">
-                  <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4 md:mb-0 md:mr-6">
-                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900 mr-2">Smart Research Integration</h3>
-                      <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">Roadmap</span>
-                    </div>
-                    <ul className="text-gray-600 space-y-2">
-                      <li>• Feed existing research into the system for better question suggestions</li>
-                      <li>• Leverage past studies to generate more realistic participant responses</li>
-                      <li>• Build on your research history for continuously improving simulations</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom CTA */}
-              <div className="text-center mt-16">
-                <p className="text-lg text-gray-600 mb-6">
-                  Ready to enhance your research process with professional-grade AI simulation?
-                </p>
-                <Link href="/signup">
-                  <Button size="lg" className="px-8">
-                    Start Free Trial
-                  </Button>
-                </Link>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Loom Video Demo Section */}
+        <section className="py-20 bg-white border-t demo-section">
+          <div className="container max-w-3xl mx-auto flex flex-col items-center">
+            <h2 className="mb-2 text-center text-3xl font-bold demo-section-title">See How InsightSim Works</h2>
+            <p className="mb-10 text-center text-gray-500 text-lg">Watch a quick demo of how to run your first AI-powered focus group</p>
+            <div className="w-full flex justify-center mb-8">
+              <div className="w-full max-w-2xl aspect-video rounded-lg overflow-hidden shadow bg-gray-100 flex items-center justify-center video-container animate-element">
+                <iframe
+                  src="https://www.loom.com/embed/3f2acb20d33541ea8236200f080f3c8b"
+                  title="InsightSim Demo Video"
+                  allow="autoplay; fullscreen"
+                  frameBorder="0"
+                  className="w-full h-full min-h-[320px]"
+                  allowFullScreen
+                ></iframe>
+                {/* Play button overlay for animation (optional, visually hidden since Loom has its own) */}
+                <div className="play-button absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-white rounded-full p-4 shadow-lg cursor-pointer" style={{ pointerEvents: 'none', opacity: 0 }}>
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="currentColor" opacity="0.2"/><polygon points="13,10 24,16 13,22" fill="currentColor"/></svg>
+                </div>
+              </div>
+            </div>
+            <Button size="lg" className="mt-2 try-it-button animate-element" asChild>
+              <Link href="/signup">Try It Yourself</Link>
+            </Button>
           </div>
         </section>
 
@@ -924,6 +947,64 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Upcoming Features Section */}
+        <section className="py-20 bg-white">
+          <div className="container max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Coming Soon</h2>
+              <p className="text-lg text-gray-600">Enhanced features to make your research even more powerful</p>
+            </div>
+            
+            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+              <div className="space-y-8">
+                {/* Qual-to-Quant Validation */}
+                <div className="flex flex-col md:flex-row items-start md:items-center">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 md:mb-0 md:mr-6">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center mb-3">
+                      <h3 className="text-xl font-semibold text-gray-900 mr-3">Qual-to-Quant Validation</h3>
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">Coming Soon - June</span>
+                    </div>
+                    <p className="text-gray-600 mb-3">Test patterns with simulated surveys</p>
+                    <ul className="text-gray-600 space-y-1">
+                      <li>• Validate qualitative findings through simulated quantitative studies</li>
+                      <li>• Bridge the gap between exploratory insights and statistical validation</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Smart Research Integration */}
+                <div className="flex flex-col md:flex-row items-start md:items-center">
+                  <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4 md:mb-0 md:mr-6">
+                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center mb-3">
+                      <h3 className="text-xl font-semibold text-gray-900 mr-3">Smart Research Integration</h3>
+                      <span className="px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">Roadmap</span>
+                    </div>
+                    <p className="text-gray-600 mb-3">Learn from your research history</p>
+                    <ul className="text-gray-600 space-y-1">
+                      <li>• Feed existing research into the system for better question suggestions</li>
+                      <li>• Leverage past studies to generate more realistic participant responses</li>
+                      <li>• Build on your research history for continuously improving simulations</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* FAQ Section (styled like screenshot) */}
         <section className="py-20 bg-white border-t faq-section">
           <div className="container max-w-4xl mx-auto">
@@ -946,34 +1027,6 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-
-
-        {/* Loom Video Demo Section */}
-        <section className="py-20 bg-white border-t demo-section">
-          <div className="container max-w-3xl mx-auto flex flex-col items-center">
-            <h2 className="mb-2 text-center text-3xl font-bold demo-section-title">See How InsightSim Works</h2>
-            <p className="mb-10 text-center text-gray-500 text-lg">Watch a quick demo of how to run your first AI-powered focus group</p>
-            <div className="w-full flex justify-center mb-8">
-              <div className="w-full max-w-2xl aspect-video rounded-lg overflow-hidden shadow bg-gray-100 flex items-center justify-center video-container animate-element">
-                <iframe
-                  src="https://www.loom.com/embed/3f2acb20d33541ea8236200f080f3c8b"
-                  title="InsightSim Demo Video"
-                  allow="autoplay; fullscreen"
-                  frameBorder="0"
-                  className="w-full h-full min-h-[320px]"
-                  allowFullScreen
-                ></iframe>
-                {/* Play button overlay for animation (optional, visually hidden since Loom has its own) */}
-                <div className="play-button absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-white rounded-full p-4 shadow-lg cursor-pointer" style={{ pointerEvents: 'none', opacity: 0 }}>
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="currentColor" opacity="0.2"/><polygon points="13,10 24,16 13,22" fill="currentColor"/></svg>
-                </div>
-              </div>
-            </div>
-            <Button size="lg" className="mt-2 try-it-button animate-element" asChild>
-              <Link href="/signup">Try It Yourself</Link>
-            </Button>
           </div>
         </section>
 

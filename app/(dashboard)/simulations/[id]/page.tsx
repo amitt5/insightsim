@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Download, UserCircle, Menu, Copy } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePrompt";
-import { buildMessagesForOpenAI } from "@/utils/buildMessagesForOpenAI";
+import { buildMessagesForOpenAI, buildFollowUpQuestionsPrompt } from "@/utils/buildMessagesForOpenAI";
 import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import Link from "next/link";
@@ -105,7 +105,20 @@ export default function SimulationViewPage() {
     if (!showFollowUpQuestions) {
       setShowFollowUpQuestions(true)
       setIsLoadingFollowUpQuestions(true)
-      
+      const sample = {
+        simulation: simulationData?.simulation || {} as Simulation,
+        messages: simulationMessages || [] as SimulationMessage[],
+        personas: simulationData?.personas || [] as Persona[]
+      }
+      const prompt = buildFollowUpQuestionsPrompt(sample)
+      console.log('prompt', prompt);
+      const data = await runSimulationAPI(prompt, modelInUse);
+      console.log('data', data);
+      const parsedMessages = parseSimulationResponse(data.reply);
+      console.log('parsedMessages-amit', parsedMessages);
+      // // save messages to database
+      // const saveResult = await saveMessagesToDatabase(parsedMessages);
+      // console.log('saveResult', saveResult);
       // Simulate API call with delay
       setTimeout(() => {
         // Select 3 random questions

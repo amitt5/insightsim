@@ -1070,9 +1070,7 @@ export default function LandingPage() {
         {/* Testimonial 1 */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center mb-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-              <span className="text-blue-600 font-semibold text-lg">SM</span>
-            </div>
+            <img src="https://randomuser.me/api/portraits/women/32.jpg" alt="Sarah Mitchell" className="w-12 h-12 rounded-full object-cover border mr-3" />
             <div>
               <p className="font-semibold text-gray-900">Sarah Mitchell</p>
               <p className="text-sm text-gray-600">Senior Research Manager</p>
@@ -1087,9 +1085,7 @@ export default function LandingPage() {
         {/* Testimonial 2 */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center mb-4">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-3">
-              <span className="text-green-600 font-semibold text-lg">MR</span>
-            </div>
+            <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="Marcus Rodriguez" className="w-12 h-12 rounded-full object-cover border mr-3" />
             <div>
               <p className="font-semibold text-gray-900">Marcus Rodriguez</p>
               <p className="text-sm text-gray-600">UX Research Lead</p>
@@ -1104,9 +1100,7 @@ export default function LandingPage() {
         {/* Testimonial 3 */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center mb-4">
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-              <span className="text-purple-600 font-semibold text-lg">JC</span>
-            </div>
+            <img src="https://randomuser.me/api/portraits/women/29.jpg" alt="Jennifer Chen" className="w-12 h-12 rounded-full object-cover border mr-3" />
             <div>
               <p className="font-semibold text-gray-900">Jennifer Chen</p>
               <p className="text-sm text-gray-600">Director of Consumer Insights</p>

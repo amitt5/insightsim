@@ -75,8 +75,49 @@ export default function SimulationViewPage() {
   const [modelInUse, setModelInUse] = useState<string>('gpt-4o-mini')
   const [showInstructionBox, setShowInstructionBox] = useState(false)
   const [userInstruction, setUserInstruction] = useState("")
+  const [showFollowUpQuestions, setShowFollowUpQuestions] = useState(false)
+  const [isLoadingFollowUpQuestions, setIsLoadingFollowUpQuestions] = useState(false)
+  const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([])
 
   const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
+
+  // Hardcoded follow-up questions for now
+  const hardcodedQuestions = [
+    "Can you elaborate more on that point?",
+    "What specific examples can you share about this?",
+    "How does this compare to your previous experiences?",
+    "What concerns do you have about this approach?",
+    "Can you walk us through your decision-making process?",
+    "What would convince you to change your mind on this?",
+    "How important is this factor in your overall evaluation?",
+    "What questions do you still have about this topic?",
+    "Can you help us understand why you feel that way?",
+    "What would be the ideal solution from your perspective?",
+    "How does this impact your daily routine or workflow?",
+    "What alternatives have you considered?",
+    "Can you describe what success would look like to you?",
+    "What barriers do you see in implementing this?",
+    "How do you think others in your situation would react?"
+  ]
+
+  // Function to handle follow-up questions
+  const handleFollowUpQuestions = async () => {
+    if (!showFollowUpQuestions) {
+      setShowFollowUpQuestions(true)
+      setIsLoadingFollowUpQuestions(true)
+      
+      // Simulate API call with delay
+      setTimeout(() => {
+        // Select 3 random questions
+        const shuffled = hardcodedQuestions.sort(() => 0.5 - Math.random())
+        setFollowUpQuestions(shuffled.slice(0, 3))
+        setIsLoadingFollowUpQuestions(false)
+      }, 1500) // 1.5 second delay
+    } else {
+      setShowFollowUpQuestions(false)
+      setFollowUpQuestions([])
+    }
+  }
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -825,7 +866,7 @@ export default function SimulationViewPage() {
                  {/* AI Instruction Box */}
                  {formattedMessages.length > 0 && (
                 //  { (simulationData?.simulation?.mode === "human-mod") && (
-                  <div className="mt-2">
+                  <div className="mt-2 space-y-2">
                     <button
                       type="button"
                       className="text-xs text-primary underline hover:text-primary/80 focus:outline-none"
@@ -833,6 +874,15 @@ export default function SimulationViewPage() {
                     >
                       {showInstructionBox ? "Hide AI instruction box" : "Not happy with the response? Instruct AI to improve its replies."}
                     </button>
+                    
+                    <button
+                      type="button"
+                      className="block text-xs text-primary underline hover:text-primary/80 focus:outline-none"
+                      onClick={handleFollowUpQuestions}
+                    >
+                      {showFollowUpQuestions ? "Hide follow-up questions" : "Suggest follow-up questions"}
+                    </button>
+                    
                     {showInstructionBox && (
                       <div className="mt-2 flex flex-col gap-2">
                         <textarea
@@ -849,10 +899,39 @@ export default function SimulationViewPage() {
                         </div>
                       </div>
                     )}
+
+                    {showFollowUpQuestions && (
+                      <div className="mt-2 flex flex-col gap-2">
+                        {isLoadingFollowUpQuestions ? (
+                          <div className="flex items-center gap-2 py-2">
+                            <div className="h-2 w-2 bg-primary rounded-full animate-bounce" />
+                            <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                            <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                            <span className="text-xs text-gray-500 ml-2">Generating follow-up questions...</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-500">Click on a question to add it to your message:</p>
+                            {followUpQuestions.map((question, index) => (
+                              <button
+                                key={index}
+                                type="button"
+                                className="w-full text-left p-2 text-xs border border-gray-200 rounded hover:bg-gray-50 hover:border-primary transition-colors"
+                                onClick={() => setNewMessage(question)}
+                              >
+                                {question}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                { ((simulationData?.simulation?.mode === "human-mod") || (formattedMessages.length > 0)) &&
+               
+
+                {((simulationData?.simulation?.mode === "human-mod") || (formattedMessages.length > 0)) &&
                 <div className="mt-2 flex gap-2 ">
                 {/* { (simulationData?.simulation?.mode === "human-mod") &&<div className="flex gap-2 "> */}
                 {/* formattedMessages.length > 0 && */}

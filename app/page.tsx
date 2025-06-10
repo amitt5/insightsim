@@ -442,12 +442,27 @@ export default function LandingPage() {
           <div className="container">
             <div className="mx-auto max-w-3xl text-center">
               <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-                <span className="hero-title-part block">AI-Powered Focus Groups.</span>
+                {/* <span className="hero-title-part block">AI-Powered Focus Groups.</span>
                 <span className="hero-title-part accent block text-primary">Real Insights.</span>
-                <span className="hero-title-part block">No Waiting.</span>
+                <span className="hero-title-part block">No Waiting.</span> */}
+                 <span className="hero-title-part block">AI-Powered Focus Groups.</span>
+                {/* <span className="hero-title-part block ">Directional Insights.</span> */}
+                <span className="hero-title-part accent block text-primary">No Waiting.</span>
               </h1>
               <p className="mb-10 text-xl text-gray-600 hero-subtitle">
-                Run simulated qualitative research with intelligent AI personas and moderators.
+              Test discussion guides, sharpen hypotheses, and get directional insights before your real research sessions
+                {/* Run simulated qualitative research with intelligent AI personas and moderators. */}
+                {/* "Test discussion guides, validate hypotheses, and get directional insights before your real qualitative and quantitative research" */}
+
+{/* 
+                Headline: "AI Research Simulation Platform for Qual & Quant Studies"
+                Subheadline: "Simulate focus groups and surveys, test research designs, and validate findings before investing in real fieldwork"
+                Option 3: Professional Research Focus
+                Headline: "Professional AI Research Simulation Platform"
+                Subheadline: "From qualitative insights to quantitative validation - test your research approach before going to field" */}
+
+
+
               </p>
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row hero-buttons">
                 <Link href="/signup">
@@ -457,9 +472,39 @@ export default function LandingPage() {
                 </Link>
                 <Link href="#features">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto button">
-                    Learn More
+                    Watch Demo
                   </Button>
                 </Link>
+              </div>
+
+              {/*add later Trust indicator: "Trusted by 500+ Market Researchers" */}
+
+
+            </div>
+          </div>
+        </section>
+
+
+        {/* Who Is This Product For Section */}
+        <section className="py-20 bg-gray-50 border-t">
+          <div className="container max-w-5xl mx-auto">
+            <h2 className="mb-2 text-center text-3xl font-bold">Who Is InsightSim For?</h2>
+            <p className="mb-10 text-center text-gray-500 text-lg">Our platform is designed for professionals who need deep qualitative insights without the traditional time and cost constraints.</p>
+            <div className="grid gap-8 md:grid-cols-3">
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+                <span className="text-4xl mb-4">🔍</span>
+                <h3 className="mb-2 text-xl font-semibold text-center">Qualitative Researchers</h3>
+                <p className="text-gray-600 text-center">Run more studies in less time. Test discussion guides, validate findings, and explore new research directions without recruiting delays.</p>
+              </div>
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+                <span className="text-4xl mb-4">💡</span>
+                <h3 className="mb-2 text-xl font-semibold text-center">Insight Managers</h3>
+                <p className="text-gray-600 text-center">Get consumer feedback on demand. Quickly test concepts, messaging, and product ideas before investing in full-scale research.</p>
+              </div>
+              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
+                <span className="text-4xl mb-4">👤</span>
+                <h3 className="mb-2 text-xl font-semibold text-center">User Researchers</h3>
+                <p className="text-gray-600 text-center">Simulate user feedback sessions for early designs and prototypes. Identify usability issues and preference patterns faster.</p>
               </div>
             </div>
           </div>
@@ -568,30 +613,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Who Is This Product For Section */}
-        <section className="py-20 bg-gray-50 border-t">
-          <div className="container max-w-5xl mx-auto">
-            <h2 className="mb-2 text-center text-3xl font-bold">Who Is InsightSim For?</h2>
-            <p className="mb-10 text-center text-gray-500 text-lg">Our platform is designed for professionals who need deep qualitative insights without the traditional time and cost constraints.</p>
-            <div className="grid gap-8 md:grid-cols-3">
-              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
-                <span className="text-4xl mb-4">🔍</span>
-                <h3 className="mb-2 text-xl font-semibold text-center">Qualitative Researchers</h3>
-                <p className="text-gray-600 text-center">Run more studies in less time. Test discussion guides, validate findings, and explore new research directions without recruiting delays.</p>
-              </div>
-              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
-                <span className="text-4xl mb-4">💡</span>
-                <h3 className="mb-2 text-xl font-semibold text-center">Insight Managers</h3>
-                <p className="text-gray-600 text-center">Get consumer feedback on demand. Quickly test concepts, messaging, and product ideas before investing in full-scale research.</p>
-              </div>
-              <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
-                <span className="text-4xl mb-4">👤</span>
-                <h3 className="mb-2 text-xl font-semibold text-center">User Researchers</h3>
-                <p className="text-gray-600 text-center">Simulate user feedback sessions for early designs and prototypes. Identify usability issues and preference patterns faster.</p>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Loom Video Demo Section */}
         <section className="py-20 bg-white border-t demo-section">

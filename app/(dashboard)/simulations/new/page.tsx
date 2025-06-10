@@ -342,9 +342,30 @@ export default function NewSimulationPage() {
   };
 
   // Function to build OpenAI prompt for discussion questions
-  function buildDiscussionQuestionsPrompt(studyTitle: string, topic: string) {
-    return `\nYou are an expert qualitative researcher. \nGiven the following study title and topic, suggest 5-7 insightful, open-ended discussion questions that a moderator could use in a focus group or in-depth interview.\n\nStudy Title: "${studyTitle}"\nTopic/Stimulus: "${topic}"\n\nList the questions as a numbered list, phrased as a moderator would ask them.`.trim();
+  function buildDiscussionQuestionsPrompt(studyTitle: string, topic: string, studyType: 'focus-group' | 'idi' = 'focus-group') {
+    const sessionType = studyType === 'idi' ? 'in-depth interview' : 'focus group discussion';
+    
+    return `You are an expert qualitative market researcher specializing in ${sessionType}s.
+  
+  Generate 6-8 strategic discussion questions for this research study:
+  
+  Study Title: "${studyTitle}"
+  Topic/Context: "${topic}"
+  Session Type: ${sessionType}
+  
+  Create questions that follow qualitative research best practices:
+  - Use open-ended, exploratory language ("How", "What", "Why", "Describe", "Tell me about")
+  - Progress from general to specific topics
+  - Include both rational and emotional dimensions
+  - Encourage storytelling and personal experiences
+  - Avoid leading or biased phrasing
+  - Include at least one projective or hypothetical scenario question
+  
+  Structure your response as a clean numbered list with no introductory text, explanations, or additional commentary. Start directly with question 1.
+  
+  Format each question as a moderator would naturally ask it in the session.`.trim();
   }
+  
 
   return (
     <div className="space-y-6">
@@ -636,8 +657,9 @@ export default function NewSimulationPage() {
                             try {
                               const prompt = buildDiscussionQuestionsPrompt(
                                 simulationData.study_title,
-                                simulationData.topic
+                                simulationData.topic,
                               );
+                              console.log('prompt111', prompt);
                               const messages: ChatCompletionMessageParam[] = [
                                 { role: "system", content: prompt }
                               ];

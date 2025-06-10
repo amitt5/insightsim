@@ -471,7 +471,7 @@ export default function LandingPage() {
                     Try for Free
                   </Button>
                 </Link>
-                <Link href="#features">
+                <Link href="#demo">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto button">
                     Watch Demo
                   </Button>

@@ -869,6 +869,156 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Use Cases Section */}
+        <section className="py-20 bg-white">
+          <div className="container">
+            <div className="mx-auto max-w-6xl">
+              {/* Section Header */}
+              <div className="text-center mb-16">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
+                  How Researchers Use InsightSim
+                </h2>
+                <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                  Real scenarios from market researchers, UX researchers, and insight managers who enhance their research process with AI simulation
+                </p>
+              </div>
+
+              {/* Use Cases Grid */}
+              <div className="grid gap-8 md:grid-cols-2">
+                {/* Testing Discussion Guides */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 border border-blue-100">
+                  <div className="flex items-start mb-6">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Testing Discussion Guides Before Expensive Field Research</h3>
+                      <p className="text-sm text-blue-600 font-medium mb-3">Market Research Agencies</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 mb-4">
+                    "Before we invest $15K in recruitment and fieldwork, we run our discussion guide through InsightSim with different persona mixes. Last month, we caught three weak questions that would have derailed our automotive study."
+                  </p>
+                  <div className="bg-white rounded-lg p-4 border border-blue-200">
+                    <p className="text-sm text-gray-600 font-medium mb-2">Typical Workflow:</p>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• Upload draft discussion guide</li>
+                      <li>• Test with 3-4 different demographic profiles</li>
+                      <li>• Identify questions that don't generate insights</li>
+                      <li>• Refine guide before client presentation</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Exploring Hypotheses */}
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-8 border border-purple-100">
+                  <div className="flex items-start mb-6">
+                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                      <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Exploring Hypotheses with Different Participant Profiles</h3>
+                      <p className="text-sm text-purple-600 font-medium mb-3">Consumer Insights Teams</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 mb-4">
+                    "We had competing hypotheses about Gen Z vs Millennial attitudes toward sustainable packaging. InsightSim let us test both scenarios instantly, helping us focus our real research on the most promising angles."
+                  </p>
+                  <div className="bg-white rounded-lg p-4 border border-purple-200">
+                    <p className="text-sm text-gray-600 font-medium mb-2">Typical Workflow:</p>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• Create personas for different hypotheses</li>
+                      <li>• Run parallel simulations</li>
+                      <li>• Compare response patterns</li>
+                      <li>• Prioritize research focus areas</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Training Junior Researchers */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-8 border border-green-100">
+                  <div className="flex items-start mb-6">
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Training Junior Researchers on Moderation Techniques</h3>
+                      <p className="text-sm text-green-600 font-medium mb-3">Research Training & Development</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 mb-4">
+                    "New hires practice moderation skills with InsightSim before their first real focus group. They learn how to probe deeper, manage dominant participants, and keep discussions on track—all without the pressure of a live session."
+                  </p>
+                  <div className="bg-white rounded-lg p-4 border border-green-200">
+                    <p className="text-sm text-gray-600 font-medium mb-2">Typical Workflow:</p>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• Practice with challenging persona combinations</li>
+                      <li>• Learn follow-up questioning techniques</li>
+                      <li>• Build confidence before client sessions</li>
+                      <li>• Review and improve moderation approach</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Getting Directional Insights */}
+                <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-8 border border-orange-100">
+                  <div className="flex items-start mb-6">
+                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
+                      <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Getting Directional Insights for Proposal Development</h3>
+                      <p className="text-sm text-orange-600 font-medium mb-3">UX Research & Product Teams</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 mb-4">
+                    "When stakeholders need quick insights for sprint planning, we use InsightSim to test user scenarios and validate assumptions. It gives us directional data to inform decisions while we plan comprehensive user research."
+                  </p>
+                  <div className="bg-white rounded-lg p-4 border border-orange-200">
+                    <p className="text-sm text-gray-600 font-medium mb-2">Typical Workflow:</p>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• Rapid concept testing with user personas</li>
+                      <li>• Generate insights for stakeholder meetings</li>
+                      <li>• Validate research proposals with preliminary data</li>
+                      <li>• Support business cases with directional findings</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Stats/Social Proof */}
+              <div className="mt-16 text-center">
+                <div className="bg-gray-50 rounded-xl p-8">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Join Researchers Who Enhance Their Process</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <p className="text-2xl font-bold text-primary mb-1">73%</p>
+                      <p className="text-sm text-gray-600">Catch weak questions before fieldwork</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-primary mb-1">5x</p>
+                      <p className="text-sm text-gray-600">Faster hypothesis validation</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-primary mb-1">$12K</p>
+                      <p className="text-sm text-gray-600">Average savings per failed study prevented</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
         {/* Features Section */}
         <section id="features" className="bg-gray-50 py-20">
           <div className="container">

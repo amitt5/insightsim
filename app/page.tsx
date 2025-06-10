@@ -755,7 +755,8 @@ export default function LandingPage() {
                   <ul className="text-gray-600 space-y-2 mb-4">
                     <li>• Create diverse, authentic participants that match your target demographics</li>
                     <li>• Calibrate personas using your existing research data for more accurate responses &nbsp;
-                    <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Coming Soon - June</span></li>
+                    <span className= "inline-block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Beta</span>
+                    </li>
                   </ul>
                 </div>
 

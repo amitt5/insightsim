@@ -754,9 +754,9 @@ export default function LandingPage() {
                   <h3 className="text-xl font-semibold text-gray-900 mb-3">AI Personas: Realistic participant simulation</h3>
                   <ul className="text-gray-600 space-y-2 mb-4">
                     <li>• Create diverse, authentic participants that match your target demographics</li>
-                    <li>• Calibrate personas using your existing research data for more accurate responses</li>
+                    <li>• Calibrate personas using your existing research data for more accurate responses &nbsp;
+                    <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Coming Soon - June</span></li>
                   </ul>
-                  <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Coming Soon - June</span>
                 </div>
 
                 {/* Discussion Guide Testing */}

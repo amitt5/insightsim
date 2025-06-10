@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Download, UserCircle, Menu, Copy } from "lucide-react"
+import { ArrowLeft, Download, UserCircle, Menu, Copy, ChevronDown, ChevronUp } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePrompt";
 import { buildMessagesForOpenAI, buildFollowUpQuestionsPrompt } from "@/utils/buildMessagesForOpenAI";
@@ -78,6 +78,8 @@ export default function SimulationViewPage() {
   const [showFollowUpQuestions, setShowFollowUpQuestions] = useState(false)
   const [isLoadingFollowUpQuestions, setIsLoadingFollowUpQuestions] = useState(false)
   const [followUpQuestions, setFollowUpQuestions] = useState<{question: string}[]>([])
+  const [isParticipantsCollapsed, setIsParticipantsCollapsed] = useState(false)
+  const [isDiscussionQuestionsCollapsed, setIsDiscussionQuestionsCollapsed] = useState(false)
   const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Function to handle follow-up questions
@@ -748,35 +750,97 @@ export default function SimulationViewPage() {
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Participants Section - Full width on mobile, side column on desktop */}
-          <div className="col-span-1 lg:col-span-3">
-          <Card className="h-full">
-            <CardContent className="p-4">
-                <h2 className="font-semibold mb-4">{simulation.study_type === 'focus-group'? 'Participants': 'Participant'} {simulation.study_type === 'focus-group'?'(' + personas.length + ')': ''}</h2>
-                {personas.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500">
-                    No participants added to this simulation
-                  </div>
-                ) : (
-              <div className="space-y-4">
-                    {personas.map((participant) => (
-                  <div key={participant.id} className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <UserCircle className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{participant.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        {participant.age} • {participant.occupation}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-600">{participant.bio}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="col-span-1 lg:col-span-3 space-y-4">
+            {/* Participants Section */}
+            <Card className="h-fit">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold">
+                    {simulation.study_type === 'focus-group'? 'Participants': 'Participant'} {simulation.study_type === 'focus-group'?'(' + personas.length + ')': ''}
+                  </h2>
+                  <button
+                    onClick={() => setIsParticipantsCollapsed(!isParticipantsCollapsed)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title={isParticipantsCollapsed ? "Expand participants" : "Collapse participants"}
+                  >
+                    {isParticipantsCollapsed ? (
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                
+                {!isParticipantsCollapsed && (
+                  <>
+                    {personas.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500">
+                        No participants added to this simulation
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {personas.map((participant) => (
+                          <div key={participant.id} className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <UserCircle className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium">{participant.name}</h3>
+                              <p className="text-sm text-gray-500">
+                                {participant.age} • {participant.occupation}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-600">{participant.bio}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+
+            {/* Discussion Questions Section */}
+            <Card className="h-fit">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold">Discussion Questions</h2>
+                  <button
+                    onClick={() => setIsDiscussionQuestionsCollapsed(!isDiscussionQuestionsCollapsed)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title={isDiscussionQuestionsCollapsed ? "Expand questions" : "Collapse questions"}
+                  >
+                    {isDiscussionQuestionsCollapsed ? (
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                
+                {!isDiscussionQuestionsCollapsed && (
+                  <>
+                    {!simulation.discussion_questions || simulation.discussion_questions.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500">
+                        No discussion questions added to this simulation
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {simulation.discussion_questions.map((question, index) => (
+                          <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium">
+                              {index + 1}
+                            </div>
+                            <p className="text-sm text-gray-700 leading-relaxed">{question}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Chat Window - Full width on mobile */}
           <div className="col-span-1 lg:col-span-6">

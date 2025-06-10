@@ -15,9 +15,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus } from "lucide-react"
+import { Plus, Sparkles } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Persona } from "@/utils/types"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 
 interface CreatePersonaDialogProps {
   open: boolean;
@@ -29,6 +30,45 @@ interface CreatePersonaDialogProps {
   onHideSystemPersonasChange?: (hide: boolean) => void;
   hideSystemPersonas?: boolean;
 }
+
+// Example constants
+const OCCUPATION_EXAMPLES = [
+  "Marketing Manager", "Software Engineer", "Nurse", "High School Teacher", "Accountant", "Sales Representative", "Graphic Designer", "Product Manager", "Data Analyst", "Customer Support Specialist", "Construction Worker", "Chef", "Retail Store Manager", "Financial Advisor", "HR Specialist", "Pharmacist", "Research Scientist", "Freelance Writer", "UX Designer", "Operations Director"
+];
+const ARCHETYPE_EXAMPLES = [
+  "Budget Buyer", "Trendsetter", "Caregiver", "Early Adopter", "Skeptic", "Loyalist", "Explorer", "Achiever", "Social Butterfly", "Minimalist", "Health Enthusiast", "Tech-Savvy", "Traditionalist", "Adventurer", "Influencer", "Analytical Thinker", "Eco-Conscious", "Brand Advocate", "Impulse Shopper", "Pragmatist"
+];
+const GOAL_EXAMPLES = [
+  "Save money on monthly expenses", "Find the best product for my needs", "Balance work and family life", "Advance my career", "Stay healthy and fit", "Learn new skills", "Make a positive impact", "Be recognized for my work", "Try new experiences", "Build a strong network", "Achieve financial independence", "Help others succeed", "Reduce stress", "Travel more often", "Live sustainably", "Be a good role model", "Master a hobby", "Improve productivity", "Gain respect from peers", "Make informed decisions"
+];
+const ATTITUDE_EXAMPLES = [
+  "Open-minded and curious", "Skeptical but willing to try", "Cautiously optimistic", "Highly enthusiastic", "Indifferent", "Critical of new trends", "Supportive of innovation", "Traditional and reserved", "Eager to learn", "Wary of risks", "Confident in opinions", "Easily influenced by peers", "Prefers evidence-based decisions", "Emotionally driven", "Pragmatic and realistic", "Idealistic", "Competitive", "Collaborative", "Risk-averse", "Adventurous"
+];
+const BIO_EXAMPLES = [
+  "A passionate educator who loves inspiring young minds.",
+  "Tech enthusiast and lifelong learner, always seeking new challenges.",
+  "Dedicated caregiver with a knack for building strong relationships.",
+  "Creative thinker who enjoys solving complex problems.",
+  "Fitness lover and advocate for healthy living.",
+  "World traveler with a curiosity for different cultures.",
+  "Analytical and detail-oriented, excels in data-driven environments.",
+  "Natural leader who motivates teams to achieve their best.",
+  "Environmentalist committed to sustainable living.",
+  "Avid reader and writer with a love for storytelling.",
+  "Entrepreneur at heart, always looking for new opportunities.",
+  "Community volunteer passionate about making a difference.",
+  "Art lover who finds inspiration in creativity.",
+  "Problem-solver who thrives under pressure.",
+  "Family-oriented and values strong connections.",
+  "Innovator who embraces change and new technology.",
+  "Customer-focused and skilled at building rapport.",
+  "Driven by results and continuous improvement.",
+  "Enjoys mentoring and helping others grow.",
+  "Believes in lifelong learning and personal growth."
+];
+const TRAIT_EXAMPLES = [
+  "Health-conscious", "Tech-savvy", "Detail-oriented", "Empathetic", "Creative", "Analytical", "Adventurous", "Organized", "Collaborative", "Resilient", "Resourceful", "Curious", "Open-minded", "Goal-driven", "Skeptical", "Optimistic", "Pragmatic", "Ambitious", "Patient", "Sociable"
+];
 
 export function CreatePersonaDialog({ 
   open, 
@@ -86,6 +126,9 @@ export function CreatePersonaDialog({
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  // Utility to pick a random value from an array
+  const pickRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 
   // Handle form submission
   const handleSubmit = async () => {
@@ -240,62 +283,227 @@ export function CreatePersonaDialog({
 
           <div className="space-y-2">
             <Label htmlFor="occupation">Occupation</Label>
-            <Input 
-              id="occupation" 
-              value={formData.occupation}
-              onChange={(e) => handleChange("occupation", e.target.value)}
-              required
-            />
+            <div className="relative">
+              <Input 
+                id="occupation" 
+                value={formData.occupation}
+                onChange={(e) => handleChange("occupation", e.target.value)}
+                required
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("occupation", pickRandom(OCCUPATION_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random occupation with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="archetype">Archetype</Label>
-            <Input 
-              id="archetype" 
-              placeholder="e.g., Budget Buyer, Trendsetter" 
-              value={formData.archetype}
-              onChange={(e) => handleChange("archetype", e.target.value)}
-            />
+            <div className="relative">
+              <Input 
+                id="archetype" 
+                placeholder="e.g., Budget Buyer, Trendsetter" 
+                value={formData.archetype}
+                onChange={(e) => handleChange("archetype", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("archetype", pickRandom(ARCHETYPE_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random archetype with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="bio">Short Bio</Label>
-            <Textarea 
-              id="bio" 
-              rows={3} 
-              value={formData.bio}
-              onChange={(e) => handleChange("bio", e.target.value)}
-            />
+            <div className="relative">
+              <Textarea 
+                id="bio" 
+                rows={3} 
+                value={formData.bio}
+                onChange={(e) => handleChange("bio", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 top-0">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("bio", pickRandom(BIO_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6 mt-2"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random short bio with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="traits">Traits (comma-separated)</Label>
-            <Input 
-              id="traits" 
-              placeholder="e.g., Health-conscious, Tech-savvy" 
-              value={formData.traits}
-              onChange={(e) => handleChange("traits", e.target.value)}
-            />
+            <div className="relative">
+              <Input 
+                id="traits" 
+                placeholder="e.g., Health-conscious, Tech-savvy" 
+                value={formData.traits}
+                onChange={(e) => handleChange("traits", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          // Split current traits, trim, and filter out empty
+                          const currentTraits = formData.traits
+                            .split(',')
+                            .map(t => t.trim())
+                            .filter(t => t.length > 0);
+                          // Pick a random trait not already present
+                          let availableTraits = TRAIT_EXAMPLES.filter(t => !currentTraits.includes(t));
+                          if (availableTraits.length === 0) availableTraits = TRAIT_EXAMPLES;
+                          const newTrait = pickRandom(availableTraits);
+                          // Append to the list
+                          const updatedTraits = currentTraits.length > 0
+                            ? [...currentTraits, newTrait].join(', ')
+                            : newTrait;
+                          handleChange("traits", updatedTraits);
+                        }}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Add a random trait with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="persona_goal">Persona Goal</Label>
-            <Input 
-              id="persona_goal" 
-              placeholder="What is this persona trying to achieve?" 
-              value={formData.goal}
-              onChange={(e) => handleChange("goal", e.target.value)}
-            />
+            <div className="relative">
+              <Input 
+                id="persona_goal" 
+                placeholder="What is this persona trying to achieve?" 
+                value={formData.goal}
+                onChange={(e) => handleChange("goal", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("goal", pickRandom(GOAL_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random persona goal with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="attitude">Attitude Toward Topic</Label>
-            <Input 
-              id="attitude" 
-              placeholder="Initial bias or opinion" 
-              value={formData.attitude}
-              onChange={(e) => handleChange("attitude", e.target.value)}
-            />
+            <div className="relative">
+              <Input 
+                id="attitude" 
+                placeholder="Initial bias or opinion" 
+                value={formData.attitude}
+                onChange={(e) => handleChange("attitude", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("attitude", pickRandom(ATTITUDE_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random attitude with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
           </div>
         </div>
         <DialogFooter className="px-6 py-2 pb-1 border-t">

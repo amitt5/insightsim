@@ -15,6 +15,21 @@ export default function DashboardLayout({
   const router = useRouter()
   const { user, signOut } = useAuth()
 
+  const handleUpgrade = async () => {
+    const res = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+    });
+
+    if (!res.ok) {
+      alert('Failed to create checkout session');
+      return;
+    }
+
+    const data = await res.json();
+    router.push(data.url); // redirect to Stripe Checkout
+  };
+
+
   const handleLogout = async () => {
     await signOut()
   }
@@ -86,7 +101,14 @@ export default function DashboardLayout({
                         {user?.email} {user?.role && `(${user.role})`}
                       </div>
                     </div>
-
+                    {/* {user?.role === 'admin' && ( */}
+                    <button
+                      onClick={handleUpgrade}
+                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    >
+                      Upgrade to Premium
+                    </button>
+                    {/* )} */}
                     {/* Mobile-only navigation links */}
                     <div className="lg:hidden">
                       <Link 

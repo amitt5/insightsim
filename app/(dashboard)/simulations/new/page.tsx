@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { PersonaCard } from "@/components/persona-card"
-import { ArrowLeft, ArrowRight, Upload, X, FileIcon } from "lucide-react"
+import { ArrowLeft, ArrowRight, Upload, X, FileIcon, Sparkles, Loader2 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
@@ -20,6 +20,8 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { v4 as uuidv4 } from 'uuid'
 import { useToast } from "@/hooks/use-toast"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
+import { runSimulationAPI } from "@/utils/api"
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 
 export default function NewSimulationPage() {
   const { toast } = useToast()
@@ -41,9 +43,10 @@ export default function NewSimulationPage() {
     turn_based: false,
     num_turns: "10",
   });
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   
   const router = useRouter()
-  const { personas, loading, error } = usePersonas()
+  const { personas, loading, error, mutate } = usePersonas()
   const supabase = createClientComponentClient();
 
   // Filter personas based on hideSystemPersonas state
@@ -337,6 +340,33 @@ export default function NewSimulationPage() {
     console.log('handlePlayingAround',randomSimulation);
     setSimulationData(randomSimulation);
   };
+
+  // Function to build OpenAI prompt for discussion questions
+  function buildDiscussionQuestionsPrompt(studyTitle: string, topic: string, studyType: 'focus-group' | 'idi' = 'focus-group') {
+    const sessionType = studyType === 'idi' ? 'in-depth interview' : 'focus group discussion';
+    
+    return `You are an expert qualitative market researcher specializing in ${sessionType}s.
+  
+  Generate 6-8 strategic discussion questions for this research study:
+  
+  Study Title: "${studyTitle}"
+  Topic/Context: "${topic}"
+  Session Type: ${sessionType}
+  
+  Create questions that follow qualitative research best practices:
+  - Use open-ended, exploratory language ("How", "What", "Why", "Describe", "Tell me about")
+  - Progress from general to specific topics
+  - Include both rational and emotional dimensions
+  - Encourage storytelling and personal experiences
+  - Avoid leading or biased phrasing
+  - Include at least one projective or hypothetical scenario question
+  
+  Structure your response as a clean numbered list with no introductory text, explanations, or additional commentary. Start directly with question 1.
+  
+  Format each question as a moderator would naturally ask it in the session.`.trim();
+  }
+  
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -457,6 +487,7 @@ export default function NewSimulationPage() {
                   onOpenChange={setOpenPersonaModal}
                   onHideSystemPersonasChange={setHideSystemPersonas}
                   hideSystemPersonas={hideSystemPersonas}
+                  onSuccess={mutate}
                 />
               </div>
 
@@ -473,6 +504,7 @@ export default function NewSimulationPage() {
                       selected={selectedPersonas.includes(persona.id)}
                       onToggle={() => togglePersona(persona.id)}
                       selectable={true}
+                      onUpdate={mutate}
                     />
                   ))}
                 </div>
@@ -609,7 +641,67 @@ export default function NewSimulationPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="questions">Discussion Questions</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="questions">Discussion Questions</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="p-0 h-6 w-6 bg-transparent border-none cursor-pointer"
+                          tabIndex={-1}
+                          disabled={isGeneratingQuestions}
+                          onClick={async () => {
+                            if (isGeneratingQuestions) return;
+                            setIsGeneratingQuestions(true);
+                            try {
+                              const prompt = buildDiscussionQuestionsPrompt(
+                                simulationData.study_title,
+                                simulationData.topic,
+                              );
+                              console.log('prompt111', prompt);
+                              const messages: ChatCompletionMessageParam[] = [
+                                { role: "system", content: prompt }
+                              ];
+                              const result = await runSimulationAPI(messages);
+                              // Parse the response: expect a numbered list
+                              let questions = result.reply || "";
+                              // Remove markdown, trim, etc.
+                              questions = questions.replace(/```[a-z]*[\s\S]*?```/g, "").trim();
+                              // If it's a numbered list, split into lines
+                              let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+                              // Remove leading numbers if present
+                              lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
+                              // Join as textarea value (one per line)
+                              setSimulationData(prev => ({
+                                ...prev,
+                                discussion_questions: lines.join("\n")
+                              }));
+                            } catch (err) {
+                              toast({
+                                title: "Error",
+                                description: "Failed to generate questions. Please try again.",
+                                variant: "destructive",
+                                duration: 5000,
+                              });
+                            } finally {
+                              setIsGeneratingQuestions(false);
+                            }
+                          }}
+                        >
+                          {isGeneratingQuestions ? (
+                            <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4 text-primary" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        Generate discussion questions with AI
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Textarea
                   id="questions"
                   placeholder="Enter your discussion questions here..."

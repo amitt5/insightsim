@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Download, UserCircle, Menu, Copy } from "lucide-react"
+import { ArrowLeft, Download, UserCircle, Menu, Copy, ChevronDown, ChevronUp } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePrompt";
-import { buildMessagesForOpenAI } from "@/utils/buildMessagesForOpenAI";
+import { buildMessagesForOpenAI, buildFollowUpQuestionsPrompt } from "@/utils/buildMessagesForOpenAI";
 import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import Link from "next/link";
@@ -75,8 +75,45 @@ export default function SimulationViewPage() {
   const [modelInUse, setModelInUse] = useState<string>('gpt-4o-mini')
   const [showInstructionBox, setShowInstructionBox] = useState(false)
   const [userInstruction, setUserInstruction] = useState("")
-
+  const [showFollowUpQuestions, setShowFollowUpQuestions] = useState(false)
+  const [isLoadingFollowUpQuestions, setIsLoadingFollowUpQuestions] = useState(false)
+  const [followUpQuestions, setFollowUpQuestions] = useState<{question: string}[]>([])
+  const [isParticipantsCollapsed, setIsParticipantsCollapsed] = useState(false)
+  const [isDiscussionQuestionsCollapsed, setIsDiscussionQuestionsCollapsed] = useState(false)
   const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
+
+  // Function to handle follow-up questions
+  const handleFollowUpQuestions = async () => {
+    if (!showFollowUpQuestions) {
+      setShowFollowUpQuestions(true)
+      setIsLoadingFollowUpQuestions(true)
+      const sample = {
+        simulation: simulationData?.simulation || {} as Simulation,
+        messages: simulationMessages || [] as SimulationMessage[],
+        personas: simulationData?.personas || [] as Persona[]
+      }
+      const prompt = buildFollowUpQuestionsPrompt(sample)
+      console.log('prompt', prompt);
+      const data = await runSimulationAPI(prompt, modelInUse);
+      // console.log('data', data);
+      const parsedMessages = parseSimulationResponse(data.reply);
+      // console.log('parsedMessages-amit', parsedMessages);
+      // // save messages to database
+      // const saveResult = await saveMessagesToDatabase(parsedMessages);
+      // console.log('saveResult', saveResult);
+      // Simulate API call with delay
+      setFollowUpQuestions(parsedMessages)
+      // setTimeout(() => {
+      //   // Select 3 random questions
+      //   const shuffled = hardcodedQuestions.sort(() => 0.5 - Math.random())
+      //   setFollowUpQuestions(shuffled.slice(0, 3))
+      setIsLoadingFollowUpQuestions(false)
+      // }, 1500) // 1.5 second delay
+    } else {
+      setShowFollowUpQuestions(false)
+      setFollowUpQuestions([])
+    }
+  }
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -142,6 +179,8 @@ export default function SimulationViewPage() {
          // if no messages, set the initial message, later also add condition simulationData.simulation.mode === "human-mod"
         setInitialMessage();
       } else {
+        // sort messages by created_at date
+        data.messages.sort((a: SimulationMessage, b: SimulationMessage) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         // if there are messages, check how many times moderator has spoken and then set the new message to the next question
         const moderatorMessages = data.messages.filter((msg: SimulationMessage) => msg.sender_type === 'moderator');
         if(moderatorMessages.length) {
@@ -711,35 +750,97 @@ export default function SimulationViewPage() {
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Participants Section - Full width on mobile, side column on desktop */}
-          <div className="col-span-1 lg:col-span-3">
-          <Card className="h-full">
-            <CardContent className="p-4">
-                <h2 className="font-semibold mb-4">{simulation.study_type === 'focus-group'? 'Participants': 'Participant'} {simulation.study_type === 'focus-group'?'(' + personas.length + ')': ''}</h2>
-                {personas.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500">
-                    No participants added to this simulation
-                  </div>
-                ) : (
-              <div className="space-y-4">
-                    {personas.map((participant) => (
-                  <div key={participant.id} className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <UserCircle className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{participant.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        {participant.age} • {participant.occupation}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-600">{participant.bio}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="col-span-1 lg:col-span-3 space-y-4">
+            {/* Participants Section */}
+            <Card className="h-fit">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold">
+                    {simulation.study_type === 'focus-group'? 'Participants': 'Participant'} {simulation.study_type === 'focus-group'?'(' + personas.length + ')': ''}
+                  </h2>
+                  <button
+                    onClick={() => setIsParticipantsCollapsed(!isParticipantsCollapsed)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title={isParticipantsCollapsed ? "Expand participants" : "Collapse participants"}
+                  >
+                    {isParticipantsCollapsed ? (
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                
+                {!isParticipantsCollapsed && (
+                  <>
+                    {personas.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500">
+                        No participants added to this simulation
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {personas.map((participant) => (
+                          <div key={participant.id} className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <UserCircle className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium">{participant.name}</h3>
+                              <p className="text-sm text-gray-500">
+                                {participant.age} • {participant.occupation}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-600">{participant.bio}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+
+            {/* Discussion Questions Section */}
+            <Card className="h-fit">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold">Discussion Questions</h2>
+                  <button
+                    onClick={() => setIsDiscussionQuestionsCollapsed(!isDiscussionQuestionsCollapsed)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title={isDiscussionQuestionsCollapsed ? "Expand questions" : "Collapse questions"}
+                  >
+                    {isDiscussionQuestionsCollapsed ? (
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                
+                {!isDiscussionQuestionsCollapsed && (
+                  <>
+                    {!simulation.discussion_questions || simulation.discussion_questions.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500">
+                        No discussion questions added to this simulation
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {simulation.discussion_questions.map((question, index) => (
+                          <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium">
+                              {index + 1}
+                            </div>
+                            <p className="text-sm text-gray-700 leading-relaxed">{question}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Chat Window - Full width on mobile */}
           <div className="col-span-1 lg:col-span-6">
@@ -810,26 +911,20 @@ export default function SimulationViewPage() {
                 </div>
               </CardContent>
               <div className="p-2 border-t">
-              { (simulationData?.simulation?.mode === "human-mod") &&<div className="flex gap-2 ">
-                  <input 
-                    type="text" 
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
-                    disabled={simulation.status === 'Completed'}
-                  />
+
+              { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
                   <Button 
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim() || simulation.status === 'Completed' || isLoadingMessages}
+                    onClick={startDiscussion}
+                    disabled={isStartingDiscussion}
                   >
-                    Send
+                    {isStartingDiscussion ? "Starting..." : "Start Discussion"}
                   </Button>
                 </div>}
 
-                {/* AI Instruction Box */}
-                { (simulationData?.simulation?.mode === "human-mod") && (
-                  <div className="mt-2">
+                 {/* AI Instruction Box */}
+                 {formattedMessages.length > 0 && (
+                //  { (simulationData?.simulation?.mode === "human-mod") && (
+                  <div className="mt-2 space-y-2">
                     <button
                       type="button"
                       className="text-xs text-primary underline hover:text-primary/80 focus:outline-none"
@@ -837,6 +932,15 @@ export default function SimulationViewPage() {
                     >
                       {showInstructionBox ? "Hide AI instruction box" : "Not happy with the response? Instruct AI to improve its replies."}
                     </button>
+                    
+                    <button
+                      type="button"
+                      className="block text-xs text-primary underline hover:text-primary/80 focus:outline-none"
+                      onClick={handleFollowUpQuestions}
+                    >
+                      {showFollowUpQuestions ? "Hide follow-up questions" : "Suggest follow-up questions"}
+                    </button>
+                    
                     {showInstructionBox && (
                       <div className="mt-2 flex flex-col gap-2">
                         <textarea
@@ -853,8 +957,59 @@ export default function SimulationViewPage() {
                         </div>
                       </div>
                     )}
+
+                    {showFollowUpQuestions && (
+                      <div className="mt-2 flex flex-col gap-2">
+                        {isLoadingFollowUpQuestions ? (
+                          <div className="flex items-center gap-2 py-2">
+                            <div className="h-2 w-2 bg-primary rounded-full animate-bounce" />
+                            <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                            <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                            <span className="text-xs text-gray-500 ml-2">Generating follow-up questions...</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-500">Click on a question to add it to your message:</p>
+                            {followUpQuestions.map((questionObj, index) => (
+                              <button
+                                key={index}
+                                type="button"
+                                className="w-full text-left p-2 text-xs border border-gray-200 rounded hover:bg-gray-50 hover:border-primary transition-colors"
+                                onClick={() => setNewMessage(questionObj.question)}
+                              >
+                                {questionObj.question}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
+
+               
+
+                {((simulationData?.simulation?.mode === "human-mod") || (formattedMessages.length > 0)) &&
+                <div className="mt-2 flex gap-2 ">
+                {/* { (simulationData?.simulation?.mode === "human-mod") &&<div className="flex gap-2 "> */}
+                {/* formattedMessages.length > 0 && */}
+                  <input 
+                    type="text" 
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
+                    disabled={simulation.status === 'Completed'}
+                  />
+                  <Button 
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || simulation.status === 'Completed' || isLoadingMessages}
+                  >
+                    Send
+                  </Button>
+                </div>}
+
+               
 
                 {availableCredits !== null && (
                   <div className="flex flex-col gap-2 mt-2">
@@ -876,14 +1031,6 @@ export default function SimulationViewPage() {
                   </div>
                 )}
 
-                { (simulationData?.simulation?.mode === "ai-both" && formattedMessages.length === 0) &&<div className="mt-2">
-                  <Button 
-                    onClick={startDiscussion}
-                    disabled={isStartingDiscussion}
-                  >
-                    {isStartingDiscussion ? "Starting..." : "Start Discussion"}
-                  </Button>
-                </div>}
 
                 
               </div>

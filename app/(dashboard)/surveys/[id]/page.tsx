@@ -32,7 +32,31 @@ export default function SurveyPage({ params }: SurveyPageProps) {
     primaryBenefit: "",
     locations: [],
     marketType: "",
-    competitorContext: ""
+    competitorContext: "",
+    primaryTG: {
+      demographics: {
+        ageRange: { min: 18, max: 65 },
+        gender: [],
+        income: [],
+        location: [],
+        education: []
+      },
+      psychographics: {
+        interests: [],
+        values: [],
+        lifestyle: []
+      },
+      behavioral: {
+        purchaseFrequency: "",
+        brandLoyalty: "",
+        decisionFactors: []
+      }
+    },
+    exclusionCriteria: "",
+    sampleSize: 300,
+    confidenceLevel: 95,
+    marginOfError: 5,
+    demographicSplits: {}
   })
 
   const tabs = [
@@ -129,6 +153,109 @@ export default function SurveyPage({ params }: SurveyPageProps) {
       ...prev,
       [field]: value
     }))
+  }
+
+  // Handle number input changes
+  const handleNumberChange = (field: keyof Survey) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSurvey(prev => ({
+      ...prev,
+      [field]: parseInt(e.target.value) || 0
+    }))
+  }
+
+  // Handle demographic array changes
+  const handleDemographicArrayChange = (category: 'gender' | 'income' | 'location' | 'education', values: string[]) => {
+    setSurvey(prev => ({
+      ...prev,
+      primaryTG: {
+        ...prev.primaryTG!,
+        demographics: {
+          ...prev.primaryTG!.demographics,
+          [category]: values
+        }
+      }
+    }))
+  }
+
+  // Handle psychographic array changes
+  const handlePsychographicArrayChange = (category: 'interests' | 'values' | 'lifestyle', values: string[]) => {
+    setSurvey(prev => ({
+      ...prev,
+      primaryTG: {
+        ...prev.primaryTG!,
+        psychographics: {
+          ...prev.primaryTG!.psychographics,
+          [category]: values
+        }
+      }
+    }))
+  }
+
+  // Handle behavioral changes
+  const handleBehavioralChange = (field: 'purchaseFrequency' | 'brandLoyalty') => (value: string) => {
+    setSurvey(prev => ({
+      ...prev,
+      primaryTG: {
+        ...prev.primaryTG!,
+        behavioral: {
+          ...prev.primaryTG!.behavioral,
+          [field]: value
+        }
+      }
+    }))
+  }
+
+  // Handle age range changes
+  const handleAgeRangeChange = (type: 'min' | 'max') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSurvey(prev => ({
+      ...prev,
+      primaryTG: {
+        ...prev.primaryTG!,
+        demographics: {
+          ...prev.primaryTG!.demographics,
+          ageRange: {
+            ...prev.primaryTG!.demographics.ageRange,
+            [type]: parseInt(e.target.value) || 0
+          }
+        }
+      }
+    }))
+  }
+
+  // Generic function to add/remove items from arrays
+  const addArrayItem = (path: string, category: string) => {
+    const newItem = ''
+    if (path === 'demographics') {
+      const currentArray = survey.primaryTG?.demographics[category as keyof typeof survey.primaryTG.demographics] as string[] || []
+      handleDemographicArrayChange(category as any, [...currentArray, newItem])
+    } else if (path === 'psychographics') {
+      const currentArray = survey.primaryTG?.psychographics[category as keyof typeof survey.primaryTG.psychographics] as string[] || []
+      handlePsychographicArrayChange(category as any, [...currentArray, newItem])
+    }
+  }
+
+  const updateArrayItem = (path: string, category: string, index: number, value: string) => {
+    if (path === 'demographics') {
+      const currentArray = survey.primaryTG?.demographics[category as keyof typeof survey.primaryTG.demographics] as string[] || []
+      const updatedArray = currentArray.map((item, i) => i === index ? value : item)
+      handleDemographicArrayChange(category as any, updatedArray)
+    } else if (path === 'psychographics') {
+      const currentArray = survey.primaryTG?.psychographics[category as keyof typeof survey.primaryTG.psychographics] as string[] || []
+      const updatedArray = currentArray.map((item, i) => i === index ? value : item)
+      handlePsychographicArrayChange(category as any, updatedArray)
+    }
+  }
+
+  const removeArrayItem = (path: string, category: string, index: number) => {
+    if (path === 'demographics') {
+      const currentArray = survey.primaryTG?.demographics[category as keyof typeof survey.primaryTG.demographics] as string[] || []
+      const updatedArray = currentArray.filter((_, i) => i !== index)
+      handleDemographicArrayChange(category as any, updatedArray)
+    } else if (path === 'psychographics') {
+      const currentArray = survey.primaryTG?.psychographics[category as keyof typeof survey.primaryTG.psychographics] as string[] || []
+      const updatedArray = currentArray.filter((_, i) => i !== index)
+      handlePsychographicArrayChange(category as any, updatedArray)
+    }
   }
 
   // Handle Save & Continue
@@ -408,9 +535,164 @@ export default function SurveyPage({ params }: SurveyPageProps) {
               <CardTitle>Target Group</CardTitle>
               <CardDescription>Define your target audience and participant criteria</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center py-8 text-gray-500">
-                Target Group content will be added here
+            <CardContent className="space-y-6">
+              {/* Demographics */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Demographics</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Age Range</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={survey.primaryTG?.demographics.ageRange.min || 18}
+                        onChange={handleAgeRangeChange('min')}
+                        placeholder="Min age"
+                      />
+                      <span>to</span>
+                      <Input
+                        type="number"
+                        value={survey.primaryTG?.demographics.ageRange.max || 65}
+                        onChange={handleAgeRangeChange('max')}
+                        placeholder="Max age"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {['gender', 'income', 'education'].map((category) => (
+                  <div key={category} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="capitalize">{category}</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addArrayItem('demographics', category)}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add {category.slice(0, -1)}
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {(survey.primaryTG?.demographics[category as keyof typeof survey.primaryTG.demographics] as string[] || []).map((item, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Input
+                            value={item}
+                            onChange={(e) => updateArrayItem('demographics', category, index, e.target.value)}
+                            placeholder={`Enter ${category.slice(0, -1)}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeArrayItem('demographics', category, index)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Psychographics */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Psychographics</h3>
+                {['interests', 'values', 'lifestyle'].map((category) => (
+                  <div key={category} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="capitalize">{category}</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addArrayItem('psychographics', category)}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add {category.slice(0, -1)}
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {(survey.primaryTG?.psychographics[category as keyof typeof survey.primaryTG.psychographics] as string[] || []).map((item, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Input
+                            value={item}
+                            onChange={(e) => updateArrayItem('psychographics', category, index, e.target.value)}
+                            placeholder={`Enter ${category.slice(0, -1)}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeArrayItem('psychographics', category, index)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Behavioral */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Behavioral</h3>
+                
+                <div className="space-y-2">
+                  <Label>Purchase Frequency</Label>
+                  <Select 
+                    value={survey.primaryTG?.behavioral.purchaseFrequency || ""} 
+                    onValueChange={handleBehavioralChange('purchaseFrequency')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select purchase frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                      <SelectItem value="annually">Annually</SelectItem>
+                      <SelectItem value="rarely">Rarely</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Brand Loyalty</Label>
+                  <Select 
+                    value={survey.primaryTG?.behavioral.brandLoyalty || ""} 
+                    onValueChange={handleBehavioralChange('brandLoyalty')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select brand loyalty level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="very-loyal">Very Loyal</SelectItem>
+                      <SelectItem value="somewhat-loyal">Somewhat Loyal</SelectItem>
+                      <SelectItem value="neutral">Neutral</SelectItem>
+                      <SelectItem value="switcher">Brand Switcher</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Exclusion Criteria */}
+              <div className="space-y-2">
+                <Label htmlFor="exclusionCriteria">Exclusion Criteria</Label>
+                <Textarea
+                  id="exclusionCriteria"
+                  value={survey.exclusionCriteria || ""}
+                  onChange={handleInputChange('exclusionCriteria')}
+                  placeholder="Describe any criteria that would exclude participants from this study..."
+                  rows={3}
+                />
               </div>
             </CardContent>
           </Card>
@@ -423,8 +705,63 @@ export default function SurveyPage({ params }: SurveyPageProps) {
               <CardDescription>Configure your sampling methodology and sample size</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center py-8 text-gray-500">
-                Sample Design content will be added here
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sampleSize">Sample Size</Label>
+                  <Input
+                    id="sampleSize"
+                    type="number"
+                    value={survey.sampleSize || 300}
+                    onChange={handleNumberChange('sampleSize')}
+                    placeholder="300"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confidenceLevel">Confidence Level (%)</Label>
+                  <Select 
+                    value={survey.confidenceLevel?.toString() || "95"} 
+                    onValueChange={(value) => setSurvey(prev => ({ ...prev, confidenceLevel: parseInt(value) }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select confidence level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="90">90%</SelectItem>
+                      <SelectItem value="95">95%</SelectItem>
+                      <SelectItem value="99">99%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="marginOfError">Margin of Error (%)</Label>
+                  <Input
+                    id="marginOfError"
+                    type="number"
+                    value={survey.marginOfError || 5}
+                    onChange={handleNumberChange('marginOfError')}
+                    placeholder="5"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Sample Calculation Info</Label>
+                <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+                  <p>With a sample size of <strong>{survey.sampleSize || 300}</strong> and a confidence level of <strong>{survey.confidenceLevel || 95}%</strong>, your margin of error will be approximately <strong>±{survey.marginOfError || 5}%</strong>.</p>
+                  <p className="mt-2 text-xs">This means you can be {survey.confidenceLevel || 95}% confident that your results are within {survey.marginOfError || 5} percentage points of the true population value.</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Demographic Splits (Optional)</Label>
+                <p className="text-sm text-gray-500">
+                  Specify how you want to split your sample across different demographics
+                </p>
+                <div className="text-center py-8 text-gray-500 border border-dashed border-gray-300 rounded">
+                  Demographic splits configuration will be added here
+                </div>
               </div>
             </CardContent>
           </Card>

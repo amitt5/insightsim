@@ -68,32 +68,35 @@ export function buildMessagesForOpenAI({
   }
 
   // JSON format rules
-  systemPrompt += `
-Respond ONLY as the participants (never the moderator), in JSON format:
+  // Replace your current JSON format rules section with:
+systemPrompt += `
+RESPONSE FORMAT - CRITICAL:
+You must ALWAYS respond with valid JSON in this exact format:
 
-[
-  { "name": "Participant Name", "message": "Their message." },
-  ...
-]
+{
+  "participants": [
+    {"name": "Participant Name", "message": "Their response message"}
+  ]
+}
 
-Strictly follow these rules:
-- DO NOT include any moderator messages or names.
-- DO NOT include any explanation, commentary, or markdown.
-- DO NOT include text outside the JSON array.
-- DO NOT wrap the response in triple backticks or say "Here is the response".
-- ONLY return a valid JSON array of 1 to 4 participant messages.
+STRICT RULES:
+- Return ONLY valid JSON - no other text, explanations, or markdown
+- Include 1-4 participant responses per turn
+- Never include moderator responses
+- Each participant gets their own object in the array
+- Messages should be ${study_type === "idi" ? "detailed (50-200 words)" : "natural and conversational"}
 
-To guide you, here is an example of the expected format and depth:
-
-[
-  {
-    "name": "Michael Rodriguez",
-    "message": "When I’m developing a new investment thesis, I start by identifying key macroeconomic trends that could influence the sector. For example, if I'm looking into renewable energy, I consider factors like regulatory shifts, technological innovation, and capital flows. Next, I analyze industry reports and peer commentary to benchmark companies. I rely on both qualitative inputs—like executive interviews and field insights—and quantitative data like EBITDA margins, ROIC, and market multiples. I also assess competitive moats and their sustainability over a 5–10 year horizon. I build financial models based on conservative assumptions, stress-test them with pessimistic scenarios, and use DCF and relative valuation methods. My thesis also includes a risk section covering geopolitical and supply chain issues. Once I’m confident, I present it to the investment committee, making sure I can defend my assumptions with credible evidence and anticipate counterarguments. It’s not just about data; it’s about the narrative that connects the data to a long-term value opportunity."
-  }
-]
-
-Make the conversation feel natural and realistic, as if participants are talking to each other in a group setting.
+EXAMPLE:
+{
+  "participants": [
+    {
+      "name": "Michael Rodriguez", 
+      "message": "When I'm developing a new investment thesis, I start by identifying key macroeconomic trends..."
+    }
+  ]
+}
 `;
+
 
   openAIMessages.push({
     role: "system",

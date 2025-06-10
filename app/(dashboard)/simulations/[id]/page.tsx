@@ -97,12 +97,12 @@ export default function SimulationViewPage() {
       const data = await runSimulationAPI(prompt, modelInUse);
       // console.log('data', data);
       const parsedMessages = parseSimulationResponse(data.reply);
-      // console.log('parsedMessages-amit', parsedMessages);
+      console.log('parsedMessages-amit', parsedMessages);
       // // save messages to database
       // const saveResult = await saveMessagesToDatabase(parsedMessages);
       // console.log('saveResult', saveResult);
       // Simulate API call with delay
-      setFollowUpQuestions(parsedMessages)
+      setFollowUpQuestions(parsedMessages.questions)
       // setTimeout(() => {
       //   // Select 3 random questions
       //   const shuffled = hardcodedQuestions.sort(() => 0.5 - Math.random())
@@ -281,9 +281,9 @@ export default function SimulationViewPage() {
           // Parse the response into messages
           const parsedMessages = parseSimulationResponse(data.reply);
           console.log('Parsed messages111:', parsedMessages);
-          
+          const extractedParticipantMessages = extractParticipantMessages(parsedMessages);
           // Save the messages to the database
-          const saveResult = await saveMessagesToDatabase(parsedMessages);
+          const saveResult = await saveMessagesToDatabase(extractedParticipantMessages);
           
           // // Fetch updated messages after saving
           if (saveResult && simulationData.simulation.id) {
@@ -297,6 +297,31 @@ export default function SimulationViewPage() {
       }
     }
   }
+
+  // Function to extract participant array from any JSON structure
+function extractParticipantMessages(parsedResponse: any) {
+  // If it's already an array, return it directly
+  if (Array.isArray(parsedResponse)) {
+    return parsedResponse;
+  }
+  
+  // Look for any property that contains an array of objects with name/message
+  for (const [key, value] of Object.entries(parsedResponse)) {
+    if (Array.isArray(value) && value.length > 0) {
+      // Check if the first item has name and message properties
+      const firstItem = value[0];
+      if (firstItem && typeof firstItem === 'object' && 
+          ('name' in firstItem || 'Name' in firstItem) && 
+          ('message' in firstItem || 'Message' in firstItem)) {
+        return value;
+      }
+    }
+  }
+  
+  // If no valid array found, return empty array
+  return [];
+}
+
 
   const sendMessage = async () => {
     // this should 1st save the message to the database

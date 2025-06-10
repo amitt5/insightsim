@@ -361,10 +361,19 @@ export default function NewSimulationPage() {
   - Avoid leading or biased phrasing
   - Include at least one projective or hypothetical scenario question
   
-  Structure your response as a clean numbered list with no introductory text, explanations, or additional commentary. Start directly with question 1.
+  Return your response as a JSON object with the following structure:
   
-  Format each question as a moderator would naturally ask it in the session.`.trim();
+  {
+    "questions": [
+      "Question 1 text here",
+      "Question 2 text here",
+      "Question 3 text here"
+    ]
   }
+  
+  Format each question as a moderator would naturally ask it in the session. Return only valid JSON with no additional text or explanations.`.trim();
+  }
+  
   
 
   return (
@@ -664,19 +673,60 @@ export default function NewSimulationPage() {
                                 { role: "system", content: prompt }
                               ];
                               const result = await runSimulationAPI(messages);
+
+                              try {
+                                // Parse the JSON response
+                                let responseText = result.reply || "";
+                                
+                                // Clean the response string (remove any markdown formatting)
+                                responseText = responseText
+                                .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
+                                .replace(/```$/, '')            // Remove trailing ```
+                                .trim();
+                                
+                                // Parse the JSON
+                                const parsedResponse = JSON.parse(responseText);
+                                
+                                // Extract questions array
+                                const questions = parsedResponse.questions || [];
+                                
+                                // Join questions as textarea value (one per line)
+                                setSimulationData(prev => ({
+                                  ...prev,
+                                  discussion_questions: questions.join("\n")
+                                }));
+                                
+                              } catch (error) {
+                                console.error("Error parsing discussion questions JSON:", error);
+                                
+                                // Fallback: try to parse as the old numbered list format
+                                let questions = result.reply || "";
+                                questions = questions.replace(/```[a-z]*[\s\S]*?```/gi, '');
+                                let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+                                lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
+                                console.log('lines111', lines);
+                                setSimulationData(prev => ({
+                                  ...prev,
+                                  discussion_questions: lines.join("\n")
+                                }));
+                              }
+
+  
+                
+                              // const result = await runSimulationAPI(messages);
                               // Parse the response: expect a numbered list
-                              let questions = result.reply || "";
-                              // Remove markdown, trim, etc.
-                              questions = questions.replace(/```[a-z]*[\s\S]*?```/g, "").trim();
-                              // If it's a numbered list, split into lines
-                              let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
-                              // Remove leading numbers if present
-                              lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
-                              // Join as textarea value (one per line)
-                              setSimulationData(prev => ({
-                                ...prev,
-                                discussion_questions: lines.join("\n")
-                              }));
+                              // let questions = result.reply || "";
+                              // // Remove markdown, trim, etc.
+                              // questions = questions.replace(/```[a-z]*[\s\S]*?```/g, "").trim();
+                              // // If it's a numbered list, split into lines
+                              // let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+                              // // Remove leading numbers if present
+                              // lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
+                              // // Join as textarea value (one per line)
+                              // setSimulationData(prev => ({
+                              //   ...prev,
+                              //   discussion_questions: lines.join("\n")
+                              // }));
                             } catch (err) {
                               toast({
                                 title: "Error",

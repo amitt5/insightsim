@@ -17,6 +17,8 @@ export async function POST(req: Request) {
       messages,
       temperature: 0.9,
       max_tokens: 3000,
+      response_format: { "type": "json_object" }
+
     //   top_p: 1,
     //   frequency_penalty: 0,
     //   presence_penalty: 0,

@@ -1025,7 +1025,7 @@ export default function LandingPage() {
             <div className="w-full flex justify-center mb-8">
               <div className="w-full max-w-2xl aspect-video rounded-lg overflow-hidden shadow bg-gray-100 flex items-center justify-center video-container animate-element">
                 <iframe
-                  src="https://www.loom.com/embed/3f2acb20d33541ea8236200f080f3c8b"
+                  src="https://www.loom.com/embed/8529302263914ee9bc00e2ed0619e8ec"
                   title="InsightSim Demo Video"
                   allow="autoplay; fullscreen"
                   frameBorder="0"

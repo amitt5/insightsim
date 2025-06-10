@@ -615,7 +615,7 @@ export default function LandingPage() {
               </div>
 
               {/* Process Flow */}
-              <div className="grid gap-6 md:grid-cols-9 mb-10">
+              <div className="grid gap-6 md:grid-cols-8 mb-10">
                 {/* Step 1: Plan */}
                 <div className="text-center md:col-span-2">
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -672,8 +672,8 @@ export default function LandingPage() {
 
               {/* Final Step - Execute Real Research */}
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>

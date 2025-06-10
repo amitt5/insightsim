@@ -10,7 +10,12 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata = {
   title: "InsightSim - AI-Powered Qualitative Research",
   description: "Simulate focus group discussions with AI personas",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

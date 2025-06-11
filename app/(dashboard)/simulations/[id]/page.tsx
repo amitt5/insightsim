@@ -1,6 +1,6 @@
 "use client"
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -81,6 +81,24 @@ export default function SimulationViewPage() {
   const [isParticipantsCollapsed, setIsParticipantsCollapsed] = useState(false)
   const [isDiscussionQuestionsCollapsed, setIsDiscussionQuestionsCollapsed] = useState(false)
   const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
+
+  // Ref for the textarea to enable scrolling and focusing
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Function to handle discussion question selection
+  const handleQuestionSelect = (question: string) => {
+    setNewMessage(question);
+    // Scroll to and focus the textarea after a brief delay to ensure the text is set
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        textareaRef.current.focus();
+      }
+    }, 100);
+  };
 
   // Function to handle follow-up questions
   const handleFollowUpQuestions = async () => {
@@ -182,10 +200,10 @@ export default function SimulationViewPage() {
         // sort messages by created_at date
         data.messages.sort((a: SimulationMessage, b: SimulationMessage) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         // if there are messages, check how many times moderator has spoken and then set the new message to the next question
-        const moderatorMessages = data.messages.filter((msg: SimulationMessage) => msg.sender_type === 'moderator');
-        if(moderatorMessages.length) {
-          setNewMessage(simulationData?.simulation?.discussion_questions?.[moderatorMessages.length] || "");
-        }
+        // const moderatorMessages = data.messages.filter((msg: SimulationMessage) => msg.sender_type === 'moderator');
+        // if(moderatorMessages.length) {
+        //   setNewMessage(simulationData?.simulation?.discussion_questions?.[moderatorMessages.length] || "");
+        // }
       }
       
       // Store the raw messages
@@ -852,7 +870,12 @@ function extractParticipantMessages(parsedResponse: any) {
                     ) : (
                       <div className="space-y-3">
                         {simulation.discussion_questions.map((question, index) => (
-                          <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                          <div 
+                            key={index} 
+                            className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors border border-transparent hover:border-primary/20"
+                            onClick={() => handleQuestionSelect(question)}
+                            title="Click to add this question to your message"
+                          >
                             <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium">
                               {index + 1}
                             </div>
@@ -1000,7 +1023,7 @@ function extractParticipantMessages(parsedResponse: any) {
                                 key={index}
                                 type="button"
                                 className="w-full text-left p-2 text-xs border border-gray-200 rounded hover:bg-gray-50 hover:border-primary transition-colors"
-                                onClick={() => setNewMessage(questionObj.question)}
+                                onClick={() => handleQuestionSelect(questionObj.question)}
                               >
                                 {questionObj.question}
                               </button>
@@ -1015,46 +1038,66 @@ function extractParticipantMessages(parsedResponse: any) {
                
 
                 {((simulationData?.simulation?.mode === "human-mod") || (formattedMessages.length > 0)) &&
-                <div className="mt-2 flex gap-2 ">
-                {/* { (simulationData?.simulation?.mode === "human-mod") &&<div className="flex gap-2 "> */}
-                {/* formattedMessages.length > 0 && */}
-                  <input 
-                    type="text" 
+                <div className="mt-2 space-y-2">
+                  {/* Full width multiline textbox */}
+                  <textarea 
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type your message..."
-                    className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    rows={3}
                     disabled={simulation.status === 'Completed'}
+                    ref={textareaRef}
                   />
-                  <Button 
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim() || simulation.status === 'Completed' || isLoadingMessages}
-                  >
-                    Send
-                  </Button>
-                </div>}
-
-               
-
-                {availableCredits !== null && (
-                  <div className="flex flex-col gap-2 mt-2">
-                    <ModelSelectorWithCredits
-                      modelInUse={modelInUse}
-                      setModelInUse={setModelInUse}
-                      availableCredits={availableCredits}
-                    />
-                    {formattedMessages.length > 0 && (
-                      <Button
-                        className="mt-2"
-                        variant="destructive"
-                        onClick={endDiscussion}
-                        disabled={simulation.status === 'Completed' || isEndingDiscussion}
+                  
+                  {/* Model selector and Send button row */}
+                  {availableCredits !== null && (
+                    <div className="flex gap-2 items-center">
+                      <div className="flex-1">
+                        <Select
+                          value={modelInUse}
+                          onValueChange={(value: string) => setModelInUse(value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select model" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(CREDIT_RATES).map(([model, rates]) => (
+                              <SelectItem key={model} value={model}>
+                                {model} ({rates.usage})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button 
+                        onClick={sendMessage}
+                        disabled={!newMessage.trim() || simulation.status === 'Completed' || isLoadingMessages}
                       >
-                        {isEndingDiscussion ? "Ending..." : "Thank participants and End Discussion"}
+                        Send
                       </Button>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                  
+                  {/* Available credits display */}
+                  {availableCredits !== null && (
+                    <div className="text-right">
+                      <span className="text-sm text-gray-600">Available credits: {availableCredits.toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  {/* End discussion button */}
+                  {formattedMessages.length > 0 && availableCredits !== null && (
+                    <Button
+                      className="w-full"
+                      variant="destructive"
+                      onClick={endDiscussion}
+                      disabled={simulation.status === 'Completed' || isEndingDiscussion}
+                    >
+                      {isEndingDiscussion ? "Ending..." : "End Discussion and generate insights"}
+                    </Button>
+                  )}
+                </div>}
 
 
                 

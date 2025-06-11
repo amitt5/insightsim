@@ -843,9 +843,12 @@ function extractParticipantMessages(parsedResponse: any) {
                     ) : (
                       <div className="space-y-4">
                         {personas.map((participant) => (
-                          <div key={participant.id} className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                              <UserCircle className="h-6 w-6" />
+                          <div key={participant.id} className="flex items-start gap-2">
+                            <div 
+                              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-white text-xs font-medium"
+                              style={{ backgroundColor: getPersonaColor(participant.id, personas) }}
+                            >
+                              {participant.name[0]}
                             </div>
                             <div>
                               <h3 className="font-medium">{participant.name}</h3>

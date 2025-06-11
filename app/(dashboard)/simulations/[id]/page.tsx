@@ -943,7 +943,7 @@ function extractParticipantMessages(parsedResponse: any) {
                           : '#9238FF'; // Purple color to match moderator message bubble
                         
                         return (
-                          <div key={i} className={`flex gap-4 ${isModeratorMessage ? "flex-row-reverse" : ""}`}>
+                          <div key={i} className={`flex gap-4 items-end ${isModeratorMessage ? "flex-row-reverse" : ""}`}>
                             <div 
                               className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white font-medium"
                               style={{ backgroundColor: personaColor }}

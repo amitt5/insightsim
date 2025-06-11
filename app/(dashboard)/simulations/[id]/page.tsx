@@ -82,6 +82,26 @@ export default function SimulationViewPage() {
   const [isDiscussionQuestionsCollapsed, setIsDiscussionQuestionsCollapsed] = useState(false)
   const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
+  // Color palette for personas (10 colors)
+  const personaColors = [
+    '#E91E63', // Pink
+    '#673AB7', // Deep Purple
+    '#3F51B5', // Indigo
+    '#2196F3', // Blue
+    '#00BCD4', // Cyan
+    '#009688', // Teal
+    '#4CAF50', // Green
+    '#FF9800', // Orange
+    '#F44336', // Red
+    '#795548', // Brown
+  ];
+
+  // Function to get color for a persona
+  const getPersonaColor = (personaId: string, personas: Persona[]) => {
+    const index = personas.findIndex(p => p.id === personaId);
+    return index !== -1 ? personaColors[index % personaColors.length] : personaColors[0];
+  };
+
   // Ref for the textarea to enable scrolling and focusing
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -916,28 +936,51 @@ function extractParticipantMessages(parsedResponse: any) {
                     </div>
                   ) : (
                     <>
-                      {formattedMessages.map((message, i) => (
-                        <div key={i} className={`flex gap-4 ${message.speaker === "Moderator" ? "flex-row-reverse" : ""}`}>
-                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                            {message.speaker === "Moderator" ? "M" : message.speaker[0]}
-                          </div>
-                          <div className={`flex-1 ${message.speaker === "Moderator" ? "text-right" : ""}`}>
-                            <div className={`flex items-center gap-2 ${message.speaker === "Moderator" ? "justify-end" : ""}`}>
-                              <span className="font-medium"> { message.speaker === "Moderator" ? 
-                               (simulationData?.simulation?.study_type === 'focus-group'? 'Moderator': 'Interviewer') : message.speaker}
-                                </span>
-                              <span className="text-xs text-gray-500">{message.time}</span>
+                      {formattedMessages.map((message, i) => {
+                        const isModeratorMessage = message.speaker === "Moderator";
+                        const personaColor = !isModeratorMessage && message.sender_id 
+                          ? getPersonaColor(message.sender_id, personas) 
+                          : '#9238FF'; // Purple color to match moderator message bubble
+                        
+                        return (
+                          <div key={i} className={`flex gap-4 ${isModeratorMessage ? "flex-row-reverse" : ""}`}>
+                            <div 
+                              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white font-medium"
+                              style={{ backgroundColor: personaColor }}
+                            >
+                              {isModeratorMessage ? "M" : message.speaker[0]}
                             </div>
-                            <div className={`mt-1 inline-block rounded-lg px-4 py-2 ${
-                              message.speaker === "Moderator" 
-                                ? "bg-primary text-primary-foreground" 
-                                : "bg-muted"
-                            }`}>
-                              <p className="text-sm">{message.text}</p>
+                            <div className={`flex-1 ${isModeratorMessage ? "text-right" : ""}`}>
+                              <div className={`inline-block rounded-lg px-4 py-2 max-w-[80%] ${
+                                isModeratorMessage 
+                                  ? "bg-primary text-primary-foreground" 
+                                  : "bg-muted"
+                              }`}>
+                                {!isModeratorMessage && (
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span 
+                                      className="font-semibold text-sm"
+                                      style={{ color: personaColor }}
+                                    >
+                                      {message.speaker}
+                                    </span>
+                                    <span className="text-xs text-gray-500 ml-2">{message.time}</span>
+                                  </div>
+                                )}
+                                {isModeratorMessage && (
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs text-primary-foreground/70">{message.time}</span>
+                                    <span className="font-semibold text-sm text-primary-foreground ml-2">
+                                      {simulationData?.simulation?.study_type === 'focus-group'? 'Moderator': 'Interviewer'}
+                                    </span>
+                                  </div>
+                                )}
+                                <p className="text-sm">{message.text}</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {isSimulationRunning && (
                         <div className="flex gap-4">
                           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">

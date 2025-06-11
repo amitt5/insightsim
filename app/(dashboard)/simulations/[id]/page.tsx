@@ -891,7 +891,10 @@ function extractParticipantMessages(parsedResponse: any) {
           </div>
 
           {/* Chat Window - Full width on mobile */}
-          <div className="col-span-1 lg:col-span-6">
+          <div className={`col-span-1 ${
+            simulationData?.simulation?.status === 'Completed' && simulationSummaries ? 
+            'lg:col-span-6' : 'lg:col-span-9'
+          }`}>
             <Card className="h-full flex flex-col">
               <CardContent className="p-4 flex-1 overflow-auto">
               <h2 className="font-semibold mb-4 flex items-center gap-2">
@@ -1105,66 +1108,68 @@ function extractParticipantMessages(parsedResponse: any) {
           </Card>
         </div>
 
-          {/* Summary Tabs - Full width on mobile */}
-          <div className="col-span-1 lg:col-span-3">
-          <Card className="h-full">
-            <CardContent className="p-4">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                  <TabsList className="mb-4 grid w-full grid-cols-2">
-                    {/* <TabsTrigger value="transcript">Transcript</TabsTrigger> */}
-                  <TabsTrigger value="summary">Summary</TabsTrigger>
-                  <TabsTrigger value="themes">Themes</TabsTrigger>
-                </TabsList>
+          {/* Summary Tabs - Only show when discussion is completed and summary is available */}
+          {simulationData?.simulation?.status === 'Completed' && simulationSummaries && (
+            <div className="col-span-1 lg:col-span-3">
+              <Card className="h-full">
+                <CardContent className="p-4">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+                      <TabsList className="mb-4 grid w-full grid-cols-2">
+                        {/* <TabsTrigger value="transcript">Transcript</TabsTrigger> */}
+                      <TabsTrigger value="summary">Summary</TabsTrigger>
+                      <TabsTrigger value="themes">Themes</TabsTrigger>
+                    </TabsList>
 
-                  {/* <TabsContent value="transcript" className="flex-1 overflow-auto">
-                  <div className="space-y-4">
-                      {discussion.map((message, i) => (
-                      <div key={i} className="border-b pb-2">
-                        <div className="flex justify-between">
-                          <span className="font-medium">{message.speaker}</span>
-                          <span className="text-xs text-gray-500">{message.time}</span>
-                        </div>
-                        <p className="text-sm text-gray-700">{message.text}</p>
+                      {/* <TabsContent value="transcript" className="flex-1 overflow-auto">
+                      <div className="space-y-4">
+                          {discussion.map((message, i) => (
+                          <div key={i} className="border-b pb-2">
+                            <div className="flex justify-between">
+                              <span className="font-medium">{message.speaker}</span>
+                              <span className="text-xs text-gray-500">{message.time}</span>
+                            </div>
+                            <p className="text-sm text-gray-700">{message.text}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  </TabsContent> */}
+                      </TabsContent> */}
 
-                <TabsContent value="summary" className="flex-1 overflow-auto">
-                  <h3 className="font-medium mb-3">Key Insights</h3>
-                  <ul className="space-y-2">
-                      {simulationSummaries?.summaries.map((insight, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">
-                          {i + 1}
-                        </span>
-                          <span className="text-sm">{insight.summary}</span>
-                      </li>
-                    ))}
-                  </ul>
+                    <TabsContent value="summary" className="flex-1 overflow-auto">
+                      <h3 className="font-medium mb-3">Key Insights</h3>
+                      <ul className="space-y-2">
+                          {simulationSummaries?.summaries.map((insight, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">
+                              {i + 1}
+                            </span>
+                              <span className="text-sm">{insight.summary}</span>
+                          </li>
+                        ))}
+                      </ul>
 
-                    {/* <div className="mt-6">
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Download className="h-4 w-4" />
-                      Download Report
-                      </Button> uncomment me Amit
-                    </div> */}
-                </TabsContent>
+                        {/* <div className="mt-6">
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Download className="h-4 w-4" />
+                          Download Report
+                          </Button> uncomment me Amit
+                        </div> */}
+                    </TabsContent>
 
-                <TabsContent value="themes" className="flex-1 overflow-auto">
-                  <h3 className="font-medium mb-3">Emerging Themes</h3>
-                  <div className="flex flex-wrap gap-2">
-                      {simulationSummaries?.themes.map((theme, i) => (
-                      <div key={i} className="rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-                          {theme.theme}
+                    <TabsContent value="themes" className="flex-1 overflow-auto">
+                      <h3 className="font-medium mb-3">Emerging Themes</h3>
+                      <div className="flex flex-wrap gap-2">
+                          {simulationSummaries?.themes.map((theme, i) => (
+                          <div key={i} className="rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
+                              {theme.theme}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-          </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </div>

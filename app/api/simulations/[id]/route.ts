@@ -95,35 +95,68 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createRouteHandlerClient({ cookies })
-  const { id } = params
-  const { data: simulation, error: simulationError } = await supabase
-    .from("simulations")
-    .select("*")
-    .eq("id", id)
-    .single()
-  if (simulationError) {
-    console.error("Error fetching simulation:", simulationError)
-    return NextResponse.json({ error: simulationError.message }, { status: 500 })
+  try {
+    const supabase = createRouteHandlerClient({ cookies })
+    const { id } = params
+    
+    // Fetch the simulation to verify it exists
+    const { data: simulation, error: simulationError } = await supabase
+      .from("simulations")
+      .select("*")
+      .eq("id", id)
+      .single()
+      
+    if (simulationError) {
+      console.error("Error fetching simulation:", simulationError)
+      return NextResponse.json({ error: simulationError.message }, { status: 500 })
+    }
+    
+    if (!simulation) {
+      return NextResponse.json({ error: "Simulation not found" }, { status: 404 })
+    }
+    
+    // Parse the request body for fields to update
+    const body = await request.json();
+    
+    // Handle soft delete case
+    if (body.is_deleted === true) {
+      const { data: updatedSimulation, error: updateError } = await supabase
+        .from("simulations")
+        .update({ 
+          is_deleted: true,
+          deleted_at: new Date().toISOString()
+        })
+        .eq("id", id)
+        .select()
+        .single()
+        
+      if (updateError) {
+        console.error("Error soft deleting simulation:", updateError)
+        return NextResponse.json({ error: "Failed to delete simulation" }, { status: 500 })
+      }
+      
+      return NextResponse.json({ 
+        message: "Simulation deleted successfully",
+        simulation: updatedSimulation 
+      })
+    }
+    
+    // Handle regular updates
+    const { data: updatedSimulation, error: updateError } = await supabase
+      .from("simulations")
+      .update(body)
+      .eq("id", id)
+      .select()
+      .single()
+      
+    if (updateError) {
+      console.error("Error updating simulation:", updateError)
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+    
+    return NextResponse.json(updatedSimulation)
+  } catch (error) {
+    console.error("Unexpected error in PATCH:", error)
+    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
   }
-  if (!simulation) {
-    return NextResponse.json({ error: "Simulation not found" }, { status: 404 })
-  }
-  // Parse the request body for fields to update
-  const body = await request.json();
-  // Optionally, prevent updates if already completed (unless you want to allow updating user_instructions after completion)
-  // if (simulation.status === 'Completed') {
-  //   return NextResponse.json({ error: "Simulation already completed" }, { status: 400 })
-  // }
-  const { data: updatedSimulation, error: updateError } = await supabase
-    .from("simulations")
-    .update(body)
-    .eq("id", id)
-    .select()
-    .single()
-  if (updateError) {
-    console.error("Error updating simulation:", updateError)
-    return NextResponse.json({ error: updateError.message }, { status: 500 })
-  }
-  return NextResponse.json(updatedSimulation)
 }

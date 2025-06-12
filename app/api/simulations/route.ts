@@ -30,6 +30,7 @@ export async function GET() {
       .from("simulations")
       .select("*")
       .order("created_at", { ascending: false })
+      .or("is_deleted.is.null,is_deleted.eq.false") // Filter out soft-deleted simulations (include NULL and false values)
 
     // Only filter by user_id if the user is not an admin
     if (userData?.role !== 'admin') {

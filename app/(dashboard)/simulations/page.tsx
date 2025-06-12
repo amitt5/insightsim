@@ -5,9 +5,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus } from "lucide-react"
+import { Plus, Trash2, MoreVertical, Eye } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Simulation } from "@/utils/types"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 // Interface for the API response
 interface SimulationsApiResponse {
   simulations: Simulation[];
@@ -28,6 +34,55 @@ export default function SimulationsPage() {
   const [simulations, setSimulations] = useState<SimulationViewModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const handleDeleteClick = (simulationId: string) => {
+    setDeleteConfirmId(simulationId);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmId) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/simulations/${deleteConfirmId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_deleted: true }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete simulation');
+      }
+
+      const result = await response.json();
+      console.log('Simulation deleted successfully:', result);
+      
+      // Remove from local state
+      setSimulations(prev => prev.filter(sim => sim.id !== deleteConfirmId));
+      
+      // Show success message
+      setSuccessMessage('Simulation deleted successfully');
+      setTimeout(() => setSuccessMessage(null), 3000); // Hide after 3 seconds
+      
+      setDeleteConfirmId(null);
+    } catch (error) {
+      console.error('Failed to delete simulation:', error);
+      setError(error instanceof Error ? error.message : 'Failed to delete simulation');
+      setTimeout(() => setError(null), 5000); // Hide error after 5 seconds
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmId(null);
+  };
 
   useEffect(() => {
     const fetchSimulations = async () => {
@@ -66,6 +121,20 @@ export default function SimulationsPage() {
 
   return (
     <div className="container mx-auto p-4">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-green-800 font-medium">{successMessage}</p>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800 font-medium">{error}</p>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold">Simulations</h1>
@@ -112,9 +181,28 @@ export default function SimulationsPage() {
                     </Badge>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <Button variant="ghost" asChild>
-                      <Link href={`/simulations/${simulation.id}`}>View</Link>
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/simulations/${simulation.id}`} className="flex items-center gap-2">
+                            <Eye className="h-4 w-4" />
+                            View
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteClick(simulation.id)}
+                          className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}
@@ -153,15 +241,65 @@ export default function SimulationsPage() {
                 </div>
 
                 <div className="pt-3 border-t">
-                  <Button className="w-full" variant="outline" asChild>
-                    <Link href={`/simulations/${simulation.id}`}>View Details</Link>
-                  </Button>
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1" />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/simulations/${simulation.id}`} className="flex items-center gap-2">
+                            <Eye className="h-4 w-4" />
+                            View Details
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteClick(simulation.id)}
+                          className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-2">Delete Simulation</h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete this simulation? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleDeleteCancel}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

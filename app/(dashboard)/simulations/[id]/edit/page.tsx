@@ -98,23 +98,58 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
           // Set simulation status
           setSimulationStatus(simulation.status || 'Draft');
           
-          // Populate simulation data
-          setSimulationData({
+          // Set the current step from active_step (default to 1 if not set)
+          setStep(simulation.active_step || 1);
+          
+          // Data consistency checks
+          const processedData = {
             study_title: simulation.study_title || "",
             study_type: simulation.study_type || "focus-group",
             mode: simulation.mode || "human-mod",
             topic: simulation.topic || "",
-            stimulus_media_url: simulation.stimulus_media_url || [],
+            stimulus_media_url: Array.isArray(simulation.stimulus_media_url) 
+              ? simulation.stimulus_media_url 
+              : [],
             discussion_questions: Array.isArray(simulation.discussion_questions) 
               ? simulation.discussion_questions.join('\n')
               : simulation.discussion_questions || "",
-            turn_based: simulation.turn_based || false,
+            turn_based: Boolean(simulation.turn_based),
             num_turns: simulation.num_turns?.toString() || "10",
-          });
+          };
 
-          // Set selected personas
+          // Validate num_turns is a valid number
+          const numTurns = parseInt(processedData.num_turns);
+          if (isNaN(numTurns) || numTurns < 1 || numTurns > 50) {
+            processedData.num_turns = "10"; // Default fallback
+          }
+
+          // Populate simulation data
+          setSimulationData(processedData);
+
+          // Set selected personas with validation
           if (data.personas && data.personas.length > 0) {
-            setSelectedPersonas(data.personas.map((p: any) => p.id));
+            const personaIds = data.personas.map((p: any) => p.id);
+            
+            // Apply study type constraints
+            if (processedData.study_type === 'idi' && personaIds.length > 1) {
+              // For IDI, only keep the first persona
+              setSelectedPersonas([personaIds[0]]);
+              toast({
+                title: "Participants adjusted",
+                description: "In-depth interviews can only have 1 participant. Only the first participant was kept.",
+                variant: "default",
+              });
+            } else if (processedData.study_type === 'focus-group' && personaIds.length > 8) {
+              // For focus groups, limit to 8 participants
+              setSelectedPersonas(personaIds.slice(0, 8));
+              toast({
+                title: "Participants adjusted",
+                description: "Focus groups can have maximum 8 participants. Only the first 8 were kept.",
+                variant: "default",
+              });
+            } else {
+              setSelectedPersonas(personaIds);
+            }
           }
         } else {
           toast({
@@ -168,6 +203,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
             : [],
           num_turns: parseInt(simulationData.num_turns),
           personas: selectedPersonas,
+          active_step: step, // Include current step in auto-save
         }),
       });
 
@@ -236,15 +272,35 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   }
 
   const nextStep = () => {
-    autoSave(); // Auto-save when navigating
-    console.log('simulationData9', simulationData, selectedPersonas)
-    setStep((prev) => Math.min(prev + 1, 4))
-  }
-  const prevStep = () => {
-    autoSave(); // Auto-save when navigating
-    setStep((prev) => Math.max(prev - 1, 1))
+    const newStep = Math.min(step + 1, 4);
+    setStep(newStep);
+    saveActiveStep(newStep); // Save the new step to database
   }
   
+  const prevStep = () => {
+    const newStep = Math.max(step - 1, 1);
+    setStep(newStep);
+    saveActiveStep(newStep); // Save the new step to database
+  }
+
+  // Function to save active_step to database
+  const saveActiveStep = async (activeStep: number) => {
+    try {
+      await fetch(`/api/simulations/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          active_step: activeStep
+        }),
+      });
+    } catch (error) {
+      console.error('Error saving active step:', error);
+      // Don't show error to user as this is background functionality
+    }
+  };
+
   // Input change handlers with debounced auto-save
   const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setSimulationData(prev => ({
@@ -472,7 +528,8 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
           discussion_questions: discussionQuestionsArray,
           num_turns: parseInt(simulationData.num_turns),
           personas: selectedPersonas,
-          status: 'Active', // Change status from Draft to Active when launching
+          status: 'Running', // Change status from Draft to Running when launching
+          active_step: step, // Include current step
         }),
       });
 

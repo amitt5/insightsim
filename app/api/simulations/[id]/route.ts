@@ -208,6 +208,7 @@ export async function PUT(
       turn_based: requestData.turn_based,
       num_turns: requestData.num_turns,
       status: requestData.status,
+      active_step: requestData.active_step,
       updated_at: new Date().toISOString(),
     }).eq("id", id).select()
 

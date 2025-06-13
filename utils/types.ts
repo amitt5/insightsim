@@ -21,6 +21,7 @@ export interface Simulation {
     turn_based: boolean;
     num_turns: number;
     status: "Draft" | "Active" | "Running" | "Completed";
+    active_step?: 1 | 2 | 3 | 4;
     created_at: string;
     user_instructions?: string;
   }

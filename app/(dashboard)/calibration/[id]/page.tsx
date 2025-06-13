@@ -264,10 +264,6 @@ export default function CalibrationDetailPage() {
       try {
         const data = await runSimulationAPI(prompt, modelInUse);
         console.log('API response:', data);
-        console.log('Simulation reply:', data.reply);
-        console.log('Token usage:', data.usage);
-        console.log('Credits remaining:', data.creditInfo.remaining_credits);
-        console.log('Credits deducted:', data.creditInfo.credits_deducted);
         setAvailableCredits(data.creditInfo.remaining_credits);
         if (data.reply) {
           // Parse the response into messages

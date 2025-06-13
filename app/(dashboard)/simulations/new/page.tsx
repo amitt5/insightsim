@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { getRandomSimulation } from "@/utils/mockSimulations"
-import { Simulation } from "@/utils/types"
+import { Simulation, Persona } from "@/utils/types"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { v4 as uuidv4 } from 'uuid'
 import { useToast } from "@/hooks/use-toast"
@@ -52,9 +52,9 @@ export default function NewSimulationPage() {
     primaryGoals: '',
     frustrations: ''
   })
-  const [generatedPersonas, setGeneratedPersonas] = useState<any[]>([])
+  const [generatedPersonas, setGeneratedPersonas] = useState<Persona[]>([])
   const [selectedGeneratedPersonas, setSelectedGeneratedPersonas] = useState<string[]>([])
-  const [editingGeneratedPersona, setEditingGeneratedPersona] = useState<any>(null)
+  const [editingGeneratedPersona, setEditingGeneratedPersona] = useState<Persona | null>(null)
   const [editGeneratedPersonaOpen, setEditGeneratedPersonaOpen] = useState(false)
 
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([])
@@ -529,7 +529,7 @@ export default function NewSimulationPage() {
                       aiPersonaData.frustrations.trim() !== '';
 
   // Hardcoded personas for now
-  const hardcodedPersonas = [
+  const hardcodedPersonas: Persona[] = [
     {
       id: 'generated-1',
       name: 'Amit',
@@ -539,7 +539,8 @@ export default function NewSimulationPage() {
       archetype: 'The Efficiency Seeker',
       bio: 'A dedicated father of two who drives for Uber to supplement his income. Always looking for ways to maximize his earning potential while spending quality time with family.',
       goal: 'Find a way to organize family schedules and maximize driving income during peak hours.',
-      traits: ['Time-Poor', 'Tech-Savvy', 'Family-Focused', 'Goal-Oriented']
+      traits: ['Time-Poor', 'Tech-Savvy', 'Family-Focused', 'Goal-Oriented'],
+      editable: true
     },
     {
       id: 'generated-2',
@@ -550,7 +551,8 @@ export default function NewSimulationPage() {
       archetype: 'The Wellness Enthusiast',
       bio: 'A career-driven professional who values work-life balance. She\'s always seeking new ways to stay healthy and productive despite her busy schedule.',
       goal: 'Maintain fitness and wellness routines while managing a demanding career.',
-      traits: ['Health-Conscious', 'Ambitious', 'Organized', 'Social']
+      traits: ['Health-Conscious', 'Ambitious', 'Organized', 'Social'],
+      editable: true
     },
     {
       id: 'generated-3',
@@ -561,7 +563,8 @@ export default function NewSimulationPage() {
       archetype: 'The Problem Solver',
       bio: 'Owns a local coffee shop and is always looking for innovative solutions to improve customer experience and streamline operations.',
       goal: 'Grow his business while maintaining the personal touch that makes his cafe special.',
-      traits: ['Entrepreneurial', 'Customer-Focused', 'Resourceful', 'Community-Minded']
+      traits: ['Entrepreneurial', 'Customer-Focused', 'Resourceful', 'Community-Minded'],
+      editable: true
     },
     {
       id: 'generated-4',
@@ -572,7 +575,8 @@ export default function NewSimulationPage() {
       archetype: 'The Multitasker',
       bio: 'A mother of three who works part-time from home. She\'s constantly juggling family responsibilities and looking for tools that can help simplify her daily routines.',
       goal: 'Balance motherhood and career while maintaining her sanity and family happiness.',
-      traits: ['Efficient', 'Nurturing', 'Practical', 'Budget-Conscious']
+      traits: ['Efficient', 'Nurturing', 'Practical', 'Budget-Conscious'],
+      editable: true
     }
   ];
 
@@ -592,13 +596,13 @@ export default function NewSimulationPage() {
   };
 
   // Handle editing a generated persona
-  const handleEditGeneratedPersona = (persona: any) => {
+  const handleEditGeneratedPersona = (persona: Persona) => {
     setEditingGeneratedPersona(persona);
     setEditGeneratedPersonaOpen(true);
   };
 
   // Handle successful edit of generated persona
-  const handleEditGeneratedPersonaSuccess = (updatedPersona: any) => {
+  const handleEditGeneratedPersonaSuccess = (updatedPersona: Persona) => {
     // Update the generated personas list with the edited persona
     setGeneratedPersonas(prev => 
       prev.map(p => p.id === updatedPersona.id ? updatedPersona : p)
@@ -1094,7 +1098,7 @@ export default function NewSimulationPage() {
                               <div className="pr-8 mb-3">
                                 <div className="flex items-center gap-2 mb-1">
                                   <h4 className="font-medium text-base">
-                                    {persona.name}, {persona.age}{persona.gender.charAt(0)}, {persona.occupation}
+                                    {persona.name}, {persona.age}{persona.gender?.charAt(0)}, {persona.occupation}
                                   </h4>
                                 </div>
                                 <div className="text-sm text-primary font-medium mb-2">
@@ -1117,7 +1121,7 @@ export default function NewSimulationPage() {
                               <div className="mb-4">
                                 <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Key Traits:</span>
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                  {persona.traits.map((trait: string, index: number) => (
+                                  {persona.traits?.map((trait: string, index: number) => (
                                     <span key={index} className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
                                       {trait}
                                     </span>
@@ -1150,7 +1154,7 @@ export default function NewSimulationPage() {
                           open={editGeneratedPersonaOpen}
                           onOpenChange={setEditGeneratedPersonaOpen}
                           onSuccess={handleEditGeneratedPersonaSuccess}
-                          initialData={editingGeneratedPersona}
+                          initialData={editingGeneratedPersona || undefined}
                           mode="edit"
                           hideTrigger={true}
                           variant="default"

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const { data: simulation, error } = await supabase.from("simulations").insert([
       {
         user_id: session.user.id,
-        study_title: requestData.study_title || "Draft study",
+        study_title: requestData.study_title || "",
         study_type: requestData.study_type || "focus-group",
         mode: requestData.mode || "human-mod",
         topic: requestData.topic || "",

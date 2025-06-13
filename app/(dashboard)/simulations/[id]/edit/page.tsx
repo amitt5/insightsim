@@ -1091,7 +1091,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
                                 className="p-0 h-5 w-5 bg-transparent border-none cursor-pointer hover:bg-gray-100 rounded-full flex items-center justify-center"
                                 onClick={() => setTitleGenerationOpen(true)}
                               >
-                                <HelpCircle className="h-4 w-4 text-gray-500" />
+                                <Sparkles className="h-4 w-4 text-primary" />
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="right">
@@ -1155,7 +1155,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
                   </div>
                   <Input 
                     id="studyTitle" 
-                    placeholder="e.g., New Product Concept Testing" 
+                    placeholder="Enter your study title (e.g., New Product Concept Testing, Customer Satisfaction Study)" 
                     value={simulationData.study_title}
                     onChange={handleInputChange('study_title')}
                   />

@@ -1,11 +1,56 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, BarChart, Users, FileText } from "lucide-react"
+import { Plus, BarChart, Users, FileText, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { useToast } from "@/hooks/use-toast"
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Function to create draft simulation and redirect
+  const handleCreateNewSimulation = async () => {
+    try {
+      setIsCreating(true);
+      const response = await fetch('/api/simulations/draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}), // Empty body for default values
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.simulation?.id) {
+          router.push(`/simulations/${data.simulation.id}/edit`);
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create simulation",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating draft simulation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create simulation",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   // Mock data
   const recentSimulations = [
     {
@@ -35,12 +80,14 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Link href="/simulations/new">
-          <Button>
+        <Button onClick={handleCreateNewSimulation} disabled={isCreating}>
+          {isCreating ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
             <Plus className="mr-2 h-4 w-4" />
-            Create New Simulation
-          </Button>
-        </Link>
+          )}
+          {isCreating ? 'Creating...' : 'Create New Simulation'}
+        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">

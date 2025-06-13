@@ -160,3 +160,93 @@ export async function PATCH(
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
   }
 }
+
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies })
+    const { id } = params
+    
+    // Get session data to verify user is logged in
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    
+    // Parse request body
+    const requestData = await request.json()
+    
+    // Verify the simulation exists and belongs to the user
+    const { data: existingSimulation, error: fetchError } = await supabase
+      .from("simulations")
+      .select("user_id")
+      .eq("id", id)
+      .single()
+    
+    if (fetchError) {
+      console.error("Error fetching simulation:", fetchError)
+      return NextResponse.json({ error: "Simulation not found" }, { status: 404 })
+    }
+    
+    if (existingSimulation.user_id !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+    
+    // Handle media URLs
+    const mediaUrls = requestData.stimulus_media_url || [];
+    
+    // Update simulation record
+    const { data: simulation, error } = await supabase.from("simulations").update({
+      study_title: requestData.study_title,
+      study_type: requestData.study_type,
+      mode: requestData.mode,
+      topic: requestData.topic,
+      stimulus_media_url: mediaUrls,
+      discussion_questions: requestData.discussion_questions,
+      turn_based: requestData.turn_based,
+      num_turns: requestData.num_turns,
+      updated_at: new Date().toISOString(),
+    }).eq("id", id).select()
+
+    if (error) {
+      console.error("Error updating simulation:", error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // If personas were provided, update the simulation_personas table
+    if (requestData.personas !== undefined) {
+      // First, delete existing persona associations
+      await supabase
+        .from("simulation_personas")
+        .delete()
+        .eq("simulation_id", id)
+      
+      // Then, add new associations if any personas provided
+      if (requestData.personas.length > 0) {
+        const personaEntries = requestData.personas.map((personaId: string) => ({
+          simulation_id: id,
+          persona_id: personaId
+        }))
+        
+        const { error: personaError } = await supabase
+          .from("simulation_personas")
+          .insert(personaEntries)
+          
+        if (personaError) {
+          console.error("Error updating personas for simulation:", personaError)
+          return NextResponse.json({ 
+            simulation: simulation ? simulation[0] : null,
+            error: "Simulation updated, but failed to update personas" 
+          })
+        }
+      }
+    }
+    
+    return NextResponse.json({ simulation: simulation ? simulation[0] : null })
+  } catch (error) {
+    console.error("Unexpected error:", error)
+    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
+  }
+}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Trash2, MoreVertical, Eye } from "lucide-react"
+import { Plus, Trash2, MoreVertical, Eye, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Simulation } from "@/utils/types"
 import {
@@ -14,6 +14,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+
 // Interface for the API response
 interface SimulationsApiResponse {
   simulations: Simulation[];
@@ -31,12 +35,16 @@ interface SimulationViewModel {
 }
 
 export default function SimulationsPage() {
+  const router = useRouter();
+  const { toast } = useToast();
   const [simulations, setSimulations] = useState<SimulationViewModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const supabase = createClientComponentClient()
 
   const handleDeleteClick = (simulationId: string) => {
     setDeleteConfirmId(simulationId);
@@ -82,6 +90,42 @@ export default function SimulationsPage() {
 
   const handleDeleteCancel = () => {
     setDeleteConfirmId(null);
+  };
+
+  // Function to create draft simulation and redirect
+  const handleCreateNewSimulation = async () => {
+    try {
+      setIsCreating(true);
+      const response = await fetch('/api/simulations/draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}), // Empty body for default values
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.simulation?.id) {
+          router.push(`/simulations/${data.simulation.id}/edit`);
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create simulation",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating draft simulation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create simulation",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   useEffect(() => {
@@ -140,11 +184,13 @@ export default function SimulationsPage() {
           <h1 className="text-2xl font-bold">Simulations</h1>
           <p className="text-gray-600">Manage your qualitative research simulations</p>
         </div>
-        <Button asChild>
-          <Link href="/simulations/new">
-            <Plus className="h-4 w-4 mr-2" />
-            New Simulation
-          </Link>
+        <Button onClick={handleCreateNewSimulation} disabled={isCreating}>
+          {isCreating ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Plus className="mr-2 h-4 w-4" />
+          )}
+          {isCreating ? 'Creating...' : 'Create New Simulation'}
         </Button>
       </div>
 

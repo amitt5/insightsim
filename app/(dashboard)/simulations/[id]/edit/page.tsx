@@ -24,6 +24,7 @@ import { runSimulationAPI } from "@/utils/api"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createTitleGenerationPrompt, createPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { Badge } from "@/components/ui/badge"
 
 export default function EditSimulationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params) 
@@ -77,6 +78,13 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   const { personas, loading, error, mutate } = usePersonas()
   const supabase = createClientComponentClient();
 
+  const [simulationStatus, setSimulationStatus] = useState<string>('Draft')
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
+
   // Load existing simulation data
   useEffect(() => {
     const loadSimulation = async () => {
@@ -86,6 +94,9 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         if (response.ok) {
           const data = await response.json();
           const simulation = data.simulation;
+          
+          // Set simulation status
+          setSimulationStatus(simulation.status || 'Draft');
           
           // Populate simulation data
           setSimulationData({
@@ -128,11 +139,23 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     loadSimulation();
   }, [id, router, toast]);
 
-  // Auto-save function
-  const autoSave = async () => {
-    if (isLoading) return; // Don't auto-save while initial loading
+  // Cleanup auto-save timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+      }
+    };
+  }, [autoSaveTimeout]);
+
+  // Auto-save function with retry logic
+  const autoSave = async (isRetry = false) => {
+    if (isLoading || (isSaving && !isRetry)) return; // Don't auto-save while initial loading or already saving (unless retry)
     
     try {
+      setIsSaving(true);
+      setSaveError(null);
+      
       const response = await fetch(`/api/simulations/${id}`, {
         method: 'PUT',
         headers: {
@@ -148,12 +171,45 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         }),
       });
 
-      if (!response.ok) {
-        console.error('Auto-save failed');
+      if (response.ok) {
+        setLastSaved(new Date());
+        setRetryCount(0); // Reset retry count on success
+      } else {
+        throw new Error(`Save failed: ${response.status}`);
       }
     } catch (error) {
       console.error('Auto-save error:', error);
+      setSaveError('Failed to save changes');
+      
+      // Retry logic - up to 3 attempts
+      if (retryCount < 3) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          autoSave(true);
+        }, 1000 * (retryCount + 1)); // Exponential backoff
+      }
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  // Manual retry function
+  const retryAutoSave = () => {
+    setRetryCount(0);
+    autoSave(true);
+  };
+
+  // Debounced auto-save function
+  const debouncedAutoSave = () => {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      autoSave();
+    }, 2000); // Auto-save 2 seconds after user stops typing
+    
+    setAutoSaveTimeout(timeout);
   };
 
   // Filter personas based on hideSystemPersonas state
@@ -163,9 +219,19 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
 
   const togglePersona = (id: string) => {
     if(simulationData.study_type === 'focus-group') {
-      setSelectedPersonas((prev) => (prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [...prev, id]))
+      setSelectedPersonas((prev) => {
+        const newSelection = prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [...prev, id];
+        // Trigger auto-save after state update
+        setTimeout(() => autoSave(), 100);
+        return newSelection;
+      });
     } else { // in case of in-depth interview, we only need one participant
-      setSelectedPersonas((prev) => (prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [id]))
+      setSelectedPersonas((prev) => {
+        const newSelection = prev.includes(id) ? prev.filter((personaId) => personaId !== id) : [id];
+        // Trigger auto-save after state update
+        setTimeout(() => autoSave(), 100);
+        return newSelection;
+      });
     }
   }
 
@@ -179,22 +245,22 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     setStep((prev) => Math.max(prev - 1, 1))
   }
   
-  // Input change handlers
+  // Input change handlers with debounced auto-save
   const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setSimulationData(prev => ({
       ...prev,
       [field]: e.target.value
     }));
-    // console.log('simulationData1', simulationData)
+    debouncedAutoSave(); // Trigger debounced auto-save
   };
 
-  // Handle select changes
+  // Handle select changes with auto-save
   const handleSelectChange = (field: string) => (value: string) => {
     setSimulationData(prev => ({
       ...prev,
       [field]: value
     }));
-    console.log('simulationData2', simulationData)
+    autoSave(); // Immediate auto-save for select changes
   };
 
   // Handle switch change
@@ -206,13 +272,13 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     console.log('simulationData3', simulationData)
   };
 
-  // Handle radio group change
+  // Handle radio group change with auto-save
   const handleRadioChange = (value: string) => {
     setSimulationData(prev => ({
       ...prev,
       mode: value
     }));
-    console.log('simulationData4', simulationData)
+    autoSave(); // Immediate auto-save for radio changes
   };
 
   // File handling functions
@@ -743,19 +809,98 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-3xl font-bold">Edit Simulation</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Edit Simulation</h1>
+            <div className="flex items-center gap-3 mt-1">
+              <Badge variant={simulationStatus === 'Draft' ? 'secondary' : 'default'}>
+                {simulationStatus}
+              </Badge>
+              {lastSaved && (
+                <span className="text-sm text-gray-500">
+                  Last saved: {lastSaved.toLocaleTimeString()}
+                </span>
+              )}
+              {isSaving && (
+                <span className="text-sm text-blue-600 flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Saving...
+                </span>
+              )}
+              {saveError && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-red-600 flex items-center gap-1">
+                    ⚠️ {saveError}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={retryAutoSave}
+                    className="h-6 px-2 text-xs"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-gray-500">Loading simulation...</p>
+        <div className="mx-auto max-w-4xl">
+          {/* Progress indicator skeleton */}
+          <div className="mb-8 flex justify-between">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex flex-col items-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 animate-pulse" />
+                <div className="mt-2 h-3 w-16 bg-gray-200 rounded animate-pulse" />
+              </div>
+            ))}
           </div>
+
+          {/* Form skeleton */}
+          <Card>
+            <CardHeader>
+              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse mb-2" />
+              <div className="h-4 w-64 bg-gray-200 rounded animate-pulse" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Study title skeleton */}
+              <div className="space-y-2">
+                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+              </div>
+              
+              {/* Study type skeleton */}
+              <div className="space-y-2">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+              </div>
+              
+              {/* Mode skeleton */}
+              <div className="space-y-3">
+                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="h-4 w-4 bg-gray-200 rounded-full animate-pulse" />
+                    <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="h-4 w-4 bg-gray-200 rounded-full animate-pulse" />
+                    <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="justify-end">
+              <div className="h-10 w-24 bg-gray-200 rounded animate-pulse" />
+            </CardFooter>
+          </Card>
         </div>
       ) : (
         <div className="mx-auto max-w-4xl">

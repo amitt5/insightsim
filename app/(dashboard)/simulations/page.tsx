@@ -96,6 +96,13 @@ export default function SimulationsPage() {
   const handleCreateNewSimulation = async () => {
     try {
       setIsCreating(true);
+      
+      // Show immediate feedback
+      toast({
+        title: "Creating simulation...",
+        description: "Setting up your new study",
+      });
+
       const response = await fetch('/api/simulations/draft', {
         method: 'POST',
         headers: {
@@ -107,6 +114,10 @@ export default function SimulationsPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.simulation?.id) {
+          toast({
+            title: "Simulation created!",
+            description: "Redirecting to the editor...",
+          });
           router.push(`/simulations/${data.simulation.id}/edit`);
         }
       } else {

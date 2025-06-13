@@ -23,6 +23,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { runSimulationAPI } from "@/utils/api"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { createTitleGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
 
 export default function NewSimulationPage() {
   const { toast } = useToast()
@@ -37,6 +38,9 @@ export default function NewSimulationPage() {
   const [titleGenerationOpen, setTitleGenerationOpen] = useState(false)
   const [titleGenerationInput, setTitleGenerationInput] = useState('')
   const [showTitleSuggestions, setShowTitleSuggestions] = useState(false)
+
+  const [titleSuggestions, setTitleSuggestions] = useState<string[]>([])
+
   const [simulationData, setSimulationData] = useState({
     study_title: "",
     study_type: "focus-group",
@@ -377,19 +381,61 @@ export default function NewSimulationPage() {
   
   Format each question as a moderator would naturally ask it in the session. Return only valid JSON with no additional text or explanations.`.trim();
   }
+
   
-  // Hardcoded title suggestions for now
-  const titleSuggestions = [
-    "Consumer Preferences for Sustainable Product Packaging",
-    "Brand Perception and Purchase Intent Study",
-    "New Product Concept Validation Research",
-    "Customer Journey Experience Evaluation",
-    "Market Positioning and Competitive Analysis Study"
-  ];
+  
 
   // Handle title generation
-  const handleGenerateTitles = () => {
+  const handleGenerateTitles = async () => { 
     // For now, just show the hardcoded suggestions
+    const prompt = createTitleGenerationPrompt(titleGenerationInput);
+
+    console.log('prompt111', prompt);
+    const messages: ChatCompletionMessageParam[] = [
+      { role: "system", content: prompt }
+    ];
+    const result = await runSimulationAPI(messages);
+
+    try {
+      // Parse the JSON response
+      let responseText = result.reply || "";
+      console.log('titles111', responseText);
+      
+      // Clean the response string (remove any markdown formatting)
+      responseText = responseText
+      .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
+      .replace(/```$/, '')            // Remove trailing ```
+      .trim();
+      
+      // Parse the JSON
+      const parsedResponse = JSON.parse(responseText);
+      
+      // Extract questions array
+      const titles = parsedResponse.titles || [];
+      console.log('titles222', titles);
+      setTitleSuggestions(titles);
+      // Join questions as textarea value (one per line)
+      // setSimulationData(prev => ({
+      //   ...prev,
+      //   discussion_questions: questions.join("\n")
+      // }));
+      
+    } catch (error) {
+      console.error("Error parsing discussion questions JSON:", error);
+      
+      // Fallback: try to parse as the old numbered list format
+      // let questions = result.reply || "";
+      // questions = questions.replace(/```[a-z]*[\s\S]*?```/gi, '');
+      // let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+      // lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
+      // console.log('lines111', lines);
+      // setSimulationData(prev => ({
+      //   ...prev,
+      //   discussion_questions: lines.join("\n")
+      // }));
+    }
+
+
     setShowTitleSuggestions(true);
   };
 

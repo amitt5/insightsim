@@ -187,3 +187,64 @@ Do not include any explanation, commentary, or text outside the JSON array.`;
 
   return openAIMessages;
 }
+
+
+/**
+ * Creates a structured prompt for an AI model to generate 5 professional study titles.
+ * @param userInput - The user's response to "What is the main thing you want to learn in this study?".
+ * @returns A detailed prompt string ready to be sent to an LLM.
+ */
+export function createTitleGenerationPrompt(userInput: string): string {
+  // The system prompt sets the AI's role and expertise.
+  // Referencing a top agency like Kantar gives it a specific context for quality.
+  const systemPrompt = `You are an expert Market Research Manager with 15 years of experience. Your specialty is taking a client's core business question and reframing it into a clear, professional, and insightful study title for qualitative research (Focus Groups or IDIs).`;
+
+  // The task definition clearly outlines the goal and constraints.
+  const taskDefinition = `Your task is to analyze the user's research goal, provided below, and generate 5 distinct, professional study titles. The titles should be concise, clear, and suitable for a formal research report.`;
+
+  // This section provides specific guidelines on the variety and style of titles to generate.
+  const styleGuidelines = `Ensure the 5 titles offer a variety of angles to give the user a good choice:
+1.  **A clear, descriptive title:** The most straightforward option.
+2.  **An exploratory title:** Using words like "Exploring," "Understanding," or "A Deep Dive into."
+3.  **An action-oriented title:** Focusing on outcomes, like "Uncovering Drivers," "Identifying Barriers," or "Mapping the Journey."
+4.  **A target-focused title:** Highlighting the specific audience being studied.
+5.  **A benefit-driven title:** Focusing on the business opportunity, like "Identifying Opportunities for..."`;
+
+  // The few-shot example provides a concrete model for the AI to follow, significantly improving output quality.
+  const fewShotExample = `
+EXAMPLE:
+User's Research Goal: "i want to know if busy parents would subscribe to my new app that helps schedule kids' activities."
+Expected JSON Output:
+{
+  "titles": [
+    "Kids' Activity Scheduling App Concept Test",
+    "Exploring the Daily Challenges of Family Activity Management",
+    "Uncovering Drivers for Adopting a Kids' Scheduling App",
+    "The Modern Parent's Journey in Managing Children's Schedules",
+    "Identifying Opportunities for a Family-Focused Scheduling Solution"
+  ]
+}`;
+
+  // The final instruction ensures the output is in a machine-readable format for easy integration.
+  const outputFormatInstruction = `Provide the output as a valid JSON object with a single key "titles", which is an array of 5 strings. Do not include any other text, explanation, or preamble before or after the JSON object.`;
+
+  // Assembling the final prompt.
+  return `
+${systemPrompt}
+
+${taskDefinition}
+
+${styleGuidelines}
+
+${outputFormatInstruction}
+
+${fewShotExample}
+
+--------------------
+
+USER'S ACTUAL RESEARCH GOAL:
+"${userInput}"
+
+JSON OUTPUT:
+`;
+}

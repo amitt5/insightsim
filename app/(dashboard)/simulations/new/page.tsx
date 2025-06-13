@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { PersonaCard } from "@/components/persona-card"
-import { ArrowLeft, ArrowRight, Upload, X, FileIcon, Sparkles, Loader2 } from "lucide-react"
+import { ArrowLeft, ArrowRight, Upload, X, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import { runSimulationAPI } from "@/utils/api"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 export default function NewSimulationPage() {
   const { toast } = useToast()
@@ -33,6 +34,9 @@ export default function NewSimulationPage() {
   const [previewUrls, setPreviewUrls] = useState<{[key: string]: string}>({})
   const [fileError, setFileError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [titleGenerationOpen, setTitleGenerationOpen] = useState(false)
+  const [titleGenerationInput, setTitleGenerationInput] = useState('')
+  const [showTitleSuggestions, setShowTitleSuggestions] = useState(false)
   const [simulationData, setSimulationData] = useState({
     study_title: "",
     study_type: "focus-group",
@@ -374,7 +378,36 @@ export default function NewSimulationPage() {
   Format each question as a moderator would naturally ask it in the session. Return only valid JSON with no additional text or explanations.`.trim();
   }
   
-  
+  // Hardcoded title suggestions for now
+  const titleSuggestions = [
+    "Consumer Preferences for Sustainable Product Packaging",
+    "Brand Perception and Purchase Intent Study",
+    "New Product Concept Validation Research",
+    "Customer Journey Experience Evaluation",
+    "Market Positioning and Competitive Analysis Study"
+  ];
+
+  // Handle title generation
+  const handleGenerateTitles = () => {
+    // For now, just show the hardcoded suggestions
+    setShowTitleSuggestions(true);
+  };
+
+  const handleSelectTitle = (title: string) => {
+    setSimulationData(prev => ({
+      ...prev,
+      study_title: title
+    }));
+    setTitleGenerationOpen(false);
+    setShowTitleSuggestions(false);
+    setTitleGenerationInput('');
+  };
+
+  const handleCloseTitleDialog = () => {
+    setTitleGenerationOpen(false);
+    setShowTitleSuggestions(false);
+    setTitleGenerationInput('');
+  };
 
   return (
     <div className="space-y-6">
@@ -418,7 +451,80 @@ export default function NewSimulationPage() {
             </div>
 
               <div className="space-y-2">
-                <Label htmlFor="studyTitle">Study Title</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="studyTitle">Study Title</Label>
+                  <Dialog open={titleGenerationOpen} onOpenChange={setTitleGenerationOpen}>
+                    <DialogTrigger asChild>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="p-0 h-5 w-5 bg-transparent border-none cursor-pointer hover:bg-gray-100 rounded-full flex items-center justify-center"
+                              onClick={() => setTitleGenerationOpen(true)}
+                            >
+                              <HelpCircle className="h-4 w-4 text-gray-500" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            Help me generate title
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[500px]">
+                      <DialogHeader>
+                        <DialogTitle>Generate Study Title</DialogTitle>
+                        <DialogDescription>
+                          Tell us what you want to learn, and we'll suggest some titles for your study.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="titleInput">What is the main thing you want to learn in this study?</Label>
+                          <Textarea
+                            id="titleInput"
+                            placeholder="e.g., I want to understand how consumers perceive our new eco-friendly packaging and whether it influences their purchase decisions..."
+                            rows={4}
+                            value={titleGenerationInput}
+                            onChange={(e) => setTitleGenerationInput(e.target.value)}
+                          />
+                        </div>
+                        {!showTitleSuggestions && (
+                          <Button 
+                            onClick={handleGenerateTitles}
+                            disabled={!titleGenerationInput.trim()}
+                            className="w-full"
+                          >
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Generate Title Suggestions
+                          </Button>
+                        )}
+                        {showTitleSuggestions && (
+                          <div className="space-y-3">
+                            <h4 className="font-medium text-sm">Choose a title:</h4>
+                            <div className="space-y-2">
+                              {titleSuggestions.map((title, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => handleSelectTitle(title)}
+                                  className="w-full text-left p-3 rounded-md border border-gray-200 hover:border-primary hover:bg-gray-50 transition-colors"
+                                >
+                                  <span className="text-sm font-medium">{title}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={handleCloseTitleDialog}>
+                          Cancel
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <Input 
                   id="studyTitle" 
                   placeholder="e.g., New Product Concept Testing" 

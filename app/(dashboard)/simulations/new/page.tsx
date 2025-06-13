@@ -498,7 +498,7 @@ export default function NewSimulationPage() {
   };
 
   const handleAiPersonaNext = () => {
-    if (aiPersonaStep < 3) {
+    if (aiPersonaStep < 7) {
       setAiPersonaStep(prev => prev + 1);
     }
   };
@@ -522,11 +522,72 @@ export default function NewSimulationPage() {
     });
   };
 
-  const isStep1Valid = aiPersonaData.problemSolved.trim() !== '';
-  const isStep2Valid = aiPersonaData.targetDescription.trim() !== '' && 
-                      aiPersonaData.location.trim() !== '' && 
-                      aiPersonaData.primaryGoals.trim() !== '' && 
-                      aiPersonaData.frustrations.trim() !== '';
+  // Question validation logic
+  const getQuestionValidation = (step: number) => {
+    switch (step) {
+      case 1: // Problem solved (mandatory)
+        return {
+          isValid: aiPersonaData.problemSolved.trim() !== '',
+          isMandatory: true
+        };
+      case 2: // Competitors (optional)
+        return {
+          isValid: true,
+          isMandatory: false
+        };
+      case 3: // Target description (mandatory)
+        return {
+          isValid: aiPersonaData.targetDescription.trim() !== '',
+          isMandatory: true
+        };
+      case 4: // Location (mandatory)
+        return {
+          isValid: aiPersonaData.location.trim() !== '',
+          isMandatory: true
+        };
+      case 5: // Primary goals (optional)
+        return {
+          isValid: true,
+          isMandatory: false
+        };
+      case 6: // Frustrations (optional)
+        return {
+          isValid: true,
+          isMandatory: false
+        };
+      default:
+        return {
+          isValid: true,
+          isMandatory: false
+        };
+    }
+  };
+
+  // Get stage info
+  const getStageInfo = (step: number) => {
+    if (step <= 2) {
+      return {
+        stage: 1,
+        stageTitle: "The Brief",
+        questionNumber: step,
+        totalQuestions: 2
+      };
+    } else if (step <= 6) {
+      return {
+        stage: 2,
+        stageTitle: "Persona Details",
+        questionNumber: step - 2,
+        totalQuestions: 4
+      };
+    } else {
+      return {
+        stage: 3,
+        stageTitle: "Generate Personas",
+        questionNumber: 1,
+        totalQuestions: 1
+      };
+    }
+  };
 
   // Hardcoded personas for now
   const hardcodedPersonas: Persona[] = [
@@ -583,7 +644,7 @@ export default function NewSimulationPage() {
   // Generate personas (for now, use hardcoded data)
   const handleGeneratePersonas = () => {
     setGeneratedPersonas(hardcodedPersonas);
-    setAiPersonaStep(3);
+    setAiPersonaStep(7);
   };
 
   // Toggle persona selection
@@ -961,19 +1022,26 @@ export default function NewSimulationPage() {
                       AI Persona Assistant
                     </DialogTitle>
                     <DialogDescription>
-                      Step {aiPersonaStep} of 3: {aiPersonaStep === 1 ? 'Product/Service Details' : aiPersonaStep === 2 ? 'Target Audience' : 'Generate Personas'}
+                      {(() => {
+                        const stageInfo = getStageInfo(aiPersonaStep);
+                        if (aiPersonaStep <= 6) {
+                          return `Step ${stageInfo.stage} of 3: ${stageInfo.stageTitle} (Question ${stageInfo.questionNumber} of ${stageInfo.totalQuestions})`;
+                        } else {
+                          return 'Step 3 of 3: Generated Personas';
+                        }
+                      })()}
                     </DialogDescription>
                     {/* Progress Indicator */}
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                       <div 
                         className="bg-primary h-2 rounded-full transition-all duration-300" 
-                        style={{ width: `${(aiPersonaStep / 3) * 100}%` }}
+                        style={{ width: `${(aiPersonaStep / 7) * 100}%` }}
                       ></div>
                     </div>
                   </DialogHeader>
 
                   <div className="space-y-6 py-6">
-                    {/* Step 1: Product/Service Details */}
+                    {/* Step 1: Problem Solved (Mandatory) */}
                     {aiPersonaStep === 1 && (
                       <div className="space-y-4">
                         <div className="space-y-2">
@@ -988,10 +1056,15 @@ export default function NewSimulationPage() {
                             onChange={(e) => handleAiPersonaInputChange('problemSolved', e.target.value)}
                           />
                         </div>
+                      </div>
+                    )}
 
+                    {/* Step 2: Competitors (Optional) */}
+                    {aiPersonaStep === 2 && (
+                      <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="competitors" className="text-base font-medium">
-                            Who are your main competitors, if any?
+                            Who are your main competitors, if any? <span className="text-gray-500 font-normal">(Optional)</span>
                           </Label>
                           <Textarea
                             id="competitors"
@@ -1004,8 +1077,8 @@ export default function NewSimulationPage() {
                       </div>
                     )}
 
-                    {/* Step 2: Target Audience */}
-                    {aiPersonaStep === 2 && (
+                    {/* Step 3: Target Description (Mandatory) */}
+                    {aiPersonaStep === 3 && (
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="targetDescription" className="text-base font-medium">
@@ -1019,7 +1092,12 @@ export default function NewSimulationPage() {
                             onChange={(e) => handleAiPersonaInputChange('targetDescription', e.target.value)}
                           />
                         </div>
+                      </div>
+                    )}
 
+                    {/* Step 4: Location (Mandatory) */}
+                    {aiPersonaStep === 4 && (
+                      <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="location" className="text-base font-medium">
                             Where do they live? (e.g., Urban cities in the US, suburbs in the UK)
@@ -1031,10 +1109,15 @@ export default function NewSimulationPage() {
                             onChange={(e) => handleAiPersonaInputChange('location', e.target.value)}
                           />
                         </div>
+                      </div>
+                    )}
 
+                    {/* Step 5: Primary Goals (Optional) */}
+                    {aiPersonaStep === 5 && (
+                      <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="primaryGoals" className="text-base font-medium">
-                            What are their primary goals or what are they trying to achieve that your product could help with?
+                            What are their primary goals or what are they trying to achieve that your product could help with? <span className="text-gray-500 font-normal">(Optional)</span>
                           </Label>
                           <Textarea
                             id="primaryGoals"
@@ -1044,10 +1127,15 @@ export default function NewSimulationPage() {
                             onChange={(e) => handleAiPersonaInputChange('primaryGoals', e.target.value)}
                           />
                         </div>
+                      </div>
+                    )}
 
+                    {/* Step 6: Frustrations (Optional) */}
+                    {aiPersonaStep === 6 && (
+                      <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="frustrations" className="text-base font-medium">
-                            What are their biggest frustrations or challenges related to this goal?
+                            What are their biggest frustrations or challenges related to this goal? <span className="text-gray-500 font-normal">(Optional)</span>
                           </Label>
                           <Textarea
                             id="frustrations"
@@ -1062,7 +1150,6 @@ export default function NewSimulationPage() {
                         <div className="pt-4">
                           <Button 
                             onClick={handleGeneratePersonas}
-                            disabled={!isStep2Valid}
                             className="w-full"
                           >
                             <Sparkles className="mr-2 h-4 w-4" />
@@ -1072,8 +1159,8 @@ export default function NewSimulationPage() {
                       </div>
                     )}
 
-                    {/* Step 3: Generated Personas */}
-                    {aiPersonaStep === 3 && (
+                    {/* Step 7: Generated Personas */}
+                    {aiPersonaStep === 7 && (
                       <div className="space-y-4">
                         <div className="text-center mb-6">
                           <h3 className="text-lg font-semibold mb-2">Generated Personas</h3>
@@ -1178,19 +1265,16 @@ export default function NewSimulationPage() {
                     </div>
                     
                     <div>
-                      {aiPersonaStep < 3 && (
+                      {aiPersonaStep < 6 && (
                         <Button 
                           onClick={handleAiPersonaNext}
-                          disabled={
-                            (aiPersonaStep === 1 && !isStep1Valid) ||
-                            (aiPersonaStep === 2 && !isStep2Valid)
-                          }
+                          disabled={!getQuestionValidation(aiPersonaStep).isValid}
                         >
                           Next
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                       )}
-                      {aiPersonaStep === 3 && (
+                      {aiPersonaStep === 7 && (
                         <Button 
                           disabled={selectedGeneratedPersonas.length === 0}
                           onClick={() => {

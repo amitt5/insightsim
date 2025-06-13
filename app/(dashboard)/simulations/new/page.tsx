@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch"
 import { usePersonas } from "@/lib/usePersonas"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { getRandomSimulation } from "@/utils/mockSimulations"
-import { Simulation, Persona } from "@/utils/types"
+import { Simulation, Persona, AIPersonaGeneration } from "@/utils/types"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { v4 as uuidv4 } from 'uuid'
 import { useToast } from "@/hooks/use-toast"
@@ -23,7 +23,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { runSimulationAPI } from "@/utils/api"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { createTitleGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createTitleGenerationPrompt, createPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
 
 export default function NewSimulationPage() {
   const { toast } = useToast()
@@ -42,7 +42,7 @@ export default function NewSimulationPage() {
   const [simulationModeHelpOpen, setSimulationModeHelpOpen] = useState(false)
   const [aiPersonaAssistantOpen, setAiPersonaAssistantOpen] = useState(false)
   const [aiPersonaStep, setAiPersonaStep] = useState(1)
-  const [aiPersonaData, setAiPersonaData] = useState({
+  const [aiPersonaData, setAiPersonaData] = useState<AIPersonaGeneration>({
     // Step 1: Product/Service Details
     problemSolved: '',
     competitors: '',
@@ -589,61 +589,39 @@ export default function NewSimulationPage() {
     }
   };
 
-  // Hardcoded personas for now
-  const hardcodedPersonas: Persona[] = [
-    {
-      id: 'generated-1',
-      name: 'Amit',
-      age: 42,
-      gender: 'Male',
-      occupation: 'Uber Driver',
-      archetype: 'The Efficiency Seeker',
-      bio: 'A dedicated father of two who drives for Uber to supplement his income. Always looking for ways to maximize his earning potential while spending quality time with family.',
-      goal: 'Find a way to organize family schedules and maximize driving income during peak hours.',
-      traits: ['Time-Poor', 'Tech-Savvy', 'Family-Focused', 'Goal-Oriented'],
-      editable: true
-    },
-    {
-      id: 'generated-2',
-      name: 'Sarah',
-      age: 28,
-      gender: 'Female',
-      occupation: 'Marketing Manager',
-      archetype: 'The Wellness Enthusiast',
-      bio: 'A career-driven professional who values work-life balance. She\'s always seeking new ways to stay healthy and productive despite her busy schedule.',
-      goal: 'Maintain fitness and wellness routines while managing a demanding career.',
-      traits: ['Health-Conscious', 'Ambitious', 'Organized', 'Social'],
-      editable: true
-    },
-    {
-      id: 'generated-3',
-      name: 'Mike',
-      age: 35,
-      gender: 'Male',
-      occupation: 'Small Business Owner',
-      archetype: 'The Problem Solver',
-      bio: 'Owns a local coffee shop and is always looking for innovative solutions to improve customer experience and streamline operations.',
-      goal: 'Grow his business while maintaining the personal touch that makes his cafe special.',
-      traits: ['Entrepreneurial', 'Customer-Focused', 'Resourceful', 'Community-Minded'],
-      editable: true
-    },
-    {
-      id: 'generated-4',
-      name: 'Lisa',
-      age: 31,
-      gender: 'Female',
-      occupation: 'Working Mom',
-      archetype: 'The Multitasker',
-      bio: 'A mother of three who works part-time from home. She\'s constantly juggling family responsibilities and looking for tools that can help simplify her daily routines.',
-      goal: 'Balance motherhood and career while maintaining her sanity and family happiness.',
-      traits: ['Efficient', 'Nurturing', 'Practical', 'Budget-Conscious'],
-      editable: true
-    }
-  ];
-
   // Generate personas (for now, use hardcoded data)
-  const handleGeneratePersonas = () => {
-    setGeneratedPersonas(hardcodedPersonas);
+  const handleGeneratePersonas = async () => {
+    // call createPersonaGenerationPrompt passing the aiPersonaData
+    const prompt = createPersonaGenerationPrompt(aiPersonaData);
+    console.log('prompt333', prompt);
+    const messages: ChatCompletionMessageParam[] = [
+      { role: "system", content: prompt }
+    ];
+    const result = await runSimulationAPI(messages);
+
+    try {
+      // Parse the JSON response
+      let responseText = result.reply || "";
+      console.log('personas111', responseText);
+      
+      // Clean the response string (remove any markdown formatting)
+      responseText = responseText
+      .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
+      .replace(/```$/, '')            // Remove trailing ```
+      .trim();
+      
+      // Parse the JSON
+      const parsedResponse = JSON.parse(responseText);
+      
+      // Extract questions array
+      const personas = parsedResponse.personas || [];
+      console.log('personas222', personas);
+    } catch (error) {
+      console.error("Error parsing discussion questions JSON:", error);
+      
+    }
+    // set the generated personas to the parsed result
+    setGeneratedPersonas(personas);
     setAiPersonaStep(7);
   };
 

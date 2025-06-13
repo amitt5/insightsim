@@ -1,5 +1,5 @@
 // import { SimulationMessage, Persona } from "@/types";
-import { Persona, SimulationMessage, Simulation} from "@/utils/types";
+import { Persona, SimulationMessage, Simulation, AIPersonaGeneration} from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
 
@@ -247,4 +247,55 @@ USER'S ACTUAL RESEARCH GOAL:
 
 JSON OUTPUT:
 `;
+}
+
+
+/**
+ * Creates a structured prompt for an AI model to generate 5 personas.
+ * @param details - The AIPersonaGeneration object with user inputs.
+ * @returns A detailed prompt string ready for an LLM.
+ */
+export function createPersonaGenerationPrompt(details: AIPersonaGeneration): string {
+  // 1. Set the role and expertise for the AI.
+  const systemPrompt = `You are an expert persona generator for a market research platform called Insightsim. You specialize in creating realistic, diverse, and insightful user personas based on initial project details. Your output must be a valid JSON array.`;
+
+  // 2. Clearly define the task and constraints.
+  const taskDefinition = `Your task is to analyze the user's input and generate an array of 5 distinct personas that fit the target audience. Each persona should represent a different facet or archetype within the target group. The persona's 'goal' field MUST directly reflect the user's stated 'primaryGoals'.`;
+
+  // 3. Provide the user's raw input as clear context.
+  const userInputContext = `
+---
+USER INPUT CONTEXT:
+- Problem the Product Solves: "${details.problemSolved}"
+- Key Competitors: "${details.competitors}"
+- Target Audience Description: "${details.targetDescription}"
+- Target Location: "${details.location}"
+- User's Primary Goal: "${details.primaryGoals}"
+- User's Frustrations: "${details.frustrations}"
+---
+`;
+
+  // 4. Specify the exact output format using the TypeScript interface and a JSON structure.
+  const outputFormatInstruction = `
+Your response MUST be a single, valid JSON array containing exactly 5 persona objects. The structure of each object must conform to the following TypeScript interface:
+\`\`\`typescript
+interface Persona {
+  name: string; // e.g., "Alex Chen"
+  age?: number; // e.g., 34
+  occupation?: string; // e.g., "Project Manager"
+  traits?: string[]; // e.g., ["Organized", "Tech-Savvy", "Time-Poor"]
+  archetype?: string; // e.g., "The Overwhelmed Organizer"
+  gender?: string; // e.g., "Male"
+  bio?: string; // A 1-2 sentence narrative combining their role and key frustrations.
+  goal?: string; // This MUST be a version of the user's Primary Goal.
+  attitude?: string; // Their general outlook, e.g., "Optimistic but cautious about new apps."
+}
+\`\`\`
+
+The final output should be a JSON array like this: \`[ {persona1}, {persona2}, {persona3}, {persona4}, {persona5} ]\`.
+Do not include any other text, explanations, or markdown formatting before or after the JSON array.
+`;
+
+  // Assembling the final prompt.
+  return `${systemPrompt}\n\n${taskDefinition}\n${userInputContext}\n${outputFormatInstruction}`;
 }

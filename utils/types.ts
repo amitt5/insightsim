@@ -60,3 +60,12 @@ export interface Persona {
     user_id?: string;
     editable?: boolean;
 }
+
+export interface AIPersonaGeneration {
+  problemSolved: string;
+  competitors: string;
+  targetDescription: string;
+  location: string;
+  primaryGoals: string;
+  frustrations: string;
+}

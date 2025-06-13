@@ -207,6 +207,7 @@ export async function PUT(
       discussion_questions: requestData.discussion_questions,
       turn_based: requestData.turn_based,
       num_turns: requestData.num_turns,
+      status: requestData.status,
       updated_at: new Date().toISOString(),
     }).eq("id", id).select()
 

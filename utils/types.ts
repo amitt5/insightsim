@@ -20,7 +20,7 @@ export interface Simulation {
     discussion_questions?: string[];
     turn_based: boolean;
     num_turns: number;
-    status: "Draft" | "Running" | "Completed";
+    status: "Draft" | "Active" | "Running" | "Completed";
     created_at: string;
     user_instructions?: string;
   }

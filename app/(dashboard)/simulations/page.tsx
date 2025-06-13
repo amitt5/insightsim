@@ -246,9 +246,12 @@ export default function SimulationsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/simulations/${simulation.id}`} className="flex items-center gap-2">
+                          <Link 
+                            href={simulation.status === "Draft" ? `/simulations/${simulation.id}/edit` : `/simulations/${simulation.id}`} 
+                            className="flex items-center gap-2"
+                          >
                             <Eye className="h-4 w-4" />
-                            View
+                            {simulation.status === "Draft" ? "Continue Editing" : "View"}
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem 
@@ -308,9 +311,12 @@ export default function SimulationsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/simulations/${simulation.id}`} className="flex items-center gap-2">
+                          <Link 
+                            href={simulation.status === "Draft" ? `/simulations/${simulation.id}/edit` : `/simulations/${simulation.id}`} 
+                            className="flex items-center gap-2"
+                          >
                             <Eye className="h-4 w-4" />
-                            View Details
+                            {simulation.status === "Draft" ? "Continue Editing" : "View"}
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem 

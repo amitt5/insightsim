@@ -38,13 +38,15 @@ export default function NewSimulationPage() {
   const [titleGenerationOpen, setTitleGenerationOpen] = useState(false)
   const [titleGenerationInput, setTitleGenerationInput] = useState('')
   const [showTitleSuggestions, setShowTitleSuggestions] = useState(false)
+  const [studyTypeHelpOpen, setStudyTypeHelpOpen] = useState(false)
+  const [simulationModeHelpOpen, setSimulationModeHelpOpen] = useState(false)
 
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([])
 
   const [simulationData, setSimulationData] = useState({
     study_title: "",
     study_type: "focus-group",
-    mode: "ai-both",
+    mode: "human-mod",
     topic: "",
     stimulus_media_url: [] as string[],
     discussion_questions: "",
@@ -455,6 +457,22 @@ export default function NewSimulationPage() {
     setTitleGenerationInput('');
   };
 
+  const handleStudyTypeSelection = (studyType: 'focus-group' | 'idi') => {
+    setSimulationData(prev => ({
+      ...prev,
+      study_type: studyType
+    }));
+    setStudyTypeHelpOpen(false);
+  };
+
+  const handleSimulationModeSelection = (mode: 'human-mod' | 'ai-both') => {
+    setSimulationData(prev => ({
+      ...prev,
+      mode: mode
+    }));
+    setSimulationModeHelpOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -580,7 +598,25 @@ export default function NewSimulationPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="studyType">Study Type</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="studyType">Study Type</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="p-0 h-5 w-5 bg-transparent border-none cursor-pointer hover:bg-gray-100 rounded-full flex items-center justify-center"
+                          onClick={() => setStudyTypeHelpOpen(true)}
+                        >
+                          <HelpCircle className="h-4 w-4 text-gray-500" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        Help me choose study type
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Select 
                   value={simulationData.study_type}
                   onValueChange={handleSelectChange('study_type')}
@@ -595,22 +631,139 @@ export default function NewSimulationPage() {
                 </Select>
               </div>
 
+              {/* Study Type Help Dialog */}
+              <Dialog open={studyTypeHelpOpen} onOpenChange={setStudyTypeHelpOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Choose Your Study Type</DialogTitle>
+                    <DialogDescription>
+                      How do you want to talk to your participants?
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => handleStudyTypeSelection('focus-group')}
+                      className="w-full text-left p-4 rounded-md border border-gray-200 hover:border-primary hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="space-y-2">
+                        <div className="font-medium text-primary">Option A: Focus Group</div>
+                        <div className="text-sm text-gray-600">
+                          "I want to see how they interact and build on each other's ideas."
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Best for exploring group dynamics, brainstorming, and seeing how participants influence each other's opinions.
+                        </div>
+                      </div>
+                    </button>
+                    
+                    <button
+                      onClick={() => handleStudyTypeSelection('idi')}
+                      className="w-full text-left p-4 rounded-md border border-gray-200 hover:border-primary hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="space-y-2">
+                        <div className="font-medium text-primary">Option B: In-Depth Interview</div>
+                        <div className="text-sm text-gray-600">
+                          "I want to speak with them one-on-one for deep, personal insights."
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Best for exploring personal experiences, sensitive topics, and getting detailed individual perspectives.
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setStudyTypeHelpOpen(false)}>
+                      Cancel
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
               <div className="space-y-2">
-                <Label>Simulation Mode</Label>
+                <div className="flex items-center gap-2">
+                  <Label>Simulation Mode</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="p-0 h-5 w-5 bg-transparent border-none cursor-pointer hover:bg-gray-100 rounded-full flex items-center justify-center"
+                          onClick={() => setSimulationModeHelpOpen(true)}
+                        >
+                          <HelpCircle className="h-4 w-4 text-gray-500" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        Help me choose simulation mode
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <RadioGroup 
                   value={simulationData.mode}
                   onValueChange={handleRadioChange}
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="ai-both" id="ai-both" />
-                    <Label htmlFor="ai-both">AI {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'} + AI {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'} </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
                     <RadioGroupItem value="human-mod" id="human-mod" />
                     <Label htmlFor="human-mod">Human {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'} + AI {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'} </Label>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="ai-both" id="ai-both" />
+                    <Label htmlFor="ai-both">AI {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'} + AI {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'} </Label>
+                  </div>
                 </RadioGroup>
               </div>
+
+              {/* Simulation Mode Help Dialog */}
+              <Dialog open={simulationModeHelpOpen} onOpenChange={setSimulationModeHelpOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Choose Your Simulation Mode</DialogTitle>
+                    <DialogDescription>
+                      Who should run your {simulationData.study_type === 'focus-group' ? 'focus group' : 'interview'}?
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => handleSimulationModeSelection('human-mod')}
+                      className="w-full text-left p-4 rounded-md border-2 border-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium text-primary">✅ Recommended: Human {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'}</div>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          You guide the conversation while AI participants respond naturally.
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          <strong>Better results:</strong> You control the flow, ask follow-ups, and dig deeper into interesting responses. Don't worry - we'll guide you through every step and it's incredibly simple!
+                        </div>
+                      </div>
+                    </button>
+                    
+                    <button
+                      onClick={() => handleSimulationModeSelection('ai-both')}
+                      className="w-full text-left p-4 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="space-y-2">
+                        <div className="font-medium text-gray-700">AI {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'}</div>
+                        <div className="text-sm text-gray-600">
+                          Fully automated - AI runs the entire {simulationData.study_type === 'focus-group' ? 'focus group' : 'interview'}.
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Good for quick insights, but you miss the opportunity to explore unexpected responses or ask spontaneous follow-up questions.
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setSimulationModeHelpOpen(false)}>
+                      Cancel
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
             </CardContent>
             <CardFooter className="justify-end">
               <TooltipProvider>

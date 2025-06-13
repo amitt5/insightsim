@@ -41,6 +41,19 @@ export default function NewSimulationPage() {
   const [studyTypeHelpOpen, setStudyTypeHelpOpen] = useState(false)
   const [simulationModeHelpOpen, setSimulationModeHelpOpen] = useState(false)
   const [aiPersonaAssistantOpen, setAiPersonaAssistantOpen] = useState(false)
+  const [aiPersonaStep, setAiPersonaStep] = useState(1)
+  const [aiPersonaData, setAiPersonaData] = useState({
+    // Step 1: Product/Service Details
+    problemSolved: '',
+    competitors: '',
+    // Step 2: Target Audience
+    targetDescription: '',
+    location: '',
+    primaryGoals: '',
+    frustrations: ''
+  })
+  const [generatedPersonas, setGeneratedPersonas] = useState<any[]>([])
+  const [selectedGeneratedPersonas, setSelectedGeneratedPersonas] = useState<string[]>([])
 
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([])
 
@@ -474,6 +487,108 @@ export default function NewSimulationPage() {
     setSimulationModeHelpOpen(false);
   };
 
+  // AI Persona Assistant handlers
+  const handleAiPersonaInputChange = (field: string, value: string) => {
+    setAiPersonaData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAiPersonaNext = () => {
+    if (aiPersonaStep < 3) {
+      setAiPersonaStep(prev => prev + 1);
+    }
+  };
+
+  const handleAiPersonaBack = () => {
+    if (aiPersonaStep > 1) {
+      setAiPersonaStep(prev => prev - 1);
+    }
+  };
+
+  const handleAiPersonaClose = () => {
+    setAiPersonaAssistantOpen(false);
+    setAiPersonaStep(1);
+    setAiPersonaData({
+      problemSolved: '',
+      competitors: '',
+      targetDescription: '',
+      location: '',
+      primaryGoals: '',
+      frustrations: ''
+    });
+  };
+
+  const isStep1Valid = aiPersonaData.problemSolved.trim() !== '';
+  const isStep2Valid = aiPersonaData.targetDescription.trim() !== '' && 
+                      aiPersonaData.location.trim() !== '' && 
+                      aiPersonaData.primaryGoals.trim() !== '' && 
+                      aiPersonaData.frustrations.trim() !== '';
+
+  // Hardcoded personas for now
+  const hardcodedPersonas = [
+    {
+      id: 'generated-1',
+      name: 'Amit',
+      age: 42,
+      gender: 'Male',
+      occupation: 'Uber Driver',
+      archetype: 'The Efficiency Seeker',
+      bio: 'A dedicated father of two who drives for Uber to supplement his income. Always looking for ways to maximize his earning potential while spending quality time with family.',
+      goal: 'Find a way to organize family schedules and maximize driving income during peak hours.',
+      traits: ['Time-Poor', 'Tech-Savvy', 'Family-Focused', 'Goal-Oriented']
+    },
+    {
+      id: 'generated-2',
+      name: 'Sarah',
+      age: 28,
+      gender: 'Female',
+      occupation: 'Marketing Manager',
+      archetype: 'The Wellness Enthusiast',
+      bio: 'A career-driven professional who values work-life balance. She\'s always seeking new ways to stay healthy and productive despite her busy schedule.',
+      goal: 'Maintain fitness and wellness routines while managing a demanding career.',
+      traits: ['Health-Conscious', 'Ambitious', 'Organized', 'Social']
+    },
+    {
+      id: 'generated-3',
+      name: 'Mike',
+      age: 35,
+      gender: 'Male',
+      occupation: 'Small Business Owner',
+      archetype: 'The Problem Solver',
+      bio: 'Owns a local coffee shop and is always looking for innovative solutions to improve customer experience and streamline operations.',
+      goal: 'Grow his business while maintaining the personal touch that makes his cafe special.',
+      traits: ['Entrepreneurial', 'Customer-Focused', 'Resourceful', 'Community-Minded']
+    },
+    {
+      id: 'generated-4',
+      name: 'Lisa',
+      age: 31,
+      gender: 'Female',
+      occupation: 'Working Mom',
+      archetype: 'The Multitasker',
+      bio: 'A mother of three who works part-time from home. She\'s constantly juggling family responsibilities and looking for tools that can help simplify her daily routines.',
+      goal: 'Balance motherhood and career while maintaining her sanity and family happiness.',
+      traits: ['Efficient', 'Nurturing', 'Practical', 'Budget-Conscious']
+    }
+  ];
+
+  // Generate personas (for now, use hardcoded data)
+  const handleGeneratePersonas = () => {
+    setGeneratedPersonas(hardcodedPersonas);
+    setAiPersonaStep(3);
+  };
+
+  // Toggle persona selection
+  const toggleGeneratedPersona = (id: string) => {
+    setSelectedGeneratedPersonas(prev => 
+      prev.includes(id) 
+        ? prev.filter(personaId => personaId !== id)
+        : [...prev, id]
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -817,27 +932,240 @@ export default function NewSimulationPage() {
 
               {/* AI Persona Assistant Dialog - Placeholder for now */}
               <Dialog open={aiPersonaAssistantOpen} onOpenChange={setAiPersonaAssistantOpen}>
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       <Sparkles className="h-5 w-5 text-primary" />
                       AI Persona Assistant
                     </DialogTitle>
                     <DialogDescription>
-                      Let AI help you create the perfect personas for your research study.
+                      Step {aiPersonaStep} of 3: {aiPersonaStep === 1 ? 'Product/Service Details' : aiPersonaStep === 2 ? 'Target Audience' : 'Generate Personas'}
                     </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="text-center py-8 text-gray-500">
-                      <Sparkles className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p>Multi-step persona generation wizard coming soon...</p>
-                      <p className="text-sm mt-2">This will help you create personas based on your product, target audience, and research goals.</p>
+                    {/* Progress Indicator */}
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-primary h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${(aiPersonaStep / 3) * 100}%` }}
+                      ></div>
                     </div>
+                  </DialogHeader>
+
+                  <div className="space-y-6 py-6">
+                    {/* Step 1: Product/Service Details */}
+                    {aiPersonaStep === 1 && (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="problemSolved" className="text-base font-medium">
+                            You mentioned your study is about "{simulationData.study_title || 'your product/service'}". In a sentence or two, what problem does this product solve for people?
+                          </Label>
+                          <Textarea
+                            id="problemSolved"
+                            placeholder="e.g., Our fitness app helps busy professionals stay consistent with their workout routines by providing quick 15-minute exercises they can do anywhere..."
+                            rows={4}
+                            value={aiPersonaData.problemSolved}
+                            onChange={(e) => handleAiPersonaInputChange('problemSolved', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="competitors" className="text-base font-medium">
+                            Who are your main competitors, if any?
+                          </Label>
+                          <Textarea
+                            id="competitors"
+                            placeholder="e.g., Nike Training Club, Peloton Digital, Fitbit Premium, or 'No direct competitors that I know of'..."
+                            rows={3}
+                            value={aiPersonaData.competitors}
+                            onChange={(e) => handleAiPersonaInputChange('competitors', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 2: Target Audience */}
+                    {aiPersonaStep === 2 && (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="targetDescription" className="text-base font-medium">
+                            Describe the person you imagine using your product. Don't worry about getting it perfect, just give me a general idea.
+                          </Label>
+                          <Textarea
+                            id="targetDescription"
+                            placeholder="e.g., Working professionals in their 30s who care about staying fit but struggle to find time for long gym sessions..."
+                            rows={3}
+                            value={aiPersonaData.targetDescription}
+                            onChange={(e) => handleAiPersonaInputChange('targetDescription', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="location" className="text-base font-medium">
+                            Where do they live? (e.g., Urban cities in the US, suburbs in the UK)
+                          </Label>
+                          <Input
+                            id="location"
+                            placeholder="e.g., Major cities across North America, London and Manchester UK..."
+                            value={aiPersonaData.location}
+                            onChange={(e) => handleAiPersonaInputChange('location', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="primaryGoals" className="text-base font-medium">
+                            What are their primary goals or what are they trying to achieve that your product could help with?
+                          </Label>
+                          <Textarea
+                            id="primaryGoals"
+                            placeholder="e.g., Stay healthy and fit, maintain energy throughout the day, reduce stress, look good for special events..."
+                            rows={3}
+                            value={aiPersonaData.primaryGoals}
+                            onChange={(e) => handleAiPersonaInputChange('primaryGoals', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="frustrations" className="text-base font-medium">
+                            What are their biggest frustrations or challenges related to this goal?
+                          </Label>
+                          <Textarea
+                            id="frustrations"
+                            placeholder="e.g., Not enough time for hour-long gym sessions, intimidated by crowded gyms, lack of consistency, not knowing which exercises are effective..."
+                            rows={3}
+                            value={aiPersonaData.frustrations}
+                            onChange={(e) => handleAiPersonaInputChange('frustrations', e.target.value)}
+                          />
+                        </div>
+
+                        {/* Generate Personas Button */}
+                        <div className="pt-4">
+                          <Button 
+                            onClick={handleGeneratePersonas}
+                            disabled={!isStep2Valid}
+                            className="w-full"
+                          >
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Generate Personas
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 3: Generated Personas */}
+                    {aiPersonaStep === 3 && (
+                      <div className="space-y-4">
+                        <div className="text-center mb-6">
+                          <h3 className="text-lg font-semibold mb-2">Generated Personas</h3>
+                          <p className="text-sm text-gray-600">Select the personas you'd like to use in your simulation</p>
+                        </div>
+
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {generatedPersonas.map((persona) => (
+                            <div key={persona.id} className="relative border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                              {/* Selection Checkbox */}
+                              <div className="absolute top-3 right-3">
+                                <input
+                                  type="checkbox"
+                                  id={`persona-${persona.id}`}
+                                  checked={selectedGeneratedPersonas.includes(persona.id)}
+                                  onChange={() => toggleGeneratedPersona(persona.id)}
+                                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                />
+                              </div>
+
+                              {/* Persona Header */}
+                              <div className="pr-8 mb-3">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-medium text-base">
+                                    {persona.name}, {persona.age}{persona.gender.charAt(0)}, {persona.occupation}
+                                  </h4>
+                                </div>
+                                <div className="text-sm text-primary font-medium mb-2">
+                                  {persona.archetype}
+                                </div>
+                              </div>
+
+                              {/* Bio */}
+                              <p className="text-sm text-gray-600 mb-3">
+                                {persona.bio}
+                              </p>
+
+                              {/* Goal */}
+                              <div className="mb-3">
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Goal:</span>
+                                <p className="text-sm text-gray-700 mt-1">{persona.goal}</p>
+                              </div>
+
+                              {/* Traits */}
+                              <div className="mb-4">
+                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Key Traits:</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {persona.traits.map((trait: string, index: number) => (
+                                    <span key={index} className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
+                                      {trait}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Edit/View Details Button */}
+                              <Button variant="outline" size="sm" disabled>
+                                Edit / View Details
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+
+                        {selectedGeneratedPersonas.length > 0 && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                            <p className="text-sm text-blue-700">
+                              {selectedGeneratedPersonas.length} persona{selectedGeneratedPersonas.length !== 1 ? 's' : ''} selected
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setAiPersonaAssistantOpen(false)}>
-                      Close
-                    </Button>
+
+                  <DialogFooter className="flex justify-between">
+                    <div className="flex gap-2">
+                      {aiPersonaStep > 1 && (
+                        <Button variant="outline" onClick={handleAiPersonaBack}>
+                          <ArrowLeft className="mr-2 h-4 w-4" />
+                          Back
+                        </Button>
+                      )}
+                      <Button variant="outline" onClick={handleAiPersonaClose}>
+                        Cancel
+                      </Button>
+                    </div>
+                    
+                    <div>
+                      {aiPersonaStep < 3 && (
+                        <Button 
+                          onClick={handleAiPersonaNext}
+                          disabled={
+                            (aiPersonaStep === 1 && !isStep1Valid) ||
+                            (aiPersonaStep === 2 && !isStep2Valid)
+                          }
+                        >
+                          Next
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      )}
+                      {aiPersonaStep === 3 && (
+                        <Button 
+                          disabled={selectedGeneratedPersonas.length === 0}
+                          onClick={() => {
+                            // TODO: Add selected personas to main personas list
+                            console.log('Selected personas:', selectedGeneratedPersonas);
+                            handleAiPersonaClose();
+                          }}
+                        >
+                          Add Selected Personas
+                          <Sparkles className="ml-2 h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>

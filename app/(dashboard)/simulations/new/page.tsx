@@ -614,15 +614,15 @@ export default function NewSimulationPage() {
       const parsedResponse = JSON.parse(responseText);
       
       // Extract questions array
-      const personas = parsedResponse.personas || [];
-      console.log('personas222', personas);
+      const AiGeneratedPersonas = parsedResponse.personas || [];
+      console.log('personas222', AiGeneratedPersonas);
+      setGeneratedPersonas(AiGeneratedPersonas);
+      setAiPersonaStep(7);
     } catch (error) {
       console.error("Error parsing discussion questions JSON:", error);
       
     }
     // set the generated personas to the parsed result
-    setGeneratedPersonas(personas);
-    setAiPersonaStep(7);
   };
 
   // Toggle persona selection

@@ -613,8 +613,12 @@ export default function NewSimulationPage() {
       // Parse the JSON
       const parsedResponse = JSON.parse(responseText);
       
-      // Extract questions array
-      const AiGeneratedPersonas = parsedResponse.personas || [];
+      // Extract personas array and add unique IDs
+      const AiGeneratedPersonas = (parsedResponse.personas || []).map((persona: any, index: number) => ({
+        ...persona,
+        id: persona.id || `generated-${Date.now()}-${index}`, // Ensure unique ID
+        editable: true // Make them editable
+      }));
       console.log('personas222', AiGeneratedPersonas);
       setGeneratedPersonas(AiGeneratedPersonas);
       setAiPersonaStep(7);

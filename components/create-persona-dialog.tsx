@@ -29,6 +29,7 @@ interface CreatePersonaDialogProps {
   hideTrigger?: boolean;
   onHideSystemPersonasChange?: (hide: boolean) => void;
   hideSystemPersonas?: boolean;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
 }
 
 // Example constants
@@ -78,7 +79,8 @@ export function CreatePersonaDialog({
   mode = 'create',
   hideTrigger = false,
   onHideSystemPersonasChange,
-  hideSystemPersonas = false
+  hideSystemPersonas = false,
+  variant = "default"
 }: CreatePersonaDialogProps) {
   const { toast } = useToast();
   
@@ -213,7 +215,7 @@ export function CreatePersonaDialog({
       {!hideTrigger && (
         <div className="space-y-2">
           <DialogTrigger asChild>
-            <Button>
+            <Button variant={variant}>
               <Plus className="mr-2 h-4 w-4" />
               {mode === 'create' ? 'Create New Persona' : 'Edit Persona'}
             </Button>

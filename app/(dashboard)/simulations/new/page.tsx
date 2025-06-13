@@ -40,6 +40,7 @@ export default function NewSimulationPage() {
   const [showTitleSuggestions, setShowTitleSuggestions] = useState(false)
   const [studyTypeHelpOpen, setStudyTypeHelpOpen] = useState(false)
   const [simulationModeHelpOpen, setSimulationModeHelpOpen] = useState(false)
+  const [aiPersonaAssistantOpen, setAiPersonaAssistantOpen] = useState(false)
 
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([])
 
@@ -795,15 +796,51 @@ export default function NewSimulationPage() {
               <CardDescription>Choose AI personas to participate in your simulation</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="mb-4 flex justify-end">
+              <div className="mb-4 flex justify-end gap-2">
+                <Button
+                  variant="default"
+                  onClick={() => setAiPersonaAssistantOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Generate Personas
+                </Button>
                 <CreatePersonaDialog
                   open={openPersonaModal}
                   onOpenChange={setOpenPersonaModal}
                   onHideSystemPersonasChange={setHideSystemPersonas}
                   hideSystemPersonas={hideSystemPersonas}
                   onSuccess={mutate}
+                  variant="outline"
                 />
               </div>
+
+              {/* AI Persona Assistant Dialog - Placeholder for now */}
+              <Dialog open={aiPersonaAssistantOpen} onOpenChange={setAiPersonaAssistantOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      AI Persona Assistant
+                    </DialogTitle>
+                    <DialogDescription>
+                      Let AI help you create the perfect personas for your research study.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="text-center py-8 text-gray-500">
+                      <Sparkles className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>Multi-step persona generation wizard coming soon...</p>
+                      <p className="text-sm mt-2">This will help you create personas based on your product, target audience, and research goals.</p>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setAiPersonaAssistantOpen(false)}>
+                      Close
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               {loading ? (
                 <div className="p-4 text-center text-gray-500">Loading personas...</div>

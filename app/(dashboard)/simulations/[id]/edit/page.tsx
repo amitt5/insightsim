@@ -59,6 +59,8 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   const [selectedGeneratedPersonas, setSelectedGeneratedPersonas] = useState<string[]>([])
   const [editingGeneratedPersona, setEditingGeneratedPersona] = useState<Persona | null>(null)
   const [editGeneratedPersonaOpen, setEditGeneratedPersonaOpen] = useState(false)
+  const [isGeneratingPersonas, setIsGeneratingPersonas] = useState(false)
+  const [isSavingPersonas, setIsSavingPersonas] = useState(false)
 
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([])
 
@@ -801,42 +803,57 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
 
   // Generate personas (for now, use hardcoded data)
   const handleGeneratePersonas = async () => {
-    // call createPersonaGenerationPrompt passing the aiPersonaData
-    const prompt = createPersonaGenerationPrompt(aiPersonaData);
-    console.log('prompt333', prompt);
-    const messages: ChatCompletionMessageParam[] = [
-      { role: "system", content: prompt }
-    ];
-    const result = await runSimulationAPI(messages);
-
+    setIsGeneratingPersonas(true);
     try {
-      // Parse the JSON response
-      let responseText = result.reply || "";
-      console.log('personas111', responseText);
-      
-      // Clean the response string (remove any markdown formatting)
-      responseText = responseText
-      .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
-      .replace(/```$/, '')            // Remove trailing ```
-      .trim();
-      
-      // Parse the JSON
-      const parsedResponse = JSON.parse(responseText);
-      
-      // Extract personas array and add unique IDs
-      const AiGeneratedPersonas = (parsedResponse.personas || []).map((persona: any, index: number) => ({
-        ...persona,
-        id: persona.id || `generated-${Date.now()}-${index}`, // Ensure unique ID
-        editable: true // Make them editable
-      }));
-      console.log('personas222', AiGeneratedPersonas);
-      setGeneratedPersonas(AiGeneratedPersonas);
-      setAiPersonaStep(7);
+      // call createPersonaGenerationPrompt passing the aiPersonaData
+      const prompt = createPersonaGenerationPrompt(aiPersonaData);
+      console.log('prompt333', prompt);
+      const messages: ChatCompletionMessageParam[] = [
+        { role: "system", content: prompt }
+      ];
+      const result = await runSimulationAPI(messages);
+
+      try {
+        // Parse the JSON response
+        let responseText = result.reply || "";
+        console.log('personas111', responseText);
+        
+        // Clean the response string (remove any markdown formatting)
+        responseText = responseText
+        .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
+        .replace(/```$/, '')            // Remove trailing ```
+        .trim();
+        
+        // Parse the JSON
+        const parsedResponse = JSON.parse(responseText);
+        
+        // Extract personas array and add unique IDs
+        const AiGeneratedPersonas = (parsedResponse.personas || []).map((persona: any, index: number) => ({
+          ...persona,
+          id: persona.id || `generated-${Date.now()}-${index}`, // Ensure unique ID
+          editable: true // Make them editable
+        }));
+        console.log('personas222', AiGeneratedPersonas);
+        setGeneratedPersonas(AiGeneratedPersonas);
+        setAiPersonaStep(7);
+      } catch (error) {
+        console.error("Error parsing personas JSON:", error);
+        toast({
+          title: "Error",
+          description: "Failed to generate personas. Please try again.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
-      console.error("Error parsing discussion questions JSON:", error);
-      
+      console.error("Error generating personas:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate personas. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPersonas(false);
     }
-    // set the generated personas to the parsed result
   };
 
   // Toggle persona selection
@@ -862,6 +879,75 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     );
     setEditGeneratedPersonaOpen(false);
     setEditingGeneratedPersona(null);
+  };
+
+  // Handle saving selected generated personas to database
+  const handleAddSelectedPersonas = async () => {
+    if (selectedGeneratedPersonas.length === 0) return;
+    
+    setIsSavingPersonas(true);
+    try {
+      const selectedPersonaObjects = generatedPersonas.filter(p => 
+        selectedGeneratedPersonas.includes(p.id)
+      );
+      
+      const savedPersonaIds: string[] = [];
+      
+      // Save each selected persona to the database
+      for (const persona of selectedPersonaObjects) {
+        const personaData = {
+          name: persona.name,
+          age: persona.age,
+          gender: persona.gender,
+          occupation: persona.occupation,
+          archetype: persona.archetype,
+          bio: persona.bio,
+          traits: persona.traits,
+          goal: persona.goal,
+          attitude: persona.attitude,
+        };
+        
+        const response = await fetch('/api/personas', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(personaData),
+        });
+        
+        if (response.ok) {
+          const savedPersona = await response.json();
+          savedPersonaIds.push(savedPersona.id);
+        } else {
+          throw new Error(`Failed to save persona: ${persona.name}`);
+        }
+      }
+      
+      // Add the saved personas to the selected personas list
+      setSelectedPersonas(prev => [...prev, ...savedPersonaIds]);
+      
+      // Refresh the personas list to show the new personas
+      await mutate();
+      
+      // Show success message
+      toast({
+        title: "Personas added successfully",
+        description: `${savedPersonaIds.length} persona${savedPersonaIds.length !== 1 ? 's' : ''} have been added to your simulation.`,
+      });
+      
+      // Close the dialog and reset state
+      handleAiPersonaClose();
+      
+    } catch (error) {
+      console.error('Error saving personas:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save personas. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingPersonas(false);
+    }
   };
 
   return (
@@ -1429,10 +1515,20 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
                           <div className="pt-4">
                             <Button 
                               onClick={handleGeneratePersonas}
+                              disabled={isGeneratingPersonas}
                               className="w-full"
                             >
-                              <Sparkles className="mr-2 h-4 w-4" />
-                              Generate Personas
+                              {isGeneratingPersonas ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Generating Personas...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="mr-2 h-4 w-4" />
+                                  Generate Personas
+                                </>
+                              )}
                             </Button>
                           </div>
                         </div>
@@ -1555,15 +1651,20 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
                         )}
                         {aiPersonaStep === 7 && (
                           <Button 
-                            disabled={selectedGeneratedPersonas.length === 0}
-                            onClick={() => {
-                              // TODO: Add selected personas to main personas list
-                              console.log('Selected personas:', selectedGeneratedPersonas);
-                              handleAiPersonaClose();
-                            }}
+                            disabled={selectedGeneratedPersonas.length === 0 || isSavingPersonas}
+                            onClick={handleAddSelectedPersonas}
                           >
-                            Add Selected Personas
-                            <Sparkles className="ml-2 h-4 w-4" />
+                            {isSavingPersonas ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving Personas...
+                              </>
+                            ) : (
+                              <>
+                                Add Selected Personas
+                                <Sparkles className="ml-2 h-4 w-4" />
+                              </>
+                            )}
                           </Button>
                         )}
                       </div>

@@ -54,6 +54,8 @@ export default function NewSimulationPage() {
   })
   const [generatedPersonas, setGeneratedPersonas] = useState<any[]>([])
   const [selectedGeneratedPersonas, setSelectedGeneratedPersonas] = useState<string[]>([])
+  const [editingGeneratedPersona, setEditingGeneratedPersona] = useState<any>(null)
+  const [editGeneratedPersonaOpen, setEditGeneratedPersonaOpen] = useState(false)
 
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([])
 
@@ -589,6 +591,22 @@ export default function NewSimulationPage() {
     );
   };
 
+  // Handle editing a generated persona
+  const handleEditGeneratedPersona = (persona: any) => {
+    setEditingGeneratedPersona(persona);
+    setEditGeneratedPersonaOpen(true);
+  };
+
+  // Handle successful edit of generated persona
+  const handleEditGeneratedPersonaSuccess = (updatedPersona: any) => {
+    // Update the generated personas list with the edited persona
+    setGeneratedPersonas(prev => 
+      prev.map(p => p.id === updatedPersona.id ? updatedPersona : p)
+    );
+    setEditGeneratedPersonaOpen(false);
+    setEditingGeneratedPersona(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -1108,7 +1126,11 @@ export default function NewSimulationPage() {
                               </div>
 
                               {/* Edit/View Details Button */}
-                              <Button variant="outline" size="sm" disabled>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleEditGeneratedPersona(persona)}
+                              >
                                 Edit / View Details
                               </Button>
                             </div>
@@ -1122,6 +1144,18 @@ export default function NewSimulationPage() {
                             </p>
                           </div>
                         )}
+
+                        {/* Edit Generated Persona Dialog */}
+                        <CreatePersonaDialog
+                          open={editGeneratedPersonaOpen}
+                          onOpenChange={setEditGeneratedPersonaOpen}
+                          onSuccess={handleEditGeneratedPersonaSuccess}
+                          initialData={editingGeneratedPersona}
+                          mode="edit"
+                          hideTrigger={true}
+                          variant="default"
+                          isGeneratedPersona={true}
+                        />
                       </div>
                     )}
                   </div>

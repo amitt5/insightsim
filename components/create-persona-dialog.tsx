@@ -30,6 +30,7 @@ interface CreatePersonaDialogProps {
   onHideSystemPersonasChange?: (hide: boolean) => void;
   hideSystemPersonas?: boolean;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  isGeneratedPersona?: boolean;
 }
 
 // Example constants
@@ -80,7 +81,8 @@ export function CreatePersonaDialog({
   hideTrigger = false,
   onHideSystemPersonasChange,
   hideSystemPersonas = false,
-  variant = "default"
+  variant = "default",
+  isGeneratedPersona = false
 }: CreatePersonaDialogProps) {
   const { toast } = useToast();
   
@@ -143,6 +145,43 @@ export function CreatePersonaDialog({
       traits: formData.traits ? formData.traits.split(',').map(t => t.trim()) : [],
     };
 
+    // If this is a generated persona, handle it differently (no DB save)
+    if (isGeneratedPersona) {
+      try {
+        // For generated personas, just update the local data
+        const updatedPersona = {
+          ...initialData,
+          ...personaData
+        };
+        
+        // Call the onSuccess callback with the updated persona
+        if (onSuccess) {
+          onSuccess(updatedPersona);
+        }
+        
+        // Show success toast
+        toast({
+          title: "Success",
+          description: "Persona updated successfully",
+          duration: 3000,
+        });
+        
+        // Close the dialog
+        onOpenChange(false);
+        return;
+      } catch (err: any) {
+        console.error("Error updating generated persona:", err);
+        toast({
+          title: "Error",
+          description: "Failed to update persona",
+          variant: "destructive",
+          duration: 5000,
+        });
+        return;
+      }
+    }
+
+    // Original database save logic for regular personas
     try {
       const response = await fetch('/api/personas', {
         method: mode === 'create' ? 'POST' : 'PUT',
@@ -510,7 +549,12 @@ export function CreatePersonaDialog({
         </div>
         <DialogFooter className="px-6 py-2 pb-1 border-t">
           <Button type="submit" onClick={handleSubmit}>
-            {mode === 'create' ? 'Create Persona' : 'Save Changes'}
+            {isGeneratedPersona 
+              ? 'Update' 
+              : mode === 'create' 
+                ? 'Create Persona' 
+                : 'Save Changes'
+            }
           </Button>
         </DialogFooter>
       </DialogContent>

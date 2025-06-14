@@ -50,15 +50,22 @@ export default function SignupPage() {
     
     try {
       setLoading(true)
-      
-      // Use createClientComponentClient directly
       const supabase = createClientComponentClient()
-      const response = await supabase.auth.signUp({
+      
+      // Create signup promise with timeout protection
+      const signupPromise = supabase.auth.signUp({
         email: formState.email,
         password: formState.password,
       })
       
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Signup timeout after 15 seconds')), 15000)
+      })
+      
+      const response = await Promise.race([signupPromise, timeoutPromise])
+      
       if (response.error) {
+        console.log("❌ Signup error:", response.error.message)
         toast({
           title: "Signup failed",
           description: response.error.message || "Please check your information and try again",
@@ -67,20 +74,18 @@ export default function SignupPage() {
         return
       }
       
-      console.log("Signup response:", {
+      console.log("✅ Signup response:", {
         hasUser: !!response.data.user,
         userId: response.data.user?.id,
         hasSession: !!response.data.session,
-      });
+      })
       
-      // Get the user ID from the auth response
       const authUserId = response.data.user?.id
       
-      console.log("Auth user ID:", authUserId);
-      
       if (authUserId) {
-        // Create a user profile in the custom users table
+        // Create user profile
         try {
+          console.log("👤 Creating user profile...")
           const userResponse = await fetch('/api/users', {
             method: 'POST',
             headers: {
@@ -94,60 +99,71 @@ export default function SignupPage() {
               company: formState.company || null,
               role: 'researcher',
             }),
-          });
+          })
           
           if (!userResponse.ok) {
-            const errorData = await userResponse.json();
-            console.error('Error creating user profile:', errorData.error || 'Unknown error');
+            const errorData = await userResponse.json()
+            console.error('❌ Error creating user profile:', errorData.error || 'Unknown error')
             toast({
               title: "Account created",
               description: "Your account was created, but we had an issue setting up your profile. You can complete your profile later.",
               variant: "default",
-            });
+            })
           } else {
-            const userData = await userResponse.json();
-            console.log("User profile created:", userData);
+            const userData = await userResponse.json()
+            console.log("✅ User profile created:", userData)
             
-            // Show success message
             toast({
-              title: "Account created",
+              title: "Account created successfully",
               description: "Please check your email to confirm your account",
-            });
+            })
           }
           
-          // Redirect to login page
-          router.push("/login");
-        } catch (profileError: any) {
-          console.error('Error creating user profile:', profileError.message || profileError);
+          // Always redirect to login for email confirmation
+          console.log("🔄 Redirecting to login page...")
+          router.push("/login")
           
-          // Still show a success message since auth account was created
+        } catch (profileError: any) {
+          console.error('💥 Error creating user profile:', profileError.message || profileError)
+          
           toast({
             title: "Account created",
             description: "Your account was created, but we had an issue setting up your profile. You can complete your profile later.",
             variant: "default",
-          });
+          })
           
-          // Redirect to simulations page
-          router.push("/simulations");
+          router.push("/login")
         }
       } else {
-        console.error('No auth user ID was returned from signup');
+        console.error('❌ No auth user ID was returned from signup')
         toast({
           title: "Signup issue",
           description: "We couldn't complete your registration. Please try again or contact support.",
           variant: "destructive",
-        });
+        })
       }
+      
     } catch (error: any) {
-      toast({
-        title: "An error occurred",
-        description: error.message || "Something went wrong. Please try again.",
-        variant: "destructive",
-      })
+      console.log("💥 Signup timeout or error:", error.message)
+      
+      if (error.message.includes('timeout')) {
+        toast({
+          title: "Signup timeout",
+          description: "Signup is taking too long. Please check your connection and try again.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "An error occurred",
+          description: error.message || "Something went wrong. Please try again.",
+          variant: "destructive",
+        })
+      }
     } finally {
       setLoading(false)
     }
   }
+  
   
   const handleGoogleSignUp = async () => {
     try {

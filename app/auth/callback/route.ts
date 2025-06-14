@@ -2,35 +2,34 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+// auth/callback/route.ts
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
 
   if (code) {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createRouteHandlerClient({ cookies })
     
-    // Exchange the code for a session
-    const { data: { session }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
-    console.log("Session data777:", session);
-    if (sessionError) {
-      console.error('Session error:', sessionError);
-      return NextResponse.redirect(`${requestUrl.origin}/login?error=Could not authenticate user`);
-    }
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError)
+        return NextResponse.redirect(`${requestUrl.origin}/login?error=Could not authenticate user`)
+      }
 
-    if (session?.user) {
-      try {
+      if (session?.user) {
         // Check if user profile already exists
         const { data: existingUser } = await supabase
           .from('users')
           .select('id')
           .eq('user_id', session.user.id)
-          .single();
+          .single()
 
         if (!existingUser) {
-          // Get user info from the session
-          const { user } = session;
+          const { user } = session
           
-          // Create user profile in public.users
+          // Create user profile
           const { error: profileError } = await supabase
             .from('users')
             .insert({
@@ -39,32 +38,36 @@ export async function GET(request: Request) {
               first_name: user.user_metadata?.full_name?.split(' ')[0] || '',
               last_name: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
               role: 'researcher',
-            });
+              // ADD COMPANY SUPPORT for future enterprise features
+              company: user.user_metadata?.company || null,
+            })
 
           if (profileError) {
-            console.error('Error creating user profile:', profileError);
+            console.error('Error creating user profile:', profileError)
           } else {
-            // Create initial credits for the new user
+            // CREATE INITIAL CREDITS
             const { error: creditsError } = await supabase
               .from('user_credits')
               .insert({
                 user_id: user.id,
                 credits: 500,
+                created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
-              });
+              })
 
             if (creditsError) {
-              console.error('Error creating initial credits:', creditsError);
+              console.error('Error creating initial credits:', creditsError)
+            } else {
+              console.log('✅ User profile and credits created for Google user')
             }
           }
         }
-      } catch (error) {
-        console.error('Error in profile creation:', error);
-        // Continue with redirect even if profile creation fails
       }
+    } catch (error) {
+      console.error('Error in OAuth callback:', error)
+      return NextResponse.redirect(`${requestUrl.origin}/login?error=Authentication failed`)
     }
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(`${requestUrl.origin}/simulations`);
-} 
+  return NextResponse.redirect(`${requestUrl.origin}/simulations`)
+}

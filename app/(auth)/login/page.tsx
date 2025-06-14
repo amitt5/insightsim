@@ -25,34 +25,29 @@ export default function LoginPage() {
   }
   
   const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true)
-      const supabase = createClientComponentClient()
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`
-        }
-      })
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        })
+    const supabase = createClientComponentClient()
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       }
-    } catch (error: any) {
+    })
+    
+    if (error) {
+      console.error('Google signin error:', error)
       toast({
-        title: "Error",
-        description: error.message || "Something went wrong",
+        title: "Google signin failed",
+        description: error.message,
         variant: "destructive",
       })
-    } finally {
-      setLoading(false)
     }
   }
+  
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

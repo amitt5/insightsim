@@ -2,6 +2,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { CREDIT_RATES } from '@/utils/openai'
+import { logError } from '@/utils/errorLogger'
 
 async function getSupabaseAndUser() {
     const supabase = createRouteHandlerClient({ cookies })
@@ -56,8 +57,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  let userId: string | undefined;
+  
   try {
-    const { supabase, userId } = await getSupabaseAndUser()
+    const { supabase, userId: authUserId } = await getSupabaseAndUser()
+    userId = authUserId;
 
     const body = await request.json()
     
@@ -66,6 +70,22 @@ export async function POST(request: Request) {
     // Validate required fields
     if (!userId || typeof input_tokens !== 'number' || typeof output_tokens !== 'number' || !model ||
         !(model in CREDIT_RATES)) {
+      
+      // Log validation error
+      await logError(
+        'credit_deduction_validation',
+        'Missing or invalid required fields',
+        JSON.stringify(body),
+        {
+          has_user_id: !!userId,
+          input_tokens_type: typeof input_tokens,
+          output_tokens_type: typeof output_tokens,
+          model,
+          valid_model: model in CREDIT_RATES
+        },
+        userId
+      );
+      
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -74,6 +94,14 @@ export async function POST(request: Request) {
 
     // Validate model type
     if (!(model in CREDIT_RATES)) {
+      await logError(
+        'credit_deduction_invalid_model',
+        `Invalid model specified: ${model}`,
+        undefined,
+        { model, valid_models: Object.keys(CREDIT_RATES) },
+        userId
+      );
+      
       return NextResponse.json(
         { error: 'Invalid model specified' },
         { status: 400 }
@@ -95,6 +123,20 @@ export async function POST(request: Request) {
 
     if (fetchError) {
       console.error('Error fetching user credits:', fetchError)
+      
+      // Log fetch credits error
+      await logError(
+        'credit_fetch_error',
+        fetchError,
+        undefined,
+        {
+          user_id: userId,
+          error_code: fetchError.code,
+          error_details: fetchError.details
+        },
+        userId
+      );
+      
       return NextResponse.json(
         { error: 'Failed to fetch user credits' },
         { status: 500 }
@@ -102,6 +144,22 @@ export async function POST(request: Request) {
     }
 
     if (!userCredits || userCredits.credits < creditsToDeduct) {
+      // Log insufficient credits
+      await logError(
+        'insufficient_credits',
+        'User has insufficient credits for operation',
+        undefined,
+        {
+          user_id: userId,
+          current_credits: userCredits?.credits || 0,
+          credits_needed: creditsToDeduct,
+          model,
+          input_tokens,
+          output_tokens
+        },
+        userId
+      );
+      
       return NextResponse.json(
         { error: 'Insufficient credits' },
         { status: 400 }
@@ -121,13 +179,29 @@ export async function POST(request: Request) {
 
     if (updateError) {
       console.error('Error updating user credits:', updateError)
+      
+      // Log credit update error
+      await logError(
+        'credit_update_error',
+        updateError,
+        undefined,
+        {
+          user_id: userId,
+          credits_to_deduct: creditsToDeduct,
+          current_credits: userCredits.credits,
+          error_code: updateError.code,
+          error_details: updateError.details
+        },
+        userId
+      );
+      
       return NextResponse.json(
         { error: 'Failed to update user credits' },
         { status: 500 }
       )
     }
 
-    const { error: logError } = await supabase
+    const { error: usageLogError } = await supabase
     .from('model_usage_logs')
     .insert([{
       user_id: userId,
@@ -138,8 +212,8 @@ export async function POST(request: Request) {
       created_at: new Date().toISOString()
     }])
 
-    if (logError) {
-      console.error('Error inserting usage log:', logError)
+    if (usageLogError) {
+      console.error('Error inserting usage log:', usageLogError)
       // Do not return error to user — log silently
     }
 
@@ -150,6 +224,19 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error('Unexpected error:', error)
+    
+    // Log unexpected error
+    await logError(
+      'credit_deduction_unexpected',
+      error instanceof Error ? error : String(error),
+      undefined,
+      {
+        user_id: userId,
+        error_type: 'unexpected_error'
+      },
+      userId
+    );
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

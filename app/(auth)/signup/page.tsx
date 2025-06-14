@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Navbar } from "@/components/navbar"
 import { useToast } from "@/hooks/use-toast"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { logErrorNonBlocking } from "@/utils/errorLogger"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -66,6 +67,20 @@ export default function SignupPage() {
       
       if (response.error) {
         console.log("❌ Signup error:", response.error.message)
+        
+        // Log the signup error
+        logErrorNonBlocking(
+          'email_password_signup',
+          response.error,
+          undefined,
+          { 
+            email: formState.email,
+            first_name: formState.firstName,
+            last_name: formState.lastName,
+            company: formState.company
+          }
+        )
+        
         toast({
           title: "Signup failed",
           description: response.error.message || "Please check your information and try again",
@@ -104,6 +119,23 @@ export default function SignupPage() {
           if (!userResponse.ok) {
             const errorData = await userResponse.json()
             console.error('❌ Error creating user profile:', errorData.error || 'Unknown error')
+            
+            // Log user profile creation error
+            logErrorNonBlocking(
+              'user_profile_creation',
+              errorData.error || 'Unknown error creating user profile',
+              JSON.stringify(errorData),
+              { 
+                auth_id: authUserId,
+                email: formState.email,
+                first_name: formState.firstName,
+                last_name: formState.lastName,
+                company: formState.company,
+                status: userResponse.status
+              },
+              authUserId
+            )
+            
             toast({
               title: "Account created",
               description: "Your account was created, but we had an issue setting up your profile. You can complete your profile later.",
@@ -133,6 +165,19 @@ export default function SignupPage() {
               // This handles actual HTTP errors (400, 500, etc.)
               const errorData = await creditsResponse.json()
               console.error('❌ HTTP error creating credits:', errorData.error)
+              
+              // Log credits creation error
+              logErrorNonBlocking(
+                'initial_credits_creation',
+                errorData.error || 'Failed to create initial credits',
+                JSON.stringify(errorData),
+                { 
+                  user_id: authUserId,
+                  credits: 500,
+                  status: creditsResponse.status
+                },
+                authUserId
+              )
             }
 
             
@@ -150,6 +195,21 @@ export default function SignupPage() {
         } catch (profileError: any) {
           console.error('💥 Error creating user profile:', profileError.message || profileError)
           
+          // Log profile creation catch error
+          logErrorNonBlocking(
+            'user_profile_creation_catch',
+            profileError,
+            undefined,
+            { 
+              auth_id: authUserId,
+              email: formState.email,
+              first_name: formState.firstName,
+              last_name: formState.lastName,
+              company: formState.company
+            },
+            authUserId
+          )
+          
           toast({
             title: "Account created",
             description: "Your account was created, but we had an issue setting up your profile. You can complete your profile later.",
@@ -160,6 +220,19 @@ export default function SignupPage() {
         }
       } else {
         console.error('❌ No auth user ID was returned from signup')
+        
+        // Log missing auth user ID
+        logErrorNonBlocking(
+          'signup_missing_auth_id',
+          'No auth user ID returned from signup',
+          JSON.stringify(response),
+          { 
+            email: formState.email,
+            has_user: !!response.data.user,
+            has_session: !!response.data.session
+          }
+        )
+        
         toast({
           title: "Signup issue",
           description: "We couldn't complete your registration. Please try again or contact support.",
@@ -169,6 +242,17 @@ export default function SignupPage() {
       
     } catch (error: any) {
       console.log("💥 Signup timeout or error:", error.message)
+      
+      // Log signup catch error
+      logErrorNonBlocking(
+        'signup_catch_error',
+        error,
+        undefined,
+        { 
+          email: formState.email,
+          error_type: error.message.includes('timeout') ? 'timeout' : 'unexpected_error'
+        }
+      )
       
       if (error.message.includes('timeout')) {
         toast({
@@ -201,6 +285,17 @@ export default function SignupPage() {
       })
 
       if (error) {
+        // Log Google signup error
+        logErrorNonBlocking(
+          'google_signup',
+          error,
+          undefined,
+          { 
+            provider: 'google',
+            redirect_to: `${window.location.origin}/auth/callback`
+          }
+        )
+        
         toast({
           title: "Google sign-up failed",
           description: error.message || "Please try again",
@@ -208,6 +303,14 @@ export default function SignupPage() {
         })
       }
     } catch (error: any) {
+      // Log Google signup catch error
+      logErrorNonBlocking(
+        'google_signup_catch',
+        error,
+        undefined,
+        { provider: 'google' }
+      )
+      
       toast({
         title: "An error occurred",
         description: error.message || "Something went wrong. Please try again.",

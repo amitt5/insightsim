@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Navbar } from "@/components/navbar"
 import { useToast } from "@/hooks/use-toast"
 import { createClientComponentClient, User, Session } from "@supabase/auth-helpers-nextjs"
+import { logErrorNonBlocking } from "@/utils/errorLogger"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -40,6 +41,18 @@ export default function LoginPage() {
     
     if (error) {
       console.error('Google signin error:', error)
+      
+      // Log the error
+      logErrorNonBlocking(
+        'google_signin',
+        error,
+        undefined,
+        { 
+          provider: 'google',
+          redirect_to: `${window.location.origin}/auth/callback`
+        }
+      )
+      
       toast({
         title: "Google signin failed",
         description: error.message,
@@ -125,6 +138,17 @@ export default function LoginPage() {
       if (result.error) {
         console.log("❌ Login error:", result.error.message)
         
+        // Log the authentication error
+        logErrorNonBlocking(
+          'email_password_login',
+          result.error,
+          undefined,
+          { 
+            email: formState.email,
+            error_type: result.error.message === "Invalid login credentials" ? "invalid_credentials" : "auth_error"
+          }
+        )
+        
         // Handle specific error types
         if (result.error.message === "Invalid login credentials") {
           toast({
@@ -152,6 +176,17 @@ export default function LoginPage() {
       
     } catch (error: any) {
       console.log("💥 Catch block error:", error.message)
+      
+      // Log the catch block error
+      logErrorNonBlocking(
+        'login_catch_error',
+        error,
+        undefined,
+        { 
+          email: formState.email,
+          error_type: error.message.includes('timeout') ? 'timeout' : 'unexpected_error'
+        }
+      )
       
       // Handle specific error types in catch block too
       if (error.message === "Invalid login credentials") {

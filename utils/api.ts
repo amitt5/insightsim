@@ -1,5 +1,6 @@
 "use client"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import { logErrorNonBlocking } from "@/utils/errorLogger";
 
 export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], model: string = 'gpt-4o-mini'): Promise<{ reply: string, usage: any, creditInfo: { remaining_credits: number, credits_deducted: number } }> {
     try {
@@ -16,6 +17,19 @@ export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], mod
         
         if (!response.ok) {
             const errorData = await response.json();
+            
+            // Log API response error
+            logErrorNonBlocking(
+                'simulation_api_response_error',
+                errorData.error || `HTTP ${response.status}`,
+                JSON.stringify(errorData),
+                {
+                    status: response.status,
+                    model,
+                    prompt_length: prompt.length
+                }
+            );
+            
             throw new Error(errorData.error || 'Failed to run simulation');
         }
         
@@ -37,7 +51,22 @@ export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], mod
 
         let creditInfo = { remaining_credits: 0, credits_deducted: 0 };
         if (!deductResponse.ok) {
-            console.error('Failed to deduct credits:', await deductResponse.json());
+            const deductErrorData = await deductResponse.json();
+            console.error('Failed to deduct credits:', deductErrorData);
+            
+            // Log credit deduction error
+            logErrorNonBlocking(
+                'credit_deduction_api_error',
+                deductErrorData.error || `HTTP ${deductResponse.status}`,
+                JSON.stringify(deductErrorData),
+                {
+                    status: deductResponse.status,
+                    model,
+                    input_tokens: data.usage?.prompt_tokens || 0,
+                    output_tokens: data.usage?.completion_tokens || 0
+                }
+            );
+            
             // Continue with the response even if credit deduction fails
         } else {
             creditInfo = await deductResponse.json();
@@ -49,6 +78,19 @@ export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], mod
         };
     } catch (error) {
         console.error('Error in runSimulationAPI:', error);
+        
+        // Log the API utility error
+        logErrorNonBlocking(
+            'simulation_api_utility_error',
+            error instanceof Error ? error : String(error),
+            undefined,
+            {
+                model,
+                prompt_length: prompt.length,
+                error_type: error instanceof Error ? error.name : 'unknown_error'
+            }
+        );
+        
         throw error;
     }
 } 

@@ -1,8 +1,11 @@
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
+import { logError } from "@/utils/errorLogger"
 
 export async function POST(request: Request) {
+  let userId: string | undefined;
+  
   try {
     const supabase = createRouteHandlerClient({ cookies })
     
@@ -11,6 +14,8 @@ export async function POST(request: Request) {
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+    
+    userId = session.user.id;
     
     // Parse request body
     const requestData = await request.json()
@@ -42,6 +47,23 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error("Error creating simulation:", error)
+      
+      // Log simulation creation error
+      await logError(
+        'simulation_creation',
+        error,
+        JSON.stringify(requestData),
+        {
+          user_id: session.user.id,
+          study_title: requestData.study_title,
+          study_type: requestData.study_type,
+          mode: requestData.mode,
+          error_code: error.code,
+          error_details: error.details
+        },
+        userId
+      );
+      
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
@@ -61,6 +83,21 @@ export async function POST(request: Request) {
         
       if (personaError) {
         console.error("Error adding personas to simulation:", personaError)
+        
+        // Log persona assignment error
+        await logError(
+          'simulation_persona_assignment',
+          personaError,
+          JSON.stringify(personaEntries),
+          {
+            simulation_id: simulationId,
+            persona_count: requestData.personas.length,
+            error_code: personaError.code,
+            error_details: personaError.details
+          },
+          userId
+        );
+        
         return NextResponse.json({ 
           simulation: simulation[0],
           error: "Simulation created, but failed to add personas" 
@@ -71,6 +108,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ simulation: simulation ? simulation[0] : null })
   } catch (error) {
     console.error("Unexpected error:", error)
+    
+    // Log unexpected error
+    await logError(
+      'simulation_creation_unexpected',
+      error instanceof Error ? error : String(error),
+      undefined,
+      {
+        user_id: userId,
+        error_type: 'unexpected_error'
+      },
+      userId
+    );
+    
     return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
   }
 } 

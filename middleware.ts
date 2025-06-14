@@ -35,6 +35,28 @@ export default async function middleware(req: NextRequest) {
 
     // If the path is protected and the user isn't authenticated, redirect to login
     if (isPathProtected && !data.session) {
+      // Log unauthorized access attempt
+      try {
+        await fetch(`${req.nextUrl.origin}/api/error-logs`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            source: 'middleware_auth_check',
+            error_message: 'Unauthorized access attempt to protected route',
+            metadata: {
+              path,
+              user_agent: req.headers.get('user-agent'),
+              ip: req.headers.get('x-forwarded-for') || 'unknown',
+              timestamp: new Date().toISOString()
+            }
+          })
+        });
+      } catch (logError) {
+        console.error('Failed to log unauthorized access:', logError);
+      }
+      
       const redirectUrl = new URL('/login', req.url)
       // Add the current URL as a callback parameter
       redirectUrl.searchParams.set('callbackUrl', path)
@@ -47,6 +69,28 @@ export default async function middleware(req: NextRequest) {
     }
   } catch (error) {
     console.error("Error in middleware:", error)
+    
+    // Log middleware error
+    try {
+      await fetch(`${req.nextUrl.origin}/api/error-logs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          source: 'middleware_error',
+          error_message: error instanceof Error ? error.message : String(error),
+          metadata: {
+            path: req.nextUrl.pathname,
+            user_agent: req.headers.get('user-agent'),
+            error_type: error instanceof Error ? error.name : 'unknown_error',
+            timestamp: new Date().toISOString()
+          }
+        })
+      });
+    } catch (logError) {
+      console.error('Failed to log middleware error:', logError);
+    }
   }
 
   return res

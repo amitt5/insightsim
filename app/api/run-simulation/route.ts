@@ -2,15 +2,26 @@
 
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
+import { logError } from '@/utils/errorLogger';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
 export async function POST(req: Request) {
+  let userId: string | undefined;
+  
   try {
+    // Get user ID for error logging
+    const supabase = createRouteHandlerClient({ cookies });
+    const { data: { session } } = await supabase.auth.getSession();
+    userId = session?.user?.id;
+    
     const { messages, model } = await req.json();
     console.log('prompt123', messages);
+    
     // Call OpenAI
     const completion = await openai.chat.completions.create({
       model: model,
@@ -18,34 +29,15 @@ export async function POST(req: Request) {
       temperature: 0.9,
       max_tokens: 3000,
       response_format: { "type": "json_object" }
-
-    //   top_p: 1,
-    //   frequency_penalty: 0,
-    //   presence_penalty: 0,
-    //   stream: true,
-    //   stream_options: {
-    //     type: 'json_object',
-    //     stream: true,
-    //     max_tokens: 1000,
-    //     temperature: 0.7,
-    //     top_p: 1,
-    //   }
     });
 
-  // Extract usage info
+    // Extract usage info
     const usage = completion.usage;
 
     console.log("Input tokens:", usage?.prompt_tokens);
     console.log("Output tokens:", usage?.completion_tokens);
     console.log("Total tokens:", usage?.total_tokens);
     const reply = completion.choices[0].message.content;
-
-    // Deduct credits
-    // try {
-    //   await deductCredits(usage?.prompt_tokens || 0, usage?.completion_tokens || 0, model);
-    // } catch (error) {
-    //   console.error("Failed to deduct credits:", error);
-    // }
 
     return NextResponse.json({ 
       reply,
@@ -57,6 +49,20 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error(error);
+    
+    // Log the error with context
+    await logError(
+      'openai_simulation_api',
+      error instanceof Error ? error : String(error),
+      undefined,
+      {
+        model: req.body ? JSON.parse(await req.text()).model : 'unknown',
+        error_type: error instanceof Error ? error.name : 'unknown_error',
+        timestamp: new Date().toISOString()
+      },
+      userId
+    );
+    
     return NextResponse.json({ error: 'Error running simulation' }, { status: 500 });
   }
 }

@@ -71,7 +71,6 @@ export default function SimulationViewPage() {
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false)
   const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  // const [availableCredits, setAvailableCredits] = useState<number | null>(null)
   const [modelInUse, setModelInUse] = useState<string>('gpt-4o-mini')
   const [showInstructionBox, setShowInstructionBox] = useState(false)
   const [userInstruction, setUserInstruction] = useState("")
@@ -1100,7 +1099,7 @@ function extractParticipantMessages(parsedResponse: any) {
                   />
                   
                   {/* Model selector and Send button row */}
-                  {availableCredits !== null && (
+                  {/* {availableCredits !== null && ( */}
                     <div className="flex gap-2 items-center">
                       <div className="flex-1">
                         <Select
@@ -1126,7 +1125,7 @@ function extractParticipantMessages(parsedResponse: any) {
                         Send
                       </Button>
                     </div>
-                  )}
+                  {/* )} */}
                   
                   {/* Available credits display */}
                   {availableCredits !== null && (
@@ -1136,7 +1135,7 @@ function extractParticipantMessages(parsedResponse: any) {
                   )}
                   
                   {/* End discussion button */}
-                  {formattedMessages.length > 0 && availableCredits !== null && (
+                  {formattedMessages.length > 0 && (
                     <Button
                       className="w-full"
                       variant="destructive"

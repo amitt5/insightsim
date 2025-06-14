@@ -110,8 +110,32 @@ export default function SignupPage() {
               variant: "default",
             })
           } else {
-            const userData = await userResponse.json()
-            console.log("✅ User profile created:", userData)
+            const creditsResponse = await fetch('/api/user-credits', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                user_id: authUserId,
+                credits: 500,
+              }),
+            })
+            
+            if (creditsResponse.ok) {
+              const creditsData = await creditsResponse.json()
+              
+              if (creditsData.data) {
+                console.log('✅ Initial credits created:', creditsData.data)
+              } else if (creditsData.error) {
+                console.error('❌ Credits creation failed:', creditsData.error)
+              }
+            } else {
+              // This handles actual HTTP errors (400, 500, etc.)
+              const errorData = await creditsResponse.json()
+              console.error('❌ HTTP error creating credits:', errorData.error)
+            }
+
+            
             
             toast({
               title: "Account created successfully",

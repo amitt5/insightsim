@@ -78,7 +78,7 @@ export default function SettingsPage() {
               <CardDescription>Update your personal details and profile information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center gap-6">
+              {/* <div className="flex items-center gap-6">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src="/placeholder-avatar.jpg" />
                   <AvatarFallback className="text-lg">SJ</AvatarFallback>
@@ -90,7 +90,7 @@ export default function SettingsPage() {
                   </Button>
                   <p className="text-sm text-gray-500">JPG, PNG or GIF. Max size 2MB.</p>
                 </div>
-              </div>
+              </div> */}
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -108,7 +108,7 @@ export default function SettingsPage() {
                 <Input id="email" type="email" defaultValue="sarah.johnson@acmeresearch.com" />
               </div>
               
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input id="phone" defaultValue="+1 (555) 123-4567" />
               </div>
@@ -126,7 +126,7 @@ export default function SettingsPage() {
                     <SelectItem value="mst">Mountain Standard Time (MST)</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
               
               <Button>Save Changes</Button>
             </CardContent>
@@ -175,87 +175,14 @@ export default function SettingsPage() {
               </div>
               
               <Separator />
-              
-              <div className="space-y-4">
-                <h4 className="font-medium">Two-Factor Authentication</h4>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">SMS Authentication</p>
-                    <p className="text-sm text-gray-500">Receive codes via SMS</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Authenticator App</p>
-                    <p className="text-sm text-gray-500">Use Google Authenticator or similar</p>
-                  </div>
-                  <Switch />
-                </div>
-              </div>
+             
               
               <Button>Update Security Settings</Button>
             </CardContent>
           </Card>
 
-          {/* Notification Preferences */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notification Preferences
-              </CardTitle>
-              <CardDescription>Choose how you want to be notified</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Email Notifications</p>
-                  <p className="text-sm text-gray-500">Receive updates via email</p>
-                </div>
-                <Switch 
-                  checked={notifications.email}
-                  onCheckedChange={(checked) => setNotifications({...notifications, email: checked})}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Push Notifications</p>
-                  <p className="text-sm text-gray-500">Receive browser notifications</p>
-                </div>
-                <Switch 
-                  checked={notifications.push}
-                  onCheckedChange={(checked) => setNotifications({...notifications, push: checked})}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Marketing Communications</p>
-                  <p className="text-sm text-gray-500">Product updates and tips</p>
-                </div>
-                <Switch 
-                  checked={notifications.marketing}
-                  onCheckedChange={(checked) => setNotifications({...notifications, marketing: checked})}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Security Alerts</p>
-                  <p className="text-sm text-gray-500">Important security notifications</p>
-                </div>
-                <Switch 
-                  checked={notifications.security}
-                  onCheckedChange={(checked) => setNotifications({...notifications, security: checked})}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Data Management */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Download className="h-5 w-5" />
@@ -286,7 +213,7 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </TabsContent>
 
         {/* Billing Tab */}

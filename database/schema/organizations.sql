@@ -6,6 +6,13 @@ CREATE TABLE organizations (
     website TEXT,
     description TEXT,
     logo_url TEXT,
+    primary_color TEXT DEFAULT '#3B82F6',
+    secondary_color TEXT DEFAULT '#64748B',
+    font_family TEXT DEFAULT 'Inter',
+    include_logo BOOLEAN DEFAULT true,
+    show_participant_details BOOLEAN DEFAULT true,
+    executive_summary BOOLEAN DEFAULT true,
+    default_report_format TEXT DEFAULT 'PDF',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

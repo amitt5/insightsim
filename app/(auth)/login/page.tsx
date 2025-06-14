@@ -56,6 +56,7 @@ export default function LoginPage() {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
     if (!formState.email || !formState.password) {
       toast({
         title: "Error",
@@ -69,15 +70,28 @@ export default function LoginPage() {
       setLoading(true)
       const supabase = createClientComponentClient()
       
-      // Create a promise that listens for auth state changes
-      const authStatePromise = new Promise((resolve, reject) => {
+      console.log("🚪 Calling signInWithPassword...")
+      
+      // Create auth state change listener
+      let authStateResolver: any = null
+      let authStateRejector: any = null
+      
+      type AuthStateResult = {
+        data: { session: Session | null; user: User | null } | null;
+        error: Error | null;
+      }
+      
+      const authStatePromise = new Promise<AuthStateResult>((resolve, reject) => {
+        authStateResolver = resolve
+        authStateRejector = reject
+        
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log("🔄 Auth state changed:", event, !!session)
+          
           if (event === 'SIGNED_IN' && session) {
+            console.log("✅ Auth state: SIGNED_IN detected")
             subscription.unsubscribe()
             resolve({ data: { session, user: session.user }, error: null })
-          } else if (event === 'SIGNED_OUT') {
-            subscription.unsubscribe()
-            reject(new Error('Authentication failed'))
           }
         })
         
@@ -88,37 +102,84 @@ export default function LoginPage() {
         }, 15000)
       })
       
-      // Start the login process (this might hang, but auth state will change)
-      supabase.auth.signInWithPassword({
+      // Start the login process and handle immediate errors
+      const signInPromise = supabase.auth.signInWithPassword({
         email: formState.email,
         password: formState.password,
-      }).catch(error => {
-        console.log("signInWithPassword error (might be expected):", error)
       })
-      // Wait for auth state change instead of the hanging promise
-      const { data: _, error: _error } = await authStatePromise as { data: { session: Session, user: User }, error: Error | null }
       
-      if (_error) {
-        toast({
-          title: "Login failed",
-          description: _error.message || "Please check your credentials and try again",
-          variant: "destructive",
-        })
+      // Handle the signIn response for immediate errors (like invalid credentials)
+      signInPromise.then(response => {
+        if (response.error) {
+          console.log("❌ SignIn immediate error:", response.error.message)
+          // Cancel the auth state listener
+          if (authStateRejector) {
+            authStateRejector(response.error)
+          }
+        }
+      }).catch(error => {
+        console.log("❌ SignIn promise error:", error)
+        if (authStateRejector) {
+          authStateRejector(error)
+        }
+      })
+      
+      // Wait for either auth state change or immediate error
+      const result = await authStatePromise
+      
+      if (result.error) {
+        console.log("❌ Login error:", result.error.message)
+        
+        // Handle specific error types
+        if (result.error.message === "Invalid login credentials") {
+          toast({
+            title: "Invalid credentials",
+            description: "The email or password you entered is incorrect. Please try again.",
+            variant: "destructive",
+          })
+        } else {
+          toast({
+            title: "Login failed",
+            description: result.error.message || "Please check your credentials and try again",
+            variant: "destructive",
+          })
+        }
         return
       }
+      
+      console.log("✅ Login success via auth state change!")
+      
       // Small delay to ensure session is fully established
       await new Promise(resolve => setTimeout(resolve, 100))
       
+      console.log("🔄 About to redirect to /simulations...")
       router.push("/simulations")
       
     } catch (error: any) {
       console.log("💥 Catch block error:", error.message)
-      toast({
-        title: "An error occurred",
-        description: error.message || "Something went wrong. Please try again.",
-        variant: "destructive",
-      })
+      
+      // Handle specific error types in catch block too
+      if (error.message === "Invalid login credentials") {
+        toast({
+          title: "Invalid credentials",
+          description: "The email or password you entered is incorrect. Please try again.",
+          variant: "destructive",
+        })
+      } else if (error.message.includes('timeout')) {
+        toast({
+          title: "Login timeout",
+          description: "Login is taking too long. Please check your connection and try again.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "An error occurred",
+          description: error.message || "Something went wrong. Please try again.",
+          variant: "destructive",
+        })
+      }
     } finally {
+      console.log("🏁 Finally block - setting loading to false")
       setLoading(false)
     }
   }

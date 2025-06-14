@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Navbar } from "@/components/navbar"
 import { useToast } from "@/hooks/use-toast"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createClientComponentClient, User, Session } from "@supabase/auth-helpers-nextjs"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -56,7 +56,6 @@ export default function LoginPage() {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (!formState.email || !formState.password) {
       toast({
         title: "Error",
@@ -68,31 +67,52 @@ export default function LoginPage() {
     
     try {
       setLoading(true)
-      
-      // Use createClientComponentClient directly
       const supabase = createClientComponentClient()
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: formState.email,
-        password: formState.password,
+      
+      // Create a promise that listens for auth state changes
+      const authStatePromise = new Promise((resolve, reject) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_IN' && session) {
+            subscription.unsubscribe()
+            resolve({ data: { session, user: session.user }, error: null })
+          } else if (event === 'SIGNED_OUT') {
+            subscription.unsubscribe()
+            reject(new Error('Authentication failed'))
+          }
+        })
+        
+        // Clean up subscription after 15 seconds
+        setTimeout(() => {
+          subscription.unsubscribe()
+          reject(new Error('Authentication timeout'))
+        }, 15000)
       })
       
-      if (error) {
+      // Start the login process (this might hang, but auth state will change)
+      supabase.auth.signInWithPassword({
+        email: formState.email,
+        password: formState.password,
+      }).catch(error => {
+        console.log("signInWithPassword error (might be expected):", error)
+      })
+      // Wait for auth state change instead of the hanging promise
+      const { data: _, error: _error } = await authStatePromise as { data: { session: Session, user: User }, error: Error | null }
+      
+      if (_error) {
         toast({
           title: "Login failed",
-          description: error.message || "Please check your credentials and try again",
+          description: _error.message || "Please check your credentials and try again",
           variant: "destructive",
         })
         return
       }
+      // Small delay to ensure session is fully established
+      await new Promise(resolve => setTimeout(resolve, 100))
       
-      console.log("Login success:", {
-        hasSession: !!data.session,
-        hasUser: !!data.user,
-      })
-      
-      // Redirect to dashboard on successful login
       router.push("/simulations")
+      
     } catch (error: any) {
+      console.log("💥 Catch block error:", error.message)
       toast({
         title: "An error occurred",
         description: error.message || "Something went wrong. Please try again.",
@@ -102,6 +122,7 @@ export default function LoginPage() {
       setLoading(false)
     }
   }
+  
   
   return (
     <div className="flex min-h-screen flex-col">

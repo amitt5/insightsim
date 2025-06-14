@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -34,19 +34,130 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
-  Activity
+  Activity,
+  Loader2
 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useToast } from "@/hooks/use-toast"
 
 export default function SettingsPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [userData, setUserData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    company: ""
+  })
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
     marketing: true,
     security: true
   })
+  
+  const { toast } = useToast()
+
+  // Fetch user data on component mount
+  useEffect(() => {
+    fetchUserData()
+  }, [])
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true)
+      
+      const response = await fetch('/api/users', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+
+      const userProfile = await response.json()
+
+      setUserData({
+        firstName: userProfile.first_name || "",
+        lastName: userProfile.last_name || "",
+        email: userProfile.email || "",
+        company: userProfile.company || ""
+      })
+
+    } catch (error) {
+      console.error('Error fetching user data:', error)
+      
+      toast({
+        title: "Error",
+        description: "Failed to load user data. Please refresh the page.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSaveChanges = async () => {
+    try {
+      setSaving(true)
+      
+      const response = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          company: userData.company,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+
+      const updatedUser = await response.json()
+
+      // Update local state with response data
+      setUserData({
+        firstName: updatedUser.first_name || "",
+        lastName: updatedUser.last_name || "",
+        email: updatedUser.email || "",
+        company: updatedUser.company || ""
+      })
+
+      toast({
+        title: "Success",
+        description: "Your profile has been updated successfully.",
+      })
+
+    } catch (error) {
+      console.error('Error saving user data:', error)
+      
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save changes. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    setUserData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
 
   return (
     <div className="space-y-6">
@@ -78,57 +189,69 @@ export default function SettingsPage() {
               <CardDescription>Update your personal details and profile information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src="/placeholder-avatar.jpg" />
-                  <AvatarFallback className="text-lg">SJ</AvatarFallback>
-                </Avatar>
-                <div className="space-y-2">
-                  <Button variant="outline" size="sm">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Change Photo
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <span className="ml-2">Loading profile...</span>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input 
+                        id="firstName" 
+                        value={userData.firstName} 
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                        disabled={saving}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input 
+                        id="lastName" 
+                        value={userData.lastName} 
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        disabled={saving}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={userData.email} 
+                      disabled
+                      className="bg-gray-50 text-gray-500"
+                    />
+                    <p className="text-xs text-gray-500">Email address cannot be changed</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Company</Label>
+                    <Input 
+                      id="company" 
+                      value={userData.company} 
+                      onChange={(e) => handleInputChange('company', e.target.value)}
+                      placeholder="Enter your company name"
+                      disabled={saving}
+                    />
+                  </div>
+                  
+                  <Button onClick={handleSaveChanges} disabled={saving}>
+                    {saving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
                   </Button>
-                  <p className="text-sm text-gray-500">JPG, PNG or GIF. Max size 2MB.</p>
-                </div>
-              </div> */}
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" defaultValue="Sarah" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" defaultValue="Johnson" />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input id="email" type="email" defaultValue="sarah.johnson@acmeresearch.com" />
-              </div>
-              
-              {/* <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" defaultValue="+1 (555) 123-4567" />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="timezone">Timezone</Label>
-                <Select defaultValue="pst">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pst">Pacific Standard Time (PST)</SelectItem>
-                    <SelectItem value="est">Eastern Standard Time (EST)</SelectItem>
-                    <SelectItem value="cst">Central Standard Time (CST)</SelectItem>
-                    <SelectItem value="mst">Mountain Standard Time (MST)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div> */}
-              
-              <Button>Save Changes</Button>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -421,7 +544,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="companyName">Company Name</Label>
-                  <Input id="companyName" defaultValue="Acme Research Inc." />
+                  <Input id="companyName" value={userData.company} onChange={(e) => handleInputChange('company', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="industry">Industry</Label>

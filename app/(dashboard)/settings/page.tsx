@@ -51,6 +51,20 @@ export default function SettingsPage() {
     email: "",
     company: ""
   })
+  const [organizationData, setOrganizationData] = useState({
+    name: "",
+    industry: "",
+    website: "",
+    description: "",
+    logo_url: "",
+    primary_color: "#3B82F6",
+    secondary_color: "#64748B",
+    font_family: "Inter",
+    include_logo: true,
+    show_participant_details: true,
+    executive_summary: true,
+    default_report_format: "PDF"
+  })
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
@@ -60,9 +74,10 @@ export default function SettingsPage() {
   
   const { toast } = useToast()
 
-  // Fetch user data on component mount
+  // Fetch user data and organization data on component mount
   useEffect(() => {
     fetchUserData()
+    fetchOrganizationData()
   }, [])
 
   const fetchUserData = async () => {
@@ -100,6 +115,48 @@ export default function SettingsPage() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchOrganizationData = async () => {
+    try {
+      const response = await fetch('/api/organizations', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+
+      const orgData = await response.json()
+
+      setOrganizationData({
+        name: orgData.name || "",
+        industry: orgData.industry || "",
+        website: orgData.website || "",
+        description: orgData.description || "",
+        logo_url: orgData.logo_url || "",
+        primary_color: orgData.primary_color || "#3B82F6",
+        secondary_color: orgData.secondary_color || "#64748B",
+        font_family: orgData.font_family || "Inter",
+        include_logo: orgData.include_logo !== undefined ? orgData.include_logo : true,
+        show_participant_details: orgData.show_participant_details !== undefined ? orgData.show_participant_details : true,
+        executive_summary: orgData.executive_summary !== undefined ? orgData.executive_summary : true,
+        default_report_format: orgData.default_report_format || "PDF"
+      })
+
+    } catch (error) {
+      console.error('Error fetching organization data:', error)
+      
+      toast({
+        title: "Error",
+        description: "Failed to load organization data. Please refresh the page.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -157,6 +214,79 @@ export default function SettingsPage() {
       ...prev,
       [field]: value
     }))
+  }
+
+  const handleOrganizationInputChange = (field: string, value: string | boolean) => {
+    setOrganizationData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const handleSaveOrganization = async () => {
+    try {
+      setSaving(true)
+      
+      const response = await fetch('/api/organizations', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: organizationData.name,
+          industry: organizationData.industry,
+          website: organizationData.website,
+          description: organizationData.description,
+          logo_url: organizationData.logo_url,
+          primary_color: organizationData.primary_color,
+          secondary_color: organizationData.secondary_color,
+          font_family: organizationData.font_family,
+          include_logo: organizationData.include_logo,
+          show_participant_details: organizationData.show_participant_details,
+          executive_summary: organizationData.executive_summary,
+          default_report_format: organizationData.default_report_format,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+
+      const updatedOrg = await response.json()
+
+      // Update local state with response data
+      setOrganizationData({
+        name: updatedOrg.name || "",
+        industry: updatedOrg.industry || "",
+        website: updatedOrg.website || "",
+        description: updatedOrg.description || "",
+        logo_url: updatedOrg.logo_url || "",
+        primary_color: updatedOrg.primary_color || "#3B82F6",
+        secondary_color: updatedOrg.secondary_color || "#64748B",
+        font_family: updatedOrg.font_family || "Inter",
+        include_logo: updatedOrg.include_logo !== undefined ? updatedOrg.include_logo : true,
+        show_participant_details: updatedOrg.show_participant_details !== undefined ? updatedOrg.show_participant_details : true,
+        executive_summary: updatedOrg.executive_summary !== undefined ? updatedOrg.executive_summary : true,
+        default_report_format: updatedOrg.default_report_format || "PDF"
+      })
+
+      toast({
+        title: "Success",
+        description: "Your organization settings have been updated successfully.",
+      })
+
+    } catch (error) {
+      console.error('Error saving organization data:', error)
+      
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save organization settings. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -529,60 +659,92 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center gap-6">
-                <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-                  <Building className="h-8 w-8 text-gray-400" />
+                <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
+                  {organizationData.logo_url ? (
+                    <img 
+                      src={organizationData.logo_url} 
+                      alt="Company Logo" 
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <Building className="h-8 w-8 text-gray-400" />
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Button variant="outline" size="sm">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Logo
-                  </Button>
-                  <p className="text-sm text-gray-500">PNG or SVG. Max size 2MB.</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="logoUrl">Logo URL</Label>
+                    <Input
+                      id="logoUrl"
+                      type="url"
+                      placeholder="https://example.com/logo.png"
+                      value={organizationData.logo_url}
+                      onChange={(e) => handleOrganizationInputChange('logo_url', e.target.value)}
+                    />
+                  </div>
+                  <p className="text-sm text-gray-500">Enter a URL to your company logo (PNG, JPG, or SVG).</p>
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="companyName">Company Name</Label>
-                  <Input id="companyName" value={userData.company} onChange={(e) => handleInputChange('company', e.target.value)} />
+                  <Input 
+                    id="companyName" 
+                    placeholder="Enter company name"
+                    value={organizationData.name} 
+                    onChange={(e) => handleOrganizationInputChange('name', e.target.value)} 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="industry">Industry</Label>
-                  <Select defaultValue="research">
+                  <Select 
+                    value={organizationData.industry} 
+                    onValueChange={(value) => handleOrganizationInputChange('industry', value)}
+                  >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select industry" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="research">Market Research</SelectItem>
-                      <SelectItem value="consulting">Consulting</SelectItem>
                       <SelectItem value="technology">Technology</SelectItem>
                       <SelectItem value="healthcare">Healthcare</SelectItem>
+                      <SelectItem value="finance">Finance</SelectItem>
                       <SelectItem value="education">Education</SelectItem>
+                      <SelectItem value="retail">Retail</SelectItem>
+                      <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                      <SelectItem value="consulting">Consulting</SelectItem>
+                      <SelectItem value="marketing">Marketing</SelectItem>
+                      <SelectItem value="research">Market Research</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="companyEmail">Company Email</Label>
-                <Input id="companyEmail" defaultValue="admin@acmeresearch.com" />
-              </div>
-              
-              <div className="space-y-2">
                 <Label htmlFor="website">Website</Label>
-                <Input id="website" defaultValue="https://acmeresearch.com" />
+                <Input 
+                  id="website" 
+                  type="url"
+                  placeholder="https://example.com"
+                  value={organizationData.website}
+                  onChange={(e) => handleOrganizationInputChange('website', e.target.value)}
+                />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="description">Company Description</Label>
                 <Textarea 
                   id="description" 
-                  defaultValue="Leading market research firm specializing in consumer insights and behavioral analysis."
+                  placeholder="Brief description of your company..."
+                  value={organizationData.description}
+                  onChange={(e) => handleOrganizationInputChange('description', e.target.value)}
                   rows={3}
                 />
               </div>
               
-              <Button>Save Company Information</Button>
+              <Button onClick={handleSaveOrganization} disabled={saving}>
+                {saving ? "Saving..." : "Save Company Information"}
+              </Button>
             </CardContent>
           </Card>
 
@@ -597,35 +759,58 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="primaryColor">Primary Color</Label>
                   <div className="flex gap-2">
-                    <Input id="primaryColor" defaultValue="#3B82F6" className="w-20" />
-                    <div className="w-10 h-10 bg-blue-500 rounded border"></div>
+                    <Input 
+                      id="primaryColor" 
+                      value={organizationData.primary_color} 
+                      onChange={(e) => handleOrganizationInputChange('primary_color', e.target.value)}
+                      className="w-20" 
+                    />
+                    <div 
+                      className="w-10 h-10 rounded border" 
+                      style={{ backgroundColor: organizationData.primary_color }}
+                    ></div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="secondaryColor">Secondary Color</Label>
                   <div className="flex gap-2">
-                    <Input id="secondaryColor" defaultValue="#64748B" className="w-20" />
-                    <div className="w-10 h-10 bg-slate-500 rounded border"></div>
+                    <Input 
+                      id="secondaryColor" 
+                      value={organizationData.secondary_color}
+                      onChange={(e) => handleOrganizationInputChange('secondary_color', e.target.value)}
+                      className="w-20" 
+                    />
+                    <div 
+                      className="w-10 h-10 rounded border"
+                      style={{ backgroundColor: organizationData.secondary_color }}
+                    ></div>
                   </div>
                 </div>
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="fontFamily">Font Family</Label>
-                <Select defaultValue="inter">
+                <Select 
+                  value={organizationData.font_family} 
+                  onValueChange={(value) => handleOrganizationInputChange('font_family', value)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="inter">Inter</SelectItem>
-                    <SelectItem value="roboto">Roboto</SelectItem>
-                    <SelectItem value="opensans">Open Sans</SelectItem>
-                    <SelectItem value="lato">Lato</SelectItem>
+                    <SelectItem value="Inter">Inter</SelectItem>
+                    <SelectItem value="Roboto">Roboto</SelectItem>
+                    <SelectItem value="Open Sans">Open Sans</SelectItem>
+                    <SelectItem value="Lato">Lato</SelectItem>
+                    <SelectItem value="Poppins">Poppins</SelectItem>
+                    <SelectItem value="Montserrat">Montserrat</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
-              <Button>Save Branding Settings</Button>
+              <Button onClick={handleSaveOrganization} disabled={saving}>
+                {saving ? "Saving..." : "Save Branding Settings"}
+              </Button>
             </CardContent>
           </Card>
 
@@ -641,7 +826,10 @@ export default function SettingsPage() {
                   <p className="font-medium">Include Company Logo</p>
                   <p className="text-sm text-gray-500">Show logo on all reports</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={organizationData.include_logo}
+                  onCheckedChange={(checked) => handleOrganizationInputChange('include_logo', checked)}
+                />
               </div>
               
               <div className="flex items-center justify-between">
@@ -649,7 +837,10 @@ export default function SettingsPage() {
                   <p className="font-medium">Show Participant Details</p>
                   <p className="text-sm text-gray-500">Include participant information in reports</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={organizationData.show_participant_details}
+                  onCheckedChange={(checked) => handleOrganizationInputChange('show_participant_details', checked)}
+                />
               </div>
               
               <div className="flex items-center justify-between">
@@ -657,22 +848,32 @@ export default function SettingsPage() {
                   <p className="font-medium">Executive Summary</p>
                   <p className="text-sm text-gray-500">Auto-generate executive summaries</p>
                 </div>
-                <Switch />
+                <Switch 
+                  checked={organizationData.executive_summary}
+                  onCheckedChange={(checked) => handleOrganizationInputChange('executive_summary', checked)}
+                />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="reportFormat">Default Report Format</Label>
-                <Select defaultValue="pdf">
+                <Select 
+                  value={organizationData.default_report_format} 
+                  onValueChange={(value) => handleOrganizationInputChange('default_report_format', value)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pdf">PDF</SelectItem>
+                    <SelectItem value="PDF">PDF</SelectItem>
                     <SelectItem value="docx">Word Document</SelectItem>
                     <SelectItem value="pptx">PowerPoint</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              
+              <Button onClick={handleSaveOrganization} disabled={saving}>
+                {saving ? "Saving..." : "Save Report Preferences"}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

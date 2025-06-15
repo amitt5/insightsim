@@ -64,6 +64,12 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
 
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([])
 
+  // Brief upload state
+  const [briefUploadOpen, setBriefUploadOpen] = useState(false)
+  const [briefText, setBriefText] = useState('')
+  const [briefSource, setBriefSource] = useState<'upload' | 'playing-around' | null>(null)
+  const [isProcessingBrief, setIsProcessingBrief] = useState(false)
+
   const [simulationData, setSimulationData] = useState({
     study_title: "",
     study_type: "focus-group",
@@ -73,6 +79,8 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     discussion_questions: "",
     turn_based: false,
     num_turns: "10",
+    brief_text: "",
+    brief_source: null as 'upload' | 'playing-around' | null,
   });
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   
@@ -117,6 +125,8 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
               : simulation.discussion_questions || "",
             turn_based: Boolean(simulation.turn_based),
             num_turns: simulation.num_turns?.toString() || "10",
+            brief_text: simulation.brief_text || "",
+            brief_source: simulation.brief_source || null,
           };
 
           // Validate num_turns is a valid number
@@ -576,7 +586,86 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   const handlePlayingAround = () => {
     const randomSimulation: any = getRandomSimulation();
     console.log('handlePlayingAround',randomSimulation);
-    setSimulationData(randomSimulation);
+    setSimulationData({
+      ...randomSimulation,
+      brief_text: "",
+      brief_source: 'playing-around'
+    });
+    setBriefSource('playing-around');
+  };
+
+  // Brief upload handlers
+  const handleBriefUpload = () => {
+    setBriefUploadOpen(true);
+  };
+
+  const handleBriefTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setBriefText(e.target.value);
+  };
+
+  const handleCloseBriefDialog = () => {
+    setBriefUploadOpen(false);
+    setBriefText('');
+  };
+
+  const handleGenerateFromBrief = async () => {
+    if (!briefText.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter your research brief first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessingBrief(true);
+    try {
+      // For now, we'll just extract a simple title from the brief
+      // Later this will be replaced with API call
+      const briefLines = briefText.trim().split('\n').filter(line => line.trim());
+      const firstLine = briefLines[0] || 'Research Study';
+      
+      // Simple title extraction - take first meaningful line or create from content
+      let extractedTitle = firstLine.length > 100 
+        ? firstLine.substring(0, 97) + '...' 
+        : firstLine;
+      
+      // If first line seems like a title, use it; otherwise create a generic one
+      if (extractedTitle.toLowerCase().includes('research') || 
+          extractedTitle.toLowerCase().includes('study') ||
+          extractedTitle.toLowerCase().includes('analysis')) {
+        // Use as is
+      } else {
+        extractedTitle = `Research Study: ${extractedTitle}`;
+      }
+
+      // Update simulation data with extracted title and brief info
+      setSimulationData(prev => ({
+        ...prev,
+        study_title: extractedTitle,
+        brief_text: briefText,
+        brief_source: 'upload'
+      }));
+
+      // Set brief source and close dialog
+      setBriefSource('upload');
+      setBriefUploadOpen(false);
+      
+      toast({
+        title: "Brief processed successfully",
+        description: "Study title has been generated from your brief. You can edit it if needed.",
+      });
+
+    } catch (error) {
+      console.error('Error processing brief:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process brief. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingBrief(false);
+    }
   };
 
   // Function to build OpenAI prompt for discussion questions
@@ -1072,10 +1161,38 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
               </CardHeader>
               <CardContent className="space-y-4">
 
-              <div className="space-y-2">
-                {/* here add a button "playing around" and add description "This is a test simulation for playing around with the platform" */}
-                <Button variant="default" onClick={handlePlayingAround}>Playing around</Button>
-                <p className="text-sm text-gray-500">Click this button to play around with the platform. This will create a simulation with a predefined topic and discussion questions. You can then run the simulation and see the results. Clicking it again will create a new simulation with a new topic and discussion questions. You can always change the topic and discussion questions.</p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Upload Brief Button */}
+                  <div className="space-y-2">
+                    <Button 
+                      variant="default" 
+                      onClick={handleBriefUpload}
+                      className="w-full h-12 text-base font-medium"
+                    >
+                      <Upload className="mr-2 h-5 w-5" />
+                      Upload Brief
+                    </Button>
+                    <p className="text-sm text-gray-500">
+                      Have an existing research brief? Upload it and we'll auto-generate your simulation details.
+                    </p>
+                  </div>
+
+                  {/* Playing Around Button */}
+                  <div className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={handlePlayingAround}
+                      className="w-full h-12 text-base font-medium"
+                    >
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      Playing Around
+                    </Button>
+                    <p className="text-sm text-gray-500">
+                      New to the platform? Try a sample simulation with pre-filled content to explore features.
+                    </p>
+                  </div>
+                </div>
               </div>
 
                 <div className="space-y-2">
@@ -1351,6 +1468,69 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
               </CardFooter>
             </Card>
           )}
+
+          {/* Brief Upload Dialog */}
+          <Dialog open={briefUploadOpen} onOpenChange={setBriefUploadOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5 text-primary" />
+                  Upload Research Brief
+                </DialogTitle>
+                <DialogDescription>
+                  Paste your research brief below and we'll auto-generate your simulation details.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="briefTextarea">Research Brief</Label>
+                  <Textarea
+                    id="briefTextarea"
+                    placeholder="Paste your research brief here...
+
+Example:
+Research Objective: Understand consumer perceptions of our new eco-friendly packaging
+Target Audience: Environmentally conscious consumers aged 25-45
+Key Questions:
+- How do consumers perceive the new packaging design?
+- Does the eco-friendly messaging resonate with the target audience?
+- What are the main barriers to purchase consideration?
+- How does this compare to competitor offerings?"
+                    rows={12}
+                    value={briefText}
+                    onChange={handleBriefTextChange}
+                    className="resize-none"
+                  />
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-700">
+                    <strong>Tip:</strong> Include your research objectives, target audience, key questions, and any background information. The more detail you provide, the better we can auto-generate your simulation.
+                  </p>
+                </div>
+              </div>
+              <DialogFooter className="flex justify-between">
+                <Button variant="outline" onClick={handleCloseBriefDialog}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleGenerateFromBrief}
+                  disabled={!briefText.trim() || isProcessingBrief}
+                >
+                  {isProcessingBrief ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing Brief...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Generate from Brief
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {step === 2 && (
             <Card>

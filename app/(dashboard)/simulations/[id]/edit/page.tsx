@@ -23,7 +23,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { runSimulationAPI } from "@/utils/api"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt } from "@/utils/buildMessagesForOpenAI";
 import { Badge } from "@/components/ui/badge"
 
 export default function EditSimulationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -519,12 +519,16 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         });
       }
       
-      // Parse discussion questions from text to array
-      const discussionQuestionsArray = simulationData.discussion_questions
+      // Parse discussion questions from text to array if not already an array
+      let discussionQuestionsArray = [];
+      if (Array.isArray(simulationData.discussion_questions)) {
+        discussionQuestionsArray = simulationData.discussion_questions;
+      } else {
+        discussionQuestionsArray = simulationData.discussion_questions
         .split('\n')
         .filter(line => line.trim() !== '')
         .map(line => line.trim());
-
+      }
       // Use existing media URLs if no new files were uploaded
       const finalMediaUrls = mediaUrls.length > 0 ? mediaUrls : simulationData.stimulus_media_url;
 
@@ -630,6 +634,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       const result = await runSimulationAPI(messages);
       let title = '';
       let topic = '';
+      let discussionQuestions = [];
       try {
         // Parse the JSON response
         let responseText = result.reply || "";
@@ -643,10 +648,12 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         
         // Parse the JSON
         const parsedResponse = JSON.parse(responseText);
-        
+
         // Extract questions array
         title = parsedResponse.title || '';
         topic = parsedResponse.topic || '';
+        discussionQuestions = parsedResponse.questions || [];
+
         console.log('titles333',parsedResponse, title, topic);
         // setTitleSuggestions(titles);
         
@@ -662,6 +669,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         study_title: title,
         topic: topic,
         brief_text: briefText,
+        discussion_questions: discussionQuestions,
         brief_source: 'upload' as const
       };
       
@@ -675,9 +683,9 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         },
         body: JSON.stringify({
           ...updatedData,
-          discussion_questions: updatedData.discussion_questions
-            ? updatedData.discussion_questions.split('\n').filter(line => line.trim() !== '')
-            : [],
+          // discussion_questions: updatedData.discussion_questions
+          //   ? updatedData.discussion_questions.split('\n').filter(line => line.trim() !== '')
+          //   : [],
           num_turns: parseInt(updatedData.num_turns),
           personas: selectedPersonas,
           active_step: step,
@@ -710,39 +718,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  // Function to build OpenAI prompt for discussion questions
-  function buildDiscussionQuestionsPrompt(studyTitle: string, topic: string, studyType: 'focus-group' | 'idi' = 'focus-group') {
-    const sessionType = studyType === 'idi' ? 'in-depth interview' : 'focus group discussion';
-    
-    return `You are an expert qualitative market researcher specializing in ${sessionType}s.
-  
-  Generate 6-8 strategic discussion questions for this research study:
-  
-  Study Title: "${studyTitle}"
-  Topic/Context: "${topic}"
-  Session Type: ${sessionType}
-  
-  Create questions that follow qualitative research best practices:
-  - Use open-ended, exploratory language ("How", "What", "Why", "Describe", "Tell me about")
-  - Progress from general to specific topics
-  - Include both rational and emotional dimensions
-  - Encourage storytelling and personal experiences
-  - Avoid leading or biased phrasing
-  - Include at least one projective or hypothetical scenario question
-  
-  Return your response as a JSON object with the following structure:
-  
-  {
-    "questions": [
-      "Question 1 text here",
-      "Question 2 text here",
-      "Question 3 text here"
-    ]
-  }
-  
-  Format each question as a moderator would naturally ask it in the session. Return only valid JSON with no additional text or explanations.`.trim();
-  }
-
+ 
   
   
 
@@ -2106,21 +2082,6 @@ Key Questions:
                                 }
 
                 
-                              
-                                // const result = await runSimulationAPI(messages);
-                                // Parse the response: expect a numbered list
-                                // let questions = result.reply || "";
-                                // // Remove markdown, trim, etc.
-                                // questions = questions.replace(/```[a-z]*[\s\S]*?```/g, "").trim();
-                                // // If it's a numbered list, split into lines
-                                // let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
-                                // // Remove leading numbers if present
-                                // lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
-                                // // Join as textarea value (one per line)
-                                // setSimulationData(prev => ({
-                                //   ...prev,
-                                //   discussion_questions: lines.join("\n")
-                                // }));
                               } catch (err) {
                                 toast({
                                   title: "Error",

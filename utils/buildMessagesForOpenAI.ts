@@ -250,20 +250,55 @@ JSON OUTPUT:
 }
 
 
+ // Function to build OpenAI prompt for discussion questions
+ export function buildDiscussionQuestionsPrompt(studyTitle: string, topic: string, studyType: 'focus-group' | 'idi' = 'focus-group') {
+  const sessionType = studyType === 'idi' ? 'in-depth interview' : 'focus group discussion';
+  
+  return `You are an expert qualitative market researcher specializing in ${sessionType}s.
+
+  Generate 6-8 strategic discussion questions for this research study:
+
+  Study Title: "${studyTitle}"
+  Topic/Context: "${topic}"
+  Session Type: ${sessionType}
+
+  Create questions that follow qualitative research best practices:
+  - Use open-ended, exploratory language ("How", "What", "Why", "Describe", "Tell me about")
+  - Progress from general to specific topics
+  - Include both rational and emotional dimensions
+  - Encourage storytelling and personal experiences
+  - Avoid leading or biased phrasing
+  - Include at least one projective or hypothetical scenario question
+
+  Return your response as a JSON object with the following structure:
+
+  {
+    "questions": [
+      "Question 1 text here",
+      "Question 2 text here",
+      "Question 3 text here"
+    ]
+  }
+
+  Format each question as a moderator would naturally ask it in the session. Return only valid JSON with no additional text or explanations.`.trim();
+}
+
+
 /**
  * Creates a structured prompt for an AI model to extract a single professional study title 
  * and research topic from a complete research brief.
  * @param briefText - The full research brief text uploaded by the user.
  * @returns A detailed prompt string ready to be sent to an LLM.
  */
-export function createBriefExtractionPrompt(briefText: string): string {
+export function createBriefExtractionPrompt(briefText: string, studyType: 'focus-group' | 'idi' = 'focus-group'): string {
   // The system prompt establishes AI expertise in brief analysis
-  const systemPrompt = `You are an expert Market Research Manager with 15 years of experience at top agencies like Kantar, Ipsos, and Nielsen. Your specialty is analyzing research briefs and extracting the core study title and research topic for qualitative research execution.`;
+  const systemPrompt = `You are an expert Market Research Manager with 15 years of experience at top agencies like Kantar, Ipsos, and Nielsen. Your specialty is analyzing research briefs and extracting the core study title, research topic, and discussion questions for qualitative research execution.`;
 
-  // Task definition for dual extraction
+  // Task definition for triple extraction
   const taskDefinition = `Your task is to analyze the provided research brief and extract:
 1. ONE professional study title that captures the essence of the research objectives
-2. ONE clear research topic/stimulus description that participants will discuss`;
+2. ONE clear research topic/stimulus description
+3. 6-8 strategic discussion questions for the ${studyType === 'idi' ? 'in-depth interview' : 'focus group discussion'}`;
 
   // Guidelines for title extraction
   const titleGuidelines = `For the TITLE:
@@ -274,7 +309,6 @@ export function createBriefExtractionPrompt(briefText: string): string {
 
   // Guidelines for topic extraction
   const topicGuidelines = `For the TOPIC:
-
 - Create a neutral research topic description (1-2 sentences, maximum 50 words)
 - Use third-person, objective language - avoid "we," "you," or direct address
 - Focus on the single most important research area from the brief
@@ -282,6 +316,17 @@ export function createBriefExtractionPrompt(briefText: string): string {
 - Avoid listing multiple research areas - pick the primary focus
 - Make it suitable for executive presentations and formal reports
 - Keep it professional and suitable for research documentation`;
+
+  // Guidelines for discussion questions
+  const questionsGuidelines = `For the DISCUSSION QUESTIONS:
+- Create 6-8 strategic questions that address the research objectives from the brief
+- Use open-ended, exploratory language ("How", "What", "Why", "Describe", "Tell me about")
+- Progress from general to specific topics
+- Include both rational and emotional dimensions
+- Encourage storytelling and personal experiences
+- Avoid leading or biased phrasing
+- Include at least one projective or hypothetical scenario question
+- Format each question as a moderator would naturally ask it in the session`;
 
   // Few-shot example using a realistic brief scenario
   const fewShotExample = `
@@ -291,13 +336,24 @@ Research Brief: "BAT is experiencing market disruption as traditional cigarette 
 Expected JSON Output:
 {
   "title": "Adult Smoker Product Choice Drivers Study",
-  "topic": "Drivers for adult smoker decision-making when choosing between traditional cigarettes and next-generation tobacco products, including evolving preferences and brand perceptions."
+  "topic": "Drivers for adult smoker decision-making when choosing between traditional cigarettes and next-generation tobacco products, including evolving preferences and brand perceptions.",
+  "questions": [
+    "Tell me about your typical smoking routine and how it fits into your daily life.",
+    "What factors do you consider when choosing a tobacco product?",
+    "How do you feel about the different types of tobacco products available today?",
+    "Describe a time when you tried a new tobacco product - what influenced that decision?",
+    "What barriers, if any, prevent you from trying next-generation products?",
+    "How do your friends and social circle influence your product choices?",
+    "If you could design the perfect tobacco product for yourself, what would it look like?",
+    "What role do brands play in your decision-making process?"
+  ]
 }`;
 
   // Output format specification
-  const outputFormatInstruction = `Provide the output as a valid JSON object with two keys:
+  const outputFormatInstruction = `Provide the output as a valid JSON object with three keys:
 - "title": A single string containing the study title
 - "topic": A single string containing the research topic description
+- "questions": An array of strings containing the discussion questions
 
 Do not include any other text, explanation, or preamble before or after the JSON object.`;
 
@@ -311,6 +367,8 @@ ${titleGuidelines}
 
 ${topicGuidelines}
 
+${questionsGuidelines}
+
 ${outputFormatInstruction}
 
 ${fewShotExample}
@@ -323,6 +381,7 @@ RESEARCH BRIEF TO ANALYZE:
 JSON OUTPUT:
 `;
 }
+
 
 
 /**

@@ -1197,7 +1197,7 @@ export default function LandingPage() {
         </section>
 
         {/* Social Proof & Testimonials Section */}
-        <section className="min-h-screen flex items-center justify-center py-20 bg-gray-50">
+        {showMorePricing === 5 &&(<section className="min-h-screen flex items-center justify-center py-20 bg-gray-50">
           <div className="container">
             <div className="mx-auto max-w-6xl">
               {/* Section Header */}
@@ -1298,7 +1298,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-        </section>
+        </section>)}
 
         {/* Pricing Section */}
         <section id="pricing" className="py-20 bg-gray-50">

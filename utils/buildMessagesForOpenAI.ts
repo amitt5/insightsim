@@ -251,6 +251,81 @@ JSON OUTPUT:
 
 
 /**
+ * Creates a structured prompt for an AI model to extract a single professional study title 
+ * and research topic from a complete research brief.
+ * @param briefText - The full research brief text uploaded by the user.
+ * @returns A detailed prompt string ready to be sent to an LLM.
+ */
+export function createBriefExtractionPrompt(briefText: string): string {
+  // The system prompt establishes AI expertise in brief analysis
+  const systemPrompt = `You are an expert Market Research Manager with 15 years of experience at top agencies like Kantar, Ipsos, and Nielsen. Your specialty is analyzing research briefs and extracting the core study title and research topic for qualitative research execution.`;
+
+  // Task definition for dual extraction
+  const taskDefinition = `Your task is to analyze the provided research brief and extract:
+1. ONE professional study title that captures the essence of the research objectives
+2. ONE clear research topic/stimulus description that participants will discuss`;
+
+  // Guidelines for title extraction
+  const titleGuidelines = `For the TITLE:
+- Extract or create a concise, professional title (maximum 8 words)
+- Focus on the primary research objective or business question
+- Use industry-standard qualitative research terminology
+- Make it suitable for executive presentations and formal reports`;
+
+  // Guidelines for topic extraction
+  const topicGuidelines = `For the TOPIC:
+
+- Create a neutral research topic description (1-2 sentences, maximum 50 words)
+- Use third-person, objective language - avoid "we," "you," or direct address
+- Focus on the single most important research area from the brief
+- Write as a research subject statement, not a participant introduction
+- Avoid listing multiple research areas - pick the primary focus
+- Make it suitable for executive presentations and formal reports
+- Keep it professional and suitable for research documentation`;
+
+  // Few-shot example using a realistic brief scenario
+  const fewShotExample = `
+EXAMPLE:
+Research Brief: "BAT is experiencing market disruption as traditional cigarette consumption declines while next-generation products show growth. We need to understand adult smokers' motivations and barriers when choosing between traditional cigarettes and NGPs. The research should explore emotional drivers, usage occasions, and brand perceptions to inform our 2026 product strategy and increase market share by 3%."
+
+Expected JSON Output:
+{
+  "title": "Adult Smoker Product Choice Drivers Study",
+  "topic": "Drivers for adult smoker decision-making when choosing between traditional cigarettes and next-generation tobacco products, including evolving preferences and brand perceptions."
+}`;
+
+  // Output format specification
+  const outputFormatInstruction = `Provide the output as a valid JSON object with two keys:
+- "title": A single string containing the study title
+- "topic": A single string containing the research topic description
+
+Do not include any other text, explanation, or preamble before or after the JSON object.`;
+
+  // Assembling the complete prompt
+  return `
+${systemPrompt}
+
+${taskDefinition}
+
+${titleGuidelines}
+
+${topicGuidelines}
+
+${outputFormatInstruction}
+
+${fewShotExample}
+
+--------------------
+
+RESEARCH BRIEF TO ANALYZE:
+"${briefText}"
+
+JSON OUTPUT:
+`;
+}
+
+
+/**
  * Creates a structured prompt for an AI model to generate 5 personas.
  * @param details - The AIPersonaGeneration object with user inputs.
  * @returns A detailed prompt string ready for an LLM.

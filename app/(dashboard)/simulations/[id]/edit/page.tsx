@@ -23,7 +23,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { runSimulationAPI } from "@/utils/api"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { createTitleGenerationPrompt, createPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
 import { Badge } from "@/components/ui/badge"
 
 export default function EditSimulationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -622,38 +622,80 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     try {
       // For now, we'll just extract a simple title from the brief
       // Later this will be replaced with API call
-      const briefLines = briefText.trim().split('\n').filter(line => line.trim());
-      const firstLine = briefLines[0] || 'Research Study';
-      
-      // Simple title extraction - take first meaningful line or create from content
-      let extractedTitle = firstLine.length > 100 
-        ? firstLine.substring(0, 97) + '...' 
-        : firstLine;
-      
-      // If first line seems like a title, use it; otherwise create a generic one
-      if (extractedTitle.toLowerCase().includes('research') || 
-          extractedTitle.toLowerCase().includes('study') ||
-          extractedTitle.toLowerCase().includes('analysis')) {
-        // Use as is
-      } else {
-        extractedTitle = `Research Study: ${extractedTitle}`;
+      const prompt = createBriefExtractionPrompt(briefText);
+      console.log('prompt111', prompt);
+      const messages: ChatCompletionMessageParam[] = [
+        { role: "system", content: prompt }
+      ];
+      const result = await runSimulationAPI(messages);
+      let title = '';
+      let topic = '';
+      try {
+        // Parse the JSON response
+        let responseText = result.reply || "";
+        console.log('titles111', responseText);
+        
+        // Clean the response string (remove any markdown formatting)
+        responseText = responseText
+        .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
+        .replace(/```$/, '')            // Remove trailing ```
+        .trim();
+        
+        // Parse the JSON
+        const parsedResponse = JSON.parse(responseText);
+        
+        // Extract questions array
+        title = parsedResponse.title || '';
+        topic = parsedResponse.topic || '';
+        console.log('titles333',parsedResponse, title, topic);
+        // setTitleSuggestions(titles);
+        
+      } catch (error) {
+        console.error("Error parsing discussion questions JSON:", error);
       }
 
+
+     
       // Update simulation data with extracted title and brief info
-      setSimulationData(prev => ({
-        ...prev,
-        study_title: extractedTitle,
+      const updatedData = {
+        ...simulationData,
+        study_title: title,
+        topic: topic,
         brief_text: briefText,
-        brief_source: 'upload'
-      }));
+        brief_source: 'upload' as const
+      };
+      
+      setSimulationData(updatedData);
+      console.log('updatedData111', updatedData);
+      // Save to database
+      const response = await fetch(`/api/simulations/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...updatedData,
+          discussion_questions: updatedData.discussion_questions
+            ? updatedData.discussion_questions.split('\n').filter(line => line.trim() !== '')
+            : [],
+          num_turns: parseInt(updatedData.num_turns),
+          personas: selectedPersonas,
+          active_step: step,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Save failed: ${response.status}`);
+      }
 
       // Set brief source and close dialog
       setBriefSource('upload');
       setBriefUploadOpen(false);
+      setLastSaved(new Date());
       
       toast({
         title: "Brief processed successfully",
-        description: "Study title has been generated from your brief. You can edit it if needed.",
+        description: "Study title has been generated from your brief and saved. You can edit it if needed.",
       });
 
     } catch (error) {

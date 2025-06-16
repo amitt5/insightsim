@@ -209,6 +209,8 @@ export async function PUT(
       num_turns: requestData.num_turns,
       status: requestData.status,
       active_step: requestData.active_step,
+      brief_text: requestData.brief_text,
+      brief_source: requestData.brief_source,
       updated_at: new Date().toISOString(),
     }).eq("id", id).select()
 

@@ -301,10 +301,10 @@ export default function SettingsPage() {
       <Tabs defaultValue="account" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
+          {/* <TabsTrigger value="billing">Billing</TabsTrigger> */}
           <TabsTrigger value="organization">Organization</TabsTrigger>
-          <TabsTrigger value="team">Team Members</TabsTrigger>
-          <TabsTrigger value="usage">Usage & Limits</TabsTrigger>
+          {/* <TabsTrigger value="team">Team Members</TabsTrigger> */}
+          {/* <TabsTrigger value="usage">Usage & Limits</TabsTrigger> */}
         </TabsList>
 
         {/* Account Tab */}

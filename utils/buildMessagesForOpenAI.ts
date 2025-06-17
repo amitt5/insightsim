@@ -250,6 +250,140 @@ JSON OUTPUT:
 }
 
 
+ // Function to build OpenAI prompt for discussion questions
+ export function buildDiscussionQuestionsPrompt(studyTitle: string, topic: string, studyType: 'focus-group' | 'idi' = 'focus-group') {
+  const sessionType = studyType === 'idi' ? 'in-depth interview' : 'focus group discussion';
+  
+  return `You are an expert qualitative market researcher specializing in ${sessionType}s.
+
+  Generate 6-8 strategic discussion questions for this research study:
+
+  Study Title: "${studyTitle}"
+  Topic/Context: "${topic}"
+  Session Type: ${sessionType}
+
+  Create questions that follow qualitative research best practices:
+  - Use open-ended, exploratory language ("How", "What", "Why", "Describe", "Tell me about")
+  - Progress from general to specific topics
+  - Include both rational and emotional dimensions
+  - Encourage storytelling and personal experiences
+  - Avoid leading or biased phrasing
+  - Include at least one projective or hypothetical scenario question
+
+  Return your response as a JSON object with the following structure:
+
+  {
+    "questions": [
+      "Question 1 text here",
+      "Question 2 text here",
+      "Question 3 text here"
+    ]
+  }
+
+  Format each question as a moderator would naturally ask it in the session. Return only valid JSON with no additional text or explanations.`.trim();
+}
+
+
+/**
+ * Creates a structured prompt for an AI model to extract a single professional study title 
+ * and research topic from a complete research brief.
+ * @param briefText - The full research brief text uploaded by the user.
+ * @returns A detailed prompt string ready to be sent to an LLM.
+ */
+export function createBriefExtractionPrompt(briefText: string, studyType: 'focus-group' | 'idi' = 'focus-group'): string {
+  // The system prompt establishes AI expertise in brief analysis
+  const systemPrompt = `You are an expert Market Research Manager with 15 years of experience at top agencies like Kantar, Ipsos, and Nielsen. Your specialty is analyzing research briefs and extracting the core study title, research topic, and discussion questions for qualitative research execution.`;
+
+  // Task definition for triple extraction
+  const taskDefinition = `Your task is to analyze the provided research brief and extract:
+1. ONE professional study title that captures the essence of the research objectives
+2. ONE clear research topic/stimulus description
+3. 6-8 strategic discussion questions for the ${studyType === 'idi' ? 'in-depth interview' : 'focus group discussion'}`;
+
+  // Guidelines for title extraction
+  const titleGuidelines = `For the TITLE:
+- Extract or create a concise, professional title (maximum 8 words)
+- Focus on the primary research objective or business question
+- Use industry-standard qualitative research terminology
+- Make it suitable for executive presentations and formal reports`;
+
+  // Guidelines for topic extraction
+  const topicGuidelines = `For the TOPIC:
+- Create a neutral research topic description (1-2 sentences, maximum 50 words)
+- Use third-person, objective language - avoid "we," "you," or direct address
+- Focus on the single most important research area from the brief
+- Write as a research subject statement, not a participant introduction
+- Avoid listing multiple research areas - pick the primary focus
+- Make it suitable for executive presentations and formal reports
+- Keep it professional and suitable for research documentation`;
+
+  // Guidelines for discussion questions
+  const questionsGuidelines = `For the DISCUSSION QUESTIONS:
+- Create 6-8 strategic questions that address the research objectives from the brief
+- Use open-ended, exploratory language ("How", "What", "Why", "Describe", "Tell me about")
+- Progress from general to specific topics
+- Include both rational and emotional dimensions
+- Encourage storytelling and personal experiences
+- Avoid leading or biased phrasing
+- Include at least one projective or hypothetical scenario question
+- Format each question as a moderator would naturally ask it in the session`;
+
+  // Few-shot example using a realistic brief scenario
+  const fewShotExample = `
+EXAMPLE:
+Research Brief: "BAT is experiencing market disruption as traditional cigarette consumption declines while next-generation products show growth. We need to understand adult smokers' motivations and barriers when choosing between traditional cigarettes and NGPs. The research should explore emotional drivers, usage occasions, and brand perceptions to inform our 2026 product strategy and increase market share by 3%."
+
+Expected JSON Output:
+{
+  "title": "Adult Smoker Product Choice Drivers Study",
+  "topic": "Drivers for adult smoker decision-making when choosing between traditional cigarettes and next-generation tobacco products, including evolving preferences and brand perceptions.",
+  "questions": [
+    "Tell me about your typical smoking routine and how it fits into your daily life.",
+    "What factors do you consider when choosing a tobacco product?",
+    "How do you feel about the different types of tobacco products available today?",
+    "Describe a time when you tried a new tobacco product - what influenced that decision?",
+    "What barriers, if any, prevent you from trying next-generation products?",
+    "How do your friends and social circle influence your product choices?",
+    "If you could design the perfect tobacco product for yourself, what would it look like?",
+    "What role do brands play in your decision-making process?"
+  ]
+}`;
+
+  // Output format specification
+  const outputFormatInstruction = `Provide the output as a valid JSON object with three keys:
+- "title": A single string containing the study title
+- "topic": A single string containing the research topic description
+- "questions": An array of strings containing the discussion questions
+
+Do not include any other text, explanation, or preamble before or after the JSON object.`;
+
+  // Assembling the complete prompt
+  return `
+${systemPrompt}
+
+${taskDefinition}
+
+${titleGuidelines}
+
+${topicGuidelines}
+
+${questionsGuidelines}
+
+${outputFormatInstruction}
+
+${fewShotExample}
+
+--------------------
+
+RESEARCH BRIEF TO ANALYZE:
+"${briefText}"
+
+JSON OUTPUT:
+`;
+}
+
+
+
 /**
  * Creates a structured prompt for an AI model to generate 5 personas.
  * @param details - The AIPersonaGeneration object with user inputs.
@@ -298,4 +432,72 @@ Do not include any other text, explanations, or markdown formatting before or af
 
   // Assembling the final prompt.
   return `${systemPrompt}\n\n${taskDefinition}\n${userInputContext}\n${outputFormatInstruction}`;
+}
+
+
+/**
+ * Creates a structured prompt for an AI model to generate 3-5 personas from a research brief.
+ * @param briefText - The original research brief text
+ * @param title - The extracted study title
+ * @param topic - The extracted research topic
+ * @param questions - Array of discussion questions
+ * @returns A detailed prompt string ready for an LLM.
+ */
+export function createBriefPersonaGenerationPrompt(simulation: Simulation): string {
+  const briefText: string = simulation.brief_text || '';
+  const title: string = simulation.study_title || '';
+  const topic: string = simulation.topic || '';
+  const questions: string[] = simulation.discussion_questions || [];
+  
+  // 1. Set the role and expertise for the AI with brief analysis focus
+  const systemPrompt = `You are an expert persona generator for qualitative market research with 15 years of experience at top agencies like Kantar and Ipsos. You specialize in analyzing research briefs and creating realistic, diverse personas that represent the target audience described in the brief. Your output must be a valid JSON array.`;
+
+  // 2. Define the task with brief-specific context
+  const taskDefinition = `Your task is to analyze the provided research brief and generate 3-5 distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
+
+  // 3. Provide the research context
+  const researchContext = `
+  ---
+  RESEARCH STUDY CONTEXT:
+  - Study Title: "${title}"
+  - Research Topic: "${topic}"
+  - Research Brief: "${briefText}"
+  - Key Discussion Areas: ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n  ')}
+  ---
+  `;
+
+    // 4. Provide persona creation guidelines specific to brief analysis
+    const personaGuidelines = `
+  PERSONA CREATION GUIDELINES:
+  - Extract target audience characteristics from the brief's background and objectives sections
+  - Create personas that span different attitudes, behaviors, and demographics within the target group
+  - Ensure each persona can meaningfully contribute to discussions about the research topic
+  - Include relevant demographic details, motivations, and behavioral patterns mentioned in the brief
+  - Make personas realistic and relatable for moderators to work with during sessions
+  - Align persona goals and frustrations with the research objectives outlined in the brief
+  `;
+
+    // 5. Specify the exact output format
+    const outputFormatInstruction = `
+  Your response MUST be a single, valid JSON array containing 3-5 persona objects. The structure of each object must conform to the following TypeScript interface:
+  \`\`\`typescript
+  interface Persona {
+    name: string; // e.g., "Sarah Mitchell"
+    age?: number; // e.g., 32
+    occupation?: string; // e.g., "Marketing Manager"
+    traits?: string[]; // e.g., ["Brand-Conscious", "Price-Sensitive", "Early Adopter"]
+    archetype?: string; // e.g., "The Cautious Switcher"
+    gender?: string; // e.g., "Female"
+    bio?: string; // A 2-3 sentence narrative about their background and relevance to the research
+    goal?: string; // Their primary goal related to the research topic
+    attitude?: string; // Their perspective on the research topic/category
+  }
+  \`\`\`
+
+  The final output should be a JSON array like this: \`[ {persona1}, {persona2}, {persona3}, {persona4}, {persona5} ]\`.
+  Do not include any other text, explanations, or markdown formatting before or after the JSON array.
+  `;
+
+  // Assembling the final prompt
+  return `${systemPrompt}\n\n${taskDefinition}\n${researchContext}\n${personaGuidelines}\n${outputFormatInstruction}`;
 }

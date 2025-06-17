@@ -24,6 +24,8 @@ export interface Simulation {
     active_step?: 1 | 2 | 3 | 4;
     created_at: string;
     user_instructions?: string;
+    brief_text?: string;
+    brief_source?: 'upload' | 'playing-around' | null;
   }
   
   export interface CalibrationSession {

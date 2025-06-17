@@ -23,7 +23,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { runSimulationAPI } from "@/utils/api"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { createTitleGenerationPrompt, createPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt, createBriefPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
 import { Badge } from "@/components/ui/badge"
 
 export default function EditSimulationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -64,6 +64,12 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
 
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([])
 
+  // Brief upload state
+  const [briefUploadOpen, setBriefUploadOpen] = useState(false)
+  const [briefText, setBriefText] = useState('')
+  const [briefSource, setBriefSource] = useState<'upload' | 'playing-around' | null>(null)
+  const [isProcessingBrief, setIsProcessingBrief] = useState(false)
+
   const [simulationData, setSimulationData] = useState({
     study_title: "",
     study_type: "focus-group",
@@ -73,6 +79,8 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     discussion_questions: "",
     turn_based: false,
     num_turns: "10",
+    brief_text: "",
+    brief_source: null as 'upload' | 'playing-around' | null,
   });
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   
@@ -117,6 +125,8 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
               : simulation.discussion_questions || "",
             turn_based: Boolean(simulation.turn_based),
             num_turns: simulation.num_turns?.toString() || "10",
+            brief_text: simulation.brief_text || "",
+            brief_source: simulation.brief_source || null,
           };
 
           // Validate num_turns is a valid number
@@ -509,12 +519,16 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         });
       }
       
-      // Parse discussion questions from text to array
-      const discussionQuestionsArray = simulationData.discussion_questions
+      // Parse discussion questions from text to array if not already an array
+      let discussionQuestionsArray = [];
+      if (Array.isArray(simulationData.discussion_questions)) {
+        discussionQuestionsArray = simulationData.discussion_questions;
+      } else {
+        discussionQuestionsArray = simulationData.discussion_questions
         .split('\n')
         .filter(line => line.trim() !== '')
         .map(line => line.trim());
-
+      }
       // Use existing media URLs if no new files were uploaded
       const finalMediaUrls = mediaUrls.length > 0 ? mediaUrls : simulationData.stimulus_media_url;
 
@@ -576,42 +590,135 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   const handlePlayingAround = () => {
     const randomSimulation: any = getRandomSimulation();
     console.log('handlePlayingAround',randomSimulation);
-    setSimulationData(randomSimulation);
+    setSimulationData({
+      ...randomSimulation,
+      brief_text: "",
+      brief_source: 'playing-around'
+    });
+    setBriefSource('playing-around');
   };
 
-  // Function to build OpenAI prompt for discussion questions
-  function buildDiscussionQuestionsPrompt(studyTitle: string, topic: string, studyType: 'focus-group' | 'idi' = 'focus-group') {
-    const sessionType = studyType === 'idi' ? 'in-depth interview' : 'focus group discussion';
-    
-    return `You are an expert qualitative market researcher specializing in ${sessionType}s.
-  
-  Generate 6-8 strategic discussion questions for this research study:
-  
-  Study Title: "${studyTitle}"
-  Topic/Context: "${topic}"
-  Session Type: ${sessionType}
-  
-  Create questions that follow qualitative research best practices:
-  - Use open-ended, exploratory language ("How", "What", "Why", "Describe", "Tell me about")
-  - Progress from general to specific topics
-  - Include both rational and emotional dimensions
-  - Encourage storytelling and personal experiences
-  - Avoid leading or biased phrasing
-  - Include at least one projective or hypothetical scenario question
-  
-  Return your response as a JSON object with the following structure:
-  
-  {
-    "questions": [
-      "Question 1 text here",
-      "Question 2 text here",
-      "Question 3 text here"
-    ]
-  }
-  
-  Format each question as a moderator would naturally ask it in the session. Return only valid JSON with no additional text or explanations.`.trim();
-  }
+  // Brief upload handlers
+  const handleBriefUpload = () => {
+    setBriefUploadOpen(true);
+  };
 
+  const handleBriefTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setBriefText(e.target.value);
+  };
+
+  const handleCloseBriefDialog = () => {
+    setBriefUploadOpen(false);
+    setBriefText('');
+  };
+
+  const handleGenerateFromBrief = async () => {
+    if (!briefText.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter your research brief first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessingBrief(true);
+    try {
+      // For now, we'll just extract a simple title from the brief
+      // Later this will be replaced with API call
+      const prompt = createBriefExtractionPrompt(briefText);
+      console.log('prompt111', prompt);
+      const messages: ChatCompletionMessageParam[] = [
+        { role: "system", content: prompt }
+      ];
+      const result = await runSimulationAPI(messages);
+      let title = '';
+      let topic = '';
+      let discussionQuestions = [];
+      try {
+        // Parse the JSON response
+        let responseText = result.reply || "";
+        console.log('titles111', responseText);
+        
+        // Clean the response string (remove any markdown formatting)
+        responseText = responseText
+        .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
+        .replace(/```$/, '')            // Remove trailing ```
+        .trim();
+        
+        // Parse the JSON
+        const parsedResponse = JSON.parse(responseText);
+
+        // Extract questions array
+        title = parsedResponse.title || '';
+        topic = parsedResponse.topic || '';
+        discussionQuestions = parsedResponse.questions || [];
+
+        console.log('titles333',parsedResponse, title, topic);
+        // setTitleSuggestions(titles);
+        
+      } catch (error) {
+        console.error("Error parsing discussion questions JSON:", error);
+      }
+
+
+     
+      // Update simulation data with extracted title and brief info
+      const updatedData = {
+        ...simulationData,
+        study_title: title,
+        topic: topic,
+        brief_text: briefText,
+        discussion_questions: discussionQuestions,
+        brief_source: 'upload' as const
+      };
+      
+      setSimulationData(updatedData);
+      console.log('updatedData111', updatedData);
+      // Save to database
+      const response = await fetch(`/api/simulations/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...updatedData,
+          // discussion_questions: updatedData.discussion_questions
+          //   ? updatedData.discussion_questions.split('\n').filter(line => line.trim() !== '')
+          //   : [],
+          num_turns: parseInt(updatedData.num_turns),
+          personas: selectedPersonas,
+          active_step: step,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Save failed: ${response.status}`);
+      }
+
+      // Set brief source and close dialog
+      setBriefSource('upload');
+      setBriefUploadOpen(false);
+      setLastSaved(new Date());
+      
+      toast({
+        title: "Brief processed successfully",
+        description: "Study title has been generated from your brief and saved. You can edit it if needed.",
+      });
+
+    } catch (error) {
+      console.error('Error processing brief:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process brief. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingBrief(false);
+    }
+  };
+
+ 
   
   
 
@@ -801,7 +908,105 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  // Generate personas (for now, use hardcoded data)
+  // Handle Generate Personas button click - checks if brief exists
+  const handleGeneratePersonasClick = async () => {
+    // Check if brief exists
+    if (simulationData.brief_text && simulationData.brief_text.trim()) {
+      // Generate personas directly from brief
+      await handleGeneratePersonasFromBrief();
+    } else {
+      // Open the 6-step wizard
+      setAiPersonaAssistantOpen(true);
+    }
+  };
+
+  // Generate personas from brief (skip wizard)
+  const handleGeneratePersonasFromBrief = async () => {
+    setIsGeneratingPersonas(true);
+    try {
+      // Create simulation object for the prompt - cast to any to avoid type issues
+      const simulationForPrompt = {
+        id: id,
+        user_id: '',
+        status: 'Draft',
+        created_at: new Date().toISOString(),
+        study_title: simulationData.study_title,
+        study_type: simulationData.study_type,
+        mode: simulationData.mode,
+        topic: simulationData.topic,
+        stimulus_media_url: simulationData.stimulus_media_url.join(','),
+        turn_based: simulationData.turn_based,
+        num_turns: parseInt(simulationData.num_turns),
+        brief_text: simulationData.brief_text,
+        brief_source: simulationData.brief_source,
+        discussion_questions: simulationData.discussion_questions
+          ? simulationData.discussion_questions.split('\n').filter(line => line.trim() !== '')
+          : []
+      } as Simulation;
+
+      // Call createBriefPersonaGenerationPrompt
+      const prompt = createBriefPersonaGenerationPrompt(simulationForPrompt);
+      console.log('Brief persona generation prompt:', prompt);
+      
+      const messages: ChatCompletionMessageParam[] = [
+        { role: "system", content: prompt }
+      ];
+      const result = await runSimulationAPI(messages);
+
+      try {
+        // Parse the JSON response
+        let responseText = result.reply || "";
+        console.log('Brief personas response:', responseText);
+        
+        // Clean the response string (remove any markdown formatting)
+        responseText = responseText
+          .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
+          .replace(/```$/, '')            // Remove trailing ```
+          .trim();
+        
+        // Parse the JSON
+        const parsedResponse = JSON.parse(responseText);
+        
+        // Extract personas array and add unique IDs
+        const briefGeneratedPersonas = (parsedResponse.personas || parsedResponse || []).map((persona: any, index: number) => ({
+          ...persona,
+          id: persona.id || `brief-generated-${Date.now()}-${index}`, // Ensure unique ID
+          editable: true // Make them editable
+        }));
+        
+        console.log('Brief generated personas:', briefGeneratedPersonas);
+        setGeneratedPersonas(briefGeneratedPersonas);
+        
+        // Open dialog and go directly to step 7
+        setAiPersonaStep(7);
+        setAiPersonaAssistantOpen(true);
+        
+        toast({
+          title: "Personas generated from brief",
+          description: `Generated ${briefGeneratedPersonas.length} personas based on your research brief.`,
+        });
+        
+      } catch (error) {
+        console.error("Error parsing brief personas JSON:", error);
+        toast({
+          title: "Error",
+          description: "Failed to generate personas from brief. Please try the manual wizard instead.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating personas from brief:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate personas from brief. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPersonas(false);
+    }
+  };
+
+  // Generate personas using wizard (existing function)
   const handleGeneratePersonas = async () => {
     setIsGeneratingPersonas(true);
     try {
@@ -1072,10 +1277,38 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
               </CardHeader>
               <CardContent className="space-y-4">
 
-              <div className="space-y-2">
-                {/* here add a button "playing around" and add description "This is a test simulation for playing around with the platform" */}
-                <Button variant="default" onClick={handlePlayingAround}>Playing around</Button>
-                <p className="text-sm text-gray-500">Click this button to play around with the platform. This will create a simulation with a predefined topic and discussion questions. You can then run the simulation and see the results. Clicking it again will create a new simulation with a new topic and discussion questions. You can always change the topic and discussion questions.</p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Upload Brief Button */}
+                  <div className="space-y-2">
+                    <Button 
+                      variant="default" 
+                      onClick={handleBriefUpload}
+                      className="w-full h-12 text-base font-medium"
+                    >
+                      <Upload className="mr-2 h-5 w-5" />
+                      Upload Brief
+                    </Button>
+                    <p className="text-sm text-gray-500">
+                      Have an existing research brief? Upload it and we'll auto-generate your simulation details.
+                    </p>
+                  </div>
+
+                  {/* Playing Around Button */}
+                  <div className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={handlePlayingAround}
+                      className="w-full h-12 text-base font-medium"
+                    >
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      Playing Around
+                    </Button>
+                    <p className="text-sm text-gray-500">
+                      New to the platform? Try a sample simulation with pre-filled content to explore features.
+                    </p>
+                  </div>
+                </div>
               </div>
 
                 <div className="space-y-2">
@@ -1352,6 +1585,69 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
             </Card>
           )}
 
+          {/* Brief Upload Dialog */}
+          <Dialog open={briefUploadOpen} onOpenChange={setBriefUploadOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5 text-primary" />
+                  Upload Research Brief
+                </DialogTitle>
+                <DialogDescription>
+                  Paste your research brief below and we'll auto-generate your simulation details.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="briefTextarea">Research Brief</Label>
+                  <Textarea
+                    id="briefTextarea"
+                    placeholder="Paste your research brief here...
+
+Example:
+Research Objective: Understand consumer perceptions of our new eco-friendly packaging
+Target Audience: Environmentally conscious consumers aged 25-45
+Key Questions:
+- How do consumers perceive the new packaging design?
+- Does the eco-friendly messaging resonate with the target audience?
+- What are the main barriers to purchase consideration?
+- How does this compare to competitor offerings?"
+                    rows={12}
+                    value={briefText}
+                    onChange={handleBriefTextChange}
+                    className="resize-none"
+                  />
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-700">
+                    <strong>Tip:</strong> Include your research objectives, target audience, key questions, and any background information. The more detail you provide, the better we can auto-generate your simulation.
+                  </p>
+                </div>
+              </div>
+              <DialogFooter className="flex justify-between">
+                <Button variant="outline" onClick={handleCloseBriefDialog}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleGenerateFromBrief}
+                  disabled={!briefText.trim() || isProcessingBrief}
+                >
+                  {isProcessingBrief ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing Brief...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Generate from Brief
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {step === 2 && (
             <Card>
               <CardHeader>
@@ -1362,11 +1658,21 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
                 <div className="mb-4 flex justify-end gap-2">
                   <Button
                     variant="default"
-                    onClick={() => setAiPersonaAssistantOpen(true)}
+                    onClick={handleGeneratePersonasClick}
+                    disabled={isGeneratingPersonas}
                     className="flex items-center gap-2"
                   >
-                    <Sparkles className="h-4 w-4" />
-                    Generate Personas
+                    {isGeneratingPersonas ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        Generate Personas
+                      </>
+                    )}
                   </Button>
                   <CreatePersonaDialog
                     open={openPersonaModal}
@@ -1884,21 +2190,6 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
                                 }
 
                 
-                              
-                                // const result = await runSimulationAPI(messages);
-                                // Parse the response: expect a numbered list
-                                // let questions = result.reply || "";
-                                // // Remove markdown, trim, etc.
-                                // questions = questions.replace(/```[a-z]*[\s\S]*?```/g, "").trim();
-                                // // If it's a numbered list, split into lines
-                                // let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
-                                // // Remove leading numbers if present
-                                // lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
-                                // // Join as textarea value (one per line)
-                                // setSimulationData(prev => ({
-                                //   ...prev,
-                                //   discussion_questions: lines.join("\n")
-                                // }));
                               } catch (err) {
                                 toast({
                                   title: "Error",

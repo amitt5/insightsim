@@ -23,7 +23,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { runSimulationAPI } from "@/utils/api"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt, createBriefPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
 import { Badge } from "@/components/ui/badge"
 
 export default function EditSimulationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -908,7 +908,105 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  // Generate personas (for now, use hardcoded data)
+  // Handle Generate Personas button click - checks if brief exists
+  const handleGeneratePersonasClick = async () => {
+    // Check if brief exists
+    if (simulationData.brief_text && simulationData.brief_text.trim()) {
+      // Generate personas directly from brief
+      await handleGeneratePersonasFromBrief();
+    } else {
+      // Open the 6-step wizard
+      setAiPersonaAssistantOpen(true);
+    }
+  };
+
+  // Generate personas from brief (skip wizard)
+  const handleGeneratePersonasFromBrief = async () => {
+    setIsGeneratingPersonas(true);
+    try {
+      // Create simulation object for the prompt - cast to any to avoid type issues
+      const simulationForPrompt = {
+        id: id,
+        user_id: '',
+        status: 'Draft',
+        created_at: new Date().toISOString(),
+        study_title: simulationData.study_title,
+        study_type: simulationData.study_type,
+        mode: simulationData.mode,
+        topic: simulationData.topic,
+        stimulus_media_url: simulationData.stimulus_media_url.join(','),
+        turn_based: simulationData.turn_based,
+        num_turns: parseInt(simulationData.num_turns),
+        brief_text: simulationData.brief_text,
+        brief_source: simulationData.brief_source,
+        discussion_questions: simulationData.discussion_questions
+          ? simulationData.discussion_questions.split('\n').filter(line => line.trim() !== '')
+          : []
+      } as Simulation;
+
+      // Call createBriefPersonaGenerationPrompt
+      const prompt = createBriefPersonaGenerationPrompt(simulationForPrompt);
+      console.log('Brief persona generation prompt:', prompt);
+      
+      const messages: ChatCompletionMessageParam[] = [
+        { role: "system", content: prompt }
+      ];
+      const result = await runSimulationAPI(messages);
+
+      try {
+        // Parse the JSON response
+        let responseText = result.reply || "";
+        console.log('Brief personas response:', responseText);
+        
+        // Clean the response string (remove any markdown formatting)
+        responseText = responseText
+          .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
+          .replace(/```$/, '')            // Remove trailing ```
+          .trim();
+        
+        // Parse the JSON
+        const parsedResponse = JSON.parse(responseText);
+        
+        // Extract personas array and add unique IDs
+        const briefGeneratedPersonas = (parsedResponse.personas || parsedResponse || []).map((persona: any, index: number) => ({
+          ...persona,
+          id: persona.id || `brief-generated-${Date.now()}-${index}`, // Ensure unique ID
+          editable: true // Make them editable
+        }));
+        
+        console.log('Brief generated personas:', briefGeneratedPersonas);
+        setGeneratedPersonas(briefGeneratedPersonas);
+        
+        // Open dialog and go directly to step 7
+        setAiPersonaStep(7);
+        setAiPersonaAssistantOpen(true);
+        
+        toast({
+          title: "Personas generated from brief",
+          description: `Generated ${briefGeneratedPersonas.length} personas based on your research brief.`,
+        });
+        
+      } catch (error) {
+        console.error("Error parsing brief personas JSON:", error);
+        toast({
+          title: "Error",
+          description: "Failed to generate personas from brief. Please try the manual wizard instead.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating personas from brief:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate personas from brief. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPersonas(false);
+    }
+  };
+
+  // Generate personas using wizard (existing function)
   const handleGeneratePersonas = async () => {
     setIsGeneratingPersonas(true);
     try {
@@ -1560,11 +1658,21 @@ Key Questions:
                 <div className="mb-4 flex justify-end gap-2">
                   <Button
                     variant="default"
-                    onClick={() => setAiPersonaAssistantOpen(true)}
+                    onClick={handleGeneratePersonasClick}
+                    disabled={isGeneratingPersonas}
                     className="flex items-center gap-2"
                   >
-                    <Sparkles className="h-4 w-4" />
-                    Generate Personas
+                    {isGeneratingPersonas ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        Generate Personas
+                      </>
+                    )}
                   </Button>
                   <CreatePersonaDialog
                     open={openPersonaModal}

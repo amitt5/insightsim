@@ -433,3 +433,71 @@ Do not include any other text, explanations, or markdown formatting before or af
   // Assembling the final prompt.
   return `${systemPrompt}\n\n${taskDefinition}\n${userInputContext}\n${outputFormatInstruction}`;
 }
+
+
+/**
+ * Creates a structured prompt for an AI model to generate 3-5 personas from a research brief.
+ * @param briefText - The original research brief text
+ * @param title - The extracted study title
+ * @param topic - The extracted research topic
+ * @param questions - Array of discussion questions
+ * @returns A detailed prompt string ready for an LLM.
+ */
+export function createBriefPersonaGenerationPrompt(simulation: Simulation): string {
+  const briefText: string = simulation.brief_text || '';
+  const title: string = simulation.study_title || '';
+  const topic: string = simulation.topic || '';
+  const questions: string[] = simulation.discussion_questions || [];
+  
+  // 1. Set the role and expertise for the AI with brief analysis focus
+  const systemPrompt = `You are an expert persona generator for qualitative market research with 15 years of experience at top agencies like Kantar and Ipsos. You specialize in analyzing research briefs and creating realistic, diverse personas that represent the target audience described in the brief. Your output must be a valid JSON array.`;
+
+  // 2. Define the task with brief-specific context
+  const taskDefinition = `Your task is to analyze the provided research brief and generate 3-5 distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
+
+  // 3. Provide the research context
+  const researchContext = `
+  ---
+  RESEARCH STUDY CONTEXT:
+  - Study Title: "${title}"
+  - Research Topic: "${topic}"
+  - Research Brief: "${briefText}"
+  - Key Discussion Areas: ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n  ')}
+  ---
+  `;
+
+    // 4. Provide persona creation guidelines specific to brief analysis
+    const personaGuidelines = `
+  PERSONA CREATION GUIDELINES:
+  - Extract target audience characteristics from the brief's background and objectives sections
+  - Create personas that span different attitudes, behaviors, and demographics within the target group
+  - Ensure each persona can meaningfully contribute to discussions about the research topic
+  - Include relevant demographic details, motivations, and behavioral patterns mentioned in the brief
+  - Make personas realistic and relatable for moderators to work with during sessions
+  - Align persona goals and frustrations with the research objectives outlined in the brief
+  `;
+
+    // 5. Specify the exact output format
+    const outputFormatInstruction = `
+  Your response MUST be a single, valid JSON array containing 3-5 persona objects. The structure of each object must conform to the following TypeScript interface:
+  \`\`\`typescript
+  interface Persona {
+    name: string; // e.g., "Sarah Mitchell"
+    age?: number; // e.g., 32
+    occupation?: string; // e.g., "Marketing Manager"
+    traits?: string[]; // e.g., ["Brand-Conscious", "Price-Sensitive", "Early Adopter"]
+    archetype?: string; // e.g., "The Cautious Switcher"
+    gender?: string; // e.g., "Female"
+    bio?: string; // A 2-3 sentence narrative about their background and relevance to the research
+    goal?: string; // Their primary goal related to the research topic
+    attitude?: string; // Their perspective on the research topic/category
+  }
+  \`\`\`
+
+  The final output should be a JSON array like this: \`[ {persona1}, {persona2}, {persona3}, {persona4}, {persona5} ]\`.
+  Do not include any other text, explanations, or markdown formatting before or after the JSON array.
+  `;
+
+  // Assembling the final prompt
+  return `${systemPrompt}\n\n${taskDefinition}\n${researchContext}\n${personaGuidelines}\n${outputFormatInstruction}`;
+}

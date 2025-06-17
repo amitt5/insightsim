@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Users, FileText, Settings, BarChart, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react"
+import { LayoutDashboard, Users, FileText, Settings, BarChart, MessageSquare, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface SidebarProps {
@@ -18,6 +18,7 @@ export function Sidebar({ className, activePath = "" }: SidebarProps) {
     // { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/simulations", label: "Simulations", icon: MessageSquare },
     { href: "/personas", label: "Personas", icon: Users },
+    { href: "/analysis", label: "Analysis", icon: TrendingUp },
     // { href: "/reports", label: "Reports", icon: FileText },
     // { href: "/analytics", label: "Analytics", icon: BarChart },
     { href: "/settings", label: "Settings", icon: Settings },

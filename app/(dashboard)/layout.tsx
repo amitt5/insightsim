@@ -50,6 +50,12 @@ export default function DashboardLayout({
               Simulations
             </Link>
             <Link 
+              href="/analysis"
+              className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
+            >
+              Analysis
+            </Link>
+            <Link 
               href="/personas"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >

@@ -16,7 +16,12 @@ import {
   Lightbulb,
   ArrowLeft,
   BarChart3,
-  Share2
+  Share2,
+  Network,
+  Clock,
+  MapPin,
+  DollarSign,
+  Activity
 } from "lucide-react"
 import Link from "next/link"
 
@@ -185,6 +190,161 @@ const mockThemeMap = [
   { id: 7, name: "Sustainability", strength: 58, connections: ["Natural Ingredients", "Brand Values"] },
   { id: 8, name: "Word of Mouth", strength: 54, connections: ["Trust", "Recommendations"] }
 ]
+
+// Mock data for pattern analysis
+const mockPatternAnalysis = {
+  demographicPatterns: [
+    {
+      demographic: "Ages 25-35",
+      icon: Users,
+      topThemes: [
+        { theme: "Social Media Influence", strength: 89, change: "+12%" },
+        { theme: "Sustainability", strength: 82, change: "+8%" },
+        { theme: "Packaging Design", strength: 78, change: "+5%" }
+      ],
+      insights: [
+        "Highly influenced by social media trends and peer recommendations",
+        "Strong environmental consciousness drives purchasing decisions",
+        "Visual appeal and Instagram-worthy packaging crucial"
+      ]
+    },
+    {
+      demographic: "Ages 36-45",
+      icon: Users,
+      topThemes: [
+        { theme: "Health Benefits", strength: 94, change: "+15%" },
+        { theme: "Natural Ingredients", strength: 91, change: "+18%" },
+        { theme: "Brand Loyalty", strength: 73, change: "+3%" }
+      ],
+      insights: [
+        "Health and wellness are primary decision factors",
+        "Ingredient transparency and natural formulations highly valued",
+        "Established brand preferences with slower switching behavior"
+      ]
+    },
+    {
+      demographic: "High Income",
+      icon: DollarSign,
+      topThemes: [
+        { theme: "Premium Positioning", strength: 87, change: "+22%" },
+        { theme: "Health Benefits", strength: 85, change: "+11%" },
+        { theme: "Brand Loyalty", strength: 79, change: "+7%" }
+      ],
+      insights: [
+        "Price sensitivity significantly lower than other segments",
+        "Quality and health benefits justify premium pricing",
+        "Strong preference for established, trusted premium brands"
+      ]
+    },
+    {
+      demographic: "Urban Areas",
+      icon: MapPin,
+      topThemes: [
+        { theme: "Social Media Influence", strength: 83, change: "+9%" },
+        { theme: "Sustainability", strength: 76, change: "+14%" },
+        { theme: "Packaging Design", strength: 72, change: "+6%" }
+      ],
+      insights: [
+        "Higher exposure to social media marketing and trends",
+        "Environmental consciousness more pronounced in urban settings",
+        "Retail environment emphasizes visual appeal and shelf presence"
+      ]
+    }
+  ],
+  cooccurrencePatterns: [
+    {
+      primaryTheme: "Natural Ingredients",
+      secondaryTheme: "Health Benefits",
+      cooccurrence: 94,
+      strength: "Very Strong",
+      description: "These themes almost always appear together, suggesting consumers view natural ingredients as inherently healthier"
+    },
+    {
+      primaryTheme: "Social Media Influence",
+      secondaryTheme: "Packaging Design",
+      cooccurrence: 78,
+      strength: "Strong",
+      description: "Visual appeal and social media presence are closely linked in consumer decision-making"
+    },
+    {
+      primaryTheme: "Price Sensitivity",
+      secondaryTheme: "Value Perception",
+      cooccurrence: 85,
+      strength: "Strong",
+      description: "Price concerns are consistently paired with discussions about perceived value and quality"
+    },
+    {
+      primaryTheme: "Brand Loyalty",
+      secondaryTheme: "Trust",
+      cooccurrence: 91,
+      strength: "Very Strong",
+      description: "Brand loyalty is fundamentally built on trust and consistent experience"
+    },
+    {
+      primaryTheme: "Sustainability",
+      secondaryTheme: "Natural Ingredients",
+      cooccurrence: 72,
+      strength: "Moderate",
+      description: "Environmental concerns often overlap with preferences for natural formulations"
+    }
+  ],
+  intensityPatterns: [
+    {
+      segment: "Focus Group 1",
+      themes: [
+        { name: "Natural Ingredients", intensity: 95, mentions: 47 },
+        { name: "Price Sensitivity", intensity: 82, mentions: 34 },
+        { name: "Brand Loyalty", intensity: 71, mentions: 28 }
+      ]
+    },
+    {
+      segment: "Focus Group 2", 
+      themes: [
+        { name: "Packaging Design", intensity: 91, mentions: 52 },
+        { name: "Social Media Influence", intensity: 88, mentions: 41 },
+        { name: "Sustainability", intensity: 76, mentions: 31 }
+      ]
+    },
+    {
+      segment: "Individual Interview",
+      themes: [
+        { name: "Health Benefits", intensity: 89, mentions: 23 },
+        { name: "Word of Mouth", intensity: 84, mentions: 19 },
+        { name: "Premium Positioning", intensity: 67, mentions: 14 }
+      ]
+    }
+  ],
+  temporalPatterns: [
+    {
+      phase: "Early Discussion",
+      timeframe: "0-15 minutes",
+      dominantThemes: ["Brand Loyalty", "Price Sensitivity"],
+      emergingThemes: ["Natural Ingredients"],
+      insights: "Initial responses focus on familiar brands and cost concerns"
+    },
+    {
+      phase: "Mid Discussion",
+      timeframe: "15-30 minutes",
+      dominantThemes: ["Natural Ingredients", "Health Benefits", "Packaging Design"],
+      emergingThemes: ["Social Media Influence", "Sustainability"],
+      insights: "Deeper exploration reveals health consciousness and visual preferences"
+    },
+    {
+      phase: "Late Discussion",
+      timeframe: "30-45 minutes",
+      dominantThemes: ["Social Media Influence", "Sustainability", "Word of Mouth"],
+      emergingThemes: ["Premium Positioning"],
+      insights: "Social factors and environmental concerns become more prominent"
+    },
+    {
+      phase: "Session Evolution",
+      timeframe: "Across Sessions",
+      dominantThemes: ["Natural Ingredients", "Health Benefits"],
+      emergingThemes: ["Sustainability", "Social Media Influence"],
+      insights: "Consistency in health themes, growing importance of social and environmental factors"
+    }
+  ]
+}
 
 export default function AnalysisDashboardPage(props: { params: Promise<{ id: string }> }) {
     const { id } = use(props.params);
@@ -394,46 +554,240 @@ export default function AnalysisDashboardPage(props: { params: Promise<{ id: str
     </div>
   )
 
-  const renderThemeExplorer = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5" />
-          Theme Map
-        </CardTitle>
-        <CardDescription>
-          Explore the relationships between different themes in your analysis
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {mockThemeMap.map((theme) => (
-            <Card key={theme.id} className="border-muted">
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold">{theme.name}</h4>
-                    <Badge variant="outline">{theme.strength}%</Badge>
-                  </div>
-                  <Progress value={theme.strength} className="h-2" />
-                  <div>
-                    <h5 className="text-sm font-medium mb-2">Connected to:</h5>
-                    <div className="flex flex-wrap gap-1">
-                      {theme.connections.map((connection, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {connection}
-                        </Badge>
+  const renderThemesAndPatterns = () => {
+    const getStrengthColor = (strength: string) => {
+      switch (strength) {
+        case "Very Strong":
+          return "bg-green-100 text-green-800"
+        case "Strong":
+          return "bg-blue-100 text-blue-800"
+        case "Moderate":
+          return "bg-yellow-100 text-yellow-800"
+        default:
+          return "bg-gray-100 text-gray-800"
+      }
+    }
+
+    return (
+      <div className="space-y-8">
+        {/* Theme Map Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Theme Map
+            </CardTitle>
+            <CardDescription>
+              Individual themes and their interconnections across all discussions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {mockThemeMap.map((theme) => (
+                <Card key={theme.id} className="border-muted">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold">{theme.name}</h4>
+                        <Badge variant="outline">{theme.strength}%</Badge>
+                      </div>
+                      <Progress value={theme.strength} className="h-2" />
+                      <div>
+                        <h5 className="text-sm font-medium mb-2">Connected to:</h5>
+                        <div className="flex flex-wrap gap-1">
+                          {theme.connections.map((connection, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {connection}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pattern Analysis Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Demographic Patterns */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Demographic Patterns
+              </CardTitle>
+              <CardDescription>
+                How themes vary across different demographic segments
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {mockPatternAnalysis.demographicPatterns.map((pattern, index) => {
+                const IconComponent = pattern.icon
+                return (
+                  <div key={index} className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <IconComponent className="h-4 w-4" />
+                      <h4 className="font-semibold">{pattern.demographic}</h4>
+                    </div>
+                    <div className="space-y-2">
+                      {pattern.topThemes.map((theme, themeIndex) => (
+                        <div key={themeIndex} className="flex items-center justify-between text-sm">
+                          <span>{theme.theme}</span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {theme.strength}%
+                            </Badge>
+                            <Badge variant={theme.change.startsWith('+') ? 'default' : 'secondary'} className="text-xs">
+                              {theme.change}
+                            </Badge>
+                          </div>
+                        </div>
                       ))}
                     </div>
+                    <div className="text-xs text-muted-foreground">
+                      <ul className="space-y-1">
+                        {pattern.insights.map((insight, insightIndex) => (
+                          <li key={insightIndex} className="flex items-start gap-1">
+                            <div className="w-1 h-1 bg-muted-foreground rounded-full mt-1.5 flex-shrink-0" />
+                            {insight}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )
+              })}
+            </CardContent>
+          </Card>
+
+          {/* Co-occurrence Patterns */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Network className="h-5 w-5" />
+                Co-occurrence Patterns
+              </CardTitle>
+              <CardDescription>
+                Themes that frequently appear together in discussions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {mockPatternAnalysis.cooccurrencePatterns.map((pattern, index) => (
+                <div key={index} className="space-y-2 p-3 border rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">
+                      {pattern.primaryTheme} + {pattern.secondaryTheme}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {pattern.cooccurrence}%
+                      </Badge>
+                      <Badge className={getStrengthColor(pattern.strength)}>
+                        {pattern.strength}
+                      </Badge>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{pattern.description}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Intensity and Temporal Patterns */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Intensity Patterns */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Intensity Patterns
+              </CardTitle>
+              <CardDescription>
+                Theme strength across different discussion segments
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {mockPatternAnalysis.intensityPatterns.map((segment, index) => (
+                <div key={index} className="space-y-3">
+                  <h4 className="font-semibold text-sm">{segment.segment}</h4>
+                  <div className="space-y-2">
+                    {segment.themes.map((theme, themeIndex) => (
+                      <div key={themeIndex} className="space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span>{theme.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {theme.mentions} mentions
+                            </span>
+                            <Badge variant="outline" className="text-xs">
+                              {theme.intensity}%
+                            </Badge>
+                          </div>
+                        </div>
+                        <Progress value={theme.intensity} className="h-1" />
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Temporal Patterns */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Temporal Patterns
+              </CardTitle>
+              <CardDescription>
+                How themes evolved throughout discussions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {mockPatternAnalysis.temporalPatterns.map((phase, index) => (
+                <div key={index} className="space-y-2 p-3 border rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">{phase.phase}</h4>
+                    <Badge variant="outline" className="text-xs">
+                      {phase.timeframe}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <div>
+                      <h5 className="text-xs font-medium text-muted-foreground mb-1">Dominant:</h5>
+                      <div className="flex flex-wrap gap-1">
+                        {phase.dominantThemes.map((theme, themeIndex) => (
+                          <Badge key={themeIndex} variant="default" className="text-xs">
+                            {theme}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-medium text-muted-foreground mb-1">Emerging:</h5>
+                      <div className="flex flex-wrap gap-1">
+                        {phase.emergingThemes.map((theme, themeIndex) => (
+                          <Badge key={themeIndex} variant="secondary" className="text-xs">
+                            {theme}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">{phase.insights}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
-      </CardContent>
-    </Card>
-  )
+      </div>
+    )
+  }
 
   const renderExportSection = () => (
     <Card>
@@ -498,7 +852,7 @@ export default function AnalysisDashboardPage(props: { params: Promise<{ id: str
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="individual">Individual Summaries</TabsTrigger>
           <TabsTrigger value="combined">Combined Summary</TabsTrigger>
-          <TabsTrigger value="themes">Theme Explorer</TabsTrigger>
+          <TabsTrigger value="themes">Themes & Patterns</TabsTrigger>
           <TabsTrigger value="export">Export</TabsTrigger>
         </TabsList>
 
@@ -511,7 +865,7 @@ export default function AnalysisDashboardPage(props: { params: Promise<{ id: str
         </TabsContent>
 
         <TabsContent value="themes" className="space-y-4">
-          {renderThemeExplorer()}
+          {renderThemesAndPatterns()}
         </TabsContent>
 
         <TabsContent value="export" className="space-y-4">

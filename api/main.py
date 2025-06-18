@@ -7,6 +7,11 @@ import json
 from datetime import datetime
 import uuid
 
+from models import StudyMetadata,StatusResponse, UploadResponse, ErrorResponse, AnalysisStatus
+from utils import validate_file, save_uploaded_file, generate_study_id, create_upload_directory
+
+analysis_jobs = {}
+
 # Initialize FastAPI app
 app = FastAPI(
     title="InsightSim Analysis API",
@@ -43,40 +48,126 @@ async def health_check():
         "timestamp": datetime.now().isoformat()
     }
 
-# Analysis endpoints (to be implemented)
-@app.post("/analysis/upload")
+# Add this new endpoint to your FastAPI app (after your existing routes)
+@app.post("/api/analysis/upload", response_model=UploadResponse)
 async def upload_transcripts(
     files: List[UploadFile] = File(...),
     metadata: str = Form(...)
 ):
-    """
-    Upload transcript files and metadata for analysis
-    """
+    """Upload transcript files with study metadata"""
     try:
-        # Parse metadata from form data
-        metadata_dict = json.loads(metadata)
+        # Parse metadata JSON from form data
+        try:
+            metadata_dict = json.loads(metadata)
+            study_metadata = StudyMetadata(**metadata_dict)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid metadata format")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Metadata validation error: {str(e)}")
         
-        # Generate analysis ID
-        analysis_id = str(uuid.uuid4())
+        # Validate files
+        if not files or len(files) == 0:
+            raise HTTPException(status_code=400, detail="No files uploaded")
         
-        # TODO: Implement file processing with LlamaIndex
-        # For now, return mock response
-        return JSONResponse(
-            status_code=200,
-            content={
-                "analysis_id": analysis_id,
-                "status": "uploaded",
-                "files_received": len(files),
-                "metadata": metadata_dict,
-                "message": "Files uploaded successfully. Analysis will begin shortly."
-            }
+        # Generate unique study ID
+        study_id = generate_study_id()
+        
+        # Process and save files
+        saved_files = []
+        for file in files:
+            # Validate file
+            file_info = validate_file(file)
+            
+            # Save file
+            file_path = await save_uploaded_file(file, study_id)
+            saved_files.append({
+                "filename": file_info.filename,
+                "path": file_path,
+                "type": file_info.file_type,
+                "size": file_info.file_size
+            })
+        
+        # Create response
+        response = UploadResponse(
+            study_id=study_id,
+            message=f"Successfully uploaded {len(saved_files)} files",
+            files_uploaded=len(saved_files),
+            status=AnalysisStatus.PENDING,
+            created_at=datetime.now()
         )
-    
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid metadata format")
+
+        analysis_jobs[study_id] = {
+            "status": AnalysisStatus.PENDING,
+            "created_at": datetime.now(),
+            "metadata": study_metadata.dict(),
+            "files": saved_files,
+            "message": "Files uploaded successfully"
+        }
+        
+        return response
+        
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
+
+
+@app.get("/api/analysis/{study_id}/status", response_model=StatusResponse)
+async def get_analysis_status(study_id: str):
+    """Get analysis status for a study"""
+    if study_id not in analysis_jobs:
+        raise HTTPException(status_code=404, detail="Study not found")
+    
+    job = analysis_jobs[study_id]
+    return StatusResponse(
+        study_id=study_id,
+        status=job["status"],
+        progress=job.get("progress"),
+        message=job.get("message"),
+        created_at=job["created_at"],
+        updated_at=job.get("updated_at", job["created_at"])
+    )
+
+@app.post("/api/analysis/{study_id}/start")
+async def start_analysis(study_id: str):
+    """Start analysis for uploaded transcripts"""
+    if study_id not in analysis_jobs:
+        raise HTTPException(status_code=404, detail="Study not found")
+    
+    # Update status to processing
+    analysis_jobs[study_id]["status"] = AnalysisStatus.PROCESSING
+    analysis_jobs[study_id]["updated_at"] = datetime.now()
+    analysis_jobs[study_id]["message"] = "Analysis started"
+    
+    return {"message": "Analysis started successfully", "study_id": study_id}
+
+@app.get("/api/analysis/{study_id}/results")
+async def get_analysis_results(study_id: str):
+    """Get analysis results for a completed study"""
+    if study_id not in analysis_jobs:
+        raise HTTPException(status_code=404, detail="Study not found")
+    
+    job = analysis_jobs[study_id]
+    if job["status"] != AnalysisStatus.COMPLETED:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Analysis not completed. Current status: {job['status']}"
+        )
+    
+    # Return mock results for now (will be replaced with real analysis in later steps)
+    return {
+        "study_id": study_id,
+        "status": "completed",
+        "results": {
+            "summary": "Mock analysis results - will be implemented in Step 7",
+            "themes": [],
+            "insights": []
+        }
+    }
+
+
+# Analysis endpoints (to be implemented)
 @app.post("/analysis/{analysis_id}/process")
 async def process_analysis(analysis_id: str):
     """

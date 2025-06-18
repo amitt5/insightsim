@@ -29,7 +29,7 @@ class FileUploadInfo(BaseModel):
     filename: str
     file_type: FileType
     file_size: int
-    
+
 # Response Models
 class UploadResponse(BaseModel):
     study_id: str

@@ -9,6 +9,7 @@ import uuid
 
 from models import StudyMetadata,StatusResponse, UploadResponse, ErrorResponse, AnalysisStatus
 from utils import validate_file, save_uploaded_file, generate_study_id, create_upload_directory
+from document_processor import document_processor
 
 analysis_jobs = {}
 
@@ -166,79 +167,63 @@ async def get_analysis_results(study_id: str):
         }
     }
 
+# Add this import at the top with your other imports
+from document_processor import document_processor
 
-# Analysis endpoints (to be implemented)
-@app.post("/analysis/{analysis_id}/process")
-async def process_analysis(analysis_id: str):
-    """
-    Start processing uploaded transcripts
-    """
+# Add this new endpoint after your existing endpoints
+@app.get("/api/analysis/{study_id}/extract-text")
+async def extract_study_text(study_id: str):
+    """Extract text content from all files in a study"""
     try:
-        # TODO: Implement LlamaIndex processing
-        # For now, return mock response
-        return JSONResponse(
-            status_code=200,
-            content={
-                "analysis_id": analysis_id,
-                "status": "processing",
-                "message": "Analysis started successfully"
-            }
-        )
-    
+        # Process all files for the study
+        text_summary = document_processor.get_study_text_summary(study_id)
+        
+        return {
+            "study_id": study_id,
+            "status": "success",
+            "extraction_summary": {
+                "file_count": text_summary["file_count"],
+                "total_words": text_summary["total_words"],
+                "total_characters": text_summary["total_characters"],
+                "total_pages": text_summary["total_pages"],
+                "files_processed": text_summary["files_processed"]
+            },
+            "text_preview": text_summary["combined_text"][:500] + "..." if len(text_summary["combined_text"]) > 500 else text_summary["combined_text"]
+        }
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Text extraction failed: {str(e)}"
+        )
 
-@app.get("/analysis/{analysis_id}/status")
-async def get_analysis_status(analysis_id: str):
-    """
-    Get the status of an analysis
-    """
+@app.get("/api/analysis/{study_id}/full-text")
+async def get_full_study_text(study_id: str):
+    """Get complete extracted text for a study"""
     try:
-        # TODO: Implement status checking
-        # For now, return mock response
-        return JSONResponse(
-            status_code=200,
-            content={
-                "analysis_id": analysis_id,
-                "status": "completed",
-                "progress": 100,
-                "message": "Analysis completed successfully"
+        text_summary = document_processor.get_study_text_summary(study_id)
+        
+        return {
+            "study_id": study_id,
+            "combined_text": text_summary["combined_text"],
+            "metadata": {
+                "file_count": text_summary["file_count"],
+                "total_words": text_summary["total_words"],
+                "total_characters": text_summary["total_characters"],
+                "files_processed": text_summary["files_processed"]
             }
-        )
-    
+        }
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Status check failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve full text: {str(e)}"
+        )
 
-@app.get("/analysis/{analysis_id}/results")
-async def get_analysis_results(analysis_id: str):
-    """
-    Get the results of a completed analysis
-    """
-    try:
-        # TODO: Implement results retrieval
-        # For now, return mock response structure
-        return JSONResponse(
-            status_code=200,
-            content={
-                "analysis_id": analysis_id,
-                "status": "completed",
-                "results": {
-                    "individual_summaries": [],
-                    "combined_analysis": {},
-                    "themes": [],
-                    "patterns": {
-                        "demographic_patterns": [],
-                        "cooccurrence_patterns": [],
-                        "intensity_patterns": [],
-                        "temporal_patterns": []
-                    }
-                },
-                "generated_at": datetime.now().isoformat()
-            }
-        )
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Results retrieval failed: {str(e)}")
 
 # Error handlers
 @app.exception_handler(404)

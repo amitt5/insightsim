@@ -55,3 +55,7 @@ llama-index[query_tools]
 python-multipart
 python-dotenv
 psycopg2-binary
+
+llama-index-readers-file
+pypdf
+python-docx

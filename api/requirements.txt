@@ -48,3 +48,10 @@ flake8==6.1.0
 # Logging and monitoring
 structlog==23.2.0
 rich==13.7.0 
+
+llama-index==0.12.42
+llama-index[postgres]
+llama-index[query_tools]
+python-multipart
+python-dotenv
+psycopg2-binary

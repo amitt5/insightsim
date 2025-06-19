@@ -10,6 +10,7 @@ import uuid
 from models import StudyMetadata,StatusResponse, UploadResponse, ErrorResponse, AnalysisStatus
 from utils import validate_file, save_uploaded_file, generate_study_id, create_upload_directory
 from document_processor import document_processor
+from text_chunker import transcript_chunker
 
 analysis_jobs = {}
 
@@ -167,9 +168,6 @@ async def get_analysis_results(study_id: str):
         }
     }
 
-# Add this import at the top with your other imports
-from document_processor import document_processor
-
 # Add this new endpoint after your existing endpoints
 @app.get("/api/analysis/{study_id}/extract-text")
 async def extract_study_text(study_id: str):
@@ -222,6 +220,119 @@ async def get_full_study_text(study_id: str):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to retrieve full text: {str(e)}"
+        )
+
+@app.get("/api/analysis/{study_id}/chunks")
+async def get_study_chunks(study_id: str):
+    """Generate and return text chunks for a study"""
+    try:
+        # First, get the full text content from document processor
+        text_summary = document_processor.get_study_text_summary(study_id)
+        combined_text = text_summary["combined_text"]
+        
+        # Create chunks using the transcript chunker
+        chunks_data = transcript_chunker.chunk_study_content(study_id, combined_text)
+        
+        return {
+            "study_id": study_id,
+            "status": "success",
+            "chunking_summary": chunks_data["chunking_summary"],
+            "chunks_preview": [
+                {
+                    "chunk_id": chunk["chunk_id"],
+                    "chunk_index": chunk["chunk_index"],
+                    "text_preview": chunk["text"][:200] + "..." if len(chunk["text"]) > 200 else chunk["text"],
+                    "metadata": chunk["metadata"]
+                }
+                for chunk in chunks_data["chunks"][:3]  # Show first 3 chunks as preview
+            ],
+            "total_chunks": len(chunks_data["chunks"])
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Chunking failed: {str(e)}"
+        )
+
+@app.get("/api/analysis/{study_id}/chunks/{chunk_index}")
+async def get_specific_chunk(study_id: str, chunk_index: int):
+    """Get a specific chunk by index"""
+    try:
+        # Get full text and create chunks
+        text_summary = document_processor.get_study_text_summary(study_id)
+        combined_text = text_summary["combined_text"]
+        chunks_data = transcript_chunker.chunk_study_content(study_id, combined_text)
+        
+        # Get specific chunk
+        chunk = transcript_chunker.get_chunk_by_index(chunks_data, chunk_index)
+        
+        if not chunk:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Chunk {chunk_index} not found for study {study_id}"
+            )
+        
+        return {
+            "study_id": study_id,
+            "chunk": chunk,
+            "navigation": {
+                "current_index": chunk_index,
+                "total_chunks": chunks_data["chunking_summary"]["total_chunks"],
+                "has_previous": chunk_index > 0,
+                "has_next": chunk_index < chunks_data["chunking_summary"]["total_chunks"] - 1
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve chunk: {str(e)}"
+        )
+
+@app.get("/api/analysis/{study_id}/chunks/speaker/{speaker_name}")
+async def get_chunks_by_speaker(study_id: str, speaker_name: str):
+    """Get all chunks containing a specific speaker"""
+    try:
+        # Get full text and create chunks
+        text_summary = document_processor.get_study_text_summary(study_id)
+        combined_text = text_summary["combined_text"]
+        chunks_data = transcript_chunker.chunk_study_content(study_id, combined_text)
+        
+        # Get chunks with specific speaker
+        speaker_chunks = transcript_chunker.get_chunks_with_speaker(chunks_data, speaker_name)
+        
+        if not speaker_chunks:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No chunks found for speaker '{speaker_name}' in study {study_id}"
+            )
+        
+        return {
+            "study_id": study_id,
+            "speaker_name": speaker_name,
+            "chunks_found": len(speaker_chunks),
+            "chunks": [
+                {
+                    "chunk_id": chunk["chunk_id"],
+                    "chunk_index": chunk["chunk_index"],
+                    "text_preview": chunk["text"][:300] + "..." if len(chunk["text"]) > 300 else chunk["text"],
+                    "metadata": chunk["metadata"]
+                }
+                for chunk in speaker_chunks
+            ]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve speaker chunks: {str(e)}"
         )
 
 

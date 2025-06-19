@@ -13,6 +13,12 @@ from utils import validate_file, save_uploaded_file, generate_study_id, create_u
 from document_processor import document_processor
 from text_chunker import transcript_chunker
 from llm_analyzer import llm_analyzer
+import logging
+import traceback
+
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 analysis_jobs = {}
 load_dotenv()
@@ -463,6 +469,7 @@ async def analyze_single_chunk(
 ):
     """Analyze a specific chunk"""
     try:
+        logger.info(f"Analyzing chunk {chunk_index} for study {study_id}")
         # Get specific chunk
         text_summary = document_processor.get_study_text_summary(study_id)
         combined_text = text_summary["combined_text"]
@@ -476,8 +483,9 @@ async def analyze_single_chunk(
             )
         
         # Analyze the specific chunk
+        logger.info(f"Analysing single chunk {chunk_index}")
         chunk_analysis = llm_analyzer.analyze_single_chunk(chunk, analysis_types)
-        
+        logger.info(f"Successfully completed analysis for chunk {chunk_index}")
         return {
             "study_id": study_id,
             "chunk_index": chunk_index,
@@ -488,6 +496,8 @@ async def analyze_single_chunk(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error analyzing chunk {chunk_index}: {str(e)}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail=f"Chunk analysis failed: {str(e)}"

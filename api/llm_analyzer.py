@@ -6,8 +6,14 @@ import json
 from fastapi import HTTPException
 
 # OpenAI integration through LlamaIndex
-from llama_index.llms.openai import OpenAI
+from openai import OpenAI
 from llama_index.core.llms import ChatMessage, MessageRole
+import logging
+import traceback
+
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 @dataclass
 class ThemeData:
@@ -61,13 +67,19 @@ class LLMAnalyzer:
             print("ERROR: OPENAI_API_KEY not found in environment")
         else:
             print(f"DEBUG: OpenAI API Key loaded: {api_key[:10]}...")
+        
+        # This line uses the new OpenAI import
+        self.client = OpenAI(api_key=api_key)
+        self.model = "gpt-3.5-turbo"
+        self.temperature = 0.3
+        self.max_tokens = 1500
         # Initialize OpenAI LLM through LlamaIndex
-        self.llm = OpenAI(
-            model="gpt-3.5-turbo",
-            temperature=0.3,  # Lower temperature for more consistent analysis
-            max_tokens=1500,
-            api_key=api_key
-        )
+        # self.llm = OpenAI(
+        #     model="gpt-3.5-turbo",
+        #     temperature=0.3,  # Lower temperature for more consistent analysis
+        #     max_tokens=1500,
+        #     api_key=api_key
+        # )
         
         # Analysis prompts for different tasks
         self.theme_extraction_prompt = """
@@ -212,81 +224,92 @@ class LLMAnalyzer:
             ]
         }
         """
-    
-    def analyze_chunk_themes(self, chunk_text: str, chunk_id: str) -> Dict:
-        """Extract themes from a single chunk"""
-        try:
-            # Create chat message for theme extraction
-            messages = [
-                ChatMessage(
-                    role=MessageRole.USER,
-                    content=self.theme_extraction_prompt.format(chunk_text=chunk_text)
-                )
-            ]
-            
-            # Get response from LLM
-            response = self.llm.chat(messages)
-            
-            # Parse JSON response
-            try:
-                result = json.loads(response.message.content)
-                result["chunk_id"] = chunk_id
-                result["analysis_type"] = "themes"
-                return result
-            except json.JSONDecodeError:
-                # Fallback if JSON parsing fails
-                return {
-                    "chunk_id": chunk_id,
-                    "analysis_type": "themes",
-                    "themes": [],
-                    "error": "Failed to parse LLM response as JSON"
-                }
-                
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Theme analysis failed for chunk {chunk_id}: {str(e)}"
-            )
-    
-    def analyze_chunk_patterns(self, chunk_text: str, chunk_id: str) -> Dict:
-        """Extract behavioral and demographic patterns from a single chunk"""
-        try:
-            messages = [
-                ChatMessage(
-                    role=MessageRole.USER,
-                    content=self.pattern_analysis_prompt.format(chunk_text=chunk_text)
-                )
-            ]
-            
-            response = self.llm.chat(messages)
-            
-            try:
-                result = json.loads(response.message.content)
-                result["chunk_id"] = chunk_id
-                result["analysis_type"] = "patterns"
-                return result
-            except json.JSONDecodeError:
-                return {
-                    "chunk_id": chunk_id,
-                    "analysis_type": "patterns",
-                    "patterns": [],
-                    "error": "Failed to parse LLM response as JSON"
-                }
-                
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Pattern analysis failed for chunk {chunk_id}: {str(e)}"
-            )
 
+    def analyze_chunk_themes(self, chunk_text: str, chunk_id: str) -> Dict:
+        """Extract themes from a single chunk with robust JSON parsing"""
+        
+        # Simplified, more focused prompt
+        system_prompt = """You are a qualitative market research analyst. 
+        Analyze the transcript chunk and extract themes related to consumer behavior and shopping preferences.
+        You must respond with valid JSON only, no additional text.
+        
+        Return this exact JSON structure:
+        {
+            "themes": [
+                {
+                    "theme_name": "string",
+                    "description": "string", 
+                    "key_points": ["string"],
+                    "related_quotes": ["string"]
+                }
+            ]
+        }"""
+        
+        try:
+            logger.info(f"Starting analysis for chunk {chunk_id}")
+            logger.debug(f"Chunk text length: {len(chunk_text)}")
+            
+          
+            logger.debug(f"Making OpenAI API call for chunk {chunk_id}")
+
+            response = self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Analyze this transcript chunk:\n\n{chunk_text}"}
+                ],
+                response_format={"type": "json_object"},  # This is crucial
+                temperature=0.3,
+                max_tokens=1500
+            )
+            logger.debug(f"Received OpenAI response for chunk {chunk_id}")
+            # Extract and clean the response
+            raw_content = response.choices[0].message.content
+            logger.debug(f"Raw OpenAI response: {raw_content[:200]}...")
+            logger.debug(f"About to clean JSON response for chunk {chunk_id}")
+
+            cleaned_json = self._clean_json_response(raw_content)
+            logger.debug(f"Cleaned JSON: {cleaned_json[:200]}...")
+            logger.debug(f"About to parse JSON for chunk {chunk_id}")
+
+            result = json.loads(cleaned_json)
+            logger.debug(f"Successfully parsed JSON for chunk {chunk_id}")
+            
+            # Add metadata
+            result["chunk_id"] = chunk_id
+            result["analysis_type"] = "themes"
+            
+            logger.debug(f"About to return result for chunk {chunk_id}")
+        
+            logger.info(f"Successfully analyzed chunk {chunk_id}")
+            return result
+            
+        except json.JSONDecodeError as e:
+            error_msg = f"JSON parsing error for chunk {chunk_id}: {str(e)}"
+            logger.error(error_msg)
+            logger.error(f"Raw response that failed to parse: {raw_content}")
+            return self._create_fallback_response(chunk_id, "themes", error_msg)
+        
+        except Exception as e:
+            error_msg = f"Unexpected error analyzing chunk {chunk_id}: {str(e)}"
+            logger.error(error_msg)
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return self._create_fallback_response(chunk_id, "themes", error_msg)
+
+    
 # Update your analyze_single_chunk method to include patterns (around line 210)
     def analyze_single_chunk(self, chunk_data: Dict, analysis_types: List[str] = None) -> Dict:
+        logger.info(f"Analyzing single chunk11 {chunk_data['chunk_index']} for study {chunk_data['study_id']}")
+        
         """Perform comprehensive analysis on a single chunk"""
         if analysis_types is None:
             analysis_types = ["themes", "quotes", "insights", "patterns"]  # Add patterns here
         
         chunk_text = chunk_data["text"]
         chunk_id = chunk_data["chunk_id"]
+
+        logger.info(f"Chunk text length: {len(chunk_text)}")
+        logger.info(f"Chunk id: {chunk_id}")
         
         results = {
             "chunk_id": chunk_id,
@@ -297,106 +320,216 @@ class LLMAnalyzer:
         # Perform requested analyses
         if "themes" in analysis_types:
             results["analysis_results"]["themes"] = self.analyze_chunk_themes(chunk_text, chunk_id)
-        
+            logger.info(f"Themes Results: {results}")
+
         if "quotes" in analysis_types:
             results["analysis_results"]["quotes"] = self.analyze_chunk_quotes(chunk_text, chunk_id)
-        
+            logger.info(f"Quotes Results: {results}")
+
         if "insights" in analysis_types:
             results["analysis_results"]["insights"] = self.analyze_chunk_insights(chunk_text, chunk_id)
-        
+            logger.info(f"Insights Results: {results}")
+            
         if "patterns" in analysis_types:  # Add this new condition
             results["analysis_results"]["patterns"] = self.analyze_chunk_patterns(chunk_text, chunk_id)
-        
+            logger.info(f"Patterns Results: {results}")
+            
+        logger.info(f"Results: {results}")
         return results
     
     def analyze_chunk_quotes(self, chunk_text: str, chunk_id: str) -> Dict:
         """Extract significant quotes from a single chunk"""
-        try:
-            messages = [
-                ChatMessage(
-                    role=MessageRole.USER,
-                    content=self.quote_extraction_prompt.format(chunk_text=chunk_text)
-                )
-            ]
-            
-            response = self.llm.chat(messages)
-            
-            try:
-                result = json.loads(response.message.content)
-                result["chunk_id"] = chunk_id
-                result["analysis_type"] = "quotes"
-                return result
-            except json.JSONDecodeError:
-                return {
-                    "chunk_id": chunk_id,
-                    "analysis_type": "quotes",
-                    "quotes": [],
-                    "error": "Failed to parse LLM response as JSON"
+        
+        system_prompt = """You are a qualitative market research analyst.
+        Extract the most significant quotes from this transcript chunk.
+        You must respond with valid JSON only, no additional text.
+        
+        Return this exact JSON structure:
+        {
+            "quotes": [
+                {
+                    "quote_text": "string",
+                    "speaker": "string", 
+                    "context": "string",
+                    "theme_relevance": "string",
+                    "sentiment": "string"
                 }
-                
+            ]
+        }"""
+        
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Extract quotes from:\n\n{chunk_text}"}
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=1500
+            )
+            
+            raw_content = response.choices[0].message.content
+            cleaned_json = self._clean_json_response(raw_content)
+            result = json.loads(cleaned_json)
+            
+            result["chunk_id"] = chunk_id
+            result["analysis_type"] = "quotes"
+            
+            return result
+            
+        except json.JSONDecodeError as e:
+            print(f"JSON parsing error for chunk {chunk_id}: {e}")
+            return self._create_fallback_response(chunk_id, "quotes", str(e))
+            
         except Exception as e:
             raise HTTPException(
                 status_code=500,
                 detail=f"Quote analysis failed for chunk {chunk_id}: {str(e)}"
             )
-    
+
+    def analyze_chunk_patterns(self, chunk_text: str, chunk_id: str) -> Dict:
+        """Extract behavioral and demographic patterns from a single chunk"""
+        try:
+            logger.info(f"Starting pattern analysis for chunk {chunk_id}")
+            logger.debug(f"Chunk text length: {len(chunk_text)}")
+            
+            system_prompt = """You are a qualitative market research analyst.
+            Extract behavioral and demographic patterns from this transcript chunk.
+            You must respond with valid JSON only, no additional text.
+            
+            Return this exact JSON structure:
+            {
+                "patterns": [
+                    {
+                        "pattern_type": "behavioral/demographic/preference",
+                        "pattern_name": "string",
+                        "description": "string",
+                        "frequency": "high/medium/low",
+                        "demographic_segments": ["string"],
+                        "supporting_evidence": ["string"]
+                    }
+                ]
+            }"""
+            
+            logger.debug(f"Making OpenAI API call for pattern analysis - chunk {chunk_id}")
+            
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Extract patterns from this transcript chunk:\n\n{chunk_text}"}
+                ],
+                response_format={"type": "json_object"},
+                temperature=self.temperature,
+                max_tokens=self.max_tokens
+            )
+            
+            logger.debug(f"Received OpenAI response for pattern analysis - chunk {chunk_id}")
+            
+            # Extract and clean the response
+            raw_content = response.choices[0].message.content
+            logger.debug(f"Raw pattern response: {raw_content[:200]}...")
+            
+            logger.debug(f"About to clean JSON response for patterns - chunk {chunk_id}")
+            cleaned_json = self._clean_json_response(raw_content)
+            
+            logger.debug(f"About to parse JSON for patterns - chunk {chunk_id}")
+            result = json.loads(cleaned_json)
+            
+            # Add metadata
+            result["chunk_id"] = chunk_id
+            result["analysis_type"] = "patterns"
+            
+            logger.info(f"Successfully analyzed patterns for chunk {chunk_id}")
+            logger.debug(f"Pattern result keys: {result.keys()}")
+            
+            return result
+        
+        except json.JSONDecodeError as e:
+            error_msg = f"JSON parsing error for patterns chunk {chunk_id}: {str(e)}"
+            logger.error(error_msg)
+            logger.error(f"Raw response that failed to parse: {raw_content}")
+            return self._create_fallback_response(chunk_id, "patterns", error_msg)
+            
+        except Exception as e:
+            error_msg = f"Pattern analysis failed for chunk {chunk_id}: {str(e)}"
+            logger.error(error_msg)
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return self._create_fallback_response(chunk_id, "patterns", error_msg)
+
+
     def analyze_chunk_insights(self, chunk_text: str, chunk_id: str) -> Dict:
         """Generate insights from a single chunk"""
         try:
-            messages = [
-                ChatMessage(
-                    role=MessageRole.USER,
-                    content=self.insight_generation_prompt.format(chunk_text=chunk_text)
-                )
-            ]
+            logger.info(f"Starting insight analysis for chunk {chunk_id}")
+            logger.debug(f"Chunk text length: {len(chunk_text)}")
             
-            response = self.llm.chat(messages)
+            system_prompt = """You are a qualitative market research analyst.
+            Generate key insights from this transcript chunk about consumer behavior and preferences.
+            You must respond with valid JSON only, no additional text.
             
-            try:
-                result = json.loads(response.message.content)
-                result["chunk_id"] = chunk_id
-                result["analysis_type"] = "insights"
-                return result
-            except json.JSONDecodeError:
-                return {
-                    "chunk_id": chunk_id,
-                    "analysis_type": "insights",
-                    "insights": [],
-                    "error": "Failed to parse LLM response as JSON"
-                }
-                
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Insight analysis failed for chunk {chunk_id}: {str(e)}"
+            Return this exact JSON structure:
+            {
+                "insights": [
+                    {
+                        "insight_text": "string",
+                        "insight_type": "behavioral/preference/demographic/trend",
+                        "confidence_level": "high/medium/low",
+                        "supporting_quotes": ["string"],
+                        "business_implications": "string",
+                        "actionable_recommendations": ["string"]
+                    }
+                ]
+            }"""
+            
+            logger.debug(f"Making OpenAI API call for insight analysis - chunk {chunk_id}")
+            
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Generate insights from this transcript chunk:\n\n{chunk_text}"}
+                ],
+                response_format={"type": "json_object"},
+                temperature=self.temperature,
+                max_tokens=self.max_tokens
             )
-    
-    def analyze_single_chunk(self, chunk_data: Dict, analysis_types: List[str] = None) -> Dict:
-        """Perform comprehensive analysis on a single chunk"""
-        if analysis_types is None:
-            analysis_types = ["themes", "quotes", "insights"]
+            
+            logger.debug(f"Received OpenAI response for insight analysis - chunk {chunk_id}")
+            
+            # Extract and clean the response
+            raw_content = response.choices[0].message.content
+            logger.debug(f"Raw insight response: {raw_content[:200]}...")
+            
+            logger.debug(f"About to clean JSON response for insights - chunk {chunk_id}")
+            cleaned_json = self._clean_json_response(raw_content)
+            
+            logger.debug(f"About to parse JSON for insights - chunk {chunk_id}")
+            result = json.loads(cleaned_json)
+            
+            # Add metadata
+            result["chunk_id"] = chunk_id
+            result["analysis_type"] = "insights"
+            
+            logger.info(f"Successfully analyzed insights for chunk {chunk_id}")
+            logger.debug(f"Insight result keys: {result.keys()}")
+            
+            return result
         
-        chunk_text = chunk_data["text"]
-        chunk_id = chunk_data["chunk_id"]
-        
-        results = {
-            "chunk_id": chunk_id,
-            "chunk_index": chunk_data["chunk_index"],
-            "analysis_results": {}
-        }
-        
-        # Perform requested analyses
-        if "themes" in analysis_types:
-            results["analysis_results"]["themes"] = self.analyze_chunk_themes(chunk_text, chunk_id)
-        
-        if "quotes" in analysis_types:
-            results["analysis_results"]["quotes"] = self.analyze_chunk_quotes(chunk_text, chunk_id)
-        
-        if "insights" in analysis_types:
-            results["analysis_results"]["insights"] = self.analyze_chunk_insights(chunk_text, chunk_id)
-        
-        return results
-    
+        except json.JSONDecodeError as e:
+            error_msg = f"JSON parsing error for insights chunk {chunk_id}: {str(e)}"
+            logger.error(error_msg)
+            logger.error(f"Raw response that failed to parse: {raw_content}")
+            return self._create_fallback_response(chunk_id, "insights", error_msg)
+            
+        except Exception as e:
+            error_msg = f"Insight analysis failed for chunk {chunk_id}: {str(e)}"
+            logger.error(error_msg)
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return self._create_fallback_response(chunk_id, "insights", error_msg)
+
+
     def analyze_study_chunks(self, chunks_data: Dict, analysis_types: List[str] = None) -> Dict:
         """Analyze all chunks in a study"""
         study_id = chunks_data["study_id"]
@@ -464,6 +597,89 @@ class LLMAnalyzer:
             "all_insights": all_insights,
             "all_patterns": all_patterns     
         }
+
+
+    def _clean_json_response(self, raw_content: str) -> str:
+        """Clean and prepare JSON response for parsing"""
+        try:
+            logger.debug(f"Cleaning JSON response, length: {len(raw_content)}")
+            
+            if not raw_content:
+                raise ValueError("Empty response content")
+            
+            # Remove any markdown code blocks
+            content = raw_content.strip()
+            if content.startswith('```json'):
+                content = content[7:]
+            elif content.startswith('```'):
+                content = content[3:]
+            
+            if content.endswith('```'):
+                content = content[:-3]
+            
+            content = content.strip()
+            
+            # Fix common JSON issues
+            import re
+            content = re.sub(r',\s*}', '}', content)  # Remove trailing commas
+            content = re.sub(r',\s*]', ']', content)  # Remove trailing commas in arrays
+            
+            # Additional JSON cleaning
+            content = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', content)  # Remove control characters
+            content = re.sub(r'\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', r'\\\\', content)  # Fix invalid escapes
+            
+            # Ensure the content starts and ends with proper JSON delimiters
+            content = content.strip()
+            if not (content.startswith('{') or content.startswith('[')):
+                # Try to find JSON object/array in the content
+                json_match = re.search(r'[\{\[].*[\}\]]', content, re.DOTALL)
+                if json_match:
+                    content = json_match.group(0)
+                else:
+                    raise ValueError("No valid JSON structure found")
+            
+            logger.debug(f"Cleaned JSON content: {content[:100]}...")
+            return content
+            
+        except Exception as e:
+            logger.error(f"Error cleaning JSON: {str(e)}")
+            raise
+    
+    def _create_fallback_response(self, chunk_id: str, analysis_type: str, error_msg: str) -> Dict:
+        """Create fallback response when JSON parsing fails"""
+        fallback_structures = {
+            "themes": {
+                "chunk_id": chunk_id,
+                "analysis_type": "themes",
+                "themes": [{
+                    "theme_name": "Analysis Error",
+                    "description": f"Failed to parse response: {error_msg}",
+                    "key_points": ["Manual review required"],
+                    "related_quotes": []
+                }],
+                "error": True
+            },
+            "quotes": {
+                "chunk_id": chunk_id,
+                "analysis_type": "quotes", 
+                "quotes": [],
+                "error": True
+            },
+            "insights": {
+                "chunk_id": chunk_id,
+                "analysis_type": "insights",
+                "insights": [],
+                "error": True
+            },
+            "patterns": {
+                "chunk_id": chunk_id,
+                "analysis_type": "patterns",
+                "patterns": [],
+                "error": True
+            }
+        }
+        
+        return fallback_structures.get(analysis_type, {"error": True, "chunk_id": chunk_id})
 
 # Create global instance
 llm_analyzer = LLMAnalyzer()

@@ -1,8 +1,9 @@
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from typing import List, Optional, Dict, Any
-import os
 import json
 from datetime import datetime
 import uuid
@@ -11,8 +12,10 @@ from models import StudyMetadata,StatusResponse, UploadResponse, ErrorResponse, 
 from utils import validate_file, save_uploaded_file, generate_study_id, create_upload_directory
 from document_processor import document_processor
 from text_chunker import transcript_chunker
+from llm_analyzer import llm_analyzer
 
 analysis_jobs = {}
+load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -222,6 +225,7 @@ async def get_full_study_text(study_id: str):
             detail=f"Failed to retrieve full text: {str(e)}"
         )
 
+# Add these new endpoints after your existing endpoints - step 5
 @app.get("/api/analysis/{study_id}/chunks")
 async def get_study_chunks(study_id: str):
     """Generate and return text chunks for a study"""
@@ -335,7 +339,194 @@ async def get_chunks_by_speaker(study_id: str, speaker_name: str):
             detail=f"Failed to retrieve speaker chunks: {str(e)}"
         )
 
+# Add these new endpoints after your existing endpoints - step 6
+@app.post("/api/analysis/{study_id}/analyze")
+async def analyze_study_content(
+    study_id: str,
+    analysis_types: List[str] = ["themes", "quotes", "insights", "patterns"]
+):
+    """Perform LLM analysis on all chunks in a study"""
+    try:
+        # Get text content and chunks
+        text_summary = document_processor.get_study_text_summary(study_id)
+        combined_text = text_summary["combined_text"]
+        chunks_data = transcript_chunker.chunk_study_content(study_id, combined_text)
+        
+        # Perform LLM analysis on all chunks
+        analysis_results = llm_analyzer.analyze_study_chunks(chunks_data, analysis_types)
+        
+        return {
+            "study_id": study_id,
+            "status": "analysis_complete",
+            "analysis_summary": {
+                "chunks_analyzed": analysis_results["total_chunks_analyzed"],
+                "analysis_types": analysis_results["analysis_types"],
+                "total_themes": analysis_results["aggregated_results"]["summary_statistics"]["total_themes"],
+                "total_quotes": analysis_results["aggregated_results"]["summary_statistics"]["total_quotes"],
+                "total_insights": analysis_results["aggregated_results"]["summary_statistics"]["total_insights"],
+                "total_patterns": analysis_results["aggregated_results"]["summary_statistics"]["total_patterns"]
+            },
+            "results": analysis_results["aggregated_results"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Analysis failed: {str(e)}"
+        )
 
+@app.get("/api/analysis/{study_id}/themes")
+async def get_study_themes(study_id: str):
+    """Get extracted themes for a study"""
+    try:
+        # Get chunks and analyze for themes only
+        text_summary = document_processor.get_study_text_summary(study_id)
+        combined_text = text_summary["combined_text"]
+        chunks_data = transcript_chunker.chunk_study_content(study_id, combined_text)
+        
+        analysis_results = llm_analyzer.analyze_study_chunks(chunks_data, ["themes"])
+        themes = analysis_results["aggregated_results"]["all_themes"]
+        
+        return {
+            "study_id": study_id,
+            "total_themes": len(themes),
+            "themes": themes
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Theme extraction failed: {str(e)}"
+        )
+
+@app.get("/api/analysis/{study_id}/quotes")
+async def get_study_quotes(study_id: str):
+    """Get extracted quotes for a study"""
+    try:
+        # Get chunks and analyze for quotes only
+        text_summary = document_processor.get_study_text_summary(study_id)
+        combined_text = text_summary["combined_text"]
+        chunks_data = transcript_chunker.chunk_study_content(study_id, combined_text)
+        
+        analysis_results = llm_analyzer.analyze_study_chunks(chunks_data, ["quotes"])
+        quotes = analysis_results["aggregated_results"]["all_quotes"]
+        
+        return {
+            "study_id": study_id,
+            "total_quotes": len(quotes),
+            "quotes": quotes
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Quote extraction failed: {str(e)}"
+        )
+
+@app.get("/api/analysis/{study_id}/insights")
+async def get_study_insights(study_id: str):
+    """Get generated insights for a study"""
+    try:
+        # Get chunks and analyze for insights only
+        text_summary = document_processor.get_study_text_summary(study_id)
+        combined_text = text_summary["combined_text"]
+        chunks_data = transcript_chunker.chunk_study_content(study_id, combined_text)
+        
+        analysis_results = llm_analyzer.analyze_study_chunks(chunks_data, ["insights"])
+        insights = analysis_results["aggregated_results"]["all_insights"]
+        
+        return {
+            "study_id": study_id,
+            "total_insights": len(insights),
+            "insights": insights
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Insight generation failed: {str(e)}"
+        )
+
+@app.post("/api/analysis/{study_id}/chunk/{chunk_index}/analyze")
+async def analyze_single_chunk(
+    study_id: str, 
+    chunk_index: int,
+    analysis_types: List[str] = ["themes", "quotes", "insights"]
+):
+    """Analyze a specific chunk"""
+    try:
+        # Get specific chunk
+        text_summary = document_processor.get_study_text_summary(study_id)
+        combined_text = text_summary["combined_text"]
+        chunks_data = transcript_chunker.chunk_study_content(study_id, combined_text)
+        
+        chunk = transcript_chunker.get_chunk_by_index(chunks_data, chunk_index)
+        if not chunk:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Chunk {chunk_index} not found"
+            )
+        
+        # Analyze the specific chunk
+        chunk_analysis = llm_analyzer.analyze_single_chunk(chunk, analysis_types)
+        
+        return {
+            "study_id": study_id,
+            "chunk_index": chunk_index,
+            "analysis_types": analysis_types,
+            "results": chunk_analysis
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Chunk analysis failed: {str(e)}"
+        )
+
+@app.get("/api/analysis/{study_id}/patterns")
+async def get_study_patterns(study_id: str):
+    """Get extracted behavioral and demographic patterns for a study"""
+    try:
+        # Get chunks and analyze for patterns only
+        text_summary = document_processor.get_study_text_summary(study_id)
+        combined_text = text_summary["combined_text"]
+        chunks_data = transcript_chunker.chunk_study_content(study_id, combined_text)
+        
+        analysis_results = llm_analyzer.analyze_study_chunks(chunks_data, ["patterns"])
+        patterns = analysis_results["aggregated_results"]["all_patterns"]
+        
+        # Group patterns by type for better organization
+        patterns_by_type = {}
+        for pattern in patterns:
+            pattern_type = pattern.get("pattern_type", "other")
+            if pattern_type not in patterns_by_type:
+                patterns_by_type[pattern_type] = []
+            patterns_by_type[pattern_type].append(pattern)
+        
+        return {
+            "study_id": study_id,
+            "total_patterns": len(patterns),
+            "patterns_by_type": patterns_by_type,
+            "all_patterns": patterns
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Pattern analysis failed: {str(e)}"
+        )
 # Error handlers
 @app.exception_handler(404)
 async def not_found_handler(request, exc):

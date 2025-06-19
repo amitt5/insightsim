@@ -598,6 +598,185 @@ class LLMAnalyzer:
             "all_patterns": all_patterns     
         }
 
+    def analyze_complete_transcript(self, study_id: str, all_chunk_results: List[Dict]) -> Dict:
+        """Generate comprehensive analysis of complete transcript"""
+        try:
+            logger.info(f"Starting complete transcript analysis for study {study_id}")
+            
+            # Aggregate all chunk data
+            aggregated_data = self._aggregate_chunk_results(all_chunk_results)
+            
+            # Generate executive summary
+            executive_summary = self._generate_executive_summary(aggregated_data, study_id)
+            
+            # Consolidate themes
+            consolidated_themes = self._consolidate_themes(aggregated_data['all_themes'])
+            
+            # Organize quotes by themes
+            organized_quotes = self._organize_quotes_by_themes(
+                aggregated_data['all_quotes'], 
+                consolidated_themes
+            )
+            
+            # Generate actionable insights
+            actionable_insights = self._generate_actionable_insights(
+                consolidated_themes, 
+                organized_quotes
+            )
+            
+            return {
+                "study_id": study_id,
+                "analysis_type": "complete_transcript",
+                "executive_summary": executive_summary,
+                "consolidated_themes": consolidated_themes,
+                "organized_quotes": organized_quotes,
+                "actionable_insights": actionable_insights,
+                "metadata": {
+                    "total_chunks": len(all_chunk_results),
+                    "successful_chunks": len([r for r in all_chunk_results if not r.get('error', False)]),
+                    "analysis_timestamp": datetime.utcnow().isoformat()
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Complete transcript analysis failed: {str(e)}")
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=f"Transcript analysis failed: {str(e)}")
+
+    def _aggregate_chunk_results(self, chunk_results: List[Dict]) -> Dict:
+        """Aggregate data from all chunk analyses"""
+        logger.info("Aggregating chunk results")
+        
+        all_themes = []
+        all_quotes = []
+        all_insights = []
+        all_patterns = []
+        
+        for chunk_result in chunk_results:
+            if not chunk_result.get('error', False):
+                # Extract themes
+                if 'themes' in chunk_result:
+                    for theme in chunk_result['themes']:
+                        theme['source_chunk'] = chunk_result.get('chunk_id', 'unknown')
+                        all_themes.append(theme)
+                
+                # Extract quotes
+                if 'quotes' in chunk_result:
+                    for quote in chunk_result['quotes']:
+                        quote['source_chunk'] = chunk_result.get('chunk_id', 'unknown')
+                        all_quotes.append(quote)
+                
+                # Extract insights
+                if 'insights' in chunk_result:
+                    for insight in chunk_result['insights']:
+                        insight['source_chunk'] = chunk_result.get('chunk_id', 'unknown')
+                        all_insights.append(insight)
+                
+                # Extract patterns
+                if 'patterns' in chunk_result:
+                    for pattern in chunk_result['patterns']:
+                        pattern['source_chunk'] = chunk_result.get('chunk_id', 'unknown')
+                        all_patterns.append(pattern)
+        
+        logger.info(f"Aggregated: {len(all_themes)} themes, {len(all_quotes)} quotes, {len(all_insights)} insights, {len(all_patterns)} patterns")
+        
+        return {
+            'all_themes': all_themes,
+            'all_quotes': all_quotes,
+            'all_insights': all_insights,
+            'all_patterns': all_patterns
+        }
+
+    def _generate_executive_summary(self, aggregated_data: Dict, study_id: str) -> Dict:
+        """Generate executive summary using OpenAI"""
+        logger.info("Generating executive summary")
+        
+        # Prepare summary of key findings for OpenAI
+        summary_input = {
+            "total_themes": len(aggregated_data['all_themes']),
+            "total_quotes": len(aggregated_data['all_quotes']),
+            "key_themes": [theme.get('theme_name', '') for theme in aggregated_data['all_themes'][:10]],
+            "sample_quotes": [quote.get('quote_text', '')[:100] for quote in aggregated_data['all_quotes'][:5]]
+        }
+        
+        system_prompt = """You are a senior market research analyst creating an executive summary.
+        Based on the focus group analysis data provided, create a comprehensive executive summary.
+        You must respond with valid JSON only, no additional text.
+        
+        Return this exact JSON structure:
+        {
+            "executive_summary": {
+                "overview": "string - 2-3 sentence overview of the research",
+                "key_findings": ["string - top 5 key findings"],
+                "participant_sentiment": "overall positive/negative/mixed sentiment",
+                "primary_themes": ["string - top 3 most important themes"],
+                "business_implications": ["string - 3-5 business implications"],
+                "recommendations": ["string - 3-5 actionable recommendations"]
+            }
+        }"""
+        
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Create executive summary from this focus group data:\n\n{json.dumps(summary_input, indent=2)}"}
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=2000
+            )
+            
+            raw_content = response.choices[0].message.content
+            cleaned_json = self._clean_json_response(raw_content)
+            result = json.loads(cleaned_json)
+            
+            logger.info("Successfully generated executive summary")
+            return result.get('executive_summary', {})
+            
+        except Exception as e:
+            logger.error(f"Executive summary generation failed: {str(e)}")
+            return {
+                "overview": "Executive summary generation failed",
+                "key_findings": ["Manual review required"],
+                "participant_sentiment": "unknown",
+                "primary_themes": ["Analysis error"],
+                "business_implications": ["Review required"],
+                "recommendations": ["Reprocess transcript"]
+            }
+
+    def _consolidate_themes(self, all_themes: List[Dict]) -> List[Dict]:
+        """Consolidate and rank themes by frequency and importance"""
+        logger.info("Consolidating themes")
+        
+        # Group similar themes
+        theme_groups = {}
+        for theme in all_themes:
+            theme_name = theme.get('theme_name', 'Unknown')
+            
+            if theme_name not in theme_groups:
+                theme_groups[theme_name] = {
+                    'theme_name': theme_name,
+                    'frequency': 0,
+                    'descriptions': [],
+                    'key_points': [],
+                    'related_quotes': [],
+                    'source_chunks': []
+                }
+            
+            theme_groups[theme_name]['frequency'] += 1
+            theme_groups[theme_name]['descriptions'].append(theme.get('description', ''))
+            theme_groups[theme_name]['key_points'].extend(theme.get('key_points', []))
+            theme_groups[theme_name]['related_quotes'].extend(theme.get('related_quotes', []))
+            theme_groups[theme_name]['source_chunks'].append(theme.get('source_chunk', ''))
+        
+        # Convert to list and sort by frequency
+        consolidated = list(theme_groups.values())
+        consolidated.sort(key=lambda x: x['frequency'], reverse=True)
+        
+        logger.info(f"Consolidated {len(all_themes)} themes into {len(consolidated)} unique themes")
+        return consolidated[:10]  # Return top 10 themes
+
 
     def _clean_json_response(self, raw_content: str) -> str:
         """Clean and prepare JSON response for parsing"""

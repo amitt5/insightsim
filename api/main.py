@@ -537,6 +537,66 @@ async def get_study_patterns(study_id: str):
             status_code=500,
             detail=f"Pattern analysis failed: {str(e)}"
         )
+
+@app.post("/api/analysis/{study_id}/complete")
+async def analyze_complete_transcript(study_id: str):
+    """Analyze complete transcript and generate comprehensive report"""
+    try:
+        logger.info(f"Starting complete transcript analysis for study {study_id}")
+        
+        # First, analyze all chunks
+        chunks = get_study_chunks(study_id)
+        
+        chunk_results = []
+        for i, chunk in enumerate(chunks):
+            try:
+                logger.info(f"Analyzing chunk {i}")
+                # Analyze each chunk for all types
+                themes = llm_analyzer.analyze_chunk_themes(chunk.text, str(i))
+                logger.info(f"Themes: {themes}")
+                quotes = llm_analyzer.analyze_chunk_quotes(chunk.text, str(i))
+                logger.info(f"Quotes: {quotes}")
+                insights = llm_analyzer.analyze_chunk_insights(chunk.text, str(i))
+                logger.info(f"Insights: {insights}")
+                patterns = llm_analyzer.analyze_chunk_patterns(chunk.text, str(i))
+                logger.info(f"Patterns: {patterns}")
+                # Combine all analyses for this chunk
+                combined_result = {
+                    "chunk_id": str(i),
+                    "themes": themes.get('themes', []),
+                    "quotes": quotes.get('quotes', []),
+                    "insights": insights.get('insights', []),
+                    "patterns": patterns.get('patterns', []),
+                    "error": False
+                }
+                
+                chunk_results.append(combined_result)
+                logger.info(f"Completed analysis for chunk {i+1}/{len(chunks)}")
+                
+            except Exception as e:
+                logger.error(f"Failed to analyze chunk {i}: {str(e)}")
+                chunk_results.append({
+                    "chunk_id": str(i),
+                    "error": True,
+                    "error_message": str(e)
+                })
+        
+        # Generate complete transcript analysis
+        complete_analysis = llm_analyzer.analyze_complete_transcript(study_id, chunk_results)
+        
+        return {
+            "study_id": study_id,
+            "status": "completed",
+            "chunk_results": chunk_results,
+            "complete_analysis": complete_analysis,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Complete transcript analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
 # Error handlers
 @app.exception_handler(404)
 async def not_found_handler(request, exc):

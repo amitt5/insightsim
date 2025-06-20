@@ -18,7 +18,7 @@ import logging
 import traceback
 
 import time
-from vector_processor import VectorProcessor, EmbeddingManager
+from vector_processor import VectorProcessor, EmbeddingManager, SemanticSearchEngine
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -915,6 +915,87 @@ async def refresh_study_embeddings(study_id: str):
     except Exception as e:
         logger.error(f"Failed to refresh embeddings: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Embedding refresh failed: {str(e)}")
+
+# step 12
+from vector_processor import VectorProcessor, SemanticSearchEngine
+
+@app.get("/api/search/insights/cross-study")
+async def search_insights_across_studies(
+    query: str,
+    min_similarity: float = 0.6,
+    business_impact: str = None,
+    timeline: str = None,
+    study_ids: str = None,
+    limit: int = 10
+):
+    """Search for insights across all studies with business context"""
+    try:
+        vector_processor = VectorProcessor()
+        search_engine = SemanticSearchEngine(vector_processor)
+        
+        # Build context from parameters
+        context = {
+            "min_similarity": min_similarity,
+            "business_impact": business_impact,
+            "timeline": timeline,
+            "study_ids": study_ids.split(',') if study_ids else None
+        }
+        
+        results = search_engine.search_insights_across_studies(query, context, limit)
+        
+        return {
+            "status": "success",
+            "search_results": results,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Cross-study insight search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+@app.get("/api/search/business-context")
+async def search_with_business_context(
+    query: str,
+    business_scenario: str,
+    limit: int = 8
+):
+    """Search insights with specific business scenario context"""
+    try:
+        vector_processor = VectorProcessor()
+        search_engine = SemanticSearchEngine(vector_processor)
+        
+        results = search_engine.search_with_business_context(query, business_scenario, limit)
+        
+        return {
+            "status": "success",
+            "search_results": results,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Business context search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Business search failed: {str(e)}")
+
+@app.get("/api/insights/{insight_id}/recommendations")
+async def get_insight_recommendations(insight_id: str, limit: int = 5):
+    """Get recommended insights based on a specific insight"""
+    try:
+        vector_processor = VectorProcessor()
+        search_engine = SemanticSearchEngine(vector_processor)
+        
+        recommendations = search_engine.find_insight_recommendations(insight_id, limit)
+        
+        return {
+            "status": "success",
+            "insight_id": insight_id,
+            "recommendations": recommendations,
+            "count": len(recommendations),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Insight recommendations failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Recommendations failed: {str(e)}")
 
 
 # Error handlers

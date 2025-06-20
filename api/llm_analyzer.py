@@ -911,18 +911,18 @@ class LLMAnalyzer:
             
             # Cross-transcript analysis
             cross_themes = self._analyze_cross_themes(all_study_analyses)
-            # demographic_patterns = self._analyze_demographic_patterns(all_study_analyses)
-            # consensus_analysis = self._analyze_consensus_vs_divergence(all_study_analyses)
-            # trend_analysis = self._analyze_trends_across_studies(all_study_analyses)
+            demographic_patterns = self._analyze_demographic_patterns(all_study_analyses)
+            consensus_analysis = self._analyze_consensus_vs_divergence(all_study_analyses)
+            trend_analysis = self._analyze_trends_across_studies(all_study_analyses)
             meta_insights = self._generate_meta_insights(all_study_analyses)
             
             return {
                 "analysis_type": "cross_transcript",
                 "studies_analyzed": study_ids,
                 "cross_themes": cross_themes,
-                # "demographic_patterns": demographic_patterns,
-                # "consensus_analysis": consensus_analysis,
-                # "trend_analysis": trend_analysis,
+                "demographic_patterns": demographic_patterns,
+                "consensus_analysis": consensus_analysis,
+                "trend_analysis": trend_analysis,
                 "meta_insights": meta_insights,
                 "metadata": {
                     "total_studies": len(study_ids),
@@ -1060,6 +1060,148 @@ class LLMAnalyzer:
             })
         
         return sorted(clustered_themes, key=lambda x: x['frequency'], reverse=True)
+
+    def _analyze_demographic_patterns(self, all_analyses: List[Dict]) -> Dict:
+        """Analyze demographic patterns across studies"""
+        logger.info("Analyzing demographic patterns")
+        
+        # Extract demographic-related insights from all studies
+        demographic_data = []
+        for analysis in all_analyses:
+            study_id = analysis.get('study_id', 'unknown')
+            insights = analysis.get('actionable_insights', [])
+            patterns = []
+            
+            # Look for demographic patterns in insights
+            for insight in insights:
+                if any(keyword in insight.get('insight_description', '').lower() 
+                    for keyword in ['age', 'demographic', 'generation', 'segment', 'group']):
+                    patterns.append({
+                        'study_id': study_id,
+                        'pattern': insight.get('insight_description', ''),
+                        'type': insight.get('insight_type', 'unknown')
+                    })
+            
+            demographic_data.extend(patterns)
+        
+        return {
+            "demographic_patterns": demographic_data,
+            "pattern_count": len(demographic_data),
+            "studies_with_patterns": len(set([p['study_id'] for p in demographic_data]))
+        }
+
+    def _analyze_consensus_vs_divergence(self, all_analyses: List[Dict]) -> Dict:
+        """Analyze where studies agree vs disagree"""
+        logger.info("Analyzing consensus vs divergence")
+        
+        # Collect themes from all studies
+        all_themes = {}
+        for analysis in all_analyses:
+            study_id = analysis.get('study_id', 'unknown')
+            themes = analysis.get('consolidated_themes', [])
+            
+            for theme in themes:
+                theme_name = theme.get('theme_name', '').lower()
+                if theme_name not in all_themes:
+                    all_themes[theme_name] = []
+                
+                all_themes[theme_name].append({
+                    'study_id': study_id,
+                    'frequency': theme.get('frequency', 0),
+                    'description': theme.get('descriptions', [''])[0] if theme.get('descriptions') else ''
+                })
+        
+        # Categorize themes
+        consensus_themes = []  # Appear in multiple studies
+        divergent_themes = []  # Appear in only one study
+        
+        for theme_name, occurrences in all_themes.items():
+            if len(occurrences) > 1:
+                consensus_themes.append({
+                    'theme': theme_name,
+                    'studies': [occ['study_id'] for occ in occurrences],
+                    'consistency': 'high' if len(occurrences) == len(all_analyses) else 'medium'
+                })
+            else:
+                divergent_themes.append({
+                    'theme': theme_name,
+                    'study': occurrences[0]['study_id'],
+                    'uniqueness': 'study_specific'
+                })
+        
+        return {
+            "consensus_themes": consensus_themes,
+            "divergent_themes": divergent_themes,
+            "consensus_rate": len(consensus_themes) / len(all_themes) if all_themes else 0
+        }
+
+    def _analyze_trends_across_studies(self, all_analyses: List[Dict]) -> Dict:
+        """Analyze trends and patterns across studies"""
+        logger.info("Analyzing trends across studies")
+        
+        # Prepare trend data for OpenAI analysis
+        trend_data = {
+            "studies": [],
+            "common_patterns": []
+        }
+        
+        for analysis in all_analyses:
+            study_summary = {
+                "study_id": analysis.get('study_id', ''),
+                "top_themes": [t.get('theme_name', '') for t in analysis.get('consolidated_themes', [])[:3]],
+                "sentiment_indicators": [],
+                "key_insights": [i.get('insight_title', '') for i in analysis.get('actionable_insights', [])[:2]]
+            }
+            trend_data["studies"].append(study_summary)
+        
+        # Use OpenAI to identify trends
+        trend_prompt = """You are analyzing trends across multiple market research studies.
+        Identify emerging patterns, recurring themes, and directional trends.
+        You must respond with valid JSON only, no additional text.
+        
+        Return this exact JSON structure:
+        {
+            "trends": [
+                {
+                    "trend_name": "string",
+                    "trend_direction": "increasing/decreasing/stable/emerging",
+                    "evidence": ["string"],
+                    "confidence": "high/medium/low",
+                    "business_impact": "string"
+                }
+            ]
+        }"""
+        
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": trend_prompt},
+                    {"role": "user", "content": f"Identify trends from this cross-study data:\n\n{json.dumps(trend_data, indent=2)}"}
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=1500
+            )
+            
+            raw_content = response.choices[0].message.content
+            cleaned_json = self._clean_json_response(raw_content)
+            result = json.loads(cleaned_json)
+            
+            return {
+                "identified_trends": result.get('trends', []),
+                "trend_analysis_method": "ai_powered",
+                "studies_analyzed": len(all_analyses)
+            }
+            
+        except Exception as e:
+            logger.error(f"Trend analysis failed: {str(e)}")
+            return {
+                "identified_trends": [],
+                "error": f"Trend analysis failed: {str(e)}",
+                "studies_analyzed": len(all_analyses)
+            }
+
 
     def _themes_are_similar(self, theme1: str, theme2: str) -> bool:
         """Simple similarity check for theme clustering"""

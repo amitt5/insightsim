@@ -777,6 +777,114 @@ class LLMAnalyzer:
         logger.info(f"Consolidated {len(all_themes)} themes into {len(consolidated)} unique themes")
         return consolidated[:10]  # Return top 10 themes
 
+    def _organize_quotes_by_themes(self, all_quotes: List[Dict], consolidated_themes: List[Dict]) -> Dict:
+        """Organize quotes by themes for better presentation"""
+        logger.info("Organizing quotes by themes")
+        
+        organized = {}
+        
+        for theme in consolidated_themes:
+            theme_name = theme.get('theme_name', 'Unknown')
+            organized[theme_name] = {
+                'theme_info': theme,
+                'related_quotes': []
+            }
+        
+        # Match quotes to themes
+        for quote in all_quotes:
+            quote_text = quote.get('quote_text', '').lower()
+            best_match = None
+            
+            # Simple keyword matching to assign quotes to themes
+            for theme in consolidated_themes:
+                theme_name = theme.get('theme_name', '')
+                theme_keywords = theme.get('key_points', [])
+                
+                # Check if quote relates to this theme
+                for keyword in theme_keywords:
+                    if keyword.lower() in quote_text:
+                        best_match = theme_name
+                        break
+                
+                if best_match:
+                    break
+            
+            # Add quote to best matching theme or "Other"
+            if best_match and best_match in organized:
+                organized[best_match]['related_quotes'].append(quote)
+            else:
+                if 'Other' not in organized:
+                    organized['Other'] = {'theme_info': {'theme_name': 'Other'}, 'related_quotes': []}
+                organized['Other']['related_quotes'].append(quote)
+        
+        logger.info(f"Organized {len(all_quotes)} quotes across {len(organized)} themes")
+        return organized
+
+    def _generate_actionable_insights(self, consolidated_themes: List[Dict], organized_quotes: Dict) -> List[Dict]:
+        """Generate actionable business insights using OpenAI"""
+        logger.info("Generating actionable insights")
+        
+        # Prepare data for OpenAI
+        insights_input = {
+            "top_themes": [theme.get('theme_name', '') for theme in consolidated_themes[:5]],
+            "theme_frequencies": [theme.get('frequency', 0) for theme in consolidated_themes[:5]],
+            "sample_quotes": []
+        }
+        
+        # Add sample quotes from each theme
+        for theme_name, theme_data in list(organized_quotes.items())[:3]:
+            quotes = theme_data.get('related_quotes', [])[:2]
+            for quote in quotes:
+                insights_input['sample_quotes'].append(quote.get('quote_text', ''))
+        
+        system_prompt = """You are a senior business consultant analyzing market research data.
+        Generate actionable business insights and recommendations based on the focus group themes and quotes.
+        You must respond with valid JSON only, no additional text.
+        
+        Return this exact JSON structure:
+        {
+            "actionable_insights": [
+                {
+                    "insight_title": "string",
+                    "insight_description": "string",
+                    "business_impact": "high/medium/low",
+                    "recommended_actions": ["string"],
+                    "timeline": "immediate/short-term/long-term",
+                    "success_metrics": ["string"]
+                }
+            ]
+        }"""
+        
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Generate actionable insights from this research data:\n\n{json.dumps(insights_input, indent=2)}"}
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=2000
+            )
+            
+            raw_content = response.choices[0].message.content
+            cleaned_json = self._clean_json_response(raw_content)
+            result = json.loads(cleaned_json)
+            
+            logger.info("Successfully generated actionable insights")
+            return result.get('actionable_insights', [])
+            
+        except Exception as e:
+            logger.error(f"Actionable insights generation failed: {str(e)}")
+            return [{
+                "insight_title": "Analysis Error",
+                "insight_description": f"Failed to generate insights: {str(e)}",
+                "business_impact": "unknown",
+                "recommended_actions": ["Manual review required"],
+                "timeline": "immediate",
+                "success_metrics": ["Review completion"]
+            }]
+
 
     def _clean_json_response(self, raw_content: str) -> str:
         """Clean and prepare JSON response for parsing"""

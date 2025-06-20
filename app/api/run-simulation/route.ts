@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       response_format: { "type": "json_object" }
     });
 
-    // Extract usage info
+  // Extract usage info
     const usage = completion.usage;
 
     console.log("Input tokens:", usage?.prompt_tokens);

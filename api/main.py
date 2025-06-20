@@ -235,18 +235,22 @@ async def get_full_study_text(study_id: str):
 @app.get("/api/analysis/{study_id}/chunks")
 async def get_study_chunks(study_id: str):
     """Generate and return text chunks for a study"""
+    logger.info(f"Getting study chunks for study {study_id}")
     try:
         # First, get the full text content from document processor
+        logger.info(f"Getting study chunks for study {study_id}")
         text_summary = document_processor.get_study_text_summary(study_id)
         combined_text = text_summary["combined_text"]
-        
+        logger.info(f"Combined text: {combined_text}")
         # Create chunks using the transcript chunker
         chunks_data = transcript_chunker.chunk_study_content(study_id, combined_text)
-        
+        logger.info(f"Chunks data: {chunks_data}")
+        logger.info(f"Chunks111 {chunks_data['chunks']}")
         return {
             "study_id": study_id,
             "status": "success",
             "chunking_summary": chunks_data["chunking_summary"],
+            "chunks": chunks_data["chunks"],
             "chunks_preview": [
                 {
                     "chunk_id": chunk["chunk_id"],
@@ -545,20 +549,22 @@ async def analyze_complete_transcript(study_id: str):
         logger.info(f"Starting complete transcript analysis for study {study_id}")
         
         # First, analyze all chunks
-        chunks = get_study_chunks(study_id)
+        study_chunks = await get_study_chunks(study_id)
+        chunks = study_chunks["chunks"]
+        logger.info(f"Chunks: {chunks}")
         
         chunk_results = []
         for i, chunk in enumerate(chunks):
             try:
                 logger.info(f"Analyzing chunk {i}")
                 # Analyze each chunk for all types
-                themes = llm_analyzer.analyze_chunk_themes(chunk.text, str(i))
+                themes = llm_analyzer.analyze_chunk_themes(chunk["text"], str(i))
                 logger.info(f"Themes: {themes}")
-                quotes = llm_analyzer.analyze_chunk_quotes(chunk.text, str(i))
+                quotes = llm_analyzer.analyze_chunk_quotes(chunk["text"], str(i))
                 logger.info(f"Quotes: {quotes}")
-                insights = llm_analyzer.analyze_chunk_insights(chunk.text, str(i))
+                insights = llm_analyzer.analyze_chunk_insights(chunk["text"], str(i))
                 logger.info(f"Insights: {insights}")
-                patterns = llm_analyzer.analyze_chunk_patterns(chunk.text, str(i))
+                patterns = llm_analyzer.analyze_chunk_patterns(chunk["text"], str(i))
                 logger.info(f"Patterns: {patterns}")
                 # Combine all analyses for this chunk
                 combined_result = {

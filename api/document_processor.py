@@ -133,7 +133,6 @@ class DocumentProcessor:
     def get_study_text_summary(self, study_id: str) -> Dict[str, Union[str, int]]:
         """Get summary statistics for all text in a study"""
         processed_files = self.process_study_files(study_id)
-        
         total_characters = sum(file_data["character_count"] for file_data in processed_files)
         total_words = sum(file_data["word_count"] for file_data in processed_files)
         total_pages = sum(file_data["page_count"] for file_data in processed_files)

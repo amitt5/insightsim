@@ -17,6 +17,9 @@ from llm_analyzer import llm_analyzer
 import logging
 import traceback
 
+import time
+from vector_processor import VectorProcessor, EmbeddingManager
+
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -818,6 +821,100 @@ async def analyze_complete_transcript_internal(study_id: str) -> Dict:
     except Exception as e:
         logger.error(f"Internal complete transcript analysis failed: {str(e)}")
         raise Exception(f"Internal analysis failed: {str(e)}")
+
+# step 11
+
+@app.post("/api/embeddings/batch-process")
+async def batch_process_embeddings(study_ids: List[str], force_refresh: bool = False):
+    """Process embeddings for multiple studies in batch"""
+    try:
+        vector_processor = VectorProcessor()
+        embedding_manager = EmbeddingManager(vector_processor)
+        
+        results = embedding_manager.batch_process_studies(study_ids, force_refresh)
+        
+        return {
+            "status": "completed",
+            "batch_results": results,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Batch embedding processing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Batch processing failed: {str(e)}")
+
+@app.get("/api/search/advanced")
+async def advanced_similarity_search(
+    query: str,
+    search_type: str = "all",
+    study_id: str = None,
+    similarity_threshold: float = 0.7,
+    limit: int = 10
+):
+    """Advanced similarity search with filtering"""
+    try:
+        vector_processor = VectorProcessor()
+        embedding_manager = EmbeddingManager(vector_processor)
+        
+        filters = {
+            "study_id": study_id,
+            "similarity_threshold": similarity_threshold
+        }
+        
+        results = embedding_manager.advanced_similarity_search(query, search_type, filters, limit)
+        
+        return {
+            "status": "success",
+            "search_results": results,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Advanced search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Advanced search failed: {str(e)}")
+
+@app.get("/api/embeddings/statistics")
+async def get_embedding_statistics():
+    """Get statistics about stored embeddings"""
+    try:
+        vector_processor = VectorProcessor()
+        embedding_manager = EmbeddingManager(vector_processor)
+        
+        stats = embedding_manager.get_embedding_statistics()
+        
+        return {
+            "status": "success",
+            "statistics": stats,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get embedding statistics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Statistics retrieval failed: {str(e)}")
+
+@app.put("/api/embeddings/{study_id}/refresh")
+async def refresh_study_embeddings(study_id: str):
+    """Refresh embeddings for a specific study"""
+    try:
+        # Get fresh analysis
+        updated_analysis = await analyze_complete_transcript_internal(study_id)
+        
+        # Update embeddings
+        vector_processor = VectorProcessor()
+        embedding_manager = EmbeddingManager(vector_processor)
+        
+        success = embedding_manager.update_study_embeddings(study_id, updated_analysis)
+        
+        return {
+            "status": "success" if success else "failed",
+            "study_id": study_id,
+            "embeddings_refreshed": success,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to refresh embeddings: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Embedding refresh failed: {str(e)}")
 
 
 # Error handlers

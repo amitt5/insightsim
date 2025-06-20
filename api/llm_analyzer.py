@@ -886,6 +886,254 @@ class LLMAnalyzer:
                 "success_metrics": ["Review completion"]
             }]
 
+    async def analyze_cross_transcript_patterns(self, study_ids: List[str], get_chunks_func) -> Dict:
+        """Analyze patterns across multiple transcripts"""
+        try:
+            logger.info(f"Starting cross-transcript analysis for {len(study_ids)} studies")
+            
+            # Get individual analyses for each study
+            all_study_analyses = []
+            for study_id in study_ids:
+                try:
+                    # Get existing analysis or generate new one
+                    logger.info(f"Getting analysis for study {study_id}")
+                    study_analysis = await self._get_or_generate_study_analysis(study_id, get_chunks_func)
+                    logger.info(f"Study analysis: {study_analysis}")
+                    study_analysis['study_id'] = study_id
+                    all_study_analyses.append(study_analysis)
+                    logger.info(f"Loaded analysis for study {study_id}")
+                except Exception as e:
+                    logger.error(f"Failed to load analysis for study {study_id}: {str(e)}")
+                    continue
+            
+            if not all_study_analyses:
+                raise ValueError("No valid study analyses found")
+            
+            # Cross-transcript analysis
+            cross_themes = self._analyze_cross_themes(all_study_analyses)
+            # demographic_patterns = self._analyze_demographic_patterns(all_study_analyses)
+            # consensus_analysis = self._analyze_consensus_vs_divergence(all_study_analyses)
+            # trend_analysis = self._analyze_trends_across_studies(all_study_analyses)
+            meta_insights = self._generate_meta_insights(all_study_analyses)
+            
+            return {
+                "analysis_type": "cross_transcript",
+                "studies_analyzed": study_ids,
+                "cross_themes": cross_themes,
+                # "demographic_patterns": demographic_patterns,
+                # "consensus_analysis": consensus_analysis,
+                # "trend_analysis": trend_analysis,
+                "meta_insights": meta_insights,
+                "metadata": {
+                    "total_studies": len(study_ids),
+                    "successful_analyses": len(all_study_analyses),
+                    "analysis_timestamp": datetime.utcnow().isoformat()
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Cross-transcript analysis failed: {str(e)}")
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=f"Cross-transcript analysis failed: {str(e)}")
+
+    async def _get_or_generate_study_analysis(self, study_id: str, get_chunks_func) -> Dict:
+        """Get existing analysis or generate new one for a study"""
+        try:
+            # Try to load existing analysis (you might store these)
+            # For now, generate fresh analysis
+            logger.info(f"Getting chunks111 for study {study_id}")
+            study_chunks = await get_chunks_func(study_id)  # Your existing function
+            chunks = study_chunks["chunks"]
+            logger.info(f"Chunks111: {chunks}")
+            chunk_results = []
+            for i, chunk in enumerate(chunks):
+                # Get chunk text properly based on your structure
+                logger.info(f"Chunk221: {chunk}")
+                chunk_text = chunk["text"]
+                # chunk_text = self._extract_chunk_text(chunk)
+                logger.info(f"Chunk text222: {chunk_text}")
+                # Analyze chunk
+                themes = self.analyze_chunk_themes(chunk_text, str(i))
+                quotes = self.analyze_chunk_quotes(chunk_text, str(i))
+                insights = self.analyze_chunk_insights(chunk_text, str(i))
+                
+                chunk_results.append({
+                    "chunk_id": str(i),
+                    "themes": themes.get('themes', []),
+                    "quotes": quotes.get('quotes', []),
+                    "insights": insights.get('insights', [])
+                })
+            
+            # Generate complete analysis
+            return self.analyze_complete_transcript(study_id, chunk_results)
+            
+        except Exception as e:
+            logger.error(f"Failed to get analysis for study {study_id}: {str(e)}")
+            raise
+
+    def _analyze_cross_themes(self, all_analyses: List[Dict]) -> Dict:
+        """Find common themes across multiple studies"""
+        logger.info("Analyzing cross-transcript themes")
+        
+        # Collect all themes from all studies
+        all_themes = []
+        for analysis in all_analyses:
+            study_id = analysis.get('study_id', 'unknown')
+            themes = analysis.get('consolidated_themes', [])
+            
+            for theme in themes:
+                theme['source_study'] = study_id
+                all_themes.append(theme)
+        
+        # Group similar themes across studies
+        theme_clusters = self._cluster_similar_themes(all_themes)
+        
+        # Use OpenAI to analyze cross-study theme patterns
+        cross_theme_prompt = """You are analyzing themes across multiple focus group studies.
+        Identify common patterns, recurring themes, and variations across different groups.
+        You must respond with valid JSON only, no additional text.
+        
+        Return this exact JSON structure:
+        {
+            "cross_themes": [
+                {
+                    "theme_name": "string",
+                    "frequency_across_studies": "high/medium/low",
+                    "consistency": "consistent/variable/divergent",
+                    "study_variations": ["string"],
+                    "meta_insight": "string"
+                }
+            ]
+        }"""
+        
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": cross_theme_prompt},
+                    {"role": "user", "content": f"Analyze these cross-study themes:\n\n{json.dumps(theme_clusters[:20], indent=2)}"}
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=2000
+            )
+            
+            raw_content = response.choices[0].message.content
+            cleaned_json = self._clean_json_response(raw_content)
+            result = json.loads(cleaned_json)
+            
+            return result.get('cross_themes', [])
+            
+        except Exception as e:
+            logger.error(f"Cross-theme analysis failed: {str(e)}")
+            return []
+
+    def _cluster_similar_themes(self, all_themes: List[Dict]) -> List[Dict]:
+        """Group similar themes from different studies"""
+        # Simple clustering by theme name similarity
+        clusters = {}
+        
+        for theme in all_themes:
+            theme_name = theme.get('theme_name', '').lower()
+            
+            # Find existing cluster or create new one
+            cluster_key = None
+            for existing_key in clusters.keys():
+                if self._themes_are_similar(theme_name, existing_key):
+                    cluster_key = existing_key
+                    break
+            
+            if not cluster_key:
+                cluster_key = theme_name
+                clusters[cluster_key] = []
+            
+            clusters[cluster_key].append(theme)
+        
+        # Convert to list format
+        clustered_themes = []
+        for cluster_name, themes in clusters.items():
+            clustered_themes.append({
+                'cluster_name': cluster_name,
+                'themes': themes,
+                'frequency': len(themes),
+                'studies_mentioned': list(set([t.get('source_study', '') for t in themes]))
+            })
+        
+        return sorted(clustered_themes, key=lambda x: x['frequency'], reverse=True)
+
+    def _themes_are_similar(self, theme1: str, theme2: str) -> bool:
+        """Simple similarity check for theme clustering"""
+        # Basic keyword overlap check
+        words1 = set(theme1.lower().split())
+        words2 = set(theme2.lower().split())
+        
+        if not words1 or not words2:
+            return False
+        
+        overlap = len(words1.intersection(words2))
+        min_length = min(len(words1), len(words2))
+        
+        return overlap / min_length > 0.5  # 50% word overlap threshold
+
+    def _generate_meta_insights(self, all_analyses: List[Dict]) -> List[Dict]:
+        """Generate high-level insights that emerge from cross-study analysis"""
+        logger.info("Generating meta-insights")
+        
+        # Prepare summary data for OpenAI
+        meta_data = {
+            "total_studies": len(all_analyses),
+            "common_themes": [],
+            "study_summaries": []
+        }
+        
+        for analysis in all_analyses:
+            study_summary = {
+                "study_id": analysis.get('study_id', ''),
+                "top_themes": [t.get('theme_name', '') for t in analysis.get('consolidated_themes', [])[:3]],
+                "key_insights": [i.get('insight_title', '') for i in analysis.get('actionable_insights', [])[:2]]
+            }
+            meta_data["study_summaries"].append(study_summary)
+        
+        meta_prompt = """You are a senior research director analyzing multiple focus group studies.
+        Generate strategic meta-insights that only become apparent when analyzing multiple studies together.
+        Focus on overarching patterns, market implications, and strategic recommendations.
+        You must respond with valid JSON only, no additional text.
+        
+        Return this exact JSON structure:
+        {
+            "meta_insights": [
+                {
+                    "insight_title": "string",
+                    "insight_description": "string",
+                    "evidence_across_studies": ["string"],
+                    "strategic_importance": "high/medium/low",
+                    "market_implications": "string",
+                    "recommended_strategy": "string"
+                }
+            ]
+        }"""
+        
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": meta_prompt},
+                    {"role": "user", "content": f"Generate meta-insights from this cross-study data:\n\n{json.dumps(meta_data, indent=2)}"}
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=2000
+            )
+            
+            raw_content = response.choices[0].message.content
+            cleaned_json = self._clean_json_response(raw_content)
+            result = json.loads(cleaned_json)
+            
+            return result.get('meta_insights', [])
+            
+        except Exception as e:
+            logger.error(f"Meta-insights generation failed: {str(e)}")
+            return []
 
     def _clean_json_response(self, raw_content: str) -> str:
         """Clean and prepare JSON response for parsing"""

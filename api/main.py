@@ -602,6 +602,27 @@ async def analyze_complete_transcript(study_id: str):
         logger.error(f"Complete transcript analysis failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
+@app.post("/api/analysis/cross-transcript")
+async def analyze_cross_transcripts(study_ids: List[str]):
+    """Analyze patterns across multiple transcripts"""
+    try:
+        if len(study_ids) < 2:
+            raise HTTPException(status_code=400, detail="At least 2 studies required for cross-analysis")
+        
+        logger.info(f"Starting cross-transcript analysis for studies: {study_ids}")
+        
+        cross_analysis = await llm_analyzer.analyze_cross_transcript_patterns(study_ids, get_study_chunks)
+        
+        return {
+            "status": "completed",
+            "cross_analysis": cross_analysis,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Cross-transcript analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Cross-analysis failed: {str(e)}")
+
 
 # Error handlers
 @app.exception_handler(404)

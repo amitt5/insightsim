@@ -1,0 +1,28 @@
+Focus Group Discussion - mobile payment preferences Study
+Date: January 20, 2025
+Moderator: Sarah Johnson
+Participants: 6 people, ages 25-45
+Location: Online via Zoom
+
+
+Moderator: Today we're discussing mobile payment apps like Apple Pay, Google Pay, and traditional payment methods. Let's start with Tom.
+
+Tom: I love using Apple Pay everywhere. It's so quick - just tap and go. I don't even carry my wallet anymore. The security feels better than using my actual card.
+
+Jessica: I'm still hesitant about mobile payments. What if my phone dies? What if there's a technical glitch? I prefer using my credit card because it's reliable and I can see the transaction immediately.
+
+David: I use both depending on the situation. For small purchases like coffee, mobile pay is perfect. But for big purchases, I still prefer my card because I want that physical receipt and the familiar process.
+
+Moderator: What about security concerns?
+
+Tom: Mobile payments are actually more secure. They use tokenization, so merchants never see your real card number. Plus, you need Face ID or fingerprint to authorize.
+
+Jessica: That's what they say, but I don't trust it completely. If someone hacks my phone, they could access everything. With a physical card, I can control it better.
+
+David: I think both have risks. But the convenience of mobile pay is winning me over. I just wish more small businesses accepted it.
+
+Moderator: Any final thoughts on adoption barriers?
+
+Jessica: Education is key. Most people don't understand how it works, so they're scared to try it.
+
+Tom: And businesses need better infrastructure. Some card readers are so old they don't support contactless payments.

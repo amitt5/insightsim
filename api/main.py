@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from typing import List, Optional, Dict, Any
@@ -235,7 +235,6 @@ async def get_full_study_text(study_id: str):
 @app.get("/api/analysis/{study_id}/chunks")
 async def get_study_chunks(study_id: str):
     """Generate and return text chunks for a study"""
-    logger.info(f"Getting study chunks for study {study_id}")
     try:
         # First, get the full text content from document processor
         logger.info(f"Getting study chunks for study {study_id}")
@@ -647,8 +646,8 @@ async def get_dashboard_data(study_id: str):
         logger.error(f"Dashboard data retrieval failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Dashboard data failed: {str(e)}")
 
-@app.get("/api/dashboard/cross-analysis")
-async def get_cross_analysis_dashboard(study_ids: str):
+@app.get("/api/cross-analysis/dashboard")
+async def get_cross_analysis_dashboard(study_ids: str = Query(..., description="Comma-separated study IDs")):
     """Get cross-analysis dashboard data"""
     try:
         study_list = study_ids.split(',')
@@ -679,19 +678,17 @@ async def get_or_generate_analysis(study_id: str) -> Dict:
     """Get existing analysis or generate new one"""
     # For now, generate fresh analysis
     # In production, you'd check cache/database first
-    
-    chunks = get_study_chunks(study_id)
-    
+    study_chunks = await get_study_chunks(study_id)
+    chunks = study_chunks["chunks"]
     # Generate complete analysis
     chunk_results = []
     for i, chunk in enumerate(chunks):
-        chunk_text = chunk.get('text', '') if isinstance(chunk, dict) else str(chunk)
-        
+        # chunk_text = chunk.get('text', '') if isinstance(chunk, dict) else str(chunk)
+        chunk_text = chunk["text"]
         themes = llm_analyzer.analyze_chunk_themes(chunk_text, str(i))
         quotes = llm_analyzer.analyze_chunk_quotes(chunk_text, str(i))
         insights = llm_analyzer.analyze_chunk_insights(chunk_text, str(i))
         patterns = llm_analyzer.analyze_chunk_patterns(chunk_text, str(i))
-        
         chunk_results.append({
             "chunk_id": str(i),
             "themes": themes.get('themes', []),

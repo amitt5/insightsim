@@ -1359,5 +1359,395 @@ class LLMAnalyzer:
         
         return fallback_structures.get(analysis_type, {"error": True, "chunk_id": chunk_id})
 
+    # step 9
+    def format_results_for_dashboard(self, analysis_result: Dict, analysis_type: str) -> Dict:
+        """Format analysis results for frontend dashboard consumption"""
+        try:
+            logger.info(f"Formatting {analysis_type} results for dashboard")
+            
+            if analysis_type == "single_transcript":
+                return self._format_single_transcript_dashboard(analysis_result)
+            elif analysis_type == "cross_transcript":
+                return self._format_cross_transcript_dashboard(analysis_result)
+            else:
+                return self._format_generic_dashboard(analysis_result)
+                
+        except Exception as e:
+            logger.error(f"Dashboard formatting failed: {str(e)}")
+            return {"error": f"Formatting failed: {str(e)}"}
+
+    def _format_single_transcript_dashboard(self, result: Dict) -> Dict:
+        """Format single transcript results for dashboard"""
+        logger.info("Formatting single transcript for dashboard")
+        
+        complete_analysis = result.get('complete_analysis', {})
+        chunk_results = result.get('chunk_results', [])
+        
+        return {
+            "study_overview": {
+                "study_id": result.get('study_id', ''),
+                "total_chunks": len(chunk_results),
+                "analysis_date": result.get('timestamp', ''),
+                "status": result.get('status', 'completed')
+            },
+            "summary_cards": self._create_summary_cards(complete_analysis),
+            "theme_visualization": self._prepare_theme_charts(complete_analysis),
+            "quote_highlights": self._select_key_quotes(complete_analysis),
+            "insight_cards": self._format_insight_cards(complete_analysis),
+            "export_ready_data": self._prepare_export_data(result),
+            "chart_data": self._prepare_chart_data(complete_analysis)
+        }
+
+    def _create_summary_cards(self, analysis: Dict) -> List[Dict]:
+        """Create summary cards for dashboard overview"""
+        logger.info("Creating summary cards")
+        
+        executive_summary = analysis.get('executive_summary', {})
+        consolidated_themes = analysis.get('consolidated_themes', [])
+        actionable_insights = analysis.get('actionable_insights', [])
+        
+        cards = [
+            {
+                "title": "Key Findings",
+                "value": len(executive_summary.get('key_findings', [])),
+                "description": "Primary insights discovered",
+                "icon": "findings",
+                "color": "blue"
+            },
+            {
+                "title": "Themes Identified",
+                "value": len(consolidated_themes),
+                "description": "Major themes across transcript",
+                "icon": "themes",
+                "color": "green"
+            },
+            {
+                "title": "Actionable Insights",
+                "value": len(actionable_insights),
+                "description": "Business recommendations",
+                "icon": "insights",
+                "color": "purple"
+            },
+            {
+                "title": "Participant Sentiment",
+                "value": executive_summary.get('participant_sentiment', 'Mixed').title(),
+                "description": "Overall sentiment analysis",
+                "icon": "sentiment",
+                "color": self._get_sentiment_color(executive_summary.get('participant_sentiment', 'mixed'))
+            }
+        ]
+        
+        return cards
+
+    def _prepare_theme_charts(self, analysis: Dict) -> Dict:
+        """Prepare theme data for charts and visualizations"""
+        logger.info("Preparing theme visualization data")
+        
+        consolidated_themes = analysis.get('consolidated_themes', [])
+        
+        # Theme frequency chart data
+        theme_frequency = {
+            "labels": [theme.get('theme_name', 'Unknown')[:30] for theme in consolidated_themes[:8]],
+            "data": [theme.get('frequency', 0) for theme in consolidated_themes[:8]],
+            "backgroundColor": [
+                "#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0",
+                "#9966FF", "#FF9F40", "#FF6384", "#C9CBCF"
+            ]
+        }
+        
+        # Theme sentiment distribution
+        sentiment_data = {"positive": 0, "negative": 0, "neutral": 0}
+        for theme in consolidated_themes:
+            descriptions = theme.get('descriptions', [])
+            # Simple sentiment analysis based on keywords
+            sentiment = self._analyze_theme_sentiment(descriptions)
+            sentiment_data[sentiment] += 1
+        
+        return {
+            "theme_frequency": {
+                "type": "doughnut",
+                "data": theme_frequency,
+                "title": "Theme Distribution"
+            },
+            "sentiment_distribution": {
+                "type": "bar",
+                "data": {
+                    "labels": ["Positive", "Negative", "Neutral"],
+                    "datasets": [{
+                        "label": "Theme Sentiment",
+                        "data": [sentiment_data["positive"], sentiment_data["negative"], sentiment_data["neutral"]],
+                        "backgroundColor": ["#4CAF50", "#F44336", "#9E9E9E"]
+                    }]
+                },
+                "title": "Sentiment Analysis"
+            }
+        }
+
+    def _select_key_quotes(self, analysis: Dict) -> List[Dict]:
+        """Select and format key quotes for dashboard display"""
+        logger.info("Selecting key quotes")
+        
+        organized_quotes = analysis.get('organized_quotes', {})
+        key_quotes = []
+        
+        # Get top quotes from each theme
+        for theme_name, theme_data in list(organized_quotes.items())[:5]:
+            quotes = theme_data.get('related_quotes', [])[:2]  # Top 2 quotes per theme
+            
+            for quote in quotes:
+                key_quotes.append({
+                    "text": quote.get('quote_text', ''),
+                    "speaker": quote.get('speaker', 'Participant'),
+                    "theme": theme_name,
+                    "context": quote.get('context', ''),
+                    "sentiment": quote.get('sentiment', 'neutral'),
+                    "relevance_score": quote.get('theme_relevance', 'medium')
+                })
+        
+        # Sort by relevance and return top 10
+        return sorted(key_quotes, key=lambda x: self._quote_relevance_score(x), reverse=True)[:10]
+
+    def _format_insight_cards(self, analysis: Dict) -> List[Dict]:
+        """Format actionable insights as cards"""
+        logger.info("Formatting insight cards")
+        
+        insights = analysis.get('actionable_insights', [])
+        
+        formatted_insights = []
+        for insight in insights[:6]:  # Top 6 insights
+            formatted_insights.append({
+                "title": insight.get('insight_title', 'Insight'),
+                "description": insight.get('insight_description', ''),
+                "impact": insight.get('business_impact', 'medium'),
+                "timeline": insight.get('timeline', 'short-term'),
+                "actions": insight.get('recommended_actions', []),
+                "metrics": insight.get('success_metrics', []),
+                "priority": self._calculate_insight_priority(insight)
+            })
+        
+        return sorted(formatted_insights, key=lambda x: x['priority'], reverse=True)
+
+    def _prepare_export_data(self, result: Dict) -> Dict:
+        """Prepare data for PDF/Excel export"""
+        logger.info("Preparing export data")
+        
+        return {
+            "executive_summary": result.get('complete_analysis', {}).get('executive_summary', {}),
+            "detailed_themes": result.get('complete_analysis', {}).get('consolidated_themes', []),
+            "all_quotes": result.get('complete_analysis', {}).get('organized_quotes', {}),
+            "recommendations": result.get('complete_analysis', {}).get('actionable_insights', []),
+            "metadata": {
+                "export_timestamp": datetime.utcnow().isoformat(),
+                "study_id": result.get('study_id', ''),
+                "total_chunks": len(result.get('chunk_results', []))
+            }
+        }
+
+    def _format_cross_transcript_dashboard(self, result: Dict) -> Dict:
+        """Format cross-transcript results for dashboard"""
+        logger.info("Formatting cross-transcript for dashboard")
+        
+        cross_analysis = result.get('cross_analysis', {})
+        
+        return {
+            "study_comparison": {
+                "studies_analyzed": cross_analysis.get('studies_analyzed', []),
+                "total_studies": cross_analysis.get('metadata', {}).get('total_studies', 0),
+                "analysis_date": result.get('timestamp', '')
+            },
+            "cross_theme_analysis": self._format_cross_themes(cross_analysis.get('cross_themes', [])),
+            "consensus_divergence": self._format_consensus_data(cross_analysis.get('consensus_analysis', {})),
+            "trend_visualization": self._format_trend_data(cross_analysis.get('trend_analysis', {})),
+            "meta_insights": cross_analysis.get('meta_insights', []),
+            "comparison_charts": self._prepare_comparison_charts(cross_analysis)
+        }
+
+    # Helper methods
+    def _get_sentiment_color(self, sentiment: str) -> str:
+        """Get color based on sentiment"""
+        colors = {"positive": "green", "negative": "red", "neutral": "gray", "mixed": "orange"}
+        return colors.get(sentiment.lower(), "gray")
+
+    def _analyze_theme_sentiment(self, descriptions: List[str]) -> str:
+        """Simple sentiment analysis for themes"""
+        positive_words = ["good", "great", "love", "prefer", "convenient", "easy", "fast"]
+        negative_words = ["bad", "hate", "difficult", "slow", "problem", "issue", "concern"]
+        
+        text = " ".join(descriptions).lower()
+        positive_count = sum(1 for word in positive_words if word in text)
+        negative_count = sum(1 for word in negative_words if word in text)
+        
+        if positive_count > negative_count:
+            return "positive"
+        elif negative_count > positive_count:
+            return "negative"
+        else:
+            return "neutral"
+
+    def _quote_relevance_score(self, quote: Dict) -> int:
+        """Calculate quote relevance score for sorting"""
+        score = 0
+        if quote.get('relevance_score') == 'high':
+            score += 3
+        elif quote.get('relevance_score') == 'medium':
+            score += 2
+        else:
+            score += 1
+        
+        if len(quote.get('text', '')) > 50:  # Prefer longer quotes
+            score += 1
+        
+        return score
+
+    def _calculate_insight_priority(self, insight: Dict) -> int:
+        """Calculate insight priority for sorting"""
+        priority = 0
+        
+        if insight.get('business_impact') == 'high':
+            priority += 3
+        elif insight.get('business_impact') == 'medium':
+            priority += 2
+        else:
+            priority += 1
+        
+        if insight.get('timeline') == 'immediate':
+            priority += 2
+        elif insight.get('timeline') == 'short-term':
+            priority += 1
+        
+        return priority
+
+    def _format_generic_dashboard(self, result: Dict) -> Dict:
+        """Generic formatting fallback for dashboard"""
+        return {
+            "raw_result": result,
+            "formatted": False,
+            "message": "Generic formatting applied"
+        }
+
+    def _prepare_chart_data(self, analysis: Dict) -> Dict:
+        """Prepare generic chart data from analysis"""
+        consolidated_themes = analysis.get('consolidated_themes', [])
+        if not consolidated_themes:
+            return {}
+
+        labels = [theme.get('theme_name', 'Unknown')[:30] for theme in consolidated_themes[:10]]
+        data = [theme.get('frequency', 0) for theme in consolidated_themes[:10]]
+
+        return {
+            "theme_frequency_chart": {
+                "type": "bar",
+                "data": {
+                    "labels": labels,
+                    "datasets": [{
+                        "label": "Theme Frequency",
+                        "data": data,
+                        "backgroundColor": "#36A2EB"
+                    }]
+                },
+                "options": {
+                    "responsive": True,
+                    "plugins": {
+                        "legend": {"position": "top"},
+                        "title": {"display": True, "text": "Top Themes Frequency"}
+                    }
+                }
+            }
+        }
+
+    def _format_cross_themes(self, cross_themes: List[Dict]) -> List[Dict]:
+        """Format cross-study theme analysis for dashboard"""
+        formatted = []
+        for theme in cross_themes:
+            formatted.append({
+                "theme_name": theme.get('theme_name', 'Unknown'),
+                "frequency_across_studies": theme.get('frequency_across_studies', 'unknown'),
+                "consistency": theme.get('consistency', 'unknown'),
+                "study_variations": theme.get('study_variations', []),
+                "meta_insight": theme.get('meta_insight', '')
+            })
+        return formatted
+
+    def _format_consensus_data(self, consensus_data: Dict) -> Dict:
+        """Format consensus and divergence data for dashboard"""
+        return {
+            "consensus_themes": consensus_data.get('consensus_themes', []),
+            "divergent_themes": consensus_data.get('divergent_themes', []),
+            "consensus_rate": consensus_data.get('consensus_rate', 0),
+            "total_themes_analyzed": len(consensus_data.get('consensus_themes', [])) + len(consensus_data.get('divergent_themes', []))
+        }
+
+    def _format_trend_data(self, trend_data: Dict) -> Dict:
+        """Format trend analysis data for dashboard"""
+        return {
+            "identified_trends": trend_data.get('identified_trends', []),
+            "trend_analysis_method": trend_data.get('trend_analysis_method', 'unknown'),
+            "studies_analyzed": trend_data.get('studies_analyzed', 0),
+            "trend_count": len(trend_data.get('identified_trends', []))
+        }
+
+    def _prepare_comparison_charts(self, cross_analysis: Dict) -> Dict:
+        """Prepare comparison charts for cross-transcript dashboard"""
+        consensus = cross_analysis.get('consensus_analysis', {})
+        trends = cross_analysis.get('trend_analysis', {})
+
+        # Consensus vs Divergence pie chart
+        consensus_count = len(consensus.get('consensus_themes', []))
+        divergent_count = len(consensus.get('divergent_themes', []))
+
+        pie_chart = {
+            "type": "pie",
+            "data": {
+                "labels": ["Consensus Themes", "Divergent Themes"],
+                "datasets": [{
+                    "data": [consensus_count, divergent_count],
+                    "backgroundColor": ["#4CAF50", "#F44336"]
+                }]
+            },
+            "options": {
+                "responsive": True,
+                "plugins": {
+                    "legend": {"position": "bottom"},
+                    "title": {"display": True, "text": "Consensus vs Divergence"}
+                }
+            }
+        }
+
+        # Trend confidence bar chart
+        trends_list = trends.get('identified_trends', [])
+        trend_names = [t.get('trend_name', 'Unknown')[:20] for t in trends_list[:8]]
+        trend_confidences = [
+            1 if t.get('confidence', 'low') == 'high' else 
+            0.7 if t.get('confidence', 'low') == 'medium' else 0.3 
+            for t in trends_list[:8]
+        ]
+
+        bar_chart = {
+            "type": "bar",
+            "data": {
+                "labels": trend_names,
+                "datasets": [{
+                    "label": "Confidence Level",
+                    "data": trend_confidences,
+                    "backgroundColor": "#2196F3"
+                }]
+            },
+            "options": {
+                "responsive": True,
+                "plugins": {
+                    "legend": {"display": False},
+                    "title": {"display": True, "text": "Trend Confidence Levels"}
+                },
+                "scales": {
+                    "y": {"beginAtZero": True, "max": 1}
+                }
+            }
+        }
+
+        return {
+            "consensus_pie_chart": pie_chart,
+            "trend_bar_chart": bar_chart
+        }
+
 # Create global instance
 llm_analyzer = LLMAnalyzer()

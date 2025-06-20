@@ -623,6 +623,92 @@ async def analyze_cross_transcripts(study_ids: List[str]):
         logger.error(f"Cross-transcript analysis failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Cross-analysis failed: {str(e)}")
 
+# step 9
+@app.get("/api/dashboard/{study_id}")
+async def get_dashboard_data(study_id: str):
+    """Get formatted data for dashboard display"""
+    try:
+        logger.info(f"Getting dashboard data for study {study_id}")
+        
+        # Get existing analysis (you might want to cache this)
+        # Try to get cached analysis first, then generate if needed
+        analysis_result = await get_or_generate_analysis(study_id)
+        
+        # Format for dashboard
+        dashboard_data = llm_analyzer.format_results_for_dashboard(analysis_result, "single_transcript")
+        
+        return {
+            "status": "success",
+            "dashboard_data": dashboard_data,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Dashboard data retrieval failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Dashboard data failed: {str(e)}")
+
+@app.get("/api/dashboard/cross-analysis")
+async def get_cross_analysis_dashboard(study_ids: str):
+    """Get cross-analysis dashboard data"""
+    try:
+        study_list = study_ids.split(',')
+        
+        if len(study_list) < 2:
+            raise HTTPException(status_code=400, detail="At least 2 studies required")
+        
+        # Get cross-analysis
+        cross_result = await llm_analyzer.analyze_cross_transcript_patterns(study_list, get_study_chunks)
+        
+        # Format for dashboard
+        dashboard_data = llm_analyzer.format_results_for_dashboard(
+            {"cross_analysis": cross_result}, 
+            "cross_transcript"
+        )
+        
+        return {
+            "status": "success",
+            "dashboard_data": dashboard_data,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Cross-analysis dashboard failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Cross-analysis dashboard failed: {str(e)}")
+
+async def get_or_generate_analysis(study_id: str) -> Dict:
+    """Get existing analysis or generate new one"""
+    # For now, generate fresh analysis
+    # In production, you'd check cache/database first
+    
+    chunks = get_study_chunks(study_id)
+    
+    # Generate complete analysis
+    chunk_results = []
+    for i, chunk in enumerate(chunks):
+        chunk_text = chunk.get('text', '') if isinstance(chunk, dict) else str(chunk)
+        
+        themes = llm_analyzer.analyze_chunk_themes(chunk_text, str(i))
+        quotes = llm_analyzer.analyze_chunk_quotes(chunk_text, str(i))
+        insights = llm_analyzer.analyze_chunk_insights(chunk_text, str(i))
+        patterns = llm_analyzer.analyze_chunk_patterns(chunk_text, str(i))
+        
+        chunk_results.append({
+            "chunk_id": str(i),
+            "themes": themes.get('themes', []),
+            "quotes": quotes.get('quotes', []),
+            "insights": insights.get('insights', []),
+            "patterns": patterns.get('patterns', [])
+        })
+    
+    complete_analysis = llm_analyzer.analyze_complete_transcript(study_id, chunk_results)
+    
+    return {
+        "study_id": study_id,
+        "status": "completed",
+        "chunk_results": chunk_results,
+        "complete_analysis": complete_analysis,
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 # Error handlers
 @app.exception_handler(404)

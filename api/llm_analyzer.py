@@ -10,6 +10,7 @@ from openai import OpenAI
 from llama_index.core.llms import ChatMessage, MessageRole
 import logging
 import traceback
+from datetime import datetime
 
 
 logging.basicConfig(level=logging.DEBUG)

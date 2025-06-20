@@ -7,6 +7,7 @@ from typing import List, Optional, Dict, Any
 import json
 from datetime import datetime
 import uuid
+from vector_processor import VectorProcessor
 
 from models import StudyMetadata,StatusResponse, UploadResponse, ErrorResponse, AnalysisStatus
 from utils import validate_file, save_uploaded_file, generate_study_id, create_upload_directory
@@ -706,6 +707,118 @@ async def get_or_generate_analysis(study_id: str) -> Dict:
         "complete_analysis": complete_analysis,
         "timestamp": datetime.utcnow().isoformat()
     }
+
+# step 10
+from vector_processor import VectorProcessor
+
+@app.post("/api/analysis/{study_id}/complete-with-vectors")
+async def analyze_complete_transcript_with_vectors(study_id: str):
+    """Analyze complete transcript and store vector embeddings"""
+    try:
+        logger.info(f"Starting complete analysis with vectors for study {study_id}")
+        
+        # Run your existing complete analysis
+        analysis_result = await analyze_complete_transcript_internal(study_id)
+        
+        # Process and store vector embeddings
+        vector_processor = VectorProcessor()
+        vector_success = vector_processor.process_complete_analysis(study_id, analysis_result)
+        
+        return {
+            "study_id": study_id,
+            "status": "completed",
+            "analysis_result": analysis_result,
+            "vector_processing": "success" if vector_success else "failed",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Complete analysis with vectors failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Analysis with vectors failed: {str(e)}")
+
+@app.get("/api/search/similar-themes")
+async def search_similar_themes(query: str, study_id: str = None, limit: int = 5):
+    """Search for similar themes using vector similarity"""
+    try:
+        vector_processor = VectorProcessor()
+        similar_themes = vector_processor.find_similar_themes(query, study_id, limit)
+        
+        return {
+            "query": query,
+            "similar_themes": similar_themes,
+            "count": len(similar_themes)
+        }
+        
+    except Exception as e:
+        logger.error(f"Similar themes search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+async def analyze_complete_transcript_internal(study_id: str) -> Dict:
+    """Internal function to analyze complete transcript (reusable)"""
+    try:
+        logger.info(f"Starting internal complete transcript analysis for study {study_id}")
+        
+        # Get chunks
+        study_chunks = await get_study_chunks(study_id)
+        chunks = study_chunks["chunks"]
+        
+        chunk_results = []
+        for i, chunk in enumerate(chunks):
+            try:
+                logger.info(f"Processing chunk {i+1}/{len(chunks)}")
+                
+                # Extract chunk text properly based on your structure
+                chunk_text = chunk["text"]
+                
+                chunk_id = str(i)
+                
+                if not chunk_text:
+                    logger.warning(f"No text found for chunk {i}")
+                    continue
+                
+                # Analyze the chunk text
+                themes_result = llm_analyzer.analyze_chunk_themes(chunk_text, chunk_id)
+                quotes_result = llm_analyzer.analyze_chunk_quotes(chunk_text, chunk_id)
+                insights_result = llm_analyzer.analyze_chunk_insights(chunk_text, chunk_id)
+                patterns_result = llm_analyzer.analyze_chunk_patterns(chunk_text, chunk_id)
+                
+                # Combine all analyses for this chunk
+                combined_result = {
+                    "chunk_id": chunk_id,
+                    "chunk_index": i,
+                    "themes": themes_result.get('themes', []),
+                    "quotes": quotes_result.get('quotes', []),
+                    "insights": insights_result.get('insights', []),
+                    "patterns": patterns_result.get('patterns', []),
+                    "error": False
+                }
+                
+                chunk_results.append(combined_result)
+                logger.info(f"Completed analysis for chunk {i+1}/{len(chunks)}")
+                
+            except Exception as e:
+                logger.error(f"Failed to analyze chunk {i}: {str(e)}")
+                chunk_results.append({
+                    "chunk_id": str(i),
+                    "error": True,
+                    "error_message": str(e)
+                })
+        
+        # Generate complete transcript analysis
+        complete_analysis = llm_analyzer.analyze_complete_transcript(study_id, chunk_results)
+        
+        return {
+            "study_id": study_id,
+            "status": "completed",
+            "chunk_results": chunk_results,
+            "complete_analysis": complete_analysis,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Internal complete transcript analysis failed: {str(e)}")
+        raise Exception(f"Internal analysis failed: {str(e)}")
+
 
 # Error handlers
 @app.exception_handler(404)

@@ -40,6 +40,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",  # Next.js development server
         "https://insightsim.vercel.app",  # Production domain (update as needed)
+        "https://insightsim.ai",  # Production domain (update as needed)
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -126,6 +127,50 @@ async def upload_transcripts(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
+
+# ADD THIS: New endpoint for getting transcripts
+@app.get("/api/transcripts")
+async def get_transcripts():
+    try:
+        # Replace this with your actual database query
+        # For now, returning mock data - you'll need to connect to your Supabase
+        transcripts_list = [
+            {
+                "id": "1",
+                "name": "Focus Group 1",
+                "status": "completed",
+                "created_at": "2025-06-20T10:00:00Z",
+                "file_size": "2.5MB"
+            },
+            {
+                "id": "2", 
+                "name": "Interview Session 2",
+                "status": "processing",
+                "created_at": "2025-06-20T14:30:00Z",
+                "file_size": "1.8MB"
+            }
+        ]
+        
+        return {"transcripts": transcripts_list}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch transcripts: {str(e)}")
+
+# ADD THIS: Get single transcript
+@app.get("/api/transcripts/{transcript_id}")
+async def get_transcript(transcript_id: str):
+    try:
+        # Replace with actual database query
+        transcript = {
+            "id": transcript_id,
+            "name": f"Transcript {transcript_id}",
+            "status": "completed",
+            "content": "Sample transcript content...",
+            "analysis": {}
+        }
+        return transcript
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Transcript not found")
 
 
 @app.get("/api/analysis/{study_id}/status", response_model=StatusResponse)

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Dashboard } from '@/components/Dashboard';
 import { 
   Upload, 
   FileText, 
@@ -366,7 +367,14 @@ export default function NewAnalysisPage() {
   )
 
   return (
+    
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      
+      <div>
+        <h1>Testing Dashboard Integration</h1>
+          <Dashboard />
+      </div>
+
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h2 className="text-3xl font-bold tracking-tight mb-2">New Analysis</h2>

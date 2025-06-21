@@ -41,12 +41,19 @@ class ApiClient {
   }
   
   // File upload with progress tracking
-  async uploadTranscript(file: File, metadata: any, onProgress?: (progress: number) => void) {
+  async uploadTranscripts(files: File[], metadata: any, onProgress?: (progress: number) => void) {
     const formData = new FormData();
-    formData.append('file', file);
+    
+    // 1) Handle multiple files - loop through files array and append each with key 'files'
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    
+    // 2) Format metadata correctly - convert to JSON string with key 'metadata'
     formData.append('metadata', JSON.stringify(metadata));
     
-    return this.client.post('/api/transcripts/upload', formData, {
+    // 3) Make the API call and handle response format
+    const response = await this.client.post('/api/analysis/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
@@ -55,6 +62,14 @@ class ApiClient {
         }
       },
     });
+    
+    // 4) Return the backend response format: {study_id, job_id, message}
+    return {
+      study_id: response.data.study_id,
+      job_id: response.data.job_id || response.data.study_id, // fallback if job_id not present
+      message: response.data.message,
+      data: response.data // preserve full response for compatibility
+    };
   }
   
   // Analysis endpoints

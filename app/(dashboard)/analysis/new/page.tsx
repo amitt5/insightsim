@@ -87,9 +87,11 @@ export default function NewAnalysisPage() {
   const [files, setFiles] = useState(mockFiles)
   const [metadata, setMetadata] = useState(mockMetadata)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [currentStepText, setCurrentStepText] = useState("")
 
-  const totalSteps = 3
-  const progress = (currentStep / totalSteps) * 100
+  const totalSteps = 4
+  const stepProgress = (currentStep / totalSteps) * 100
 
   const handleRemoveFile = (fileId: string) => {
     setFiles(files.filter(f => f.id !== fileId))
@@ -103,18 +105,41 @@ export default function NewAnalysisPage() {
   }
 
   const handleStartAnalysis = () => {
+    setCurrentStep(3) // Go to processing step
     setIsProcessing(true)
-    // Simulate processing time
-    setTimeout(() => {
-      setCurrentStep(3)
-      setIsProcessing(false)
-    }, 2000)
+    setProgress(0)
+    setCurrentStepText("Initializing analysis...")
+    
+    // Simulate processing with progress updates
+    const progressSteps = [
+      { progress: 10, text: "Extracting text from transcripts..." },
+      { progress: 25, text: "Chunking content for analysis..." },
+      { progress: 45, text: "Analyzing themes and patterns..." },
+      { progress: 65, text: "Extracting key insights..." },
+      { progress: 85, text: "Generating comprehensive report..." },
+      { progress: 100, text: "Analysis complete!" }
+    ]
+    
+    progressSteps.forEach((step, index) => {
+      setTimeout(() => {
+        setProgress(step.progress)
+        setCurrentStepText(step.text)
+        
+        // Move to step 4 when complete
+        if (step.progress === 100) {
+          setTimeout(() => {
+            setCurrentStep(4)
+            setIsProcessing(false)
+          }, 1000)
+        }
+      }, (index + 1) * 2000) // 2 seconds between each step
+    })
   }
 
   const renderStepIndicator = () => (
     <div className="flex items-center justify-center mb-8">
       <div className="flex items-center space-x-4">
-        {[1, 2, 3].map((step) => (
+        {[1, 2, 3, 4].map((step) => (
           <div key={step} className="flex items-center">
             <div className={`
               flex items-center justify-center w-10 h-10 rounded-full border-2 
@@ -129,7 +154,7 @@ export default function NewAnalysisPage() {
                 <span className="text-sm font-semibold">{step}</span>
               )}
             </div>
-            {step < 3 && (
+            {step < 4 && (
               <div className={`
                 w-12 h-0.5 mx-2
                 ${currentStep > step ? 'bg-primary' : 'bg-muted'}
@@ -326,7 +351,30 @@ export default function NewAnalysisPage() {
     </Card>
   )
 
-  const renderStep3 = () => (
+  const AnalysisProcessingStep = () => (
+    <div className="text-center py-12">
+      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4"></div>
+      <h3 className="text-xl font-semibold mb-2">Analyzing Your Transcripts</h3>
+      <p className="text-gray-600 mb-4">This may take 2-5 minutes depending on file size</p>
+      
+      {/* Real-time progress from your FastAPI backend */}
+      <div className="max-w-md mx-auto">
+        <div className="flex justify-between text-sm text-gray-600 mb-1">
+          <span>Processing transcripts...</span>
+          <span>{progress}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="text-sm text-gray-500 mt-2">{currentStepText}</p>
+      </div>
+    </div>
+  )
+
+  const renderStep4 = () => (
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -385,11 +433,11 @@ export default function NewAnalysisPage() {
 
         {/* Progress Indicator */}
         <div className="mb-8">
-          <div className="flex justify-between text-sm text-muted-foreground mb-2">
-            <span>Step {currentStep} of {totalSteps}</span>
-            <span>{Math.round(progress)}% Complete</span>
-          </div>
-          <Progress value={progress} className="h-2" />
+                  <div className="flex justify-between text-sm text-muted-foreground mb-2">
+          <span>Step {currentStep} of {totalSteps}</span>
+          <span>{Math.round(stepProgress)}% Complete</span>
+        </div>
+        <Progress value={stepProgress} className="h-2" />
         </div>
 
         {renderStepIndicator()}
@@ -397,7 +445,8 @@ export default function NewAnalysisPage() {
         {/* Step Content */}
         {currentStep === 1 && renderStep1()}
         {currentStep === 2 && renderStep2()}
-        {currentStep === 3 && renderStep3()}
+        {currentStep === 3 && AnalysisProcessingStep()}
+        {currentStep === 4 && renderStep4()}
       </div>
     </div>
   )

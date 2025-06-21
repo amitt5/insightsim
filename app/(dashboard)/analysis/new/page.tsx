@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Dashboard } from '@/components/Dashboard';
+import { apiClient } from '@/lib/api-client';
 import { 
   Upload, 
   FileText, 
@@ -22,6 +23,16 @@ import {
   Check
 } from "lucide-react"
 import Link from "next/link"
+
+// File wrapper type for UI management
+interface FileWithId {
+  id: string
+  file: File
+  name: string
+  size: string
+  type: string
+  uploadedAt: string
+}
 
 // Mock data for uploaded files
 const mockFiles = [
@@ -84,18 +95,105 @@ const mockMetadata = [
 
 export default function NewAnalysisPage() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [files, setFiles] = useState(mockFiles)
+  const [files, setFiles] = useState<FileWithId[]>([])
   const [metadata, setMetadata] = useState(mockMetadata)
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
   const [currentStepText, setCurrentStepText] = useState("")
+  const [dragActive, setDragActive] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
+  const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({})
+  const [isUploading, setIsUploading] = useState(false)
 
   const totalSteps = 4
   const stepProgress = (currentStep / totalSteps) * 100
 
+  // File validation
+  const validateFile = (file: File): boolean => {
+    const allowedTypes = [
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/pdf'
+    ]
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    
+    return allowedTypes.includes(file.type) && file.size <= maxSize
+  }
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  // Handle file selection
+  const handleFileSelect = (selectedFiles: FileList | File[]) => {
+    const fileArray = Array.from(selectedFiles)
+    const validFiles: FileWithId[] = []
+    
+    fileArray.forEach(file => {
+      if (validateFile(file)) {
+        const fileWithId: FileWithId = {
+          id: crypto.randomUUID(),
+          file: file,
+          name: file.name,
+          size: formatFileSize(file.size),
+          type: file.type,
+          uploadedAt: new Date().toISOString()
+        }
+        validFiles.push(fileWithId)
+      }
+    })
+    
+    setFiles(prev => [...prev, ...validFiles])
+  }
+
+  // Handle file input change
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      handleFileSelect(event.target.files)
+    }
+  }
+
+  // Drag and drop handlers
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true)
+    } else if (e.type === "dragleave") {
+      setDragActive(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+    
+    if (e.dataTransfer.files) {
+      handleFileSelect(e.dataTransfer.files)
+    }
+  }
+
   const handleRemoveFile = (fileId: string) => {
     setFiles(files.filter(f => f.id !== fileId))
     setMetadata(metadata.filter(m => m.fileId !== fileId))
+    // Also remove from upload progress/errors
+    setUploadProgress(prev => {
+      const newProgress = { ...prev }
+      delete newProgress[fileId]
+      return newProgress
+    })
+    setUploadErrors(prev => {
+      const newErrors = { ...prev }
+      delete newErrors[fileId]
+      return newErrors
+    })
   }
 
   const handleMetadataChange = (fileId: string, field: string, value: string) => {
@@ -104,36 +202,88 @@ export default function NewAnalysisPage() {
     ))
   }
 
-  const handleStartAnalysis = () => {
-    setCurrentStep(3) // Go to processing step
-    setIsProcessing(true)
-    setProgress(0)
-    setCurrentStepText("Initializing analysis...")
+  const handleStartAnalysis = async () => {
+    if (files.length === 0) return
     
-    // Simulate processing with progress updates
-    const progressSteps = [
-      { progress: 10, text: "Extracting text from transcripts..." },
-      { progress: 25, text: "Chunking content for analysis..." },
-      { progress: 45, text: "Analyzing themes and patterns..." },
-      { progress: 65, text: "Extracting key insights..." },
-      { progress: 85, text: "Generating comprehensive report..." },
-      { progress: 100, text: "Analysis complete!" }
-    ]
+    setIsUploading(true)
+    setUploadProgress({})
+    setUploadErrors({})
     
-    progressSteps.forEach((step, index) => {
-      setTimeout(() => {
-        setProgress(step.progress)
-        setCurrentStepText(step.text)
-        
-        // Move to step 4 when complete
-        if (step.progress === 100) {
-          setTimeout(() => {
-            setCurrentStep(4)
-            setIsProcessing(false)
-          }, 1000)
+    try {
+      // Prepare metadata for upload (matching StudyMetadata model)
+      const uploadMetadata = {
+        title: `Analysis Study - ${new Date().toLocaleDateString()}`,
+        description: "Qualitative research analysis study",
+        research_type: "focus_group",
+        participant_count: 8,
+        session_date: new Date().toISOString().split('T')[0],
+        location: "Remote",
+        moderator: "System Admin",
+        files_metadata: files.map(f => ({
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          uploadedAt: f.uploadedAt
+        }))
+      }
+      
+      // Extract actual File objects for upload
+      const actualFiles = files.map(f => f.file)
+      
+      // Upload files with progress tracking
+      const result = await apiClient.uploadTranscripts(
+        actualFiles, 
+        uploadMetadata,
+        (progressPercent) => {
+          // Update overall progress (simplified for now)
+          setUploadProgress(prev => ({
+            ...prev,
+            overall: progressPercent
+          }))
         }
-      }, (index + 1) * 2000) // 2 seconds between each step
-    })
+      )
+      
+      console.log('Upload successful:', result)
+      
+      // If upload successful, proceed to analysis processing
+      setIsUploading(false)
+      setCurrentStep(3) // Go to processing step
+      setIsProcessing(true)
+      setProgress(0)
+      setCurrentStepText("Initializing analysis...")
+      
+      // Simulate processing with progress updates
+      const progressSteps = [
+        { progress: 10, text: "Extracting text from transcripts..." },
+        { progress: 25, text: "Chunking content for analysis..." },
+        { progress: 45, text: "Analyzing themes and patterns..." },
+        { progress: 65, text: "Extracting key insights..." },
+        { progress: 85, text: "Generating comprehensive report..." },
+        { progress: 100, text: "Analysis complete!" }
+      ]
+      
+      progressSteps.forEach((step, index) => {
+        setTimeout(() => {
+          setProgress(step.progress)
+          setCurrentStepText(step.text)
+          
+          // Move to step 4 when complete
+          if (step.progress === 100) {
+            setTimeout(() => {
+              setCurrentStep(4)
+              setIsProcessing(false)
+            }, 1000)
+          }
+        }, (index + 1) * 2000) // 2 seconds between each step
+      })
+      
+    } catch (error) {
+      console.error('Upload failed:', error)
+      setIsUploading(false)
+      
+      // Handle upload errors - for now, show alert (we can improve this later)
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   const renderStepIndicator = () => (
@@ -179,19 +329,38 @@ export default function NewAnalysisPage() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* File Upload Area */}
-        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+        <div 
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            dragActive 
+              ? 'border-primary bg-primary/5' 
+              : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
           <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Drop files here or click to upload</h3>
           <p className="text-muted-foreground mb-4">
-            Supported formats: .txt, .doc, .docx, .pdf
+            Supported formats: .txt, .doc, .docx, .pdf (Max 10MB each)
           </p>
-          <Button variant="outline" disabled>
-            <Upload className="h-4 w-4 mr-2" />
-            Choose Files
-          </Button>
-          <p className="text-xs text-muted-foreground mt-2">
-            (File upload functionality will be implemented later)
-          </p>
+          <input
+            type="file"
+            multiple
+            accept=".txt,.doc,.docx,.pdf"
+            onChange={handleFileInputChange}
+            className="hidden"
+            id="file-upload"
+          />
+          <label htmlFor="file-upload">
+            <Button variant="outline" asChild>
+              <span className="cursor-pointer">
+                <Upload className="h-4 w-4 mr-2" />
+                Choose Files
+              </span>
+            </Button>
+          </label>
         </div>
 
         {/* Uploaded Files List */}
@@ -199,22 +368,43 @@ export default function NewAnalysisPage() {
           <div className="space-y-2">
             <h4 className="font-semibold">Uploaded Files ({files.length})</h4>
             {files.map((file) => (
-              <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{file.name}</p>
-                    <p className="text-sm text-muted-foreground">{file.size}</p>
+              <div key={file.id} className="p-3 border rounded-lg space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{file.name}</p>
+                      <p className="text-sm text-muted-foreground">{file.size}</p>
+                    </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveFile(file.id)}
+                    className="text-destructive hover:text-destructive"
+                    disabled={isUploading}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveFile(file.id)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                
+                {/* Upload Progress Bar */}
+                {isUploading && uploadProgress[file.id] !== undefined && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Uploading...</span>
+                      <span>{Math.round(uploadProgress[file.id])}%</span>
+                    </div>
+                    <Progress value={uploadProgress[file.id]} className="h-1" />
+                  </div>
+                )}
+                
+                {/* Upload Error */}
+                {uploadErrors[file.id] && (
+                  <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+                    Upload failed: {uploadErrors[file.id]}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -333,8 +523,13 @@ export default function NewAnalysisPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Upload
           </Button>
-          <Button onClick={handleStartAnalysis} disabled={isProcessing}>
-            {isProcessing ? (
+          <Button onClick={handleStartAnalysis} disabled={isProcessing || isUploading || files.length === 0}>
+            {isUploading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Uploading Files... {uploadProgress.overall ? `${Math.round(uploadProgress.overall)}%` : ''}
+              </>
+            ) : isProcessing ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Processing...

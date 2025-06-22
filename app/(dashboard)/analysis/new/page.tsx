@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -104,6 +104,11 @@ export default function NewAnalysisPage() {
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({})
   const [isUploading, setIsUploading] = useState(false)
+  const [studyId, setStudyId] = useState<string | null>(null)
+  const [analysisStatus, setAnalysisStatus] = useState<string | null>(null)
+  const [realProgress, setRealProgress] = useState(0)
+  const [statusMessage, setStatusMessage] = useState("")
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const totalSteps = 4
   const stepProgress = (currentStep / totalSteps) * 100
@@ -202,6 +207,104 @@ export default function NewAnalysisPage() {
     ))
   }
 
+  // Start analysis API call
+  const startAnalysisRequest = async (studyId: string) => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/analysis/${studyId}/start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Failed to start analysis: ${response.statusText}`)
+    }
+    
+    return response.json()
+  }
+
+  // Check analysis status API call
+  const checkAnalysisStatus = async (studyId: string) => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/analysis/${studyId}/status`)
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get status: ${response.statusText}`)
+    }
+    
+    return response.json()
+  }
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+      }
+    }
+  }, [])
+
+  // Poll analysis status every 3 seconds
+  const startStatusPolling = (studyId: string) => {
+    // Clear any existing interval
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+    }
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const statusResponse = await checkAnalysisStatus(studyId)
+        
+        setAnalysisStatus(statusResponse.status)
+        setStatusMessage(statusResponse.message || "")
+        
+        // Map status to progress percentage
+        let progressPercent = 0
+        switch (statusResponse.status) {
+          case "pending":
+            progressPercent = 10
+            break
+          case "processing":
+            progressPercent = statusResponse.progress || 50 // Use real progress if available
+            break
+          case "completed":
+            progressPercent = 100
+            break
+          case "failed":
+            progressPercent = 0
+            break
+        }
+        
+        setRealProgress(progressPercent)
+        setCurrentStepText(statusResponse.message || `Analysis ${statusResponse.status}...`)
+        
+        // Stop polling if completed or failed
+        if (statusResponse.status === "completed") {
+          clearInterval(pollInterval)
+          pollIntervalRef.current = null
+          setIsProcessing(false)
+          setTimeout(() => {
+            setCurrentStep(4) // Move to completion step
+          }, 1000)
+        } else if (statusResponse.status === "failed") {
+          clearInterval(pollInterval)
+          pollIntervalRef.current = null
+          setIsProcessing(false)
+          alert(`Analysis failed: ${statusResponse.message}`)
+        }
+        
+      } catch (error) {
+        console.error('Status polling error:', error)
+        clearInterval(pollInterval)
+        pollIntervalRef.current = null
+        setIsProcessing(false)
+        alert(`Status check failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
+    }, 3000) // Poll every 3 seconds
+    
+    // Store interval reference for cleanup
+    pollIntervalRef.current = pollInterval
+  }
+
   const handleStartAnalysis = async () => {
     if (files.length === 0) return
     
@@ -245,37 +348,23 @@ export default function NewAnalysisPage() {
       
       console.log('Upload successful:', result)
       
-      // If upload successful, proceed to analysis processing
+      // Store the study_id from the response
+      setStudyId(result.study_id)
+      
+      // If upload successful, start analysis and begin real progress tracking
       setIsUploading(false)
-      setCurrentStep(3) // Go to processing step
+      
+      // Start the actual analysis
+      await startAnalysisRequest(result.study_id)
+      
+      // Move to processing step and start polling
+      setCurrentStep(3)
       setIsProcessing(true)
-      setProgress(0)
-      setCurrentStepText("Initializing analysis...")
+      setRealProgress(0)
+      setCurrentStepText("Starting analysis...")
       
-      // Simulate processing with progress updates
-      const progressSteps = [
-        { progress: 10, text: "Extracting text from transcripts..." },
-        { progress: 25, text: "Chunking content for analysis..." },
-        { progress: 45, text: "Analyzing themes and patterns..." },
-        { progress: 65, text: "Extracting key insights..." },
-        { progress: 85, text: "Generating comprehensive report..." },
-        { progress: 100, text: "Analysis complete!" }
-      ]
-      
-      progressSteps.forEach((step, index) => {
-        setTimeout(() => {
-          setProgress(step.progress)
-          setCurrentStepText(step.text)
-          
-          // Move to step 4 when complete
-          if (step.progress === 100) {
-            setTimeout(() => {
-              setCurrentStep(4)
-              setIsProcessing(false)
-            }, 1000)
-          }
-        }, (index + 1) * 2000) // 2 seconds between each step
-      })
+      // Start polling for real progress
+      startStatusPolling(result.study_id)
       
     } catch (error) {
       console.error('Upload failed:', error)
@@ -556,15 +645,18 @@ export default function NewAnalysisPage() {
       <div className="max-w-md mx-auto">
         <div className="flex justify-between text-sm text-gray-600 mb-1">
           <span>Processing transcripts...</span>
-          <span>{progress}%</span>
+          <span>{Math.round(realProgress)}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
             className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            style={{ width: `${realProgress}%` }}
           />
         </div>
         <p className="text-sm text-gray-500 mt-2">{currentStepText}</p>
+        {analysisStatus && (
+          <p className="text-xs text-gray-400 mt-1">Status: {analysisStatus}</p>
+        )}
       </div>
     </div>
   )

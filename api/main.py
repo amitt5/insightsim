@@ -19,6 +19,8 @@ import traceback
 
 import time
 from vector_processor import VectorProcessor, EmbeddingManager, SemanticSearchEngine
+from fastapi import BackgroundTasks
+import asyncio
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -172,6 +174,135 @@ async def get_transcript(transcript_id: str):
     except Exception as e:
         raise HTTPException(status_code=404, detail="Transcript not found")
 
+async def run_analysis_pipeline(study_id: str):
+    """Execute the complete analysis pipeline for a study"""
+    try:
+        # Get the study data
+        study_data = analysis_jobs[study_id]
+        uploaded_files = study_data.get("files", [])
+        
+        # Step 4: Text Extraction
+        analysis_jobs[study_id]["current_step"] = "Extracting text from documents..."
+        analysis_jobs[study_id]["progress"] = 10
+        
+        uploaded_files = study_data.get("files", [])
+        extracted_texts = {}
+        for file_info in uploaded_files:
+            file_path = file_info["file_path"]
+            filename = file_info["filename"]
+            
+            try:
+                # Use your existing extract_text_from_file function
+                text_content = document_processor.extract_text_from_file(file_path)
+                extracted_texts[filename] = {
+                    "text": text_content,
+                    "file_path": file_path,
+                    "word_count": len(text_content.split())
+                }
+            except Exception as e:
+                print(f"Error extracting text from {filename}: {str(e)}")
+
+        # Store extracted texts in the job data
+        analysis_jobs[study_id]["extracted_texts"] = extracted_texts
+
+        # Step 5: Document Chunking  
+        analysis_jobs[study_id]["current_step"] = "Chunking documents..."
+        analysis_jobs[study_id]["progress"] = 25
+        
+        # Get extracted texts from previous step
+        extracted_texts = analysis_jobs[study_id]["extracted_texts"]
+        chunked_documents = {}
+
+        for filename, text_data in extracted_texts.items():
+            text_content = text_data["text"]
+            
+            try:
+                # Use your existing chunk_text function
+                chunks = transcript_chunker.chunk_study_content(study_id, text_content)
+                chunked_documents[filename] = {
+                    "chunks": chunks,
+                    "chunk_count": len(chunks),
+                    "original_text": text_content
+                }
+            except Exception as e:
+                print(f"Error chunking {filename}: {str(e)}")
+
+        # Store chunked documents in the job data
+        analysis_jobs[study_id]["chunked_documents"] = chunked_documents
+        analysis_results = {}
+        
+        # Step 6: LLM Analysis
+        analysis_jobs[study_id]["current_step"] = "Analyzing content with AI..."
+        analysis_jobs[study_id]["progress"] = 50
+
+        for filename, chunk_data in chunked_documents.items():
+            chunks = chunk_data["chunks"]
+            
+            try:
+                # Use your existing analyze_chunks function
+                chunk_analysis = llm_analyzer.analyze_study_chunks(chunks)
+                analysis_results[filename] = chunk_analysis
+            except Exception as e:
+                print(f"Error analyzing chunks for {filename}: {str(e)}")
+
+        # Store analysis results in the job data
+        analysis_jobs[study_id]["analysis_results"] = analysis_results
+
+        chunked_documents = analysis_jobs[study_id]["chunked_documents"]
+
+        # Step 7-9: Individual and Cross-transcript Analysis
+        analysis_jobs[study_id]["current_step"] = "Generating insights..."
+        analysis_jobs[study_id]["progress"] = 75
+        analysis_results = analysis_jobs[study_id]["analysis_results"]
+
+        try:
+            # Use your existing generate_study_insights function
+            study_insights = llm_analyzer.analyze_complete_transcript(study_id, analysis_results)
+            
+            # Store study insights in the job data
+            analysis_jobs[study_id]["study_insights"] = study_insights
+            
+        except Exception as e:
+            print(f"Error generating study insights: {str(e)}")
+
+        
+
+        # TODO: Add your insight generation logic here
+        
+        # Step 10-12: Vector Storage and Semantic Search
+        analysis_jobs[study_id]["current_step"] = "Building search index..."
+        analysis_jobs[study_id]["progress"] = 90
+        
+
+        # Get study insights from previous step
+        study_insights = analysis_jobs[study_id]["study_insights"]
+
+        try:
+            # Use your existing store_embeddings function
+            embedding_result = vector_processor.store_transcript_embeddings(study_id, study_insights)
+            
+            # Store embedding results in the job data
+            analysis_jobs[study_id]["embeddings_stored"] = embedding_result
+            
+        except Exception as e:
+            print(f"Error storing embeddings: {str(e)}")
+
+
+        # Final completion
+        analysis_jobs[study_id]["status"] = "completed"
+        analysis_jobs[study_id]["progress"] = 100
+        analysis_jobs[study_id]["current_step"] = "Analysis complete!"
+        analysis_jobs[study_id]["completed_at"] = datetime.now().isoformat()
+        
+        # TODO: Store final results
+        # analysis_jobs[study_id]["results"] = final_results
+        
+    except Exception as e:
+        analysis_jobs[study_id]["status"] = "failed"
+        analysis_jobs[study_id]["error"] = str(e)
+        analysis_jobs[study_id]["current_step"] = f"Error: {str(e)}"
+        print(f"Analysis failed for study {study_id}: {str(e)}")
+
 
 @app.get("/api/analysis/{study_id}/status", response_model=StatusResponse)
 async def get_analysis_status(study_id: str):
@@ -190,7 +321,7 @@ async def get_analysis_status(study_id: str):
     )
 
 @app.post("/api/analysis/{study_id}/start")
-async def start_analysis(study_id: str):
+async def start_analysis(study_id: str, background_tasks: BackgroundTasks):
     """Start analysis for uploaded transcripts"""
     if study_id not in analysis_jobs:
         raise HTTPException(status_code=404, detail="Study not found")
@@ -198,8 +329,12 @@ async def start_analysis(study_id: str):
     # Update status to processing
     analysis_jobs[study_id]["status"] = AnalysisStatus.PROCESSING
     analysis_jobs[study_id]["updated_at"] = datetime.now()
+    analysis_jobs[study_id]["progress"] = 0
     analysis_jobs[study_id]["message"] = "Analysis started"
-    
+    analysis_jobs[study_id]["current_step"] = "Starting analysis..."
+
+    background_tasks.add_task(run_analysis_pipeline, study_id)
+
     return {"message": "Analysis started successfully", "study_id": study_id}
 
 @app.get("/api/analysis/{study_id}/results")

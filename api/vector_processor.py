@@ -52,22 +52,23 @@ class VectorProcessor:
         """Store embeddings for transcript chunks"""
         try:
             logger.info(f"Storing transcript embeddings for study {study_id}")
-            
+            logger.info(f"Chunk results: {chunk_results}")
             embeddings_data = []
             
             for chunk_result in chunk_results:
+                logger.info(f"Chunk result111: {chunk_result}")
                 if chunk_result.get('error', False):
                     continue
-                
+                logger.info(f"Chunk result222: {chunk_result}")
                 chunk_id = chunk_result.get('chunk_id', '')
-                
+                logger.info(f"Chunk id: {chunk_id}")
                 # Get themes text for embedding
                 themes = chunk_result.get('themes', [])
                 themes_text = " ".join([
                     f"{theme.get('theme_name', '')}: {theme.get('description', '')}"
                     for theme in themes
                 ])
-                
+                logger.info(f"Themes text: {themes_text}")
                 # Get quotes text
                 quotes = chunk_result.get('quotes', [])
                 quotes_text = " ".join([quote.get('quote_text', '') for quote in quotes])
@@ -92,7 +93,7 @@ class VectorProcessor:
                         'analysis_timestamp': chunk_result.get('timestamp')
                     }
                 })
-            
+            logger.info(f"Embeddings data: {embeddings_data}")
             # Batch insert to Supabase
             if embeddings_data:
                 result = self.supabase.table('transcript_embeddings').insert(embeddings_data).execute()

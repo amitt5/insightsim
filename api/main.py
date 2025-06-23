@@ -277,6 +277,9 @@ async def run_analysis_pipeline(study_id: str):
         study_insights = analysis_jobs[study_id]["study_insights"]
 
         try:
+            # Create instance of VectorProcessor
+            vector_processor = VectorProcessor()
+            
             # Use your existing store_embeddings function
             logger.info(f"Storing embeddings for study {study_id}")
             embedding_result = vector_processor.store_transcript_embeddings(study_id, study_insights)

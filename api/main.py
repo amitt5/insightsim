@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from typing import List, Optional, Dict, Any
@@ -19,7 +19,6 @@ import traceback
 
 import time
 from vector_processor import VectorProcessor, EmbeddingManager, SemanticSearchEngine
-from fastapi import BackgroundTasks
 import asyncio
 
 
@@ -180,13 +179,13 @@ async def run_analysis_pipeline(study_id: str):
         # Get the study data
         study_data = analysis_jobs[study_id]
         uploaded_files = study_data.get("files", [])
-        
         # Step 4: Text Extraction
         analysis_jobs[study_id]["current_step"] = "Extracting text from documents..."
         analysis_jobs[study_id]["progress"] = 10
-        
+        logger.info(f"Study data: {study_data}")
         uploaded_files = study_data.get("files", [])
         extracted_texts = {}
+        logger.info(f"Extracting text from files: {uploaded_files}")
         for file_info in uploaded_files:
             file_path = file_info["file_path"]
             filename = file_info["filename"]
@@ -201,9 +200,9 @@ async def run_analysis_pipeline(study_id: str):
                 }
             except Exception as e:
                 print(f"Error extracting text from {filename}: {str(e)}")
-
         # Store extracted texts in the job data
         analysis_jobs[study_id]["extracted_texts"] = extracted_texts
+        logger.info(f"Extracted texts: {extracted_texts}")
 
         # Step 5: Document Chunking  
         analysis_jobs[study_id]["current_step"] = "Chunking documents..."
@@ -258,7 +257,7 @@ async def run_analysis_pipeline(study_id: str):
         try:
             # Use your existing generate_study_insights function
             study_insights = llm_analyzer.analyze_complete_transcript(study_id, analysis_results)
-            
+            logger.info(f"Study insights: {study_insights}")
             # Store study insights in the job data
             analysis_jobs[study_id]["study_insights"] = study_insights
             
@@ -273,14 +272,15 @@ async def run_analysis_pipeline(study_id: str):
         analysis_jobs[study_id]["current_step"] = "Building search index..."
         analysis_jobs[study_id]["progress"] = 90
         
-
+        logger.info(f"Building search index for study {study_id}")
         # Get study insights from previous step
         study_insights = analysis_jobs[study_id]["study_insights"]
 
         try:
             # Use your existing store_embeddings function
+            logger.info(f"Storing embeddings for study {study_id}")
             embedding_result = vector_processor.store_transcript_embeddings(study_id, study_insights)
-            
+            logger.info(f"Embedding result: {embedding_result}")
             # Store embedding results in the job data
             analysis_jobs[study_id]["embeddings_stored"] = embedding_result
             
@@ -308,7 +308,23 @@ async def run_analysis_pipeline(study_id: str):
 async def get_analysis_status(study_id: str):
     """Get analysis status for a study"""
     if study_id not in analysis_jobs:
-        raise HTTPException(status_code=404, detail="Study not found")
+        # Check if study exists on filesystem
+        try:
+            text_summary = document_processor.get_study_text_summary(study_id)
+            if not text_summary or not text_summary.get("combined_text"):
+                raise HTTPException(status_code=400, detail="Study not found or has no content")
+            
+            # Initialize analysis_jobs entry if study exists but not tracked
+            analysis_jobs[study_id] = {
+                "status": AnalysisStatus.PENDING,
+                "created_at": datetime.now(),
+                "metadata": {},
+                "files": [],
+                "message": "Study found, ready for analysis"
+            }
+        except Exception as e:
+            logger.error(f"Study {study_id} not found: {str(e)}")
+            raise HTTPException(status_code=400, detail="Study not found")
     
     job = analysis_jobs[study_id]
     return StatusResponse(
@@ -323,8 +339,27 @@ async def get_analysis_status(study_id: str):
 @app.post("/api/analysis/{study_id}/start")
 async def start_analysis(study_id: str, background_tasks: BackgroundTasks):
     """Start analysis for uploaded transcripts"""
+    logger.info(f"Starting analysis for study {study_id}")
+    logger.info(f"Analysis jobs1: {analysis_jobs.keys()}")
+
+    # Check if study exists by trying to get files (like chunks endpoint does)
+    try:
+        text_summary = document_processor.get_study_text_summary(study_id)
+        if not text_summary or not text_summary.get("combined_text"):
+            raise HTTPException(status_code=400, detail="Study not found or has no content")
+    except Exception as e:
+        logger.error(f"Study {study_id} not found: {str(e)}")
+        raise HTTPException(status_code=400, detail="Study not found")
+    
+    # Initialize or update analysis_jobs entry
     if study_id not in analysis_jobs:
-        raise HTTPException(status_code=404, detail="Study not found")
+        analysis_jobs[study_id] = {
+            "status": AnalysisStatus.PENDING,
+            "created_at": datetime.now(),
+            "metadata": {},
+            "files": [],
+            "message": "Analysis starting"
+        }
     
     # Update status to processing
     analysis_jobs[study_id]["status"] = AnalysisStatus.PROCESSING
@@ -332,7 +367,7 @@ async def start_analysis(study_id: str, background_tasks: BackgroundTasks):
     analysis_jobs[study_id]["progress"] = 0
     analysis_jobs[study_id]["message"] = "Analysis started"
     analysis_jobs[study_id]["current_step"] = "Starting analysis..."
-
+    logger.info(f"Analysis started for study {study_id}")
     background_tasks.add_task(run_analysis_pipeline, study_id)
 
     return {"message": "Analysis started successfully", "study_id": study_id}
@@ -341,7 +376,7 @@ async def start_analysis(study_id: str, background_tasks: BackgroundTasks):
 async def get_analysis_results(study_id: str):
     """Get analysis results for a completed study"""
     if study_id not in analysis_jobs:
-        raise HTTPException(status_code=404, detail="Study not found")
+        raise HTTPException(status_code=400, detail="Study not found")
     
     job = analysis_jobs[study_id]
     if job["status"] != AnalysisStatus.COMPLETED:

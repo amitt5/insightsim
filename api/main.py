@@ -302,7 +302,30 @@ async def run_analysis_pipeline(study_id: str):
         logger.info(f"Analysis results777: {analysis_results}")
         try:
             # Use your existing generate_study_insights function
-            study_insights = llm_analyzer.analyze_complete_transcript(study_id, analysis_results)
+            logger.info(f"STEP 5 - Starting complete transcript analysis")
+            logger.info(f"STEP 5 - Analysis results keys: {list(analysis_results.keys())}")
+
+            # Extract chunk_analyses from all files and flatten into a single list
+            all_chunk_results = []
+            for filename, file_analysis in analysis_results.items():
+                logger.info(f"STEP 5 - Processing file: {filename}")
+                logger.info(f"STEP 5 - File analysis keys: {file_analysis.keys()}")
+                
+                chunk_analyses = file_analysis.get('chunk_analyses', [])
+                logger.info(f"STEP 5 - Found {len(chunk_analyses)} chunk analyses in {filename}")
+                
+                # Add each chunk analysis to the flat list
+                all_chunk_results.extend(chunk_analyses)
+
+            logger.info(f"# The above code is a comment in Python. Comments in Python start with the
+            # `#` symbol and are used to provide explanations or notes within the code.
+            # Comments are ignored by the Python interpreter and are not executed as
+            # part of the program.
+            STEP 5 - Total chunk results to process: {len(all_chunk_results)}")
+            logger.info(f"STEP 5 - First chunk result structure: {all_chunk_results[0].keys() if all_chunk_results else 'No chunks'}")
+
+
+            study_insights = llm_analyzer.analyze_complete_transcript(study_id, all_chunk_results)
             logger.info(f"Study insights: {study_insights}")
             # Store study insights in the job data
             analysis_jobs[study_id]["study_insights"] = study_insights

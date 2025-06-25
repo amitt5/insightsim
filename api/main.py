@@ -317,11 +317,8 @@ async def run_analysis_pipeline(study_id: str):
                 # Add each chunk analysis to the flat list
                 all_chunk_results.extend(chunk_analyses)
 
-            logger.info(f"# The above code is a comment in Python. Comments in Python start with the
-            # `#` symbol and are used to provide explanations or notes within the code.
-            # Comments are ignored by the Python interpreter and are not executed as
-            # part of the program.
-            STEP 5 - Total chunk results to process: {len(all_chunk_results)}")
+        
+            # STEP 5 - Total chunk results to process: {len(all_chunk_results)}")
             logger.info(f"STEP 5 - First chunk result structure: {all_chunk_results[0].keys() if all_chunk_results else 'No chunks'}")
 
 

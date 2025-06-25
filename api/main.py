@@ -366,6 +366,23 @@ async def run_analysis_pipeline(study_id: str):
             print(f"Error storing embeddings: {str(e)}")
 
 
+        # Step 8: Prepare Dashboard Data
+        analysis_jobs[study_id]["current_step"] = "Preparing dashboard data..."
+        analysis_jobs[study_id]["progress"] = 95
+
+        logger.info(f"STEP 8 - Preparing dashboard data")
+        try:
+            dashboard_data = llm_analyzer.format_results_for_dashboard(
+                {"complete_analysis": study_insights, "chunk_results": all_chunk_results}, 
+                "single_transcript"
+            )
+            analysis_jobs[study_id]["dashboard_data"] = dashboard_data
+            logger.info(f"STEP 8 - Dashboard data prepared successfully")
+            logger.info(f"STEP 8 - Dashboard keys: {dashboard_data.keys() if isinstance(dashboard_data, dict) else 'Not a dict'}")
+        except Exception as e:
+            logger.error(f"STEP 8 - Dashboard preparation failed: {str(e)}")
+
+
         # Final completion
         analysis_jobs[study_id]["status"] = "completed"
         analysis_jobs[study_id]["progress"] = 100

@@ -9,6 +9,12 @@ from llama_index.core.node_parser import SimpleNodeParser
 from llama_index.core import Document
 from llama_index.core.schema import BaseNode
 
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+
 @dataclass
 class ChunkMetadata:
     """Metadata for each text chunk"""
@@ -180,7 +186,7 @@ class TranscriptChunker:
             all_speakers = set()
             for chunk in chunks:
                 all_speakers.update(chunk["metadata"]["speakers"])
-            
+            logger.info(f"All chunnkss222: {chunks}")
             return {
                 "study_id": study_id,
                 "chunking_summary": {

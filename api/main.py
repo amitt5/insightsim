@@ -196,13 +196,18 @@ async def run_analysis_pipeline(study_id: str):
         analysis_jobs[study_id]["progress"] = 15
         extracted_texts = {}
         logger.info(f"Extracting text from files: {uploaded_files}")
+        logger.info(f"STEP 2 - Starting text extraction for {len(uploaded_files)} files")
         for file_info in uploaded_files:
+            logger.info(f"STEP 2 - Processing file: {file_info}")
+            logger.info(f"STEP 2 - File path exists: {os.path.exists(file_info['file_path'])}")
             file_path = file_info["file_path"]
             filename = file_info["filename"]
             
             try:
                 # Use your existing extract_text_from_file function
                 text_content = document_processor.extract_text_from_file(file_path)
+                logger.info(f"STEP 2 - Extracted text length: {len(text_content) if text_content else 0}")
+
                 logger.info(f"Text content111: {text_content}")
                 extracted_texts[filename] = {
                     "text": text_content["text_content"],
@@ -211,6 +216,10 @@ async def run_analysis_pipeline(study_id: str):
                 }
             except Exception as e:
                 print(f"Error extracting text from {filename}: {str(e)}")
+        
+        logger.info(f"STEP 2 - Total extracted texts: {len(extracted_texts)}")
+        logger.info(f"STEP 2 - Extracted texts keys: {list(extracted_texts.keys())}")
+
         # Store extracted texts in the job data
         analysis_jobs[study_id]["extracted_texts"] = extracted_texts
         logger.info(f"Extracted texts111: {extracted_texts}")
@@ -218,12 +227,12 @@ async def run_analysis_pipeline(study_id: str):
 
          # Step 2/4: Document Chunking
         analysis_jobs[study_id]["current_step"] = "Chunking documents..."
-        analysis_jobs[study_id]["progress"] = 30
+        analysis_jobs[study_id]["progress"] = 25
     
         total_chunks = 0
         # extracted_texts = analysis_jobs[study_id]["extracted_texts"]
         chunked_documents = {}
-
+        chunks_results = {}
         logger.info(f"Extracted texts222: {extracted_texts}")
 
         for filename, text_data in extracted_texts.items():
@@ -232,14 +241,13 @@ async def run_analysis_pipeline(study_id: str):
             logger.info(f"text_content222: {text_content}")
             try:
                 # Use your existing chunk_text function
-                chunks = transcript_chunker.chunk_study_content(study_id, text_content)
+                chunks_results = transcript_chunker.chunk_study_content(study_id, text_content)
                 chunked_documents[filename] = {
-                    "chunks": chunks["chunks"],
-                    "chunk_count": len(chunks["chunks"]),
+                    "chunks": chunks_results["chunks"],
+                    "chunk_count": len(chunks_results["chunks"]),
                     "original_text": text_content
                 }
-                total_chunks += len(chunks["chunks"])
-                logger.info(f"Created {len(chunks)} chunks for {filename}")
+                total_chunks += len(chunks_results["chunks"])
             except Exception as e:
                 print(f"Error chunking {filename}: {str(e)}")
 
@@ -252,40 +260,6 @@ async def run_analysis_pipeline(study_id: str):
         analysis_jobs[study_id]["current_step"] = "Analyzing chunks with AI..."
         analysis_jobs[study_id]["progress"] = 50
 
-        # Combine all chunks for analysis
-        combined_chunks = {}
-        chunk_counter = 0
-
-        # for filename, chunk_data in chunked_documents.items():
-        #         logger.info(f"filename333: {filename}")
-        #         logger.info(f"chunk_data333: {chunk_data}")
-        #         for chunk in chunk_data["chunks"]:
-        #             chunk_id = f"{filename}_chunk_{chunk_counter}"
-        #             combined_chunks[chunk_id] = {
-        #                 **chunk,
-        #                 "source_file": filename,
-        #                 "chunk_id": chunk_id
-        #             }
-        #             chunk_counter += 1
-        # logger.info(f"Combined chunks333: {combined_chunks}")
-
-        # # Analyze all chunks using your existing function
-        # chunk_analysis_results = llm_analyzer.analyze_study_chunks(
-        #     combined_chunks, 
-        #     analysis_types=["themes", "quotes", "patterns", "insights"]
-        # )
-
-        # analysis_jobs[study_id]["chunk_analysis"] = chunk_analysis_results
-        # logger.info(f"Chunk analysis results333: {chunk_analysis_results}")
-
-
-
-
-
-
-
-
-        
         
         # Store chunked documents in the job data
         analysis_jobs[study_id]["chunked_documents"] = chunked_documents
@@ -295,16 +269,25 @@ async def run_analysis_pipeline(study_id: str):
         analysis_jobs[study_id]["current_step"] = "Analyzing content with AI..."
         analysis_jobs[study_id]["progress"] = 50
         logger.info(f"Chunked documents666: {chunked_documents}")
+        logger.info(f"STEP 4 - Starting LLM analysis for {len(chunked_documents)} files")
         for filename, chunk_data in chunked_documents.items():
+            logger.info(f"STEP 4 - chunk_data['chunks'] keys: {chunk_data['chunks'].keys() if isinstance(chunk_data['chunks'], dict) else 'Not a dict'}")
+    
             chunks = chunk_data["chunks"]
-            logger.info(f"chunk_data666: {chunk_data}")
-            logger.info(f"Chunks666: {chunks}")
+
+            # This is probably where the issue is:
+            logger.info(f"STEP 4 - What we're passing to analyze_study_chunks: {type(chunks)}")
+            logger.info(f"STEP 4 - Does chunks have 'chunks' key? {'chunks' in chunks if isinstance(chunks, dict) else 'Not applicable'}")
             try:
                 # Use your existing analyze_chunks function
-                chunk_analysis = llm_analyzer.analyze_study_chunks(chunks, analysis_types=["themes", "quotes", "patterns", "insights"])
-                logger.info(f"Chunk analysis666: {chunk_analysis}")
+                chunk_analysis = llm_analyzer.analyze_study_chunks(chunks_results, analysis_types=["themes", "quotes", "patterns", "insights"])
+                logger.info(f"c {filename}")
+                logger.info(f"STEP 4 - Analysis result type: {type(chunk_analysis)}")
+        
                 analysis_results[filename] = chunk_analysis
             except Exception as e:
+                logger.error(f"STEP 4 - Error analyzing chunks for {filename}: {str(e)}")
+                logger.error(f"STEP 4 - Full traceback: {traceback.format_exc()}")
                 print(f"Error analyzing chunks for {filename}: {str(e)}")
 
         # Store analysis results in the job data
@@ -316,7 +299,7 @@ async def run_analysis_pipeline(study_id: str):
         analysis_jobs[study_id]["current_step"] = "Generating insights..."
         analysis_jobs[study_id]["progress"] = 75
         analysis_results = analysis_jobs[study_id]["analysis_results"]
-
+        logger.info(f"Analysis results777: {analysis_results}")
         try:
             # Use your existing generate_study_insights function
             study_insights = llm_analyzer.analyze_complete_transcript(study_id, analysis_results)

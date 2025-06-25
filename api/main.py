@@ -280,9 +280,18 @@ async def run_analysis_pipeline(study_id: str):
             # Create instance of VectorProcessor
             vector_processor = VectorProcessor()
             
-            # Use your existing store_embeddings function
+            # Restructure the study_insights to match expected format
+            analysis_result = {
+                "complete_analysis": {
+                    "consolidated_themes": study_insights.get("consolidated_themes", []),
+                    "actionable_insights": study_insights.get("actionable_insights", [])
+                },
+                "chunk_results": []  # Empty for now since we don't have chunk-level results
+            }
+            
+            # Use process_complete_analysis instead of store_transcript_embeddings
             logger.info(f"Storing embeddings for study {study_id}")
-            embedding_result = vector_processor.store_transcript_embeddings(study_id, study_insights)
+            embedding_result = vector_processor.process_complete_analysis(study_id, analysis_result)
             logger.info(f"Embedding result: {embedding_result}")
             # Store embedding results in the job data
             analysis_jobs[study_id]["embeddings_stored"] = embedding_result
@@ -763,6 +772,7 @@ async def get_study_patterns(study_id: str):
             detail=f"Pattern analysis failed: {str(e)}"
         )
 
+# step 7: Develop individual transcript analysis workflow (summary generation, theme extraction, quote attribution)
 @app.post("/api/analysis/{study_id}/complete")
 async def analyze_complete_transcript(study_id: str):
     """Analyze complete transcript and generate comprehensive report"""
@@ -823,6 +833,7 @@ async def analyze_complete_transcript(study_id: str):
         logger.error(f"Complete transcript analysis failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
+# step 8: Build cross-transcript analysis system for identifying patterns across multiple documents
 @app.post("/api/analysis/cross-transcript")
 async def analyze_cross_transcripts(study_ids: List[str]):
     """Analyze patterns across multiple transcripts"""

@@ -383,6 +383,37 @@ async def run_analysis_pipeline(study_id: str):
             logger.error(f"STEP 8 - Dashboard preparation failed: {str(e)}")
 
 
+        # Step 7.5: Save Analysis Results to Database
+        analysis_jobs[study_id]["current_step"] = "Saving analysis to database..."
+        analysis_jobs[study_id]["progress"] = 97
+
+        logger.info(f"STEP 7.5 - Saving complete analysis results to database")
+        try:
+            # Prepare complete analysis data for storage
+            complete_analysis_data = {
+                "study_id": study_id,
+                "analysis_results": analysis_results,
+                "study_insights": study_insights,
+                "dashboard_data": dashboard_data,
+                "metadata": {
+                    "total_chunks": len(all_chunk_results),
+                    "files_processed": list(analysis_results.keys()),
+                    "analysis_timestamp": datetime.now().isoformat(),
+                    "embeddings_stored": analysis_jobs[study_id].get("embeddings_stored", False)
+                }
+            }
+            
+            # TODO: Implement save_analysis_to_database function
+            # For now, just log the structure
+            logger.info(f"STEP 7.5 - Analysis data structure prepared for database")
+            logger.info(f"STEP 7.5 - Data keys: {complete_analysis_data.keys()}")
+            logger.info(f"STEP 7.5 - Metadata: {complete_analysis_data['metadata']}")
+            
+            analysis_jobs[study_id]["db_ready"] = True
+            
+        except Exception as e:
+            logger.error(f"STEP 7.5 - Database preparation failed: {str(e)}")
+
         # Final completion
         analysis_jobs[study_id]["status"] = "completed"
         analysis_jobs[study_id]["progress"] = 100

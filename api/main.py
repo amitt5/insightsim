@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from supabase import create_client
 from typing import List, Optional, Dict, Any
 import json
 from datetime import datetime
@@ -403,7 +404,9 @@ async def run_analysis_pipeline(study_id: str):
                 }
             }
             
-            # TODO: Implement save_analysis_to_database function
+            db_success = save_analysis_to_database(study_id, complete_analysis_data)
+            analysis_jobs[study_id]["db_saved"] = db_success
+            logger.info(f"STEP 7.5 - Database save result: {db_success}")
             # For now, just log the structure
             logger.info(f"STEP 7.5 - Analysis data structure prepared for database")
             logger.info(f"STEP 7.5 - Data keys: {complete_analysis_data.keys()}")
@@ -428,6 +431,38 @@ async def run_analysis_pipeline(study_id: str):
         analysis_jobs[study_id]["error"] = str(e)
         analysis_jobs[study_id]["current_step"] = f"Error: {str(e)}"
         print(f"Analysis failed for study {study_id}: {str(e)}")
+
+def save_analysis_to_database(study_id: str, complete_analysis_data: Dict) -> bool:
+    """Save complete analysis results to Supabase"""
+    try:
+        
+        supabase_url = os.getenv('SUPABASE_URL')
+        supabase_key = os.getenv('SUPABASE_ANON_KEY')
+        supabase = create_client(supabase_url, supabase_key)
+        
+        # Check if analysis already exists for this study
+        existing = supabase.table('analysis_results').select('id').eq('study_id', study_id).execute()
+        
+        if existing.data:
+            # Update existing record
+            result = supabase.table('analysis_results').update({
+                'analysis_data': complete_analysis_data,
+                'updated_at': datetime.now().isoformat()
+            }).eq('study_id', study_id).execute()
+            logger.info(f"Updated existing analysis for study {study_id}")
+        else:
+            # Insert new record
+            result = supabase.table('analysis_results').insert({
+                'study_id': study_id,
+                'analysis_data': complete_analysis_data
+            }).execute()
+            logger.info(f"Inserted new analysis for study {study_id}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Database save failed: {str(e)}")
+        return False
 
 def get_study_files_from_filesystem(study_id: str) -> List[Dict]:
     """Get file information for a study from the filesystem"""

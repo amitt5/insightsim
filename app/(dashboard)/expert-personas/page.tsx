@@ -28,60 +28,19 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
-// Mock data for expert categories
-const expertCategories = [
-  {
-    id: "supply-chain",
-    name: "Supply Chain & Operations",
-    icon: Building,
-    count: 8,
-    color: "bg-blue-100 text-blue-700",
-    description: "Logistics, procurement, manufacturing"
-  },
-  {
-    id: "marketing-gtm",
-    name: "Marketing & Go-to-Market",
-    icon: Target,
-    count: 12,
-    color: "bg-green-100 text-green-700",
-    description: "Brand strategy, digital marketing, growth"
-  },
-  {
-    id: "ai-tech",
-    name: "AI & Technology",
-    icon: Cpu,
-    count: 15,
-    color: "bg-purple-100 text-purple-700",
-    description: "AI strategy, software development, tech innovation"
-  },
-  {
-    id: "finance",
-    name: "Finance & Investment",
-    icon: DollarSign,
-    count: 7,
-    color: "bg-emerald-100 text-emerald-700",
-    description: "CFO insights, investment strategy, financial modeling"
-  },
-  {
-    id: "hr-leadership",
-    name: "HR & Leadership",
-    icon: Users,
-    count: 6,
-    color: "bg-orange-100 text-orange-700",
-    description: "People strategy, organizational development"
-  },
-  {
-    id: "ecommerce",
-    name: "E-commerce & Retail",
-    icon: ShoppingCart,
-    count: 9,
-    color: "bg-pink-100 text-pink-700",
-    description: "Online retail, customer experience, marketplace"
-  }
+// Categories for browsing experts
+const categories = [
+  { id: "supply-chain", name: "Supply Chain", icon: "🚚" },
+  { id: "marketing", name: "Marketing/GTM", icon: "📈" },
+  { id: "ai-tech", name: "AI/Tech", icon: "🤖" },
+  { id: "finance", name: "Finance", icon: "💰" },
+  { id: "hr", name: "HR", icon: "👥" },
+  { id: "ecommerce", name: "E-commerce", icon: "🛒" },
+  { id: "influencer", name: "Influencer Personas", icon: "⭐" }
 ]
 
-// Mock data for featured experts
-const featuredExperts = [
+// Mock expert data with more detailed profiles
+const allExperts = [
   {
     id: "sarah-chen",
     name: "Dr. Sarah Chen",
@@ -89,94 +48,409 @@ const featuredExperts = [
     category: "supply-chain",
     avatar: "/placeholder-user.jpg",
     rating: 4.9,
-    consultations: 247,
-    specialties: ["Global Logistics", "Risk Management", "Sustainability"],
-    experience: "Former VP Supply Chain at Amazon, 15+ years",
-    isOnline: true,
     responseTime: "< 5 min",
-    priceRange: "$$",
-    knowledgeSources: 127,
-    recentUpdate: "2 hours ago"
+    isOnline: true,
+    specialties: ["Global Logistics", "Risk Management", "Sustainability"],
+    bio: "Former Amazon supply chain director with 15+ years optimizing global operations",
+    experience: "15+ years",
+    consultations: 847,
+    successRate: 98
   },
   {
     id: "marcus-rodriguez", 
     name: "Marcus Rodriguez",
     title: "Growth Marketing Strategist",
-    category: "marketing-gtm",
+    category: "marketing",
     avatar: "/placeholder-user.jpg",
     rating: 4.8,
-    consultations: 389,
-    specialties: ["Product-Led Growth", "B2B SaaS", "Performance Marketing"],
-    experience: "Founded 3 startups, CMO at Stripe",
-    isOnline: false,
     responseTime: "< 30 min",
-    priceRange: "$$$",
-    knowledgeSources: 203,
-    recentUpdate: "1 day ago"
+    isOnline: false,
+    specialties: ["Product-Led Growth", "B2B SaaS", "Performance Marketing"],
+    bio: "Built and scaled marketing teams at 3 unicorn startups",
+    experience: "12+ years",
+    consultations: 623,
+    successRate: 96
   },
   {
     id: "alex-kim",
     name: "Alex Kim",
-    title: "AI Implementation Consultant",
+    title: "AI Implementation Consultant", 
     category: "ai-tech",
-    avatar: "/placeholder-user.jpg", 
-    rating: 4.9,
-    consultations: 156,
-    specialties: ["Enterprise AI", "Machine Learning Operations", "AI Ethics"],
-    experience: "Former AI Research Lead at Google, PhD Stanford",
-    isOnline: true,
-    responseTime: "< 10 min",
-    priceRange: "$$$",
-    knowledgeSources: 341,
-    recentUpdate: "30 min ago"
-  },
-  {
-    id: "priya-patel",
-    name: "Priya Patel",
-    title: "E-commerce Growth Expert",
-    category: "ecommerce",
     avatar: "/placeholder-user.jpg",
-    rating: 4.7,
-    consultations: 298,
-    specialties: ["Amazon Marketplace", "D2C Strategy", "Conversion Optimization"],
-    experience: "Built $50M+ e-commerce brands, ex-Shopify",
+    rating: 4.9,
+    responseTime: "< 10 min",
     isOnline: true,
-    responseTime: "< 15 min", 
-    priceRange: "$$",
-    knowledgeSources: 189,
-    recentUpdate: "1 hour ago"
+    specialties: ["Enterprise AI", "ML Operations", "AI Ethics"],
+    bio: "Former Google AI researcher helping enterprises adopt AI responsibly",
+    experience: "10+ years",
+    consultations: 412,
+    successRate: 99
   },
   {
     id: "david-thompson",
     name: "David Thompson",
-    title: "CFO & Finance Strategy Expert",
-    category: "finance",
+    title: "Strategic Finance Advisor",
+    category: "finance", 
     avatar: "/placeholder-user.jpg",
-    rating: 4.8,
-    consultations: 167,
-    specialties: ["Financial Modeling", "M&A Strategy", "Venture Capital"],
-    experience: "CFO at 3 unicorn startups, ex-Goldman Sachs",
-    isOnline: false,
-    responseTime: "< 1 hour",
-    priceRange: "$$$",
-    knowledgeSources: 156,
-    recentUpdate: "3 hours ago"
+    rating: 4.7,
+    responseTime: "< 2 hours",
+    isOnline: true,
+    specialties: ["Fundraising", "Financial Planning", "Valuation"],
+    bio: "Ex-Goldman Sachs VP, helped raise $2B+ for startups",
+    experience: "18+ years",
+    consultations: 789,
+    successRate: 94
   },
   {
     id: "lisa-wang",
     name: "Lisa Wang",
-    title: "People & Culture Leader",
-    category: "hr-leadership", 
+    title: "People Operations Expert",
+    category: "hr",
+    avatar: "/placeholder-user.jpg", 
+    rating: 4.8,
+    responseTime: "< 1 hour",
+    isOnline: false,
+    specialties: ["Scaling Teams", "Culture", "Performance Management"],
+    bio: "Former Airbnb Head of People, scaled from 50 to 5000 employees",
+    experience: "14+ years",
+    consultations: 556,
+    successRate: 97
+  },
+  {
+    id: "james-miller",
+    name: "James Miller",
+    title: "E-commerce Growth Specialist",
+    category: "ecommerce",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.6,
+    responseTime: "< 45 min", 
+    isOnline: true,
+    specialties: ["Conversion Optimization", "Amazon FBA", "DTC Brands"],
+    bio: "Grew 3 e-commerce brands from 0 to $10M+ revenue",
+    experience: "11+ years",
+    consultations: 334,
+    successRate: 95
+  },
+  // Influencer Personas
+  {
+    id: "gary-vaynerchuk",
+    name: "Gary Vaynerchuk",
+    title: "Digital Marketing & Entrepreneurship Influencer",
+    category: "influencer",
     avatar: "/placeholder-user.jpg",
     rating: 4.9,
-    consultations: 223,
-    specialties: ["Remote Team Building", "Performance Management", "Culture Design"],
-    experience: "CHRO at Airbnb, Built teams at 5 scale-ups",
+    responseTime: "< 15 min",
     isOnline: true,
+    specialties: ["Digital Marketing", "Entrepreneurship", "Personal Branding"],
+    bio: "CEO of VaynerMedia, serial entrepreneur, and digital marketing pioneer",
+    experience: "20+ years",
+    consultations: 1250,
+    successRate: 98,
+    followers: "5,795,075 LinkedIn followers"
+  },
+  {
+    id: "adam-grant",
+    name: "Adam Grant", 
+    title: "Organizational Psychology Expert",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.9,
     responseTime: "< 20 min",
-    priceRange: "$$",
-    knowledgeSources: 134,
-    recentUpdate: "45 min ago"
+    isOnline: false,
+    specialties: ["Organizational Psychology", "Leadership", "Productivity", "Work-life Balance"],
+    bio: "Wharton professor, bestselling author of 'Give and Take' and 'Think Again'",
+    experience: "15+ years",
+    consultations: 890,
+    successRate: 99,
+    followers: "6,000,000+ LinkedIn followers"
+  },
+  {
+    id: "steven-bartlett",
+    name: "Steven Bartlett",
+    title: "Entrepreneur & Media Personality",
+    category: "influencer", 
+    avatar: "/placeholder-user.jpg",
+    rating: 4.8,
+    responseTime: "< 30 min",
+    isOnline: true,
+    specialties: ["Entrepreneurship", "Media", "Investment"],
+    bio: "Founder of Social Chain, host of 'The Diary of a CEO' podcast",
+    experience: "12+ years",
+    consultations: 675,
+    successRate: 96,
+    followers: "2,871,281 LinkedIn followers"
+  },
+  {
+    id: "sara-blakely",
+    name: "Sara Blakely",
+    title: "Women's Entrepreneurship Champion",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg", 
+    rating: 4.9,
+    responseTime: "< 25 min",
+    isOnline: true,
+    specialties: ["Entrepreneurship", "Women in Business", "Product Innovation"],
+    bio: "Founder of Spanx, self-made billionaire and women's empowerment advocate",
+    experience: "20+ years",
+    consultations: 543,
+    successRate: 98,
+    followers: "2,291,704 LinkedIn followers"
+  },
+  {
+    id: "allie-miller",
+    name: "Allie K. Miller",
+    title: "AI & Business Innovation Expert", 
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.8,
+    responseTime: "< 15 min",
+    isOnline: true,
+    specialties: ["AI", "Business Growth", "Innovation"],
+    bio: "Former Amazon AI leader, helping businesses harness AI for growth",
+    experience: "10+ years",
+    consultations: 723,
+    successRate: 97,
+    followers: "1,540,749 LinkedIn followers"
+  },
+  {
+    id: "bernard-marr",
+    name: "Bernard Marr",
+    title: "Future Tech & Strategy Advisor",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.7,
+    responseTime: "< 20 min", 
+    isOnline: false,
+    specialties: ["Futurism", "Technology", "Business Strategy", "AI", "Big Data"],
+    bio: "World-renowned futurist, author of 20+ books on business and technology",
+    experience: "18+ years",
+    consultations: 934,
+    successRate: 95,
+    followers: "1,542,289 LinkedIn followers"
+  },
+  {
+    id: "mel-robbins",
+    name: "Mel Robbins",
+    title: "Motivation & Mindset Coach",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.9,
+    responseTime: "< 10 min",
+    isOnline: true,
+    specialties: ["Motivation", "Mindset", "Productivity"],
+    bio: "Creator of The 5 Second Rule, bestselling author and motivational speaker",
+    experience: "15+ years",
+    consultations: 812,
+    successRate: 99,
+    followers: "1,257,656 LinkedIn followers"
+  },
+  {
+    id: "alex-hormozi",
+    name: "Alex Hormozi",
+    title: "Business Scaling Expert",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.8,
+    responseTime: "< 30 min",
+    isOnline: true,
+    specialties: ["Business Scaling", "Entrepreneurship", "Investing"],
+    bio: "Serial entrepreneur, author of '$100M Offers' and '$100M Leads'",
+    experience: "12+ years",
+    consultations: 456,
+    successRate: 97,
+    followers: "774,667 LinkedIn followers"
+  },
+  {
+    id: "justin-welsh",
+    name: "Justin Welsh",
+    title: "Solopreneurship Strategist",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.9,
+    responseTime: "< 15 min",
+    isOnline: true,
+    specialties: ["Solopreneurship", "Brand-building", "Audience Growth"],
+    bio: "Built a $5M+ one-person business, teaches solopreneurship strategies",
+    experience: "8+ years",
+    consultations: 634,
+    successRate: 98,
+    followers: "751,266 LinkedIn followers"
+  },
+  {
+    id: "lenny-rachitsky",
+    name: "Lenny Rachitsky",
+    title: "Product Growth Specialist",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.8,
+    responseTime: "< 25 min",
+    isOnline: false,
+    specialties: ["Growth Strategies", "Product Management", "Scaling Businesses"],
+    bio: "Former Airbnb PM, creator of Lenny's Newsletter with 500k+ subscribers",
+    experience: "10+ years", 
+    consultations: 387,
+    successRate: 96,
+    followers: "216,000+ LinkedIn followers"
+  },
+  {
+    id: "tom-hunt",
+    name: "Tom Hunt",
+    title: "SaaS Growth Expert",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.7,
+    responseTime: "< 35 min",
+    isOnline: true,
+    specialties: ["SaaS", "Entrepreneurship", "Content Marketing"],
+    bio: "Serial SaaS entrepreneur, podcast host, and content marketing strategist",
+    experience: "9+ years",
+    consultations: 298,
+    successRate: 94,
+    followers: "213,154 LinkedIn followers"
+  },
+  {
+    id: "harry-stebbings",
+    name: "Harry Stebbings",
+    title: "Venture Capital & Fundraising Expert",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.8,
+    responseTime: "< 40 min",
+    isOnline: true,
+    specialties: ["Venture Capital", "Fundraising", "Tech Industry Insights"],
+    bio: "Host of '20 Minute VC' podcast, General Partner at 20VC",
+    experience: "8+ years",
+    consultations: 445,
+    successRate: 95,
+    followers: "203,513 LinkedIn followers"
+  },
+  {
+    id: "dave-gerhardt",
+    name: "Dave Gerhardt",
+    title: "B2B Marketing & Brand Expert",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.8,
+    responseTime: "< 20 min",
+    isOnline: false,
+    specialties: ["Demand Generation", "B2B Growth Strategies", "Brand Visibility"],
+    bio: "Former Drift CMO, founder of Exit Five B2B marketing community",
+    experience: "12+ years",
+    consultations: 567,
+    successRate: 97,
+    followers: "172,000+ LinkedIn followers"
+  },
+  {
+    id: "cathy-hackl",
+    name: "Cathy Hackl",
+    title: "Metaverse & Spatial Computing Expert",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.7,
+    responseTime: "< 30 min",
+    isOnline: true,
+    specialties: ["Metaverse", "AI", "AR/VR", "Spatial Computing"],
+    bio: "Chief Metaverse Officer, leading strategist for Web3 and spatial computing",
+    experience: "15+ years",
+    consultations: 234,
+    successRate: 93,
+    followers: "171,669 LinkedIn followers"
+  },
+  {
+    id: "alex-lieberman",
+    name: "Alex Lieberman",
+    title: "Growth Marketing & Content Strategist",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.8,
+    responseTime: "< 25 min",
+    isOnline: true,
+    specialties: ["Growth Marketing", "Audience Engagement", "Content Strategy"],
+    bio: "Co-founder of Morning Brew, expert in audience-first business building",
+    experience: "8+ years",
+    consultations: 423,
+    successRate: 96,
+    followers: "168,000+ LinkedIn followers"
+  },
+  {
+    id: "jason-fried",
+    name: "Jason Fried",
+    title: "Remote Work & Business Philosophy Expert",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.9,
+    responseTime: "< 45 min",
+    isOnline: false,
+    specialties: ["Entrepreneurship", "Business", "Remote Work"],
+    bio: "Co-founder of Basecamp, author of 'Remote' and 'ReWork'",
+    experience: "20+ years",
+    consultations: 356,
+    successRate: 98,
+    followers: "155,597 LinkedIn followers"
+  },
+  {
+    id: "susan-etlinger",
+    name: "Susan Etlinger",
+    title: "AI Ethics & Digital Strategy Expert",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.8,
+    responseTime: "< 35 min",
+    isOnline: true,
+    specialties: ["AI", "Digital Strategy", "Ethics"],
+    bio: "Industry analyst focused on AI ethics and responsible technology adoption",
+    experience: "16+ years",
+    consultations: 189,
+    successRate: 95,
+    followers: "105,000+ LinkedIn followers"
+  },
+  {
+    id: "jason-vana",
+    name: "Jason Vana",
+    title: "Client Acquisition & LinkedIn Expert",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.7,
+    responseTime: "< 20 min",
+    isOnline: true,
+    specialties: ["Clients", "Brand", "LinkedIn"],
+    bio: "LinkedIn marketing strategist helping B2B companies generate leads",
+    experience: "7+ years",
+    consultations: 312,
+    successRate: 94,
+    followers: "83,395 LinkedIn followers"
+  },
+  {
+    id: "dean-seddon",
+    name: "Dean Seddon",
+    title: "LinkedIn & Business Development Expert",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.6,
+    responseTime: "< 30 min",
+    isOnline: false,
+    specialties: ["LinkedIn", "Clients", "Business"],
+    bio: "LinkedIn specialist helping professionals build their personal brand",
+    experience: "6+ years",
+    consultations: 278,
+    successRate: 92,
+    followers: "75,571 LinkedIn followers"
+  },
+  {
+    id: "katelyn-bourgoin",
+    name: "Katelyn Bourgoin",
+    title: "Customer Psychology & Growth Expert",
+    category: "influencer",
+    avatar: "/placeholder-user.jpg",
+    rating: 4.9,
+    responseTime: "< 15 min",
+    isOnline: true,
+    specialties: ["Customer Psychology", "Audience Insights", "Data-driven Growth Strategies"],
+    bio: "Founder of Customer Camp, expert in customer research and behavioral insights",
+    experience: "9+ years",
+    consultations: 445,
+    successRate: 98,
+    followers: "74,000+ LinkedIn followers"
   }
 ]
 
@@ -194,7 +468,7 @@ export default function ExpertPersonasPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-  const filteredExperts = featuredExperts.filter(expert => {
+  const filteredExperts = allExperts.filter(expert => {
     const matchesSearch = expert.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          expert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          expert.specialties.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -202,88 +476,7 @@ export default function ExpertPersonasPage() {
     return matchesSearch && matchesCategory
   })
 
-  const ExpertCard = ({ expert }: { expert: typeof featuredExperts[0] }) => {
-    return (
-      <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={expert.avatar} alt={expert.name} />
-                  <AvatarFallback>{expert.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                </Avatar>
-                {expert.isOnline && (
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg leading-tight">{expert.name}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-1">{expert.title}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="text-sm font-medium">{expert.rating}</span>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Specialties */}
-          <div className="flex flex-wrap gap-1">
-            {expert.specialties.slice(0, 3).map((specialty) => (
-              <Badge key={specialty} variant="secondary" className="text-xs">
-                {specialty}
-              </Badge>
-            ))}
-            {expert.specialties.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{expert.specialties.length - 3} more
-              </Badge>
-            )}
-          </div>
 
-          {/* Experience snippet */}
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {expert.experience}
-          </p>
-
-          {/* Stats */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
-                <MessageCircle className="h-3 w-3" />
-                <span>{expert.consultations} sessions</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <BookOpen className="h-3 w-3" />
-                <span>{expert.knowledgeSources} sources</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              <span>{expert.responseTime}</span>
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex gap-2 pt-2">
-            <Link href={`/expert-personas/chat/${expert.id}`} className="flex-1">
-              <Button size="sm" className="w-full">
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Consult
-              </Button>
-            </Link>
-            <Link href={`/expert-personas/${expert.id}`}>
-              <Button size="sm" variant="outline">
-                View Profile
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
@@ -343,38 +536,37 @@ export default function ExpertPersonasPage() {
         </CardContent>
       </Card>
 
-      {/* Category Grid */}
-      <div>
-        <h3 className="text-xl font-semibold mb-4">Browse by Expertise</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {expertCategories.map((category) => {
-            const Icon = category.icon
-            const isSelected = selectedCategory === category.id
-            
-            return (
-              <Card 
-                key={category.id}
-                className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  isSelected ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => setSelectedCategory(isSelected ? null : category.id)}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${category.color}`}>
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold">{category.name}</h4>
-                      <p className="text-sm text-muted-foreground">{category.description}</p>
-                    </div>
-                    <Badge variant="secondary">{category.count}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+      {/* Browse by Expertise */}
+      <h3 className="text-xl font-semibold mb-4">Browse by Expertise</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {categories.map((category) => {
+          const isSelected = selectedCategory === category.id
+          const categoryExperts = allExperts.filter(expert => expert.category === category.id)
+          
+          return (
+            <Card 
+              key={category.id}
+              className={`p-4 cursor-pointer transition-all duration-200 hover:shadow-md border-2 ${
+                isSelected 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-gray-200 hover:border-primary/50'
+              }`}
+              onClick={() => setSelectedCategory(isSelected ? null : category.id)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">
+                  {category.icon}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900">{category.name}</h4>
+                  <p className="text-sm text-gray-600">
+                    {categoryExperts.length} expert{categoryExperts.length !== 1 ? 's' : ''} available
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )
+        })}
       </div>
 
       {/* Expert Grid */}
@@ -382,7 +574,7 @@ export default function ExpertPersonasPage() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold">
             {selectedCategory 
-              ? `${expertCategories.find(c => c.id === selectedCategory)?.name} Experts`
+              ? `${categories.find(c => c.id === selectedCategory)?.name} Experts`
               : "Featured Experts"
             }
           </h3>
@@ -413,7 +605,82 @@ export default function ExpertPersonasPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredExperts.map((expert) => (
-              <ExpertCard key={expert.id} expert={expert} />
+              <Card key={expert.id} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                <CardContent className="p-6">
+                  {/* Header */}
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="relative">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={expert.avatar} alt={expert.name} />
+                        <AvatarFallback>{expert.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      {expert.isOnline && (
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-lg leading-tight mb-1">{expert.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-2">{expert.title}</p>
+                      <div className="flex items-center gap-1 mb-2">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm font-medium">{expert.rating}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Show follower count for influencer personas */}
+                  {expert.category === 'influencer' && 'followers' in expert && (
+                    <div className="mb-3">
+                      <Badge variant="secondary" className="text-xs">
+                        {expert.followers}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {/* Specialties */}
+                  <div className="flex flex-wrap gap-1 mb-4">
+                    {expert.specialties.slice(0, 3).map((specialty) => (
+                      <Badge key={specialty} variant="outline" className="text-xs">
+                        {specialty}
+                      </Badge>
+                    ))}
+                    {expert.specialties.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{expert.specialties.length - 3} more
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
+                        <MessageCircle className="h-3 w-3" />
+                        <span>{expert.consultations} sessions</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{expert.responseTime}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex gap-2">
+                    <Link href={`/expert-personas/chat/${expert.id}`} className="flex-1">
+                      <Button size="sm" className="w-full">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Consult
+                      </Button>
+                    </Link>
+                    <Link href={`/expert-personas/${expert.id}`}>
+                      <Button size="sm" variant="outline">
+                        View Profile
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}

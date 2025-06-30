@@ -664,7 +664,7 @@ export default function ExpertPersonasPage() {
 
                   {/* Action buttons */}
                   <div className="flex gap-2">
-                    <Link href={`/expert-personas/chat/${expert.id}`} className="flex-1">
+                    <Link href={`/expert-personas/consult/${expert.id}`} className="flex-1">
                       <Button size="sm" className="w-full">
                         <MessageCircle className="h-4 w-4 mr-2" />
                         Consult

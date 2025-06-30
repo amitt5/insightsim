@@ -813,7 +813,7 @@ export default function ExpertProfilePage({ params }: { params: { id: string } }
             </div>
 
             <div className="flex flex-col gap-3">
-              <Link href={`/expert-personas/chat/${expertData.id}`}>
+              <Link href={`/expert-personas/consult/${expertData.id}`}>
                 <Button size="lg" className="w-full md:w-auto">
                   <MessageCircle className="h-5 w-5 mr-2" />
                   Start Consultation
@@ -1226,10 +1226,10 @@ export default function ExpertProfilePage({ params }: { params: { id: string } }
                 </div>
               </div>
 
-              <Link href={`/expert-personas/chat/${expertData.id}?mode=${consultationMode}&sources=${selectedSources.join(',')}`}>
+              <Link href={`/expert-personas/consult/${expertData.id}`}>
                 <Button size="lg" className="w-full">
                   <MessageCircle className="h-5 w-5 mr-2" />
-                  Start {consultationMode === "qa" ? "Q&A Session" : "Strategic Consultation"}
+                  Start Consultation
                 </Button>
               </Link>
             </CardContent>

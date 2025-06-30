@@ -35,6 +35,9 @@ export default function CreateExpertPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisComplete, setAnalysisComplete] = useState(false)
+  const [isGatheringSources, setIsGatheringSources] = useState(false)
+  const [gatheringComplete, setGatheringComplete] = useState(false)
+  const [loadedSources, setLoadedSources] = useState<any[]>([])
   
   // Custom Expert Form Data
   const [expertiseField, setExpertiseField] = useState("")
@@ -57,10 +60,11 @@ export default function CreateExpertPage() {
     totalSources: 351
   })
 
-  // Mock curated sources for custom experts
-  const curatedSources = [
+  // Mock curated sources for custom experts - organized by category
+  const allCuratedSources = [
+    // Books (5)
     {
-      id: "1",
+      id: "book1",
       title: "Digital Marketing Strategy Handbook",
       type: "book",
       author: "Digital Marketing Institute",
@@ -69,30 +73,249 @@ export default function CreateExpertPage() {
       selected: true
     },
     {
-      id: "2",
+      id: "book2",
+      title: "The Content Code",
+      type: "book",
+      author: "Mark Schaefer",
+      year: "2022",
+      confidence: 93,
+      selected: true
+    },
+    {
+      id: "book3",
+      title: "Influence: The Psychology of Persuasion",
+      type: "book",
+      author: "Robert Cialdini",
+      year: "2021",
+      confidence: 91,
+      selected: true
+    },
+    {
+      id: "book4",
+      title: "Building a StoryBrand",
+      type: "book",
+      author: "Donald Miller",
+      year: "2022",
+      confidence: 89,
+      selected: true
+    },
+    {
+      id: "book5",
+      title: "Marketing 5.0: Technology for Humanity",
+      type: "book",
+      author: "Philip Kotler",
+      year: "2023",
+      confidence: 87,
+      selected: true
+    },
+    // Articles (12)
+    {
+      id: "article1",
       title: "Social Media Marketing Trends 2024",
       type: "article",
       author: "HubSpot",
+      year: "2023",
+      confidence: 94,
+      selected: true
+    },
+    {
+      id: "article2",
+      title: "The Future of Digital Marketing",
+      type: "article",
+      author: "McKinsey & Company",
       year: "2023",
       confidence: 92,
       selected: true
     },
     {
-      id: "3",
+      id: "article3",
+      title: "Content Marketing ROI: Complete Guide",
+      type: "article",
+      author: "Content Marketing Institute",
+      year: "2023",
+      confidence: 90,
+      selected: true
+    },
+    {
+      id: "article4",
+      title: "AI in Marketing: A Complete Guide",
+      type: "article",
+      author: "Salesforce",
+      year: "2023",
+      confidence: 88,
+      selected: true
+    },
+    {
+      id: "article5",
+      title: "Customer Journey Optimization",
+      type: "article",
+      author: "Adobe",
+      year: "2023",
+      confidence: 86,
+      selected: true
+    },
+    {
+      id: "article6",
+      title: "Email Marketing Best Practices 2024",
+      type: "article",
+      author: "Mailchimp",
+      year: "2023",
+      confidence: 84,
+      selected: true
+    },
+    {
+      id: "article7",
+      title: "SEO Strategy for Modern Brands",
+      type: "article",
+      author: "Moz",
+      year: "2023",
+      confidence: 82,
+      selected: true
+    },
+    {
+      id: "article8",
+      title: "Performance Marketing in 2024",
+      type: "article",
+      author: "Google",
+      year: "2023",
+      confidence: 80,
+      selected: true
+    },
+    {
+      id: "article9",
+      title: "Brand Storytelling Essentials",
+      type: "article",
+      author: "Harvard Business Review",
+      year: "2023",
+      confidence: 78,
+      selected: true
+    },
+    {
+      id: "article10",
+      title: "Marketing Automation Guide",
+      type: "article",
+      author: "HubSpot",
+      year: "2023",
+      confidence: 76,
+      selected: true
+    },
+    {
+      id: "article11",
+      title: "Social Commerce Trends",
+      type: "article",
+      author: "Shopify",
+      year: "2023",
+      confidence: 74,
+      selected: true
+    },
+    {
+      id: "article12",
+      title: "Influencer Marketing Strategies",
+      type: "article",
+      author: "Later",
+      year: "2023",
+      confidence: 72,
+      selected: true
+    },
+    // Videos (8)
+    {
+      id: "video1",
       title: "Advanced Marketing Analytics",
       type: "video",
       author: "Google Marketing Platform",
       year: "2023",
-      confidence: 89,
-      selected: false
+      confidence: 95,
+      selected: true
     },
     {
-      id: "4",
+      id: "video2",
+      title: "Building Your Personal Brand",
+      type: "video",
+      author: "Gary Vaynerchuk",
+      year: "2023",
+      confidence: 93,
+      selected: true
+    },
+    {
+      id: "video3",
+      title: "Content Marketing Masterclass",
+      type: "video",
+      author: "Neil Patel",
+      year: "2023",
+      confidence: 91,
+      selected: true
+    },
+    {
+      id: "video4",
+      title: "Social Media Strategy Deep Dive",
+      type: "video",
+      author: "Hootsuite",
+      year: "2023",
+      confidence: 89,
+      selected: true
+    },
+    {
+      id: "video5",
+      title: "Email Marketing Workshop",
+      type: "video",
+      author: "ConvertKit",
+      year: "2023",
+      confidence: 87,
+      selected: true
+    },
+    {
+      id: "video6",
+      title: "Digital Advertising Fundamentals",
+      type: "video",
+      author: "Facebook Blueprint",
+      year: "2023",
+      confidence: 85,
+      selected: true
+    },
+    {
+      id: "video7",
+      title: "Marketing Psychology Principles",
+      type: "video",
+      author: "Coursera",
+      year: "2023",
+      confidence: 83,
+      selected: true
+    },
+    {
+      id: "video8",
+      title: "Growth Hacking Strategies",
+      type: "video",
+      author: "Growth Tribe",
+      year: "2023",
+      confidence: 81,
+      selected: true
+    },
+    // Podcasts (3)
+    {
+      id: "podcast1",
       title: "Marketing Leadership Podcast",
       type: "podcast",
       author: "Marketing Week",
       year: "2023",
-      confidence: 87,
+      confidence: 92,
+      selected: true
+    },
+    {
+      id: "podcast2",
+      title: "The Growth Show",
+      type: "podcast",
+      author: "HubSpot",
+      year: "2023",
+      confidence: 90,
+      selected: true
+    },
+    {
+      id: "podcast3",
+      title: "Marketing Over Coffee",
+      type: "podcast",
+      author: "John Wall & Christopher Penn",
+      year: "2023",
+      confidence: 88,
       selected: true
     }
   ]
@@ -135,6 +358,27 @@ export default function CreateExpertPage() {
       setAnalysisComplete(true)
       setCurrentStep(3)
     }, 3000)
+  }
+
+  const handleGatherSources = () => {
+    setIsGatheringSources(true)
+    setLoadedSources([])
+    setCurrentStep(4)
+    
+    // Simulate progressive loading of sources
+    allCuratedSources.forEach((source, index) => {
+      setTimeout(() => {
+        setLoadedSources(prev => [...prev, source])
+        
+        // Mark as complete when all sources are loaded
+        if (index === allCuratedSources.length - 1) {
+          setTimeout(() => {
+            setIsGatheringSources(false)
+            setGatheringComplete(true)
+          }, 500)
+        }
+      }, (index + 1) * 300) // Load each source 300ms apart
+    })
   }
 
   const addSpecialty = (specialty: string) => {
@@ -292,6 +536,12 @@ export default function CreateExpertPage() {
                 3
               </div>
               <span className="font-medium">Source Selection</span>
+            </div>
+            <div className={`flex items-center gap-2 ${currentStep >= 4 ? 'text-primary' : 'text-muted-foreground'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 4 ? 'bg-primary text-white' : 'bg-muted'}`}>
+                4
+              </div>
+              <span className="font-medium">Knowledge Sources</span>
             </div>
           </div>
 
@@ -507,12 +757,12 @@ export default function CreateExpertPage() {
                   AI Source Discovery
                 </CardTitle>
                 <CardDescription>
-                  Our AI has curated {curatedSources.length} relevant knowledge sources for {expertiseField}. Review and select the sources you want to include.
+                  Our AI has curated {allCuratedSources.length} relevant knowledge sources for {expertiseField}. Review and select the sources you want to include.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  {curatedSources.map((source) => {
+                  {allCuratedSources.map((source: any) => {
                     const Icon = getSourceIcon(source.type)
                     const isSelected = selectedSources.includes(source.id)
                     
@@ -560,7 +810,7 @@ export default function CreateExpertPage() {
 
                 <div className="bg-muted/50 p-4 rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    <strong>{selectedSources.length}</strong> of {curatedSources.length} sources selected. 
+                    <strong>{selectedSources.length}</strong> of {allCuratedSources.length} sources selected. 
                     Your expert will be trained on these knowledge sources.
                   </p>
                 </div>
@@ -569,10 +819,255 @@ export default function CreateExpertPage() {
                   <Button variant="outline" onClick={() => setCurrentStep(2)}>
                     Back: Experience & Education
                   </Button>
-                  <Button disabled={selectedSources.length === 0}>
-                    Create Expert
+                  <Button 
+                    onClick={handleGatherSources}
+                    disabled={selectedSources.length === 0}
+                  >
+                    Next: Gather Sources
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 4: Knowledge Sources */}
+          {currentStep === 4 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
+                  {isGatheringSources ? "Gathering Sources..." : "Knowledge Sources"}
+                </CardTitle>
+                <CardDescription>
+                  {isGatheringSources 
+                    ? `Discovering and verifying sources from your expertise area...`
+                    : `Select which sources to include in your consultation. Based on ${allCuratedSources.length} verified sources.`
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {isGatheringSources && (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+                      <p className="text-sm text-muted-foreground">
+                        Found {loadedSources.length} of {allCuratedSources.length} sources...
+                      </p>
+                    </div>
+                    
+                    {/* Show sources as they load */}
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {loadedSources.map((source, index) => {
+                        const Icon = getSourceIcon(source.type)
+                        return (
+                          <div key={source.id} className="flex items-center gap-3 p-2 bg-muted/30 rounded-lg animate-in slide-in-from-left">
+                            <div className="p-1 bg-white rounded border">
+                              <Icon className="h-3 w-3" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{source.title}</p>
+                              <p className="text-xs text-muted-foreground">{source.author}</p>
+                            </div>
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {gatheringComplete && (
+                  <div className="space-y-6">
+                    {/* Category tabs */}
+                    <Tabs defaultValue="books" className="w-full">
+                      <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="books">Books (5)</TabsTrigger>
+                        <TabsTrigger value="articles">Articles (12)</TabsTrigger>
+                        <TabsTrigger value="videos">Videos (8)</TabsTrigger>
+                        <TabsTrigger value="podcasts">Podcasts (3)</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="books" className="space-y-4">
+                        {loadedSources.filter(s => s.type === 'book').map((source) => {
+                          const Icon = getSourceIcon(source.type)
+                          return (
+                            <div key={source.id} className="flex items-start gap-4 p-4 border rounded-lg bg-blue-50/50 border-blue-200">
+                              <Checkbox defaultChecked />
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-start gap-3">
+                                  <div className="p-2 bg-white rounded-lg border">
+                                    <Icon className="h-4 w-4" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold leading-tight">{source.title}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      by {source.author} • {source.year}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                      <span className="text-sm font-medium">{source.confidence}%</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">confidence</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </TabsContent>
+                      
+                      <TabsContent value="articles" className="space-y-4">
+                        {loadedSources.filter(s => s.type === 'article').map((source) => {
+                          const Icon = getSourceIcon(source.type)
+                          return (
+                            <div key={source.id} className="flex items-start gap-4 p-4 border rounded-lg bg-blue-50/50 border-blue-200">
+                              <Checkbox defaultChecked />
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-start gap-3">
+                                  <div className="p-2 bg-white rounded-lg border">
+                                    <Icon className="h-4 w-4" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold leading-tight">{source.title}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      by {source.author} • {source.year}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                      <span className="text-sm font-medium">{source.confidence}%</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">confidence</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </TabsContent>
+                      
+                      <TabsContent value="videos" className="space-y-4">
+                        {loadedSources.filter(s => s.type === 'video').map((source) => {
+                          const Icon = getSourceIcon(source.type)
+                          return (
+                            <div key={source.id} className="flex items-start gap-4 p-4 border rounded-lg bg-blue-50/50 border-blue-200">
+                              <Checkbox defaultChecked />
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-start gap-3">
+                                  <div className="p-2 bg-white rounded-lg border">
+                                    <Icon className="h-4 w-4" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold leading-tight">{source.title}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      by {source.author} • {source.year}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                      <span className="text-sm font-medium">{source.confidence}%</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">confidence</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </TabsContent>
+                      
+                      <TabsContent value="podcasts" className="space-y-4">
+                        {loadedSources.filter(s => s.type === 'podcast').map((source) => {
+                          const Icon = getSourceIcon(source.type)
+                          return (
+                            <div key={source.id} className="flex items-start gap-4 p-4 border rounded-lg bg-blue-50/50 border-blue-200">
+                              <Checkbox defaultChecked />
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-start gap-3">
+                                  <div className="p-2 bg-white rounded-lg border">
+                                    <Icon className="h-4 w-4" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold leading-tight">{source.title}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      by {source.author} • {source.year}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                      <span className="text-sm font-medium">{source.confidence}%</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">confidence</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </TabsContent>
+                    </Tabs>
+
+                    {/* Add Custom Sources */}
+                    <div className="border-t pt-6">
+                      <h4 className="font-semibold mb-4 flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        Add Custom Sources
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Upload PDF</Label>
+                          <div className="flex gap-2">
+                            <Input type="file" accept=".pdf" />
+                            <Button variant="outline" size="sm">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>YouTube Video URL</Label>
+                          <div className="flex gap-2">
+                            <Input placeholder="https://youtube.com/watch?v=..." />
+                            <Button variant="outline" size="sm">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Article URL</Label>
+                          <div className="flex gap-2">
+                            <Input placeholder="https://..." />
+                            <Button variant="outline" size="sm">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Podcast Episode URL</Label>
+                          <div className="flex gap-2">
+                            <Input placeholder="https://..." />
+                            <Button variant="outline" size="sm">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <Button variant="outline" onClick={() => setCurrentStep(3)}>
+                        Back: Source Selection
+                      </Button>
+                      <Button>
+                        Create Expert
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

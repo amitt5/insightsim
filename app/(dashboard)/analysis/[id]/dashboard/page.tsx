@@ -883,11 +883,11 @@ export default function AnalysisDashboardPage(props: { params: Promise<{ id: str
         <div className="flex items-center space-x-2">
           <Button variant="outline" disabled>
             <Share2 className="h-4 w-4 mr-2" />
-            Share (Demo)
+            Share
           </Button>
           <Button variant="outline" disabled>
             <Download className="h-4 w-4 mr-2" />
-            Export (Demo)
+            Export
           </Button>
         </div>
       </div>

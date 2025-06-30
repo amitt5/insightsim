@@ -614,9 +614,6 @@ export default function ExpertPersonasPage() {
                         <AvatarImage src={expert.avatar} alt={expert.name} />
                         <AvatarFallback>{expert.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                       </Avatar>
-                      {expert.isOnline && (
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-lg leading-tight mb-1">{expert.name}</h3>
@@ -657,10 +654,6 @@ export default function ExpertPersonasPage() {
                       <div className="flex items-center gap-1">
                         <MessageCircle className="h-3 w-3" />
                         <span>{expert.consultations} sessions</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{expert.responseTime}</span>
                       </div>
                     </div>
                   </div>

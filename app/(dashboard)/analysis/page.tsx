@@ -13,7 +13,8 @@ import {
   Calendar,
   FileText,
   Users,
-  Clock
+  Clock,
+  Info
 } from "lucide-react"
 import Link from "next/link"
 
@@ -87,6 +88,21 @@ export default function AnalysisPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      {/* Demo Banner */}
+      <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/50 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100">Demo Mode</h3>
+              <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
+                This is a demo using sample data. Click "Start New Analysis" to see the complete analysis workflow. You don't need to upload any files - just click through the steps to explore all features.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between space-y-2">
         <div>
           <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
@@ -112,10 +128,10 @@ export default function AnalysisPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Analysis History
+            Analysis History (Demo Data)
           </CardTitle>
           <CardDescription>
-            View and manage your previous qualitative research analyses
+            View and manage your previous qualitative research analyses. These are sample analyses for demonstration.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -146,6 +162,7 @@ export default function AnalysisPage() {
                       <Badge className={getStatusColor(analysis.status)}>
                         {analysis.status}
                       </Badge>
+                      <Badge variant="outline" className="text-xs">DEMO</Badge>
                     </div>
                     
                     <div className="flex items-center gap-6 text-sm text-muted-foreground">
@@ -174,7 +191,7 @@ export default function AnalysisPage() {
                     <Link href={`/analysis/${analysis.id}`}>
                       <Button variant="outline" size="sm" className="flex items-center gap-1">
                         <Eye className="h-4 w-4" />
-                        View
+                        View Demo
                       </Button>
                     </Link>
                     <Button 

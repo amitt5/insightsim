@@ -21,7 +21,9 @@ import {
   Clock,
   MapPin,
   DollarSign,
-  Activity
+  Activity,
+  Info,
+  Calendar
 } from "lucide-react"
 import Link from "next/link"
 
@@ -347,7 +349,8 @@ const mockPatternAnalysis = {
 }
 
 export default function AnalysisDashboardPage(props: { params: Promise<{ id: string }> }) {
-    const { id } = use(props.params);
+  const params = use(props.params)
+  const analysisId = params.id
   const [activeTab, setActiveTab] = useState("individual")
 
   const getSentimentColor = (sentiment: string) => {
@@ -828,48 +831,141 @@ export default function AnalysisDashboardPage(props: { params: Promise<{ id: str
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between">
+      {/* Demo Banner */}
+      <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/50 dark:border-blue-800">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100">Demo Analysis Dashboard</h3>
+              <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
+                This dashboard shows sample analysis results with demo data. All insights, themes, quotes, and visualizations are examples to demonstrate the platform's capabilities. In production, this would show your actual research analysis.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-between space-y-2">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Link href="/analysis">
-              <Button variant="ghost" size="sm">
+              <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Analysis
               </Button>
             </Link>
           </div>
-          <h2 className="text-3xl font-bold tracking-tight">{mockAnalysis.name}</h2>
-          <p className="text-muted-foreground">
-            Analysis of {mockAnalysis.fileCount} files • {mockAnalysis.participantCount} participants • {mockAnalysis.totalThemes} themes identified
-          </p>
+          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <TrendingUp className="h-8 w-8 text-primary" />
+            {mockAnalysis.name} (Demo)
+          </h2>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
+            <div className="flex items-center gap-1">
+              <Calendar className="h-4 w-4" />
+              {new Date(mockAnalysis.createdAt).toLocaleDateString()}
+            </div>
+            <div className="flex items-center gap-1">
+              <FileText className="h-4 w-4" />
+              {mockAnalysis.fileCount} files
+            </div>
+            <div className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              {mockAnalysis.participantCount} participants
+            </div>
+            <div className="flex items-center gap-1">
+              <Target className="h-4 w-4" />
+              {mockAnalysis.totalThemes} themes
+            </div>
+            <Badge variant="outline" className="text-xs">DEMO DATA</Badge>
+          </div>
         </div>
-        <Badge className="bg-green-100 text-green-800">
-          {mockAnalysis.status}
-        </Badge>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" disabled>
+            <Share2 className="h-4 w-4 mr-2" />
+            Share (Demo)
+          </Button>
+          <Button variant="outline" disabled>
+            <Download className="h-4 w-4 mr-2" />
+            Export (Demo)
+          </Button>
+        </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="individual" className="space-y-4">
+        <TabsList>
           <TabsTrigger value="individual">Individual Summaries</TabsTrigger>
-          <TabsTrigger value="combined">Combined Summary</TabsTrigger>
+          <TabsTrigger value="combined">Combined Analysis</TabsTrigger>
           <TabsTrigger value="themes">Themes & Patterns</TabsTrigger>
-          <TabsTrigger value="export">Export</TabsTrigger>
+          <TabsTrigger value="export">Export & Share</TabsTrigger>
         </TabsList>
 
         <TabsContent value="individual" className="space-y-4">
-          {renderIndividualSummaries()}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Individual File Summaries (Demo Data)
+              </CardTitle>
+              <CardDescription>
+                Review insights from each transcript individually. This is sample analysis data for demonstration.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderIndividualSummaries()}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="combined" className="space-y-4">
-          {renderCombinedSummary()}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Combined Analysis Results (Demo Data)
+              </CardTitle>
+              <CardDescription>
+                Cross-cutting insights and themes from all transcripts combined. Sample analysis for demonstration purposes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderCombinedSummary()}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="themes" className="space-y-4">
-          {renderThemesAndPatterns()}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Network className="h-5 w-5" />
+                Theme Analysis & Patterns (Demo Data)
+              </CardTitle>
+              <CardDescription>
+                Explore thematic patterns and relationships in your data. Sample themes and connections shown for demo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderThemesAndPatterns()}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="export" className="space-y-4">
-          {renderExportSection()}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Download className="h-5 w-5" />
+                Export & Share Options (Demo)
+              </CardTitle>
+              <CardDescription>
+                Download your analysis in various formats or share with your team. Export features disabled in demo mode.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderExportSection()}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

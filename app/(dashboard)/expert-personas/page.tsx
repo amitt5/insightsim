@@ -492,14 +492,18 @@ export default function ExpertPersonasPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline">
-            <Users className="h-4 w-4 mr-2" />
-            Multi-Expert Session
-          </Button>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Custom Expert
-          </Button>
+          <Link href="/expert-personas/multi-session">
+            <Button variant="outline">
+              <Users className="h-4 w-4 mr-2" />
+              Multi-Expert Session
+            </Button>
+          </Link>
+          <Link href="/expert-personas/create">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Custom Expert
+            </Button>
+          </Link>
         </div>
       </div>
 

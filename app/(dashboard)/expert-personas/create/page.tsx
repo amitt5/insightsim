@@ -363,7 +363,7 @@ export default function CreateExpertPage() {
   const handleGatherSources = () => {
     setIsGatheringSources(true)
     setLoadedSources([])
-    setCurrentStep(4)
+    setCurrentStep(3)
     
     // Simulate progressive loading of sources
     allCuratedSources.forEach((source, index) => {
@@ -534,12 +534,6 @@ export default function CreateExpertPage() {
             <div className={`flex items-center gap-2 ${currentStep >= 3 ? 'text-primary' : 'text-muted-foreground'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 3 ? 'bg-primary text-white' : 'bg-muted'}`}>
                 3
-              </div>
-              <span className="font-medium">Source Selection</span>
-            </div>
-            <div className={`flex items-center gap-2 ${currentStep >= 4 ? 'text-primary' : 'text-muted-foreground'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 4 ? 'bg-primary text-white' : 'bg-muted'}`}>
-                4
               </div>
               <span className="font-medium">Knowledge Sources</span>
             </div>
@@ -734,104 +728,22 @@ export default function CreateExpertPage() {
                 </Card>
               </div>
 
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                  Back: Define Expertise
-                </Button>
-                <Button 
-                  onClick={() => setCurrentStep(3)}
-                  disabled={!currentRole}
-                >
-                  Next: Source Selection
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Source Selection */}
-          {currentStep === 3 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Search className="h-5 w-5" />
-                  AI Source Discovery
-                </CardTitle>
-                <CardDescription>
-                  Our AI has curated {allCuratedSources.length} relevant knowledge sources for {expertiseField}. Review and select the sources you want to include.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  {allCuratedSources.map((source: any) => {
-                    const Icon = getSourceIcon(source.type)
-                    const isSelected = selectedSources.includes(source.id)
-                    
-                    return (
-                      <div 
-                        key={source.id}
-                        className={`flex items-start gap-4 p-4 border rounded-lg transition-all ${
-                          isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-muted/50'
-                        }`}
-                      >
-                        <Checkbox 
-                          checked={isSelected}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedSources([...selectedSources, source.id])
-                            } else {
-                              setSelectedSources(selectedSources.filter(id => id !== source.id))
-                            }
-                          }}
-                        />
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-start gap-3">
-                            <div className="p-2 bg-white rounded-lg border">
-                              <Icon className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-semibold leading-tight">{source.title}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                by {source.author} • {source.year}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center gap-1">
-                                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                <span className="text-sm font-medium">{source.confidence}%</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">confidence</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    <strong>{selectedSources.length}</strong> of {allCuratedSources.length} sources selected. 
-                    Your expert will be trained on these knowledge sources.
-                  </p>
-                </div>
-
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => setCurrentStep(2)}>
-                    Back: Experience & Education
+                              <div className="flex justify-between">
+                  <Button variant="outline" onClick={() => setCurrentStep(1)}>
+                    Back: Define Expertise
                   </Button>
                   <Button 
                     onClick={handleGatherSources}
-                    disabled={selectedSources.length === 0}
+                    disabled={!currentRole}
                   >
                     Next: Gather Sources
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+            </div>
           )}
 
-          {/* Step 4: Knowledge Sources */}
-          {currentStep === 4 && (
+          {/* Step 3: Knowledge Sources */}
+          {currentStep === 3 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1058,14 +970,14 @@ export default function CreateExpertPage() {
                       </div>
                     </div>
 
-                    <div className="flex justify-between">
-                      <Button variant="outline" onClick={() => setCurrentStep(3)}>
-                        Back: Source Selection
-                      </Button>
-                      <Button>
-                        Create Expert
-                      </Button>
-                    </div>
+                                         <div className="flex justify-between">
+                       <Button variant="outline" onClick={() => setCurrentStep(2)}>
+                         Back: Experience & Education
+                       </Button>
+                       <Button>
+                         Create Expert
+                       </Button>
+                     </div>
                   </div>
                 )}
               </CardContent>

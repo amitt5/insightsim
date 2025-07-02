@@ -53,7 +53,7 @@ export default function DashboardLayout({
               href="/analysis"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >
-              Analysis
+              Analysis (demo)
             </Link>
             <Link 
               href="/personas"

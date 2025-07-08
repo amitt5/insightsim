@@ -65,6 +65,8 @@ export default function LandingPage() {
     },
   ];
 
+  const [hideForNow, setHideForNow] = useState(false);
+
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [openNewFaq, setOpenNewFaq] = useState<number | null>(null);
   const [showMorePricing, setShowMorePricing] = useState<number | null>(null);
@@ -496,17 +498,17 @@ export default function LandingPage() {
               <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
                 <span className="text-4xl mb-4">🔍</span>
                 <h3 className="mb-2 text-xl font-semibold text-center">Qualitative Researchers</h3>
-                <p className="text-gray-600 text-center">Run more studies in less time. Test discussion guides, validate findings, and explore new research directions without recruiting delays.</p>
+                <p className="text-gray-600 text-center"> Test discussion guides and explore new research directions</p>
               </div>
               <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
                 <span className="text-4xl mb-4">💡</span>
                 <h3 className="mb-2 text-xl font-semibold text-center">Insight Managers</h3>
-                <p className="text-gray-600 text-center">Get consumer feedback on demand. Quickly test concepts, messaging, and product ideas before investing in full-scale research.</p>
+                <p className="text-gray-600 text-center">Get on-demand feedback to quickly validate concepts</p>
               </div>
               <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
                 <span className="text-4xl mb-4">👤</span>
                 <h3 className="mb-2 text-xl font-semibold text-center">User Researchers</h3>
-                <p className="text-gray-600 text-center">Simulate user feedback sessions for early designs and prototypes. Identify usability issues and preference patterns faster.</p>
+                <p className="text-gray-600 text-center">Identify early usability issues and preferences</p>
               </div>
             </div>
           </div>
@@ -567,13 +569,12 @@ export default function LandingPage() {
                     <h3 className="text-xl font-semibold text-gray-900">Wasted Research Budgets</h3>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Every failed study costs thousands in recruitment, incentives, and time. One poorly designed discussion guide can derail an entire project, leaving clients frustrated and budgets blown.
+                  Poorly designed discussion guides can cost thousands in wasted resources
                   </p>
                   <ul className="text-sm text-gray-500 space-y-2">
-                    <li>• Untested questions that don't generate insights</li>
-                    <li>• Recruitment challenges for specific demographics</li>
-                    <li>• Last-minute guide changes that compromise data quality</li>
-                    <li>• Pressure to deliver actionable insights from flawed methodology</li>
+                    <li>• Questions that don't generate insights</li>
+                    <li>• Wasting live sessions getting obvious insights.</li>
+                    <li>• Inability to ask crucial follow-up questions after the interview.</li>
                   </ul>
                 </div>
 
@@ -588,13 +589,12 @@ export default function LandingPage() {
                     <h3 className="text-xl font-semibold text-gray-900">Delayed Product Decisions</h3>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Waiting weeks for user research while product deadlines loom. By the time insights arrive, the market opportunity may have passed.
+                  Waiting weeks for results can cause you to miss market opportunities
                   </p>
                   <ul className="text-sm text-gray-500 space-y-2">
-                    <li>• Sprint cycles that can't wait for traditional research timelines</li>
                     <li>• Limited research budgets for early-stage concept testing</li>
-                    <li>• Difficulty recruiting specific user segments quickly</li>
-                    <li>• Stakeholder pressure for immediate user feedback</li>
+                    <li>• Difficulty recruiting specific users</li>
+                    <li>• Non-iterative feedback loops</li>
                   </ul>
                 </div>
 
@@ -609,10 +609,10 @@ export default function LandingPage() {
                     <h3 className="text-xl font-semibold text-gray-900">Missed Strategic Opportunities</h3>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Critical business decisions made without proper research validation. Competitors move faster while you're still planning your methodology.
+                  Making critical business decisions without research validation
                   </p>
                   <ul className="text-sm text-gray-500 space-y-2">
-                    <li>• Board meetings demanding insights you don't have yet</li>
+                    {/* <li>• Board meetings demanding insights you don't have yet</li> */}
                     <li>• Campaign launches based on assumptions, not data</li>
                     <li>• Seasonal opportunities missed due to research lead times</li>
                     <li>• Team credibility questioned when insights come too late</li>
@@ -621,11 +621,11 @@ export default function LandingPage() {
               </div>
 
               {/* Closing CTA */}
-              <div className="text-center">
+              {/* <div className="text-center">
                 <p className="text-xl text-gray-700 font-medium">
                   What if you could test your approach, refine your questions, and validate your hypotheses before investing in expensive fieldwork?
                 </p>
-              </div>
+              </div> */}
             </div>
           </div>
         </section>
@@ -655,7 +655,7 @@ export default function LandingPage() {
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">1. Plan</h3>
                   <p className="text-gray-600 text-sm">
-                    Create your discussion guide, define objectives, and set up AI personas that match your target audience
+                    Define objectives, target audience and create your discussion guide
                   </p>
                 </div>
 
@@ -675,7 +675,7 @@ export default function LandingPage() {
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">2. Simulate</h3>
                   <p className="text-gray-600 text-sm">
-                    Run realistic focus groups with AI participants. Test different scenarios and participant mixes instantly
+                    Test different scenarios and participant mixes instantly
                   </p>
                 </div>
 
@@ -695,7 +695,7 @@ export default function LandingPage() {
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">3. Refine</h3>
                   <p className="text-gray-600 text-sm">
-                    Identify weak questions, optimize your guide, and sharpen your hypotheses based on simulation insights
+                    Identify strong/weak questions and sharpen your hypotheses
                   </p>
                 </div>
               </div>
@@ -711,9 +711,6 @@ export default function LandingPage() {
                 <p className="text-base text-gray-600 mb-2">
                   Launch your field research with confidence, knowing your methodology is tested and your questions are optimized
                 </p>
-                <p className="text-sm text-gray-500 italic">
-                  InsightSim prepares you for success—it doesn't replace the real insights only human participants can provide
-                </p>
               </div>
 
               {/* Benefits Grid */}
@@ -726,7 +723,7 @@ export default function LandingPage() {
                   </div>
                   <h4 className="font-semibold text-gray-900 mb-2">Reduce Research Failures</h4>
                   <p className="text-sm text-gray-600">
-                    Test your discussion guides before expensive field research. Catch weak questions early and optimize for better insights.
+                    Test your discussion guides before expensive field research
                   </p>
                 </div>
 
@@ -738,7 +735,7 @@ export default function LandingPage() {
                   </div>
                   <h4 className="font-semibold text-gray-900 mb-2">Accelerate Decision Making</h4>
                   <p className="text-sm text-gray-600">
-                    Get directional insights instantly. No more waiting weeks for recruitment—test concepts and validate approaches immediately.
+                    Get directional insights instantly. Iterate as often as you like
                   </p>
                 </div>
 
@@ -783,7 +780,7 @@ export default function LandingPage() {
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Recruit the Unreachable</h3>
                   <p className="text-gray-600 text-sm mb-3">
-                    Need insights from CEOs, busy professionals, or niche demographics? Create AI personas of participants you could never recruit in real life.
+                    Need insights from CEOs, or niche demographics? Create AI personas of participants you could never recruit in real life.
                   </p>
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-xs text-gray-500 font-medium">Example scenarios:</p>
@@ -878,7 +875,7 @@ export default function LandingPage() {
               </div>
 
               {/* Bottom Comparison */}
-              <div className="mt-16 bg-white rounded-xl p-8 border border-gray-200">
+              {/* <div className="mt-16 bg-white rounded-xl p-8 border border-gray-200">
                 <h3 className="text-xl font-semibold text-gray-900 text-center mb-8">Traditional Research vs. InsightSim</h3>
                 <div className="grid md:grid-cols-2 gap-8">
                   <div>
@@ -914,13 +911,14 @@ export default function LandingPage() {
                     </ul>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </section>
 
 
         {/* Key Features & Benefits Section */}
+        {hideForNow && (
         <section id="features" className="py-20 bg-gray-50">
           <div className="container">
             <div className="mx-auto max-w-6xl">
@@ -985,10 +983,11 @@ export default function LandingPage() {
               
             </div>
           </div>
-        </section>
+        </section>)}
 
 
         {/* Upcoming Features Section */}
+        {hideForNow && (
         <section className="py-20 bg-white">
           <div className="container max-w-4xl mx-auto">
             <div className="text-center mb-12">
@@ -1045,7 +1044,8 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-
+        )}
+    
 
         {/* Use Cases Section */}
         <section className="min-h-screen flex items-center justify-center py-20 bg-white">

@@ -921,7 +921,7 @@ function extractParticipantMessages(parsedResponse: any) {
               <CardContent className="p-4 flex-1 overflow-auto">
               <h2 className="font-semibold mb-4 flex items-center gap-2">
                 Discussion
-                {simulationData?.simulation?.status === 'Completed' && (
+                {/* {simulationData?.simulation?.status === 'Completed' && ( */}
                   <button
                     className="ml-2 p-1 rounded hover:bg-gray-100"
                     title="Copy transcript"
@@ -929,7 +929,7 @@ function extractParticipantMessages(parsedResponse: any) {
                   >
                     <Copy className="h-4 w-4 text-primary" />
                   </button>
-                )}
+                {/* )} */}
               </h2>
               <div className="space-y-6">
                   {formattedMessages.length === 0 ? (

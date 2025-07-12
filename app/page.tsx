@@ -450,6 +450,15 @@ export default function LandingPage() {
                 <span className="hero-title-part accent block text-primary">Real Insights.</span>
                 <span className="hero-title-part block">No Waiting.</span> */}
                  <span className="hero-title-part block">AI-Powered Focus Groups.</span>
+                 {/* Discover Actionable Insights. Guarenteed. Today!
+                 find features, discover user pain points, concerns with trying user product and possible solutions
+
+                 contact us with yous business problem. 
+
+                 monthly subscription. 
+                 1 project/app idea - 
+
+                 100% satisfaction guaranteed! */}
                 {/* <span className="hero-title-part block ">Directional Insights.</span> */}
                 <span className="hero-title-part accent block text-primary">No Waiting.</span>
               </h1>

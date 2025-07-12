@@ -124,28 +124,43 @@ export default function SimulationViewPage() {
     if (!showFollowUpQuestions) {
       setShowFollowUpQuestions(true)
       setIsLoadingFollowUpQuestions(true)
+      
+      // Get only the most recent message exchange (last moderator question + respondent answers)
+      const getRecentMessageExchange = (messages: SimulationMessage[]) => {
+        if (!messages || messages.length === 0) return [];
+        
+        // Find the last moderator message
+        let lastModeratorIndex = -1;
+        for (let i = messages.length - 1; i >= 0; i--) {
+          if (messages[i].sender_type === 'moderator') {
+            lastModeratorIndex = i;
+            break;
+          }
+        }
+        
+        // If no moderator message found, return empty array
+        if (lastModeratorIndex === -1) return [];
+        
+        // Return the last moderator message and all subsequent messages (respondent answers)
+        return messages.slice(lastModeratorIndex);
+      };
+      
+      const recentMessages = getRecentMessageExchange(simulationMessages || []);
+      
       const sample = {
         simulation: simulationData?.simulation || {} as Simulation,
-        messages: simulationMessages || [] as SimulationMessage[],
+        messages: recentMessages,
         personas: simulationData?.personas || [] as Persona[]
       }
       const prompt = buildFollowUpQuestionsPrompt(sample)
-      console.log('prompt', prompt);
+      console.log('prompt-followup', prompt);
+      console.log('recent-messages-used', recentMessages);
       const data = await runSimulationAPI(prompt, modelInUse);
       // console.log('data', data);
       const parsedMessages = parseSimulationResponse(data.reply);
       console.log('parsedMessages-amit', parsedMessages);
-      // // save messages to database
-      // const saveResult = await saveMessagesToDatabase(parsedMessages);
-      // console.log('saveResult', saveResult);
-      // Simulate API call with delay
       setFollowUpQuestions(parsedMessages.questions)
-      // setTimeout(() => {
-      //   // Select 3 random questions
-      //   const shuffled = hardcodedQuestions.sort(() => 0.5 - Math.random())
-      //   setFollowUpQuestions(shuffled.slice(0, 3))
       setIsLoadingFollowUpQuestions(false)
-      // }, 1500) // 1.5 second delay
     } else {
       setShowFollowUpQuestions(false)
       setFollowUpQuestions([])

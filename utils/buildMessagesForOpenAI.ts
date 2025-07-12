@@ -67,6 +67,8 @@ export function buildMessagesForOpenAI({
     systemPrompt += `Respond with 1–4 participant messages in a natural back-and-forth. Make each message realistic and contextually aware.\n`;
   }
 
+  
+
   // JSON format rules
   // Replace your current JSON format rules section with:
 systemPrompt += `
@@ -84,7 +86,7 @@ STRICT RULES:
 - Include 1-4 participant responses per turn
 - Never include moderator responses
 - Each participant gets their own object in the array
-- Messages should be ${study_type === "idi" ? "detailed (50-200 words)" : "natural and conversational"}
+- Messages should be detailed(50-200 words) and natural and conversational
 
 EXAMPLE:
 {
@@ -453,7 +455,7 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation): stri
   const systemPrompt = `You are an expert persona generator for qualitative market research with 15 years of experience at top agencies like Kantar and Ipsos. You specialize in analyzing research briefs and creating realistic, diverse personas that represent the target audience described in the brief. Your output must be a valid JSON array.`;
 
   // 2. Define the task with brief-specific context
-  const taskDefinition = `Your task is to analyze the provided research brief and generate 3-5 distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
+  const taskDefinition = `Your task is to analyze the provided research brief and generate 7-8 distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
 
   // 3. Provide the research context
   const researchContext = `

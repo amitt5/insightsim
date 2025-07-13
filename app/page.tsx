@@ -1416,9 +1416,9 @@ export default function LandingPage() {
                       </ul>
                     </div>
                   </div>
-                  <Link href="/contact-sales?plan=insight-partner" className="mt-8">
-                    <Button className="w-full text-lg py-3">Contact Sales</Button>
-                  </Link>
+                                     <a href="mailto:amit@insightsim.ai?subject=Insight Partner Plan - Let's Discuss Your Research Needs" className="mt-8">
+                     <Button className="w-full text-lg py-3">Contact Sales</Button>
+                   </a>
                 </div>
 
               </div>

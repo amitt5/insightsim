@@ -57,6 +57,7 @@ export interface Persona {
     traits?: string[]
     archetype?: string
     gender?: string
+    location?: string
     bio?: string
     goal?: string
     attitude?: string;

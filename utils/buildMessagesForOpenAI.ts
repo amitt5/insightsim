@@ -419,6 +419,7 @@ interface Persona {
   name: string; // e.g., "Alex Chen"
   age?: number; // e.g., 34
   occupation?: string; // e.g., "Project Manager"
+  location?: string; // e.g., "New York, USA"
   traits?: string[]; // e.g., ["Organized", "Tech-Savvy", "Time-Poor"]
   archetype?: string; // e.g., "The Overwhelmed Organizer"
   gender?: string; // e.g., "Male"
@@ -487,6 +488,7 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation): stri
     name: string; // e.g., "Sarah Mitchell"
     age?: number; // e.g., 32
     occupation?: string; // e.g., "Marketing Manager"
+    location?: string; // e.g., "San Francisco, USA"
     traits?: string[]; // e.g., ["Brand-Conscious", "Price-Sensitive", "Early Adopter"]
     archetype?: string; // e.g., "The Cautious Switcher"
     gender?: string; // e.g., "Female"

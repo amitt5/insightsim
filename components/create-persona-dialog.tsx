@@ -71,6 +71,9 @@ const BIO_EXAMPLES = [
 const TRAIT_EXAMPLES = [
   "Health-conscious", "Tech-savvy", "Detail-oriented", "Empathetic", "Creative", "Analytical", "Adventurous", "Organized", "Collaborative", "Resilient", "Resourceful", "Curious", "Open-minded", "Goal-driven", "Skeptical", "Optimistic", "Pragmatic", "Ambitious", "Patient", "Sociable"
 ];
+const LOCATION_EXAMPLES = [
+  "New York, USA", "London, UK", "Tokyo, Japan", "Sydney, Australia", "Toronto, Canada", "Berlin, Germany", "São Paulo, Brazil", "Mumbai, India", "Singapore", "Dubai, UAE", "Amsterdam, Netherlands", "Stockholm, Sweden", "Copenhagen, Denmark", "Barcelona, Spain", "Mexico City, Mexico", "Seoul, South Korea", "Tel Aviv, Israel", "Vienna, Austria", "Zurich, Switzerland", "Oslo, Norway"
+];
 
 export function CreatePersonaDialog({ 
   open, 
@@ -92,6 +95,7 @@ export function CreatePersonaDialog({
     age: "",
     gender: "",
     occupation: "",
+    location: "",
     archetype: "",
     bio: "",
     traits: "",
@@ -115,6 +119,7 @@ export function CreatePersonaDialog({
         age: initialData.age?.toString() || "",
         gender: initialData.gender || "",
         occupation: initialData.occupation || "",
+        location: initialData.location || "",
         archetype: initialData.archetype || "",
         bio: initialData.bio || "",
         traits: Array.isArray(initialData.traits) 
@@ -217,6 +222,7 @@ export function CreatePersonaDialog({
           age: "",
           gender: "",
           occupation: "",
+          location: "",
           archetype: "",
           bio: "",
           traits: "",
@@ -350,6 +356,41 @@ export function CreatePersonaDialog({
                     </TooltipTrigger>
                     <TooltipContent side="left">
                       Generate a random occupation with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <div className="relative">
+              <Input 
+                id="location" 
+                placeholder="e.g., New York, USA" 
+                value={formData.location}
+                onChange={(e) => handleChange("location", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("location", pickRandom(LOCATION_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random location with AI
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

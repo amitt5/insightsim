@@ -109,6 +109,7 @@ export async function PUT(request: Request) {
         age: personaData.age,
         gender: personaData.gender,
         occupation: personaData.occupation,
+        location: personaData.location,
         archetype: personaData.archetype,
         bio: personaData.bio,
         traits: personaData.traits,

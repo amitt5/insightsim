@@ -1105,6 +1105,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
           age: persona.age,
           gender: persona.gender,
           occupation: persona.occupation,
+          location: persona.location,
           archetype: persona.archetype,
           bio: persona.bio,
           traits: persona.traits,
@@ -1867,6 +1868,7 @@ Key Questions:
                                   <div className="flex items-center gap-2 mb-1">
                                     <h4 className="font-medium text-base">
                                       {persona.name}, {persona.age}{persona.gender?.charAt(0)}, {persona.occupation}
+                                      {persona.location && `, ${persona.location}`}
                                     </h4>
                                   </div>
                                   <div className="text-sm text-primary font-medium mb-2">

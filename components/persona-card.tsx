@@ -96,6 +96,7 @@ export function PersonaCard({
                   {persona.gender && <span>{persona.gender}</span>}
                   {persona.age && <span>{persona.age}</span>}
                   {persona.occupation && <><span>•</span> <span className="truncate">{persona.occupation}</span></>}
+                  {persona.location && <><span>•</span> <span className="truncate">{persona.location}</span></>}
                 </p>
               </div>
               {persona.editable && (

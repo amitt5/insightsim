@@ -323,7 +323,7 @@ export default function NewCalibrationPage() {
                         <div>
                           <h4 className="font-medium">{persona.name}</h4>
                           <p className="text-sm text-gray-500">
-                            {persona.age} • {persona.gender} • {persona.occupation}
+                            {persona.age} • {persona.gender} • {persona.occupation}{persona.location && ` • ${persona.location}`}
                           </p>
                           <div className="mt-1 flex flex-wrap gap-1">
                             {persona.traits.map((trait: string, i: number) => (

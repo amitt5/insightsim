@@ -35,6 +35,9 @@ interface  PersonaMapping  {
       if (persona.occupation) {
         prompt += ` - occupation: ${persona.occupation}`;
       }
+      if (persona.location) {
+        prompt += ` - location: ${persona.location}`;
+      }
       if (persona.archetype) {
         prompt += ` - archetype: ${persona.archetype}`;
       }

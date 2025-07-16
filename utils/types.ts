@@ -70,6 +70,7 @@ export interface Persona {
     category_products?: string[];
     product_relationship?: string;
     category_habits?: string;
+    tags?: string[];
 }
 
 export interface AIPersonaGeneration {

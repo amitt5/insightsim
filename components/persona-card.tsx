@@ -87,7 +87,7 @@ export function PersonaCard({
         <CardContent className="p-0">
           <div className="bg-primary/10 p-4">
             {/* Row 1: Name/Basic Info + Buttons */}
-            <div className="flex items-start gap-3 mb-3">
+            <div className="flex items-start gap-3 mb-1">
               <div className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary">
                 <UserCircle className="h-6 w-6" />
               </div>
@@ -96,7 +96,7 @@ export function PersonaCard({
                 <div className="text-sm">
                   {(persona.gender || persona.age) && (
                     <p className="flex items-center gap-1">
-                      {persona.gender && <span>{persona.gender}</span>}
+                      {persona.gender && <span>{persona.gender},</span>}
                       {persona.age && <span>{persona.age}</span>}
                     </p>
                   )}

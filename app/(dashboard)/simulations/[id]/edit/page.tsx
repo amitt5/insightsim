@@ -19,6 +19,8 @@ import { Simulation, Persona, AIPersonaGeneration } from "@/utils/types"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { v4 as uuidv4 } from 'uuid'
 import { useToast } from "@/hooks/use-toast"
+import { uploadMultipleFilesToServer } from '@/utils/uploadApi'
+import { validateFile, createFilePreview, revokeFilePreview } from '@/utils/fileUpload'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import { runSimulationAPI } from "@/utils/api"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
@@ -37,6 +39,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   const [previewUrls, setPreviewUrls] = useState<{[key: string]: string}>({})
   const [fileError, setFileError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({})
   const [isLoading, setIsLoading] = useState(true)
   const [titleGenerationOpen, setTitleGenerationOpen] = useState(false)
   const [titleGenerationInput, setTitleGenerationInput] = useState('')
@@ -186,6 +189,17 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     loadSimulation();
   }, [id, router, toast]);
 
+  // Cleanup preview URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      Object.values(previewUrls).forEach(url => {
+        if (url) {
+          revokeFilePreview(url);
+        }
+      });
+    };
+  }, [previewUrls]);
+
   // Cleanup auto-save timeout on unmount
   useEffect(() => {
     return () => {
@@ -295,229 +309,70 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     saveActiveStep(newStep); // Save the new step to database
   }
 
-  // Function to save active_step to database
-  const saveActiveStep = async (activeStep: number) => {
-    try {
-      await fetch(`/api/simulations/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          active_step: activeStep
-        }),
+  // Function to upload media files
+  const uploadMedia = async (): Promise<string[]> => {
+    const mediaUrls: string[] = [];
+    
+    // If there are files selected, upload them first
+    if (selectedFiles.length > 0) {
+      setUploadProgress({});
+      const uploadResults = await uploadMultipleFilesToServer(
+        selectedFiles,
+        id, // simulation ID
+        'simulation-media',
+        (fileIndex, result) => {
+          // Track upload progress
+          setUploadProgress(prev => ({
+            ...prev,
+            [fileIndex]: result.success ? 100 : 0
+          }));
+          console.log(`File ${fileIndex + 1} upload result:`, result);
+        }
+      );
+      
+      // Check for upload errors
+      const failedUploads = uploadResults.filter(result => !result.success);
+      if (failedUploads.length > 0) {
+        const errorMessages = failedUploads.map(result => result.error).join(', ');
+        throw new Error(`Failed to upload ${failedUploads.length} file(s): ${errorMessages}`);
+      }
+      
+      // Collect successful upload URLs
+      uploadResults.forEach(result => {
+        if (result.success && result.url) {
+          mediaUrls.push(result.url);
+        }
       });
-    } catch (error) {
-      console.error('Error saving active step:', error);
-      // Don't show error to user as this is background functionality
-    }
-  };
-
-  // Input change handlers with debounced auto-save
-  const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setSimulationData(prev => ({
-      ...prev,
-      [field]: e.target.value
-    }));
-    debouncedAutoSave(); // Trigger debounced auto-save
-  };
-
-  // Handle select changes with auto-save
-  const handleSelectChange = (field: string) => (value: string) => {
-    setSimulationData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    autoSave(); // Immediate auto-save for select changes
-  };
-
-  // Handle switch change
-  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSimulationData(prev => ({
-      ...prev,
-      turn_based: e.target.checked
-    }));
-    console.log('simulationData3', simulationData)
-  };
-
-  // Handle radio group change with auto-save
-  const handleRadioChange = (value: string) => {
-    setSimulationData(prev => ({
-      ...prev,
-      mode: value
-    }));
-    autoSave(); // Immediate auto-save for radio changes
-  };
-
-  // File handling functions
-  const validateFile = (file: File): boolean => {
-    // Check file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-    if (!allowedTypes.includes(file.type)) {
-      setFileError('File type not supported. Please upload a PNG, JPG, or PDF file.');
-      return false;
-    }
-    
-    // Check file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-    if (file.size > maxSize) {
-      setFileError('File is too large. Maximum size is 10MB.');
-      return false;
-    }
-    
-    setFileError(null);
-    return true;
-  };
-
-  // Handle file selection from input
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    // Process each file
-    const newFiles: File[] = [];
-    const newPreviews: {[key: string]: string} = {...previewUrls};
-    
-    Array.from(files).forEach(file => {
-      if (validateFile(file)) {
-        newFiles.push(file);
-        
-        // Create preview URL for images
-        if (file.type.startsWith('image/')) {
-          const url = URL.createObjectURL(file);
-          newPreviews[file.name] = url;
+      
+      toast({
+        title: "Files uploaded successfully",
+        description: `${selectedFiles.length} file(s) have been uploaded and attached to the simulation.`,
+        duration: 3000,
+      });
+      
+      // Clear uploaded files after successful upload
+      Object.values(previewUrls).forEach(url => {
+        if (url) {
+          revokeFilePreview(url);
         }
-      }
-    });
-    
-    if (newFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...newFiles]);
-      setPreviewUrls(newPreviews);
-      
-      // Update simulationData to indicate files are pending upload - just mark them as pending
-      setSimulationData(prev => ({
-        ...prev,
-        stimulus_media_url: Array(selectedFiles.length + newFiles.length).fill('pending_upload'),
-      }));
+      });
+      setSelectedFiles([]);
+      setPreviewUrls({});
+      setUploadProgress({});
     }
-  };
-
-  // Handle drag and drop
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
     
-    const files = e.dataTransfer.files;
-    if (!files || files.length === 0) return;
-    
-    // Process each dropped file
-    const newFiles: File[] = [];
-    const newPreviews: {[key: string]: string} = {...previewUrls};
-    
-    Array.from(files).forEach(file => {
-      if (validateFile(file)) {
-        newFiles.push(file);
-        
-        // Create preview URL for images
-        if (file.type.startsWith('image/')) {
-          const url = URL.createObjectURL(file);
-          newPreviews[file.name] = url;
-        }
-      }
-    });
-    
-    if (newFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...newFiles]);
-      setPreviewUrls(newPreviews);
-      
-      // Update simulationData with just one array
-      setSimulationData(prev => ({
-        ...prev,
-        stimulus_media_url: Array(selectedFiles.length + newFiles.length).fill('pending_upload'),
-      }));
-    }
-  };
-
-  // Handle file removal
-  const handleRemoveFile = (indexToRemove: number) => {
-    setSelectedFiles(prevFiles => {
-      const updatedFiles = [...prevFiles];
-      const fileToRemove = updatedFiles[indexToRemove];
-      
-      // Remove the preview URL if exists
-      if (previewUrls[fileToRemove.name]) {
-        URL.revokeObjectURL(previewUrls[fileToRemove.name]);
-        const newPreviews = {...previewUrls};
-        delete newPreviews[fileToRemove.name];
-        setPreviewUrls(newPreviews);
-      }
-      
-      // Remove the file from the array
-      updatedFiles.splice(indexToRemove, 1);
-      
-      // Update simulationData - use single array
-      const newMediaUrls = updatedFiles.length > 0 
-        ? Array(updatedFiles.length).fill('pending_upload')
-        : [];
-      
-      setSimulationData(prev => ({
-        ...prev,
-        stimulus_media_url: newMediaUrls,
-      }));
-      
-      return updatedFiles;
-    });
+    return mediaUrls;
   };
 
   // Function to save simulation to database
   const saveSimulation = async () => {
+    console.log('amit-saveSimulation', selectedFiles)
     try {
       setIsUploading(true);
-      const mediaUrls: string[] = [];
       
-      // If there are files selected, upload them first
-      if (selectedFiles.length > 0) {
-        // Upload each file and collect the URLs
-        for (const file of selectedFiles) {
-          // Create a unique file name to avoid collisions
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${uuidv4()}.${fileExt}`;
-          const filePath = `simulation-media/${fileName}`;
-          
-          // Upload the file to Supabase Storage
-          const { data: uploadData, error: uploadError } = await supabase
-            .storage
-            .from('simulation-media')
-            .upload(filePath, file, {
-              cacheControl: '3600',
-              upsert: false
-            });
-            
-          if (uploadError) {
-            throw new Error(`Error uploading file ${file.name}: ${uploadError.message}`);
-          }
-          
-          // Get the public URL for the uploaded file
-          const { data: { publicUrl } } = supabase
-            .storage
-            .from('simulation-media')
-            .getPublicUrl(filePath);
-            
-          // Add the URL to our array
-          mediaUrls.push(publicUrl);
-        }
-        
-        toast({
-          title: "Files uploaded successfully",
-          description: `${selectedFiles.length} file(s) have been uploaded and attached to the simulation.`,
-          duration: 3000,
-        });
-      }
+      // Upload media files if any are selected
+      const mediaUrls = await uploadMedia();
+      console.log('amit-saveSimulation-mediaUrls', mediaUrls)
       
       // Parse discussion questions from text to array if not already an array
       let discussionQuestionsArray = [];
@@ -587,6 +442,179 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     }
   };
 
+
+  // Function to save active_step to database
+  const saveActiveStep = async (activeStep: number) => {
+    try {
+      await fetch(`/api/simulations/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          active_step: activeStep
+        }),
+      });
+    } catch (error) {
+      console.error('Error saving active step:', error);
+      // Don't show error to user as this is background functionality
+    }
+  };
+
+  // Input change handlers with debounced auto-save
+  const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setSimulationData(prev => ({
+      ...prev,
+      [field]: e.target.value
+    }));
+    debouncedAutoSave(); // Trigger debounced auto-save
+  };
+
+  // Handle select changes with auto-save
+  const handleSelectChange = (field: string) => (value: string) => {
+    setSimulationData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    autoSave(); // Immediate auto-save for select changes
+  };
+
+  // Handle switch change
+  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSimulationData(prev => ({
+      ...prev,
+      turn_based: e.target.checked
+    }));
+    console.log('simulationData3', simulationData)
+  };
+
+  // Handle radio group change with auto-save
+  const handleRadioChange = (value: string) => {
+    setSimulationData(prev => ({
+      ...prev,
+      mode: value
+    }));
+    autoSave(); // Immediate auto-save for radio changes
+  };
+
+  // File handling functions
+  const validateAndProcessFile = (file: File): boolean => {
+    const validation = validateFile(file);
+    if (!validation.isValid) {
+      setFileError(validation.error || 'File validation failed');
+      return false;
+    }
+    
+    setFileError(null);
+    return true;
+  };
+
+  // Handle file selection from input
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    // Process each file
+    const newFiles: File[] = [];
+    const newPreviews: {[key: string]: string} = {...previewUrls};
+    
+    Array.from(files).forEach(file => {
+      if (validateAndProcessFile(file)) {
+        newFiles.push(file);
+        
+        // Create preview URL for images using utility function
+        const previewUrl = createFilePreview(file);
+        if (previewUrl) {
+          newPreviews[file.name] = previewUrl;
+        }
+      }
+    });
+    
+    if (newFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...newFiles]);
+      setPreviewUrls(newPreviews);
+      
+      // Update simulationData to indicate files are pending upload
+      setSimulationData(prev => ({
+        ...prev,
+        stimulus_media_url: Array(selectedFiles.length + newFiles.length).fill('pending_upload'),
+      }));
+    }
+  };
+
+  // Handle drag and drop
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    
+    // Process each dropped file
+    const newFiles: File[] = [];
+    const newPreviews: {[key: string]: string} = {...previewUrls};
+    
+    Array.from(files).forEach(file => {
+      if (validateAndProcessFile(file)) {
+        newFiles.push(file);
+        
+        // Create preview URL for images using utility function
+        const previewUrl = createFilePreview(file);
+        if (previewUrl) {
+          newPreviews[file.name] = previewUrl;
+        }
+      }
+    });
+    
+    if (newFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...newFiles]);
+      setPreviewUrls(newPreviews);
+      
+      // Update simulationData with pending upload indicators
+      setSimulationData(prev => ({
+        ...prev,
+        stimulus_media_url: Array(selectedFiles.length + newFiles.length).fill('pending_upload'),
+      }));
+    }
+  };
+
+  // Handle file removal
+  const handleRemoveFile = (indexToRemove: number) => {
+    setSelectedFiles(prevFiles => {
+      const updatedFiles = [...prevFiles];
+      const fileToRemove = updatedFiles[indexToRemove];
+      
+      // Remove the preview URL if exists using utility function
+      if (previewUrls[fileToRemove.name]) {
+        revokeFilePreview(previewUrls[fileToRemove.name]);
+        const newPreviews = {...previewUrls};
+        delete newPreviews[fileToRemove.name];
+        setPreviewUrls(newPreviews);
+      }
+      
+      // Remove the file from the array
+      updatedFiles.splice(indexToRemove, 1);
+      
+      // Update simulationData with correct array length
+      const newMediaUrls = updatedFiles.length > 0 
+        ? Array(updatedFiles.length).fill('pending_upload')
+        : [];
+      
+      setSimulationData(prev => ({
+        ...prev,
+        stimulus_media_url: newMediaUrls,
+      }));
+      
+      return updatedFiles;
+    });
+  };
+
+  
   const handlePlayingAround = () => {
     const randomSimulation: any = getRandomSimulation();
     console.log('handlePlayingAround',randomSimulation);
@@ -2056,10 +2084,10 @@ Key Questions:
                   <div 
                     className={`flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed ${
                       selectedFiles.length > 0 ? 'border-primary' : 'border-gray-300'
-                    } hover:bg-gray-50 p-4`}
+                    } hover:bg-gray-50 p-4 ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
-                    onClick={() => document.getElementById('file-upload')?.click()}
+                    onClick={() => !isUploading && document.getElementById('file-upload')?.click()}
                   >
                     <input
                       id="file-upload"
@@ -2078,6 +2106,7 @@ Key Questions:
                             variant="ghost" 
                             size="sm" 
                             className="h-8 px-2 text-xs"
+                            disabled={isUploading}
                             onClick={(e) => {
                               e.stopPropagation();
                               document.getElementById('file-upload')?.click();
@@ -2086,6 +2115,15 @@ Key Questions:
                             Add More
                           </Button>
                         </div>
+                        
+                        {isUploading && (
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-primary h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${(Object.keys(uploadProgress).length / selectedFiles.length) * 100}%` }}
+                            />
+                          </div>
+                        )}
                         
                         <div className="space-y-2">
                           {selectedFiles.map((file, index) => (
@@ -2120,8 +2158,14 @@ Key Questions:
                       </div>
                     ) : (
                       <div className="flex flex-col items-center space-y-2 text-center">
-                        <Upload className="h-6 w-6 text-gray-400" />
-                        <span className="text-sm text-gray-500">Click to upload or drag and drop</span>
+                        {isUploading ? (
+                          <Loader2 className="h-6 w-6 text-gray-400 animate-spin" />
+                        ) : (
+                          <Upload className="h-6 w-6 text-gray-400" />
+                        )}
+                        <span className="text-sm text-gray-500">
+                          {isUploading ? 'Uploading files...' : 'Click to upload or drag and drop'}
+                        </span>
                         <span className="text-xs text-gray-400">PNG, JPG, PDF up to 10MB</span>
                         <span className="text-xs text-gray-400">Select multiple files by holding Ctrl/Cmd</span>
                       </div>

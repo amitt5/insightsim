@@ -22,7 +22,7 @@ export default function PersonaFilter({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [filteredPersonas, setFilteredPersonas] = useState<Persona[]>(personas);
+  const [filteredPersonas, setFilteredPersonas] = useState<Persona[]>([]);
 
   // Get all unique tags from all personas
   const allTags = Array.from(
@@ -58,7 +58,7 @@ export default function PersonaFilter({
 
     setFilteredPersonas(filtered);
     onFilteredPersonasChange(filtered);
-  }, [searchQuery, selectedTags, personas, onFilteredPersonasChange]);
+  }, [searchQuery, selectedTags, personas]); // Removed onFilteredPersonasChange from deps
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags(prev =>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { usePersonas } from "@/lib/usePersonas"
@@ -26,9 +26,9 @@ export default function PersonasPage() {
     : personas;
 
   // Handle filtered personas from the filter component
-  const handleFilteredPersonasChange = (filtered: Persona[]) => {
+  const handleFilteredPersonasChange = useCallback((filtered: Persona[]) => {
     setFilteredPersonas(filtered);
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

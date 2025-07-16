@@ -155,9 +155,57 @@ export function PersonaCard({
               </div>
             )}
             {persona.attitude && (
-              <div>
+              <div className="mb-2">
                 <span className="text-xs font-medium text-gray-500">ATTITUDE</span>
                 <p className="text-xs text-gray-600 line-clamp-2">{persona.attitude}</p>
+              </div>
+            )}
+            {persona.family_status && (
+              <div className="mb-2">
+                <span className="text-xs font-medium text-gray-500">FAMILY STATUS</span>
+                <p className="text-xs text-gray-600 line-clamp-2">{persona.family_status}</p>
+              </div>
+            )}
+            {persona.education_level && (
+              <div className="mb-2">
+                <span className="text-xs font-medium text-gray-500">EDUCATION</span>
+                <p className="text-xs text-gray-600 line-clamp-2">{persona.education_level}</p>
+              </div>
+            )}
+            {persona.income_level && (
+              <div className="mb-2">
+                <span className="text-xs font-medium text-gray-500">INCOME</span>
+                <p className="text-xs text-gray-600 line-clamp-2">{persona.income_level}</p>
+              </div>
+            )}
+            {persona.lifestyle && (
+              <div className="mb-2">
+                <span className="text-xs font-medium text-gray-500">LIFESTYLE</span>
+                <p className="text-xs text-gray-600 line-clamp-3">{persona.lifestyle}</p>
+              </div>
+            )}
+            {persona.category_products && persona.category_products.length > 0 && (
+              <div className="mb-2">
+                <span className="text-xs font-medium text-gray-500">CATEGORY PRODUCTS</span>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {persona.category_products.map((product: string, i: number) => (
+                    <Badge key={i} variant="outline" className="text-xs">
+                      {product}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {persona.product_relationship && (
+              <div className="mb-2">
+                <span className="text-xs font-medium text-gray-500">PRODUCT RELATIONSHIP</span>
+                <p className="text-xs text-gray-600 line-clamp-3">{persona.product_relationship}</p>
+              </div>
+            )}
+            {persona.category_habits && (
+              <div>
+                <span className="text-xs font-medium text-gray-500">CATEGORY HABITS</span>
+                <p className="text-xs text-gray-600 line-clamp-3">{persona.category_habits}</p>
               </div>
             )}
           </div>

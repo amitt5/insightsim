@@ -75,6 +75,51 @@ const LOCATION_EXAMPLES = [
   "New York, USA", "London, UK", "Tokyo, Japan", "Sydney, Australia", "Toronto, Canada", "Berlin, Germany", "São Paulo, Brazil", "Mumbai, India", "Singapore", "Dubai, UAE", "Amsterdam, Netherlands", "Stockholm, Sweden", "Copenhagen, Denmark", "Barcelona, Spain", "Mexico City, Mexico", "Seoul, South Korea", "Tel Aviv, Israel", "Vienna, Austria", "Zurich, Switzerland", "Oslo, Norway"
 ];
 
+const FAMILY_STATUS_EXAMPLES = [
+  "Single, living independently", "Married with two young children (ages 3 and 5)", "Living with and supporting elderly parents", "Divorced, co-parenting one teenager", "In a long-term relationship, no children", "Married, no children", "Single parent with one child", "Recently widowed", "Living with roommates", "Married with adult children who moved out"
+];
+
+const EDUCATION_LEVEL_EXAMPLES = [
+  "High School Graduate", "Completed 2 years of college", "Bachelor's Degree in Communications", "Master of Business Administration (MBA)", "Vocational Certificate in IT", "Associate Degree in Nursing", "PhD in Psychology", "Trade School Certificate", "Bachelor's Degree in Engineering", "Master's Degree in Education"
+];
+
+const INCOME_LEVEL_EXAMPLES = [
+  "PHP 25,000 - 40,000 per month", "Approx. $60,000 USD per year (household)", "Entry-level salary", "Upper-middle income bracket", "Freelancer with fluctuating income", "$80,000 - $120,000 annually", "Minimum wage worker", "Six-figure income", "Retired with fixed pension", "Student with part-time income"
+];
+
+const LIFESTYLE_EXAMPLES = [
+  "A busy professional who values convenience above all. Spends on food delivery, ride-sharing, and online shopping. Enjoys occasional weekend trips to de-stress.",
+  "A homebody who enjoys online gaming, streaming movies, and cooking at home. Very budget-conscious and actively seeks out discounts and sales.",
+  "Socially active and heavily influenced by friends. Enjoys trying new restaurants, attending concerts, and follows the latest fashion trends on Instagram.",
+  "A fitness enthusiast who prioritizes health. Spends money on gym memberships, organic food, and athletic wear. Prefers brands that align with a healthy lifestyle.",
+  "Family-oriented and spends most free time with children. Values educational experiences and invests in quality products that last.",
+  "Creative and artistic, enjoys DIY projects and handmade items. Prefers unique, artisanal products over mass-produced ones.",
+  "Tech-savvy early adopter who loves trying new gadgets and apps. Willing to pay premium for cutting-edge technology.",
+  "Environmentally conscious and makes purchasing decisions based on sustainability. Prefers eco-friendly and ethically sourced products."
+];
+
+const CATEGORY_PRODUCTS_EXAMPLES = [
+  "Metrobank Rewards Visa, GCash, BDO Amex", "Sunsilk Damage Repair, Head & Shoulders Cool Menthol, Watsons Generic Argan Oil Shampoo", "Toyota Vios, Grab App, Angkas App", "RELX Infinity Device, Flava Strawberry Pods, Local disposable vape brand", "iPhone 14, Samsung Galaxy S23, Google Pixel 7", "Nike Air Max, Adidas Ultraboost, New Balance 990", "Starbucks Coffee, Dunkin' Donuts, Local coffee shop blend"
+];
+
+const PRODUCT_RELATIONSHIP_EXAMPLES = [
+  "Primary card is Metrobank for daily use, but keeps a BDO card specifically for dining promotions. Is actively looking for a better travel card.",
+  "Has been loyal to Sunsilk for years out of habit, but recently tried a friend's L'Oréal and was impressed. Now considers it a premium alternative for special occasions.",
+  "Relies on their Toyota Vios for weekend family trips, but uses Grab for daily commuting to the office to avoid parking issues.",
+  "Primary device is RELX due to brand reliability, but buys Flava pods when their preferred flavor is out of stock. Views Flava as a cheaper, secondary option.",
+  "Loyal Apple user across all devices, but considering switching to Android for better customization options.",
+  "Prefers Nike for running shoes due to comfort, but buys Adidas for casual wear because of style preferences."
+];
+
+const CATEGORY_HABITS_EXAMPLES = [
+  "Checks account balance daily via the mobile app. Pays off the full credit card balance every month to avoid interest. Actively hunts for cashback deals before making any large purchase.",
+  "Washes hair every other day. Tends to buy the largest bottle available to save money. Is highly influenced by TikTok reviews when considering a new shampoo brand.",
+  "Gets the car serviced every 6 months. Spends roughly PHP 4,000 per month on gasoline. Always uses Waze for navigation, even on familiar routes.",
+  "Usually vapes after meals and during work breaks. Prefers fruit-flavored pods over tobacco flavors. Spends about PHP 1,000 per month on pods and accessories.",
+  "Upgrades phone every 2-3 years. Always buys a protective case and screen protector immediately. Researches extensively before making any tech purchase.",
+  "Shops for clothes seasonally during sales. Prefers to try on items in-store rather than buying online. Follows fashion influencers for style inspiration."
+];
+
 export function CreatePersonaDialog({ 
   open, 
   onOpenChange, 
@@ -101,6 +146,13 @@ export function CreatePersonaDialog({
     traits: "",
     goal: "",
     attitude: "",
+    family_status: "",
+    education_level: "",
+    income_level: "",
+    lifestyle: "",
+    category_products: "",
+    product_relationship: "",
+    category_habits: "",
   });
   
   // State for hiding system personas
@@ -127,6 +179,15 @@ export function CreatePersonaDialog({
           : initialData.traits || "",
         goal: initialData.goal || "",
         attitude: initialData.attitude || "",
+        family_status: initialData.family_status || "",
+        education_level: initialData.education_level || "",
+        income_level: initialData.income_level || "",
+        lifestyle: initialData.lifestyle || "",
+        category_products: Array.isArray(initialData.category_products) 
+          ? initialData.category_products.join(', ') 
+          : initialData.category_products || "",
+        product_relationship: initialData.product_relationship || "",
+        category_habits: initialData.category_habits || "",
       });
     }
   }, [initialData]);
@@ -148,6 +209,8 @@ export function CreatePersonaDialog({
       age: formData.age ? parseInt(formData.age) : undefined,
       // Convert traits string to array
       traits: formData.traits ? formData.traits.split(',').map(t => t.trim()) : [],
+      // Convert category_products string to array
+      category_products: formData.category_products ? formData.category_products.split(',').map(p => p.trim()) : [],
     };
 
     // If this is a generated persona, handle it differently (no DB save)
@@ -228,6 +291,13 @@ export function CreatePersonaDialog({
           traits: "",
           goal: "",
           attitude: "",
+          family_status: "",
+          education_level: "",
+          income_level: "",
+          lifestyle: "",
+          category_products: "",
+          product_relationship: "",
+          category_habits: "",
         });
       }
       
@@ -581,6 +651,254 @@ export function CreatePersonaDialog({
                     </TooltipTrigger>
                     <TooltipContent side="left">
                       Generate a random attitude with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="family_status">Family Status</Label>
+            <div className="relative">
+              <Input 
+                id="family_status" 
+                placeholder="e.g., Single, living independently" 
+                value={formData.family_status}
+                onChange={(e) => handleChange("family_status", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("family_status", pickRandom(FAMILY_STATUS_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random family status with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="education_level">Education Level</Label>
+            <div className="relative">
+              <Input 
+                id="education_level" 
+                placeholder="e.g., Bachelor's Degree in Communications" 
+                value={formData.education_level}
+                onChange={(e) => handleChange("education_level", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("education_level", pickRandom(EDUCATION_LEVEL_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random education level with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="income_level">Income Level</Label>
+            <div className="relative">
+              <Input 
+                id="income_level" 
+                placeholder="e.g., PHP 25,000 - 40,000 per month" 
+                value={formData.income_level}
+                onChange={(e) => handleChange("income_level", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("income_level", pickRandom(INCOME_LEVEL_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random income level with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="lifestyle">Lifestyle</Label>
+            <div className="relative">
+              <Textarea 
+                id="lifestyle" 
+                rows={3}
+                placeholder="Describe hobbies, routines, and values..." 
+                value={formData.lifestyle}
+                onChange={(e) => handleChange("lifestyle", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 top-0">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("lifestyle", pickRandom(LIFESTYLE_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6 mt-2"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random lifestyle with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category_products">Category Products (comma-separated)</Label>
+            <div className="relative">
+              <Input 
+                id="category_products" 
+                placeholder="e.g., Metrobank Rewards Visa, GCash, BDO Amex" 
+                value={formData.category_products}
+                onChange={(e) => handleChange("category_products", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("category_products", pickRandom(CATEGORY_PRODUCTS_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate random category products with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="product_relationship">Product Relationship</Label>
+            <div className="relative">
+              <Textarea 
+                id="product_relationship" 
+                rows={3}
+                placeholder="Describe relationship with products used..." 
+                value={formData.product_relationship}
+                onChange={(e) => handleChange("product_relationship", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 top-0">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("product_relationship", pickRandom(PRODUCT_RELATIONSHIP_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6 mt-2"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate a random product relationship with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category_habits">Category Habits</Label>
+            <div className="relative">
+              <Textarea 
+                id="category_habits" 
+                rows={3}
+                placeholder="Describe specific behaviors and routines..." 
+                value={formData.category_habits}
+                onChange={(e) => handleChange("category_habits", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 top-0">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("category_habits", pickRandom(CATEGORY_HABITS_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6 mt-2"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate random category habits with AI
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

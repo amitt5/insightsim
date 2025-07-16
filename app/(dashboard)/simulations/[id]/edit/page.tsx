@@ -1111,6 +1111,13 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
           traits: persona.traits,
           goal: persona.goal,
           attitude: persona.attitude,
+          family_status: persona.family_status,
+          education_level: persona.education_level,
+          income_level: persona.income_level,
+          lifestyle: persona.lifestyle,
+          category_products: persona.category_products,
+          product_relationship: persona.product_relationship,
+          category_habits: persona.category_habits,
         };
         
         const response = await fetch('/api/personas', {

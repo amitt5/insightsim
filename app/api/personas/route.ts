@@ -115,6 +115,13 @@ export async function PUT(request: Request) {
         traits: personaData.traits,
         goal: personaData.goal,
         attitude: personaData.attitude,
+        family_status: personaData.family_status,
+        education_level: personaData.education_level,
+        income_level: personaData.income_level,
+        lifestyle: personaData.lifestyle,
+        category_products: personaData.category_products,
+        product_relationship: personaData.product_relationship,
+        category_habits: personaData.category_habits,
         editable: true
       })
       .eq('id', personaData.id)

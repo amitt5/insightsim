@@ -426,6 +426,13 @@ interface Persona {
   bio?: string; // A 1-2 sentence narrative combining their role and key frustrations.
   goal?: string; // This MUST be a version of the user's Primary Goal.
   attitude?: string; // Their general outlook, e.g., "Optimistic but cautious about new apps."
+  family_status?: string; // e.g., "Single, living independently"
+  education_level?: string; // e.g., "Bachelor's Degree in Communications"
+  income_level?: string; // e.g., "PHP 25,000 - 40,000 per month"
+  lifestyle?: string; // A brief narrative describing hobbies, routines, and values
+  category_products?: string[]; // e.g., ["Metrobank Rewards Visa", "GCash", "BDO Amex"]
+  product_relationship?: string; // Qualitative relationship with products used
+  category_habits?: string; // Specific behaviors and routines related to product category
 }
 \`\`\`
 
@@ -456,7 +463,7 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation): stri
   const systemPrompt = `You are an expert persona generator for qualitative market research with 15 years of experience at top agencies like Kantar and Ipsos. You specialize in analyzing research briefs and creating realistic, diverse personas that represent the target audience described in the brief. Your output must be a valid JSON array.`;
 
   // 2. Define the task with brief-specific context
-  const taskDefinition = `Your task is to analyze the provided research brief and generate 7-8 distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
+  const taskDefinition = `Your task is to analyze the provided research brief and generate 3 distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
 
   // 3. Provide the research context
   const researchContext = `
@@ -495,6 +502,13 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation): stri
     bio?: string; // A 2-3 sentence narrative about their background and relevance to the research
     goal?: string; // Their primary goal related to the research topic
     attitude?: string; // Their perspective on the research topic/category
+    family_status?: string; // e.g., "Married with two young children (ages 3 and 5)"
+    education_level?: string; // e.g., "Master of Business Administration (MBA)"
+    income_level?: string; // e.g., "Upper-middle income bracket"
+    lifestyle?: string; // A brief narrative describing hobbies, routines, and values
+    category_products?: string[]; // e.g., ["Sunsilk Damage Repair", "Head & Shoulders Cool Menthol"]
+    product_relationship?: string; // Qualitative relationship with products used
+    category_habits?: string; // Specific behaviors and routines related to product category
   }
   \`\`\`
 

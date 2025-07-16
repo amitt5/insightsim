@@ -19,6 +19,7 @@ import { Plus, Sparkles } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Persona } from "@/utils/types"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
+import TagInput from "@/components/tag-input"
 
 interface CreatePersonaDialogProps {
   open: boolean;
@@ -120,6 +121,10 @@ const CATEGORY_HABITS_EXAMPLES = [
   "Shops for clothes seasonally during sales. Prefers to try on items in-store rather than buying online. Follows fashion influencers for style inspiration."
 ];
 
+const TAG_SUGGESTIONS = [
+  "tech-savvy", "budget-conscious", "luxury-buyer", "early-adopter", "traditionalist", "millennial", "gen-z", "gen-x", "baby-boomer", "urban", "suburban", "rural", "health-conscious", "eco-friendly", "brand-loyal", "price-sensitive", "convenience-focused", "social-media-active", "research-oriented", "impulse-buyer", "quality-focused", "trendsetter", "risk-averse", "adventurous", "family-oriented", "career-driven", "lifestyle-focused", "value-seeker", "premium-preferred", "mobile-first", "online-shopper", "in-store-preferred", "influencer-driven", "peer-influenced", "expert-opinion", "review-dependent", "feature-focused", "brand-conscious", "sustainability-minded", "innovation-seeker"
+];
+
 export function CreatePersonaDialog({ 
   open, 
   onOpenChange, 
@@ -154,6 +159,9 @@ export function CreatePersonaDialog({
     product_relationship: "",
     category_habits: "",
   });
+
+  // State for tags
+  const [tags, setTags] = useState<string[]>([]);
   
   // State for hiding system personas
   const [hideSystemPersonasState, setHideSystemPersonasState] = useState(hideSystemPersonas);
@@ -189,6 +197,9 @@ export function CreatePersonaDialog({
         product_relationship: initialData.product_relationship || "",
         category_habits: initialData.category_habits || "",
       });
+      
+      // Set tags from initialData
+      setTags(initialData.tags || []);
     }
   }, [initialData]);
 
@@ -211,6 +222,8 @@ export function CreatePersonaDialog({
       traits: formData.traits ? formData.traits.split(',').map(t => t.trim()) : [],
       // Convert category_products string to array
       category_products: formData.category_products ? formData.category_products.split(',').map(p => p.trim()) : [],
+      // Add tags
+      tags: tags,
     };
 
     // If this is a generated persona, handle it differently (no DB save)
@@ -904,6 +917,17 @@ export function CreatePersonaDialog({
                 </TooltipProvider>
               </div>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags</Label>
+            <TagInput
+              tags={tags}
+              onTagsChange={setTags}
+              placeholder="Add tags to categorize this persona..."
+              maxTags={10}
+              suggestions={TAG_SUGGESTIONS}
+            />
           </div>
         </div>
         <DialogFooter className="px-6 py-2 pb-1 border-t">

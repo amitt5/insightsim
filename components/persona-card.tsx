@@ -203,9 +203,21 @@ export function PersonaCard({
               </div>
             )}
             {persona.category_habits && (
-              <div>
+              <div className="mb-2">
                 <span className="text-xs font-medium text-gray-500">CATEGORY HABITS</span>
                 <p className="text-xs text-gray-600 line-clamp-3">{persona.category_habits}</p>
+              </div>
+            )}
+            {persona.tags && persona.tags.length > 0 && (
+              <div>
+                <span className="text-xs font-medium text-gray-500">TAGS</span>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {persona.tags.map((tag: string, i: number) => (
+                    <Badge key={i} variant="default" className="text-xs bg-green-100 text-green-800 hover:bg-green-200">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
           </div>

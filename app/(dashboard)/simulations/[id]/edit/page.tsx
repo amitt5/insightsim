@@ -297,7 +297,52 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     }
   }
 
-  const nextStep = () => {
+  const nextStep = async () => {
+    // If moving from step 3 to step 4, upload media files first
+    if (step === 3 && selectedFiles.length > 0) {
+      try {
+        setIsUploading(true);
+        const mediaUrls = await uploadMedia();
+        console.log('amit-nextStep-mediaUrls', mediaUrls);
+        
+        // Update simulation data with uploaded URLs
+        setSimulationData(prev => ({
+          ...prev,
+          stimulus_media_url: [...prev.stimulus_media_url.filter(url => url !== 'pending_upload'), ...mediaUrls]
+        }));
+        
+        // Also save to database immediately
+        await fetch(`/api/simulations/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...simulationData,
+            stimulus_media_url: [...simulationData.stimulus_media_url.filter(url => url !== 'pending_upload'), ...mediaUrls],
+            discussion_questions: simulationData.discussion_questions
+              ? simulationData.discussion_questions.split('\n').filter(line => line.trim() !== '')
+              : [],
+            num_turns: parseInt(simulationData.num_turns),
+            personas: selectedPersonas,
+            active_step: step + 1,
+          }),
+        });
+        
+      } catch (error) {
+        console.error('Error uploading media:', error);
+        toast({
+          title: "Upload Error",
+          description: error instanceof Error ? error.message : "Failed to upload media files. Please try again.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        return; // Don't proceed to next step if upload fails
+      } finally {
+        setIsUploading(false);
+      }
+    }
+    
     const newStep = Math.min(step + 1, 4);
     setStep(newStep);
     saveActiveStep(newStep); // Save the new step to database
@@ -370,10 +415,6 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     try {
       setIsUploading(true);
       
-      // Upload media files if any are selected
-      const mediaUrls = await uploadMedia();
-      console.log('amit-saveSimulation-mediaUrls', mediaUrls)
-      
       // Parse discussion questions from text to array if not already an array
       let discussionQuestionsArray = [];
       if (Array.isArray(simulationData.discussion_questions)) {
@@ -384,8 +425,8 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         .filter(line => line.trim() !== '')
         .map(line => line.trim());
       }
-      // Use existing media URLs if no new files were uploaded
-      const finalMediaUrls = mediaUrls.length > 0 ? mediaUrls : simulationData.stimulus_media_url;
+      // Use existing media URLs (already uploaded in step 3)
+      const finalMediaUrls = simulationData.stimulus_media_url;
 
       // Update the existing simulation (now we're editing, not creating)
       const response = await fetch(`/api/simulations/${id}`, {
@@ -2275,9 +2316,18 @@ Key Questions:
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
-                <Button onClick={nextStep}>
-                  Continue
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                <Button onClick={nextStep} disabled={isUploading}>
+                  {isUploading && selectedFiles.length > 0 ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
                 </Button>
               </CardFooter>
             </Card>
@@ -2347,7 +2397,7 @@ Key Questions:
                   onClick={saveSimulation}
                   disabled={!simulationData.study_title || selectedPersonas.length === 0 || isUploading}
                 >
-                  {isUploading ? 'Updating...' : 'Update & Launch Simulation'}
+                  {isUploading ? 'Launching...' : 'Launch Simulation'}
                 </Button>
               </CardFooter>
             </Card>

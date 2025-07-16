@@ -624,7 +624,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  // Handle file removal
+  // Handle file removal (for local files before upload)
   const handleRemoveFile = (indexToRemove: number) => {
     setSelectedFiles(prevFiles => {
       const updatedFiles = [...prevFiles];
@@ -653,6 +653,82 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       
       return updatedFiles;
     });
+  };
+
+  // Handle removal of uploaded files
+  const handleRemoveUploadedFile = async (urlToRemove: string) => {
+    try {
+      // Remove from simulation data
+      const updatedUrls = simulationData.stimulus_media_url.filter(url => url !== urlToRemove);
+      setSimulationData(prev => ({
+        ...prev,
+        stimulus_media_url: updatedUrls,
+      }));
+
+      // Save to database immediately
+      await fetch(`/api/simulations/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...simulationData,
+          stimulus_media_url: updatedUrls,
+          discussion_questions: simulationData.discussion_questions
+            ? simulationData.discussion_questions.split('\n').filter(line => line.trim() !== '')
+            : [],
+          num_turns: parseInt(simulationData.num_turns),
+          personas: selectedPersonas,
+          active_step: step,
+        }),
+      });
+
+      toast({
+        title: "File removed",
+        description: "The file has been removed from your simulation.",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error removing file:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove file. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
+  // Extract filename from URL for display
+  const getFileNameFromUrl = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const segments = pathname.split('/');
+      let filename = segments[segments.length - 1];
+      
+      // Remove UUID prefix if present (format: uuid.extension)
+      const parts = filename.split('.');
+      if (parts.length === 2 && parts[0].length === 36) {
+        // This looks like a UUID, return a generic name
+        return `uploaded-file.${parts[1]}`;
+      }
+      
+      return filename || 'uploaded-file';
+    } catch {
+      return 'uploaded-file';
+    }
+  };
+
+  // Check if a URL is an image
+  const isImageUrl = (url: string): boolean => {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    return imageExtensions.some(ext => url.toLowerCase().includes(ext));
+  };
+
+  // Get uploaded files that aren't pending
+  const getUploadedFiles = () => {
+    return simulationData.stimulus_media_url.filter(url => url !== 'pending_upload');
   };
 
   
@@ -2124,7 +2200,7 @@ Key Questions:
                   </Label>
                   <div 
                     className={`flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed ${
-                      selectedFiles.length > 0 ? 'border-primary' : 'border-gray-300'
+                      selectedFiles.length > 0 || getUploadedFiles().length > 0 ? 'border-primary' : 'border-gray-300'
                     } hover:bg-gray-50 p-4 ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
@@ -2139,10 +2215,15 @@ Key Questions:
                       multiple
                     />
                     
-                    {selectedFiles.length > 0 ? (
+                    {(selectedFiles.length > 0 || getUploadedFiles().length > 0) ? (
                       <div className="w-full space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">{selectedFiles.length} file(s) selected</span>
+                          <span className="text-sm font-medium">
+                            {getUploadedFiles().length > 0 && `${getUploadedFiles().length} uploaded`}
+                            {getUploadedFiles().length > 0 && selectedFiles.length > 0 && ', '}
+                            {selectedFiles.length > 0 && `${selectedFiles.length} selected`}
+                            {getUploadedFiles().length === 0 && selectedFiles.length === 0 && '0 files'}
+                          </span>
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -2167,8 +2248,42 @@ Key Questions:
                         )}
                         
                         <div className="space-y-2">
+                          {/* Show uploaded files first */}
+                          {getUploadedFiles().map((url, index) => (
+                            <div key={`uploaded-${index}`} className="flex items-center justify-between bg-green-50 p-2 rounded border border-green-200">
+                              <div className="flex items-center space-x-2">
+                                {isImageUrl(url) ? (
+                                  <img 
+                                    src={url} 
+                                    alt={getFileNameFromUrl(url)} 
+                                    className="h-8 w-8 object-cover rounded"
+                                  />
+                                ) : (
+                                  <div className="h-8 w-8 flex items-center justify-center bg-green-100 rounded">
+                                    <FileIcon size={14} className="text-green-600" />
+                                  </div>
+                                )}
+                                <div className="flex flex-col">
+                                  <span className="text-xs truncate max-w-[200px]">{getFileNameFromUrl(url)}</span>
+                                  <span className="text-xs text-green-600 font-medium">✓ Uploaded</span>
+                                </div>
+                              </div>
+                              <button 
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveUploadedFile(url);
+                                }}
+                                className="text-red-500 hover:text-red-700 text-xs flex items-center"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                          
+                          {/* Show selected files (pending upload) */}
                           {selectedFiles.map((file, index) => (
-                            <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                            <div key={`selected-${index}`} className="flex items-center justify-between bg-blue-50 p-2 rounded border border-blue-200">
                               <div className="flex items-center space-x-2">
                                 {previewUrls[file.name] ? (
                                   <img 
@@ -2177,11 +2292,14 @@ Key Questions:
                                     className="h-8 w-8 object-cover rounded"
                                   />
                                 ) : (
-                                  <div className="h-8 w-8 flex items-center justify-center bg-primary/10 rounded">
-                                    <FileIcon size={14} className="text-primary" />
+                                  <div className="h-8 w-8 flex items-center justify-center bg-blue-100 rounded">
+                                    <FileIcon size={14} className="text-blue-600" />
                                   </div>
                                 )}
-                                <span className="text-xs truncate max-w-[200px]">{file.name}</span>
+                                <div className="flex flex-col">
+                                  <span className="text-xs truncate max-w-[200px]">{file.name}</span>
+                                  <span className="text-xs text-blue-600 font-medium">Pending upload</span>
+                                </div>
                               </div>
                               <button 
                                 type="button"

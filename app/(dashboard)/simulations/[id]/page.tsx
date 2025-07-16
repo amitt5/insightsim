@@ -121,6 +121,7 @@ export default function SimulationViewPage() {
 
   // Function to handle follow-up questions
   const handleFollowUpQuestions = async () => {
+    console.log('amit-handleFollowUpQuestions', showFollowUpQuestions)
     if (!showFollowUpQuestions) {
       setShowFollowUpQuestions(true)
       setIsLoadingFollowUpQuestions(true)
@@ -346,6 +347,7 @@ export default function SimulationViewPage() {
         console.error("Error running simulation:", error);
       } finally {
         setIsSimulationRunning(false);
+        handleFollowUpQuestions();
       }
     }
   }
@@ -386,6 +388,7 @@ function extractParticipantMessages(parsedResponse: any) {
     // then update the formatted messages state
    
     //1. save the moderator message to the database
+    setShowFollowUpQuestions(false);
     const modMessage = {
       name: 'Moderator',
       message: newMessage
@@ -411,7 +414,7 @@ function extractParticipantMessages(parsedResponse: any) {
         // rest of the steps handled in run simulation
       }
     }
-    
+    console.log('amit-handleFollowUpQuestions111', showFollowUpQuestions)
   }
 
   const sendMessageTest = async () => {

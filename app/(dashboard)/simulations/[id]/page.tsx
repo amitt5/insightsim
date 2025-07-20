@@ -79,6 +79,7 @@ export default function SimulationViewPage() {
   const [followUpQuestions, setFollowUpQuestions] = useState<{question: string}[]>([])
   const [isParticipantsCollapsed, setIsParticipantsCollapsed] = useState(false)
   const [isDiscussionQuestionsCollapsed, setIsDiscussionQuestionsCollapsed] = useState(false)
+  const [askedQuestionIndices, setAskedQuestionIndices] = useState<number[]>([])
   const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
@@ -105,8 +106,14 @@ export default function SimulationViewPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Function to handle discussion question selection
-  const handleQuestionSelect = (question: string) => {
+  const handleQuestionSelect = (question: string, questionIndex?: number) => {
     setNewMessage(question);
+    
+    // Mark question as asked if index is provided
+    if (questionIndex !== undefined && !askedQuestionIndices.includes(questionIndex)) {
+      setAskedQuestionIndices(prev => [...prev, questionIndex]);
+    }
+    
     // Scroll to and focus the textarea after a brief delay to ensure the text is set
     setTimeout(() => {
       if (textareaRef.current) {
@@ -117,6 +124,21 @@ export default function SimulationViewPage() {
         textareaRef.current.focus();
       }
     }, 100);
+  };
+
+  // Function to handle "Ask next question" functionality
+  const handleNextQuestion = () => {
+    if (!simulation.discussion_questions) return;
+    
+    // Find the next unasked question
+    const nextQuestionIndex = simulation.discussion_questions.findIndex((_, index) => 
+      !askedQuestionIndices.includes(index)
+    );
+    
+    if (nextQuestionIndex !== -1) {
+      const nextQuestion = simulation.discussion_questions[nextQuestionIndex];
+      handleQuestionSelect(nextQuestion, nextQuestionIndex);
+    }
   };
 
   // Function to handle follow-up questions
@@ -909,19 +931,34 @@ function extractParticipantMessages(parsedResponse: any) {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {simulation.discussion_questions.map((question, index) => (
-                          <div 
-                            key={index} 
-                            className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors border border-transparent hover:border-primary/20"
-                            onClick={() => handleQuestionSelect(question)}
-                            title="Click to add this question to your message"
-                          >
-                            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium">
-                              {index + 1}
+                        {simulation.discussion_questions.map((question, index) => {
+                          const isAsked = askedQuestionIndices.includes(index);
+                          return (
+                            <div 
+                              key={index} 
+                              className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border ${
+                                isAsked 
+                                  ? 'bg-green-50 border-green-200 opacity-75' 
+                                  : 'bg-gray-50 hover:bg-gray-100 border-transparent hover:border-primary/20'
+                              }`}
+                              onClick={() => handleQuestionSelect(question, index)}
+                              title={isAsked ? "This question has been asked" : "Click to add this question to your message"}
+                            >
+                              <div className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                                isAsked 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : 'bg-primary/10 text-primary'
+                              }`}>
+                                {isAsked ? '✓' : index + 1}
+                              </div>
+                              <p className={`text-sm leading-relaxed ${
+                                isAsked ? 'text-gray-500 line-through' : 'text-gray-700'
+                              }`}>
+                                {question}
+                              </p>
                             </div>
-                            <p className="text-sm text-gray-700 leading-relaxed">{question}</p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </>
@@ -1046,6 +1083,21 @@ function extractParticipantMessages(parsedResponse: any) {
                     >
                       {showInstructionBox ? "Hide AI instruction box" : "Not happy with the response? Instruct AI to improve its replies."}
                     </button>
+                    
+                    {/* Ask Next Question Button */}
+                    {simulation.discussion_questions && simulation.discussion_questions.length > 0 && (
+                      <button
+                        type="button"
+                        className="block text-xs text-primary underline hover:text-primary/80 focus:outline-none mb-1"
+                        onClick={handleNextQuestion}
+                        disabled={askedQuestionIndices.length >= simulation.discussion_questions.length}
+                      >
+                        {askedQuestionIndices.length >= simulation.discussion_questions.length 
+                          ? "All questions asked" 
+                          : `Ask next question (${askedQuestionIndices.length + 1} of ${simulation.discussion_questions.length})`
+                        }
+                      </button>
+                    )}
                     
                     <button
                       type="button"

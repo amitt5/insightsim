@@ -379,28 +379,28 @@ export default function SimulationViewPage() {
   }
 
   // Function to extract participant array from any JSON structure
-function extractParticipantMessages(parsedResponse: any) {
-  // If it's already an array, return it directly
-  if (Array.isArray(parsedResponse)) {
-    return parsedResponse;
-  }
-  
-  // Look for any property that contains an array of objects with name/message
-  for (const [key, value] of Object.entries(parsedResponse)) {
-    if (Array.isArray(value) && value.length > 0) {
-      // Check if the first item has name and message properties
-      const firstItem = value[0];
-      if (firstItem && typeof firstItem === 'object' && 
-          ('name' in firstItem || 'Name' in firstItem) && 
-          ('message' in firstItem || 'Message' in firstItem)) {
-        return value;
+  function extractParticipantMessages(parsedResponse: any) {
+    // If it's already an array, return it directly
+    if (Array.isArray(parsedResponse)) {
+      return parsedResponse;
+    }
+    
+    // Look for any property that contains an array of objects with name/message
+    for (const [key, value] of Object.entries(parsedResponse)) {
+      if (Array.isArray(value) && value.length > 0) {
+        // Check if the first item has name and message properties
+        const firstItem = value[0];
+        if (firstItem && typeof firstItem === 'object' && 
+            ('name' in firstItem || 'Name' in firstItem) && 
+            ('message' in firstItem || 'Message' in firstItem)) {
+          return value;
+        }
       }
     }
+    
+    // If no valid array found, return empty array
+    return [];
   }
-  
-  // If no valid array found, return empty array
-  return [];
-}
 
 
   const sendMessage = async () => {
@@ -516,42 +516,42 @@ function extractParticipantMessages(parsedResponse: any) {
 
   // Function to parse the simulation response
   const testParseSimulationResponse = (responseString: string) => {
-  try {
-    // Remove the initial "=" and any whitespace if it exists
-    const cleanedString = responseString.trim()
-    .replace(/^```json\s*/i, '') // remove leading ```json
-    .replace(/^```\s*/i, '')     // or just ```
-    .replace(/```$/, '')
-    .replace(/^\s*=\s*/, '');
-    const parsed = JSON.parse(cleanedString);
-    setMessages(parsed);
-    return parsed;
-  } catch (error) {
+    try {
+      // Remove the initial "=" and any whitespace if it exists
+      const cleanedString = responseString.trim()
+      .replace(/^```json\s*/i, '') // remove leading ```json
+      .replace(/^```\s*/i, '')     // or just ```
+      .replace(/```$/, '')
+      .replace(/^\s*=\s*/, '');
+      const parsed = JSON.parse(cleanedString);
+      setMessages(parsed);
+      return parsed;
+    } catch (error) {
 
-    // Show error popup instead of chat message
-    setErrorMessage("We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment.");
-    setShowErrorPopup(true);
-     // --- Fallback single-speaker parser ---
-     const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
-     console.log('fallbackMatch', fallbackMatch);
-     if (fallbackMatch) {
-       const [_, name, message] = fallbackMatch;
-       const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
-       setMessages(fallbackParsed);
-       return fallbackParsed;
-     }
+      // Show error popup instead of chat message
+      setErrorMessage("We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment.");
+      setShowErrorPopup(true);
+      // --- Fallback single-speaker parser ---
+      const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
+      console.log('fallbackMatch', fallbackMatch);
+      if (fallbackMatch) {
+        const [_, name, message] = fallbackMatch;
+        const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
+        setMessages(fallbackParsed);
+        return fallbackParsed;
+      }
 
-     // Show user-friendly error message
-     setMessages([{
-      name: "System",
-      message: "We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment."
-    }]);
+      // Show user-friendly error message
+      setMessages([{
+        name: "System",
+        message: "We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment."
+      }]);
 
-     // --- Log final error if both parsing strategies fail ---
-    console.error("Error parsing simulation response:", error);
-    return [];
-  }
-};
+      // --- Log final error if both parsing strategies fail ---
+      console.error("Error parsing simulation response:", error);
+      return [];
+    }
+  };
 
   // Function to save messages to the database
   const saveMessagesToDatabase = async (parsedMessages: Array<{name: string, message: string}>) => {

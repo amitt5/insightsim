@@ -150,8 +150,8 @@ ${personas.map(p => `- ${p.name}${p.age ? ` (${p.age})` : ''}${p.occupation ? `,
 Based on the recent conversation, suggest 4-5 follow-up questions that would help the moderator:
 1. Probe deeper into interesting points participants made
 2. Explore contradictions or differences in opinions
-3. Uncover underlying motivations or emotions
-4. Get more specific examples or stories
+3. Elicit constructive ideas and potential solutions, especially when problems, pain points, or areas for improvement are discussed.
+4. Uncover underlying motivations or emotions
 5. Challenge assumptions or explore alternative perspectives
 
 Focus on questions that would generate rich, detailed responses and deeper insights.

@@ -64,7 +64,7 @@ export function buildMessagesForOpenAI({
     // systemPrompt += `IMPORTANT: Respond with a short message. Max 10 words\n`;
     // systemPrompt += `IMPORTANT: Respond with a long, detailed, descriptive message of at least 50–200 words per participant. Be reflective and realistic in tone.\n`;
   } else {
-    systemPrompt += `Respond with 1–4 participant messages in a natural back-and-forth. Make each message realistic and contextually aware.\n`;
+    systemPrompt += `Respond with ALL the participant messages in a natural back-and-forth. Make each message realistic and contextually aware.\n`;
   }
 
   
@@ -83,7 +83,7 @@ You must ALWAYS respond with valid JSON in this exact format:
 
 STRICT RULES:
 - Return ONLY valid JSON - no other text, explanations, or markdown
-- Include 1-4 participant responses per turn
+- Include ALL participant responses per turn
 - Never include moderator responses
 - Each participant gets their own object in the array
 - Messages should be detailed(50-200 words) and natural and conversational

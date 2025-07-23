@@ -504,10 +504,6 @@ export default function SettingsPage() {
                   <p className="text-sm text-gray-600">Simulations this month</p>
                 </div>
                 <div className="text-center p-4 border rounded-lg">
-                  <p className="text-2xl font-bold">12.4K</p>
-                  <p className="text-sm text-gray-600">Credits used</p>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
                   <p className="text-2xl font-bold">8</p>
                   <p className="text-sm text-gray-600">Active users</p>
                 </div>
@@ -533,14 +529,7 @@ export default function SettingsPage() {
                   </div>
                   <Progress value={84.7} className="h-2" />
                 </div>
-                
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Credits</span>
-                    <span className="text-sm text-gray-600">12,400 / 15,000</span>
-                  </div>
-                  <Progress value={82.7} className="h-2" />
-                </div>
+               
                 
                 <div>
                   <div className="flex justify-between mb-2">
@@ -1057,21 +1046,6 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Credits Used</CardTitle>
-                <Zap className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">12.4K</div>
-                <p className="text-xs text-muted-foreground">
-                  +8% from last month
-                </p>
-                <Progress value={82.7} className="mt-2" />
-                <p className="text-xs text-muted-foreground mt-1">12,400 / 15,000 limit</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Users</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -1160,7 +1134,6 @@ export default function SettingsPage() {
                   </div>
                   <div className="text-right">
                     <p className="font-medium">423 simulations</p>
-                    <p className="text-sm text-gray-500">6,847 credits</p>
                   </div>
                 </div>
                 
@@ -1171,7 +1144,6 @@ export default function SettingsPage() {
                   </div>
                   <div className="text-right">
                     <p className="font-medium">312 simulations</p>
-                    <p className="text-sm text-gray-500">4,234 credits</p>
                   </div>
                 </div>
                 
@@ -1182,7 +1154,6 @@ export default function SettingsPage() {
                   </div>
                   <div className="text-right">
                     <p className="font-medium">112 simulations</p>
-                    <p className="text-sm text-gray-500">1,319 credits</p>
                   </div>
                 </div>
               </div>

@@ -142,46 +142,6 @@ export default function SignupPage() {
               variant: "default",
             })
           } else {
-            const creditsResponse = await fetch('/api/user-credits', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                user_id: authUserId,
-                credits: 500,
-              }),
-            })
-            
-            if (creditsResponse.ok) {
-              const creditsData = await creditsResponse.json()
-              
-              if (creditsData.data) {
-                console.log('✅ Initial credits created:', creditsData.data)
-              } else if (creditsData.error) {
-                console.error('❌ Credits creation failed:', creditsData.error)
-              }
-            } else {
-              // This handles actual HTTP errors (400, 500, etc.)
-              const errorData = await creditsResponse.json()
-              console.error('❌ HTTP error creating credits:', errorData.error)
-              
-              // Log credits creation error
-              logErrorNonBlocking(
-                'initial_credits_creation',
-                errorData.error || 'Failed to create initial credits',
-                JSON.stringify(errorData),
-                { 
-                  user_id: authUserId,
-                  credits: 500,
-                  status: creditsResponse.status
-                },
-                authUserId
-              )
-            }
-
-            
-            
             toast({
               title: "Account created successfully",
               description: "Please check your email to confirm your account",

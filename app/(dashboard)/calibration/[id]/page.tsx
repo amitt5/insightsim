@@ -15,7 +15,7 @@ import { prepareInitialPrompt, buildPersonaImprovementPrompt } from "@/utils/pre
 import { set } from "date-fns"
 import { usePersonas } from "@/lib/usePersonas"
 import { ModelSelectorWithCredits } from '@/components/ModelSelectorWithCredits';
-import { useCredits } from "@/hooks/useCredits"; // adjust path as needed
+// import { useCredits } from "@/hooks/useCredits"; // adjust path as needed
 import { runSimulationAPI } from '@/utils/api';
 
 export default function CalibrationDetailPage() {
@@ -23,7 +23,7 @@ export default function CalibrationDetailPage() {
   const params = useParams(); // Use useParams() to get the id
   const calibrationId = params.calibration_id as string;
   const [modelInUse, setModelInUse] = useState<string>('gpt-4o-mini')
-  const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
+  // const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   const [activeTab, setActiveTab] = useState("real")
   const [suggestions, setSuggestions] = useState([
@@ -108,9 +108,9 @@ export default function CalibrationDetailPage() {
  
 
   // Add credits fetch to initial load
-  useEffect(() => {
-      fetchUserCredits();
-  }, [params.user_id]);
+  // useEffect(() => {
+  //     fetchUserCredits();
+  // }, [params.user_id]);
 
   const compareTranscripts = async() => {
     console.log('compareTranscripts', calibrationSession)
@@ -165,7 +165,7 @@ export default function CalibrationDetailPage() {
     try {
       const data = await runSimulationAPI(prompt, modelInUse);
       console.log('API response:', data);
-      setAvailableCredits(data.creditInfo.remaining_credits);
+      // setAvailableCredits(data.creditInfo.remaining_credits);
      
       saveOpenAIResponse(data);
       
@@ -240,11 +240,11 @@ export default function CalibrationDetailPage() {
 
   const runSimulation = async () => {
     console.log('runSimulationCalled', calibrationSession);
-    if (availableCredits && availableCredits < 10) {
-      setErrorMessage("You have low credit balance. Please purchase more credits to continue.");
-      setShowErrorPopup(true);
-      return;
-    }
+    // if (availableCredits && availableCredits < 10) {
+    //   setErrorMessage("You have low credit balance. Please purchase more credits to continue.");
+    //   setShowErrorPopup(true);
+    //   return;
+    // }
     if(calibrationSession && calibrationSession.title) {
       const simulation : Simulation = {
         id: calibrationSession.id || '',
@@ -264,7 +264,7 @@ export default function CalibrationDetailPage() {
       try {
         const data = await runSimulationAPI(prompt, modelInUse);
         console.log('API response:', data);
-        setAvailableCredits(data.creditInfo.remaining_credits);
+        // setAvailableCredits(data.creditInfo.remaining_credits);
         if (data.reply) {
           // Parse the response into messages
           const parsedMessages = parseSimulationResponse(data.reply);
@@ -545,7 +545,6 @@ function parseTranscript(transcriptText: string): TranscriptEntry[] {
                 <ModelSelectorWithCredits
                   modelInUse={modelInUse}
                   setModelInUse={setModelInUse}
-                  availableCredits={availableCredits}
                 />
               {/* )} */}
               {(calibrationSession?.comparison_summary && calibrationSession?.comparison_summary.length) &&

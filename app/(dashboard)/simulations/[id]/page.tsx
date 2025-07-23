@@ -80,7 +80,7 @@ export default function SimulationViewPage() {
   const [isParticipantsCollapsed, setIsParticipantsCollapsed] = useState(false)
   const [isDiscussionQuestionsCollapsed, setIsDiscussionQuestionsCollapsed] = useState(false)
   const [askedQuestionIndices, setAskedQuestionIndices] = useState<number[]>([])
-  const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
+  // const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
   const personaColors = [
@@ -146,6 +146,7 @@ export default function SimulationViewPage() {
     console.log('amit-handleFollowUpQuestions', showFollowUpQuestions)
     if (!showFollowUpQuestions) {
       setShowFollowUpQuestions(true)
+      console.log('amit-handleFollowUpQuestions-true', followUpQuestions)
       setIsLoadingFollowUpQuestions(true)
       
       // Get only the most recent message exchange (last moderator question + respondent answers)
@@ -336,11 +337,7 @@ export default function SimulationViewPage() {
 
   const runSimulation = async (customPrompt?: ChatCompletionMessageParam[]) => {
     console.log('runSimulationCalled', simulationData);
-    if (availableCredits && availableCredits < 10) {
-      setErrorMessage("You have low credit balance. Please purchase more credits to continue.");
-      setShowErrorPopup(true);
-      return;
-    }
+    
     if(simulationData?.simulation && simulationData?.personas) {
       const prompt = customPrompt 
       ? customPrompt 
@@ -350,7 +347,7 @@ export default function SimulationViewPage() {
         setIsSimulationRunning(true);
         const data = await runSimulationAPI(prompt, modelInUse);
         console.log('API response:', data);
-        setAvailableCredits(data.creditInfo.remaining_credits);
+        // setAvailableCredits(data.creditInfo.remaining_credits);
         
         if (data.reply) {
           // Parse the response into messages
@@ -705,7 +702,7 @@ function extractParticipantMessages(parsedResponse: any) {
       try {
         const data = await runSimulationAPI(prompt);
         console.log('API response:', data);
-        setAvailableCredits(data.creditInfo.remaining_credits);
+        // setAvailableCredits(data.creditInfo.remaining_credits);
         
         if (data.reply) {
           // Parse the response into messages
@@ -733,9 +730,9 @@ function extractParticipantMessages(parsedResponse: any) {
     navigator.clipboard.writeText(transcript);
   };
   
-  useEffect(() => {
-      fetchUserCredits();
-  }, [params.user_id]);
+  // useEffect(() => {
+  //     fetchUserCredits();
+  // }, [params.user_id]);
 
   // Save instruction handler (expand as needed)
   const saveInstruction = async () => {
@@ -1182,7 +1179,7 @@ function extractParticipantMessages(parsedResponse: any) {
                           <SelectContent>
                             {Object.entries(CREDIT_RATES).map(([model, rates]) => (
                               <SelectItem key={model} value={model}>
-                                {model} ({rates.usage})
+                                {model} 
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1197,12 +1194,6 @@ function extractParticipantMessages(parsedResponse: any) {
                     </div>
                   {/* )} */}
                   
-                  {/* Available credits display */}
-                  {availableCredits !== null && (
-                    <div className="text-right">
-                      <span className="text-sm text-gray-600">Available credits: {availableCredits.toFixed(2)}</span>
-                    </div>
-                  )}
                   
                   {/* End discussion button */}
                   {formattedMessages.length > 0 && (

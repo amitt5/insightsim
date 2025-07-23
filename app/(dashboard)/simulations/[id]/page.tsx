@@ -142,7 +142,7 @@ export default function SimulationViewPage() {
   };
 
   // Function to handle follow-up questions
-  const handleFollowUpQuestions = async () => {
+  const handleFollowUpQuestions = async (messagesOverride?: SimulationMessage[]) => {
     console.log('amit-handleFollowUpQuestions', showFollowUpQuestions)
     if (!showFollowUpQuestions) {
       setShowFollowUpQuestions(true)
@@ -169,7 +169,10 @@ export default function SimulationViewPage() {
         return messages.slice(lastModeratorIndex);
       };
       
-      const recentMessages = getRecentMessageExchange(simulationMessages || []);
+      // Use provided messages or fall back to state
+      const messagesToUse = messagesOverride || simulationMessages || [];
+      console.log('simulationMessages', messagesToUse);
+      const recentMessages = getRecentMessageExchange(messagesToUse);
       
       const sample = {
         simulation: simulationData?.simulation || {} as Simulation,
@@ -299,8 +302,8 @@ export default function SimulationViewPage() {
       
       setFormattedMessages(formatted);
       
-      // return formatted;
-      return data.messages
+      // return the raw messages for further processing
+      return data.messages || []
     } catch (err: any) {
       console.error("Error fetching simulation messages:", err);
     } finally {
@@ -359,14 +362,18 @@ export default function SimulationViewPage() {
           
           // // Fetch updated messages after saving
           if (saveResult && simulationData.simulation.id) {
-            await fetchSimulationMessages(simulationData.simulation.id);
+            const updatedMessages = await fetchSimulationMessages(simulationData.simulation.id);
+            // Call handleFollowUpQuestions with the fresh messages
+            if (updatedMessages) {
+              handleFollowUpQuestions(updatedMessages);
+            }
           }
         }
       } catch (error) {
         console.error("Error running simulation:", error);
       } finally {
         setIsSimulationRunning(false);
-        handleFollowUpQuestions();
+        // Don't call handleFollowUpQuestions here - it will be called after fetchSimulationMessages
       }
     }
   }
@@ -428,7 +435,7 @@ function extractParticipantMessages(parsedResponse: any) {
         const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction);
         console.log('prompt1111',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
-        //4. send the messages to openai
+          //4. send the messages to openai
         runSimulation(prompt);
         // rest of the steps handled in run simulation
       }

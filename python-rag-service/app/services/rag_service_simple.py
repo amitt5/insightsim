@@ -34,6 +34,11 @@ class SimpleRAGService:
         try:
             logger.info(f"Processing document {document_id} for simulation {simulation_id}")
             
+            # Update status to processing
+            self.supabase.table("rag_documents").update({
+                "processing_status": "processing"
+            }).eq("id", document_id).execute()
+            
             # Download file from Supabase Storage
             response = self.supabase.storage.from_("rag-documents").download(storage_path)
             

@@ -19,6 +19,7 @@ import { MediaSlideshow } from "@/components/media-slideshow";
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { RAGUpload } from "@/components/rag-upload"
 import { CREDIT_RATES } from '@/utils/openai'
 import {
   Select,
@@ -1201,6 +1202,16 @@ export default function SimulationViewPage() {
                     </div>
                   {/* )} */}
                   
+                  
+                  {/* RAG Upload - positioned above End Discussion button */}
+                  {formattedMessages.length > 0 && simulation.status !== 'Completed' && (
+                    <div className="mb-4">
+                      <RAGUpload 
+                        simulationId={simulation.id} 
+                        disabled={isEndingDiscussion}
+                      />
+                    </div>
+                  )}
                   
                   {/* End discussion button */}
                   {formattedMessages.length > 0 && (

@@ -18,7 +18,8 @@ import {
   FileText,
   Download,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  RefreshCw
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { 
@@ -70,6 +71,23 @@ export function RAGUpload({ simulationId, disabled = false }: RAGUploadProps) {
       loadDocuments()
     }
   }, [isExpanded, loadDocuments])
+
+  // Poll for status updates of processing documents
+  React.useEffect(() => {
+    if (!isExpanded) return
+
+    const processingDocs = documents.filter(doc => 
+      doc.processing_status === 'pending' || doc.processing_status === 'processing'
+    )
+
+    if (processingDocs.length === 0) return
+
+    const pollInterval = setInterval(() => {
+      loadDocuments()
+    }, 3000) // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval)
+  }, [documents, isExpanded, loadDocuments])
 
   // Handle file selection
   const handleFiles = useCallback(async (files: FileList) => {
@@ -270,18 +288,30 @@ export function RAGUpload({ simulationId, disabled = false }: RAGUploadProps) {
         )}
 
         {/* Documents List Toggle */}
-        <div className="mt-4">
+        <div className="mt-4 flex gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full justify-between"
+            className="flex-1 justify-between"
           >
             <span>
               View Documents ({documents.length})
             </span>
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
+          
+          {isExpanded && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadDocuments}
+              disabled={isLoadingDocuments}
+              className="flex-shrink-0"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoadingDocuments ? 'animate-spin' : ''}`} />
+            </Button>
+          )}
         </div>
 
         {/* Documents List */}

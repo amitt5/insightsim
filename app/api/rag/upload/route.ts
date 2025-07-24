@@ -68,9 +68,9 @@ export async function POST(request: Request) {
         simulation_id: simulationId,
         filename: file.name,
         storage_path: storagePath,
-        file_type: file.type,
         file_size: file.size,
-        processing_status: 'pending'
+        processing_status: 'pending',
+        user_id: session.user.id
       })
 
     if (dbError) {

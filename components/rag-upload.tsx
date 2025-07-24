@@ -309,7 +309,7 @@ export function RAGUpload({ simulationId, disabled = false }: RAGUploadProps) {
                       
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
-                          {doc.document_name}
+                          {doc.filename}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge 
@@ -322,7 +322,7 @@ export function RAGUpload({ simulationId, disabled = false }: RAGUploadProps) {
                             {formatFileSize(doc.file_size)}
                           </span>
                           <span className="text-xs text-gray-500">
-                            {new Date(doc.created_at).toLocaleDateString()}
+                            {new Date(doc.upload_date).toLocaleDateString()}
                           </span>
                         </div>
                       </div>

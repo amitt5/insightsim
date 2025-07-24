@@ -9,8 +9,12 @@ export async function GET(
   { params }: { params: { documentId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    // const supabase = createRouteHandlerClient({ cookies: async () => await cookies() })
     
+
+    const cookieStore = cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+  
     // Get the current session
     const { data: { session } } = await supabase.auth.getSession()
     
@@ -58,7 +62,7 @@ export async function DELETE(
   { params }: { params: { documentId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createRouteHandlerClient({ cookies: async () => await cookies() })
     
     // Get the current session
     const { data: { session } } = await supabase.auth.getSession()

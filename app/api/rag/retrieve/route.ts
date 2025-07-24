@@ -6,7 +6,10 @@ const PYTHON_RAG_SERVICE_URL = process.env.PYTHON_RAG_SERVICE_URL || 'http://loc
 
 export async function POST(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    // const supabase = createRouteHandlerClient({ cookies: async () => await cookies() })
+
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
     
     // Get the current session
     const { data: { session } } = await supabase.auth.getSession()

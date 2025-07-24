@@ -6,8 +6,11 @@ const PYTHON_RAG_SERVICE_URL = process.env.PYTHON_RAG_SERVICE_URL || 'http://loc
 
 export async function POST(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
+    // const supabase = createRouteHandlerClient({ cookies: async () => await cookies() })
+
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
     // Get the current session
     const { data: { session } } = await supabase.auth.getSession()
     
@@ -63,7 +66,7 @@ export async function POST(request: Request) {
       .insert({
         id: documentId,
         simulation_id: simulationId,
-        document_name: file.name,
+        filename: file.name,
         storage_path: storagePath,
         file_type: file.type,
         file_size: file.size,
@@ -90,7 +93,7 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           simulation_id: simulationId,
           document_id: documentId,
-          document_name: file.name,
+          filename: file.name,
           storage_path: storagePath
         })
       })

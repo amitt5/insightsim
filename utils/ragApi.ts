@@ -1,13 +1,13 @@
 export interface RAGDocument {
   id: string
   simulation_id: string
-  document_name: string
+  filename: string
   storage_path: string
-  file_type: string
+  file_type?: string
   file_size: number
   processing_status: 'pending' | 'processing' | 'completed' | 'failed'
-  created_at: string
-  updated_at: string
+  upload_date: string
+  user_id?: string
 }
 
 export interface RAGContext {
@@ -83,7 +83,7 @@ export async function getRAGDocuments(simulationId: string): Promise<{
   documents: RAGDocument[]
   count: number
 }> {
-  const response = await fetch(`/api/rag/documents/${simulationId}`)
+  const response = await fetch(`/api/rag/simulations/${simulationId}/documents`)
 
   if (!response.ok) {
     const error = await response.json()

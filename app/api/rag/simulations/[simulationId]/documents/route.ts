@@ -40,7 +40,7 @@ export async function GET(
       .from('rag_documents')
       .select('*')
       .eq('simulation_id', simulationId)
-      .order('created_at', { ascending: false })
+      .order('upload_date', { ascending: false })
 
     if (docError) {
       console.error('Error fetching documents:', docError)

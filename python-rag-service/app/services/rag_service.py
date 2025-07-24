@@ -53,7 +53,7 @@ class FullRAGService:
     def _get_vector_store(self, simulation_id: str) -> SupabaseVectorStore:
         """Get a vector store for a specific simulation"""
         return SupabaseVectorStore(
-            postgres_connection_string=f"postgresql://postgres:{os.getenv('SUPABASE_DB_PASSWORD')}@{self.supabase_url.replace('https://', '').replace('.supabase.co', '')}.supabase.co:5432/postgres",
+            postgres_connection_string=os.getenv('DATABASE_URL'),
             collection_name=f"simulation_{simulation_id.replace('-', '_')}"
         )
 

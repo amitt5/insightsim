@@ -1,0 +1,26 @@
+# Core FastAPI and web framework
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+python-dotenv==1.0.0
+
+# Supabase and database
+supabase==2.0.2
+psycopg2-binary==2.9.7
+
+# OpenAI for embeddings
+openai==1.6.1
+
+# LlamaIndex - compatible versions
+llama-index-core==0.10.57
+llama-index-embeddings-openai==0.1.11
+llama-index-vector-stores-supabase==0.1.4
+llama-index-readers-file==0.1.6
+
+# Pydantic compatibility
+pydantic==2.5.3
+pydantic-core==2.14.6
+
+# Additional utilities
+numpy==1.24.3
+tiktoken==0.5.2 

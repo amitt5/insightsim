@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.services.rag_service import rag_service
+from app.services.rag_service import get_full_rag_service
 from app.models.schemas import RAGQueryRequest, RAGQueryResponse
 import logging
 
@@ -7,13 +7,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/retrieve-context", response_model=RAGQueryResponse)
-async def retrieve_context(request: RAGQueryRequest):
-    """Retrieve relevant context for a query"""
+async def retrieve_context_full(request: RAGQueryRequest):
+    """Retrieve relevant context using full semantic search with embeddings"""
     try:
-        logger.info(f"Retrieving context for simulation {request.simulation_id}")
+        logger.info(f"Retrieving context for simulation {request.simulation_id} with full RAG")
         
-        # Get context from RAG service
-        result = await rag_service.retrieve_context(
+        service = get_full_rag_service()
+        
+        # Use the full RAG service for semantic search
+        result = await service.retrieve_context(
             simulation_id=request.simulation_id,
             query=request.query,
             max_chunks=request.max_chunks
@@ -22,37 +24,32 @@ async def retrieve_context(request: RAGQueryRequest):
         return RAGQueryResponse(
             context=result["context"],
             chunks=result["chunks"],
-            total_chunks=result["total_chunks"]
+            total_chunks=result["total_chunks"],
+            query=request.query
         )
         
     except Exception as e:
-        logger.error(f"Error retrieving context: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to retrieve context: {str(e)}"
-        )
+        logger.error(f"Error retrieving context with full RAG: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/document/{document_id}")
-async def delete_document(document_id: str, simulation_id: str):
-    """Delete a document from the RAG system"""
+async def delete_document_full(document_id: str):
+    """Delete document and its vector embeddings"""
     try:
-        logger.info(f"Deleting document {document_id} from simulation {simulation_id}")
+        logger.info(f"Deleting document {document_id} with full cleanup")
         
-        success = await rag_service.delete_document(simulation_id, document_id)
+        service = get_full_rag_service()
         
-        if success:
-            return {"status": "success", "message": "Document deleted successfully"}
-        else:
-            raise HTTPException(
-                status_code=404,
-                detail="Document not found or could not be deleted"
-            )
-            
+        # Use the full RAG service for complete cleanup
+        success = await service.delete_document(document_id)
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        return {"message": "Document and embeddings deleted successfully"}
+        
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting document: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to delete document: {str(e)}"
-        ) 
+        logger.error(f"Error deleting document with full RAG: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) 

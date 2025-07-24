@@ -1,5 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-from app.services.rag_service import rag_service
+from app.services.rag_service import get_full_rag_service
 from app.models.schemas import ProcessDocumentRequest, ProcessingResponse, DocumentStatusResponse
 import logging
 
@@ -7,17 +7,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/process-document", response_model=ProcessingResponse)
-async def process_document(
+async def process_document_full(
     request: ProcessDocumentRequest, 
     background_tasks: BackgroundTasks
 ):
-    """Process uploaded document in background"""
+    """Process uploaded document with full chunking and embeddings"""
     try:
-        logger.info(f"Received document processing request: {request.document_id}")
+        logger.info(f"Received full RAG processing request: {request.document_id}")
         
-        # Add background task for document processing
+        # Add background task for full document processing
         background_tasks.add_task(
-            rag_service.add_document,
+            get_full_rag_service().process_document,
             request.simulation_id,
             request.document_id,
             request.storage_path
@@ -25,23 +25,24 @@ async def process_document(
         
         return ProcessingResponse(
             status="processing",
-            message="Document processing started",
+            message="Document processing started with full chunking and embeddings",
             document_id=request.document_id
         )
         
     except Exception as e:
-        logger.error(f"Error starting document processing: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to start document processing: {str(e)}"
-        )
+        logger.error(f"Error starting full RAG processing: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/document/{document_id}/status", response_model=DocumentStatusResponse)
 async def get_document_status(document_id: str):
-    """Get processing status of a document"""
+    """Get document processing status"""
     try:
-        # Query database for document status
-        response = rag_service.supabase.table("rag_documents").select("processing_status").eq("id", document_id).execute()
+        logger.info(f"Getting status for document: {document_id}")
+        
+        service = get_full_rag_service()
+        
+        # Get document status from database
+        response = service.supabase.table("rag_documents").select("processing_status").eq("id", document_id).execute()
         
         if not response.data:
             raise HTTPException(status_code=404, detail="Document not found")
@@ -49,15 +50,12 @@ async def get_document_status(document_id: str):
         status = response.data[0]["processing_status"]
         
         return DocumentStatusResponse(
-            status=status,
-            message=f"Document is {status}"
+            document_id=document_id,
+            status=status
         )
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error getting document status: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get document status: {str(e)}"
-        ) 
+        raise HTTPException(status_code=500, detail=str(e)) 

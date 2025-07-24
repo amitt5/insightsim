@@ -1,0 +1,17 @@
+# Supabase Configuration (Required)
+SUPABASE_URL=your_supabase_url_here
+SUPABASE_SERVICE_KEY=your_supabase_service_key_here
+
+# Database Configuration (Required for vector storage)
+# Format: your_supabase_db_password (found in Supabase Settings > Database)
+SUPABASE_DB_PASSWORD=your_database_password_here
+
+# OpenAI Configuration (Required for embeddings)
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Optional: Override default embedding model
+# EMBEDDING_MODEL=text-embedding-3-small
+
+# Optional: Override chunking settings
+# CHUNK_SIZE=512
+# CHUNK_OVERLAP=50 

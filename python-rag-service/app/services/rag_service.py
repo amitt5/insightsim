@@ -181,13 +181,13 @@ class FullRAGService:
                 chunks = []
                 for node in response.source_nodes:
                     chunks.append({
-                        "content": node.text,
+                        "text": node.text,
                         "score": float(node.score) if hasattr(node, 'score') and node.score else 0.0,
                         "metadata": node.metadata
                     })
                 
                 # Combine context
-                context = "\n\n".join([chunk["content"] for chunk in chunks])
+                context = "\n\n".join([chunk["text"] for chunk in chunks])
                 
                 logger.info(f"Retrieved {len(chunks)} relevant chunks using semantic search")
                 

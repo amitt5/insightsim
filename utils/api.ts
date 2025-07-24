@@ -2,7 +2,11 @@
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import { logErrorNonBlocking } from "@/utils/errorLogger";
 
-export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], model: string = 'gpt-4o-mini'): Promise<{ reply: string, usage: any, creditInfo: { remaining_credits: number } }> {
+export async function runSimulationAPI(
+    prompt: ChatCompletionMessageParam[], 
+    model: string = 'gpt-4o-mini',
+    simulationId?: string
+): Promise<{ reply: string, usage: any, creditInfo: { remaining_credits: number } }> {
     try {
         const response = await fetch('/api/run-simulation', {
             method: 'POST',
@@ -11,7 +15,8 @@ export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], mod
             },
             body: JSON.stringify({
                 messages: prompt,
-                model: model
+                model: model,
+                simulation_id: simulationId
             }),
         });
         
@@ -26,7 +31,8 @@ export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], mod
                 {
                     status: response.status,
                     model,
-                    prompt_length: prompt.length
+                    prompt_length: prompt.length,
+                    simulation_id: simulationId
                 }
             );
             
@@ -87,6 +93,7 @@ export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], mod
             {
                 model,
                 prompt_length: prompt.length,
+                simulation_id: simulationId,
                 error_type: error instanceof Error ? error.name : 'unknown_error'
             }
         );

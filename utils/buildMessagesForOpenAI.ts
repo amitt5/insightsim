@@ -53,6 +53,32 @@ export function buildMessagesForOpenAI({
 
   systemPrompt += `\nThe moderator is named "Moderator". They guide the discussion by asking questions.\n\n`;
 
+  // Add image analysis instructions
+  systemPrompt += `IMAGE ANALYSIS CAPABILITIES:
+When the moderator shares images (photos, documents, screenshots, etc.), participants should:
+- Carefully examine and describe what they see in the image
+- Relate the image content to the discussion topic
+- Share their thoughts, reactions, and opinions about what's shown
+- Draw connections between the image and their personal experiences
+- Discuss how the image relates to the main research questions
+- Be specific about visual details they notice
+- Express authentic reactions as their persona would respond
+
+`;
+
+  // Add image analysis instructions
+  systemPrompt += `IMAGE ANALYSIS CAPABILITIES:
+When the moderator shares images (photos, documents, screenshots, etc.), participants should:
+- Carefully examine and describe what they see in the image
+- Relate the image content to the discussion topic
+- Share their thoughts, reactions, and opinions about what's shown
+- Draw connections between the image and their personal experiences
+- Discuss how the image relates to the main research questions
+- Be specific about visual details they notice
+- Express authentic reactions as their persona would respond
+
+`;
+
 
   // Add user instruction if provided (NEW SECTION)
   if (userInstruction?.trim()) {
@@ -116,7 +142,7 @@ EXAMPLE:
     // Check if this is the last moderator message and we have attached images
     const isLastMessage = i === messages.length - 1;
     const isModeratorMessage = m.sender_type === "moderator";
-    const hasAttachedImages = attachedImages && attachedImages.length > 0;
+    const hasAttachedImages = attachedImages && Array.isArray(attachedImages) && attachedImages.length > 0;
 
     if (isLastMessage && isModeratorMessage && hasAttachedImages) {
       // Format the last moderator message with images using OpenAI vision format
@@ -126,12 +152,14 @@ EXAMPLE:
 
       // Add each attached image
       for (const image of attachedImages) {
-        content.push({
-          type: "image_url",
-          image_url: {
-            url: image.url
-          }
-        });
+        if (image && image.url) {
+          content.push({
+            type: "image_url",
+            image_url: {
+              url: image.url
+            }
+          });
+        }
       }
 
       openAIMessages.push({

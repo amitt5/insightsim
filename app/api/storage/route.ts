@@ -107,9 +107,28 @@ export async function POST(request: Request) {
     }
 
     // Generate unique file path
+    // const fileExtension = file.name.split('.').pop();
+    // const uniqueId = uuidv4();
+    // const filePath = `${simulationId}/${uniqueId}.${fileExtension}`;
+
+
+    // Sanitize the filename and generate a unique path
     const fileExtension = file.name.split('.').pop();
+    const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+
+    // Sanitize the file name: convert to lowercase, replace spaces and special characters with hyphens
+    const sanitizedFileName = fileNameWithoutExt
+      .toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with -
+      .replace(/[^\w\-]+/g, '') // Remove all non-word chars except -
+      .replace(/\-\-+/g, '-'); // Replace multiple - with single -
+
     const uniqueId = uuidv4();
-    const filePath = `${simulationId}/${uniqueId}.${fileExtension}`;
+    // New path format: simulationId/sanitized-file-name-uniqueId.extension
+    const filePath = `${simulationId}/${sanitizedFileName}-${uniqueId}.${fileExtension}`;
+
+
+
 
     console.log(`Uploading file to bucket: ${bucket}, path: ${filePath}`);
 

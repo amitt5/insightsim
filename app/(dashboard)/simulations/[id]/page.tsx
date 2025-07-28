@@ -911,16 +911,12 @@ function extractParticipantMessages(parsedResponse: any) {
                         ).map((url, index) => (
                           <div 
                             key={index} 
-                            className="flex flex-col items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-transparent hover:border-primary/20"
+                            className="flex flex-col items-center p-3 bg-gray-50 rounded-lg border border-transparent"
                           >
                             <p className="text-sm font-medium mb-2 text-center text-gray-700">
                               {getFilenameFromUrl(url)}
                             </p>
-                            <button
-                              onClick={() => setSelectedStimulusIndex(index)}
-                              className="flex items-center justify-center w-12 h-12 bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
-                              title="Click to view full size"
-                            >
+                            <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg mb-2">
                               <svg 
                                 className="w-6 h-6 text-primary" 
                                 fill="none" 
@@ -934,7 +930,24 @@ function extractParticipantMessages(parsedResponse: any) {
                                   d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
                                 />
                               </svg>
-                            </button>
+                            </div>
+                            <div className="flex flex-col gap-1 w-full">
+                              <button
+                                onClick={() => setSelectedStimulusIndex(index)}
+                                className="text-xs text-primary hover:text-primary/80 underline hover:no-underline transition-colors"
+                              >
+                                View Image
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const imageText = `[Image: ${getFilenameFromUrl(url)}]`;
+                                  setNewMessage(prev => prev + (prev ? ' ' : '') + imageText);
+                                }}
+                                className="text-xs text-primary hover:text-primary/80 underline hover:no-underline transition-colors"
+                              >
+                                Add to Chat
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>

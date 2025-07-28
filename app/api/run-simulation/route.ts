@@ -33,7 +33,8 @@ export async function POST(req: Request) {
 
     // Extract usage info
     const usage = completion.usage;
-
+    console.log('amit-runSimulationAPI-completion', completion);
+    console.log('amit-runSimulationAPI-completion', completion.choices[0].message);
     console.log("Input tokens:", usage?.prompt_tokens);
     console.log("Output tokens:", usage?.completion_tokens);
     console.log("Total tokens:", usage?.total_tokens);

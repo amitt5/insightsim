@@ -20,6 +20,7 @@ import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CREDIT_RATES } from '@/utils/openai'
+import { getSignedUrlForDisplay, getSignedUrlsForDisplay } from '@/utils/fileUpload'
 import {
   Select,
   SelectContent,
@@ -81,6 +82,9 @@ export default function SimulationViewPage() {
   const [isStimulusCollapsed, setIsStimulusCollapsed] = useState(false)
   const [isDiscussionQuestionsCollapsed, setIsDiscussionQuestionsCollapsed] = useState(false)
   const [selectedStimulusIndex, setSelectedStimulusIndex] = useState<number | null>(null)
+  const [attachedImages, setAttachedImages] = useState<{url: string, name: string}[]>([])
+  const [signedStimulusUrls, setSignedStimulusUrls] = useState<string[]>([])
+  const [isLoadingSignedUrls, setIsLoadingSignedUrls] = useState(false)
   const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
@@ -114,6 +118,37 @@ export default function SimulationViewPage() {
       return `Stimulus File`;
     }
   };
+
+  // Load signed URLs for stimulus images
+  useEffect(() => {
+    const loadSignedUrls = async () => {
+      if (!simulationData?.simulation?.stimulus_media_url) {
+        setSignedStimulusUrls([]);
+        return;
+      }
+
+      setIsLoadingSignedUrls(true);
+      try {
+        const urls = Array.isArray(simulationData.simulation.stimulus_media_url) 
+          ? simulationData.simulation.stimulus_media_url
+          : [simulationData.simulation.stimulus_media_url];
+
+        const signedUrls = await getSignedUrlsForDisplay(urls);
+        setSignedStimulusUrls(signedUrls);
+      } catch (error) {
+        console.error('Error loading signed URLs:', error);
+        // Fallback to original URLs
+        const urls = Array.isArray(simulationData.simulation.stimulus_media_url) 
+          ? simulationData.simulation.stimulus_media_url
+          : [simulationData.simulation.stimulus_media_url];
+        setSignedStimulusUrls(urls);
+      } finally {
+        setIsLoadingSignedUrls(false);
+      }
+    };
+
+    loadSignedUrls();
+  }, [simulationData?.simulation?.stimulus_media_url]);
 
   // Ref for the textarea to enable scrolling and focusing
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -361,7 +396,7 @@ export default function SimulationViewPage() {
         console.error("Error running simulation:", error);
       } finally {
         setIsSimulationRunning(false);
-        handleFollowUpQuestions();
+        // handleFollowUpQuestions();
       }
     }
   }
@@ -411,16 +446,18 @@ function extractParticipantMessages(parsedResponse: any) {
     if (saveResult && simulationData?.simulation?.id) {
       //2. fetch the messages from the database
       const messageFetched = await fetchSimulationMessages(simulationData.simulation.id);
+      const currentAttachedImages = [...attachedImages]; // Store current images before clearing
       setNewMessage('');
+      setAttachedImages([]); // Clear attached images after sending
      
       if(messageFetched) {
-         //3. build the messages for openai
+         //3. build the messages for openai with attached images
         const sample = {
           simulation: simulationData?.simulation,
           messages: messageFetched,
           personas: simulationData?.personas || []
         }
-        const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction);
+        const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction, currentAttachedImages);
         console.log('prompt1111',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
         //4. send the messages to openai
@@ -905,10 +942,11 @@ function extractParticipantMessages(parsedResponse: any) {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {(Array.isArray(simulation.stimulus_media_url) 
-                          ? simulation.stimulus_media_url 
-                          : [simulation.stimulus_media_url as string]
-                        ).map((url, index) => (
+                        {signedStimulusUrls.map((url, index) => {
+                          const originalUrl = Array.isArray(simulation.stimulus_media_url) 
+                            ? simulation.stimulus_media_url[index] 
+                            : simulation.stimulus_media_url as string;
+                          return (
                           <div 
                             key={index} 
                             className="flex flex-col items-center p-3 bg-gray-50 rounded-lg border border-transparent"
@@ -939,9 +977,20 @@ function extractParticipantMessages(parsedResponse: any) {
                                 View Image
                               </button>
                               <button
-                                onClick={() => {
-                                  const imageText = `[Image: ${getFilenameFromUrl(url)}]`;
-                                  setNewMessage(prev => prev + (prev ? ' ' : '') + imageText);
+                                onClick={async () => {
+                                  const imageName = getFilenameFromUrl(originalUrl);
+                                  // Use signed URL for the image
+                                  const signedUrl = await getSignedUrlForDisplay(originalUrl);
+                                  const imageObj = { url: signedUrl, name: imageName };
+                                  
+                                  // Add image to attached images if not already there
+                                  setAttachedImages(prev => {
+                                    const exists = prev.some(img => img.url === signedUrl);
+                                    if (!exists) {
+                                      return [...prev, imageObj];
+                                    }
+                                    return prev;
+                                  });
                                 }}
                                 className="text-xs text-primary hover:text-primary/80 underline hover:no-underline transition-colors"
                               >
@@ -949,7 +998,8 @@ function extractParticipantMessages(parsedResponse: any) {
                               </button>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </>
@@ -1179,6 +1229,29 @@ function extractParticipantMessages(parsedResponse: any) {
 
                 {((simulationData?.simulation?.mode === "human-mod") || (formattedMessages.length > 0)) &&
                 <div className="mt-2 space-y-2">
+                  {/* Image indicators */}
+                  {attachedImages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-lg border">
+                      <span className="text-xs text-gray-600 font-medium">Attached Images:</span>
+                      {attachedImages.map((image, index) => (
+                        <div key={index} className="flex items-center gap-1 bg-white px-2 py-1 rounded-md border text-xs">
+                          <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-gray-700">{image.name}</span>
+                          <button
+                            onClick={() => {
+                              setAttachedImages(prev => prev.filter((_, i) => i !== index));
+                            }}
+                            className="ml-1 text-gray-400 hover:text-red-500"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
                   {/* Full width multiline textbox */}
                   <textarea 
                     value={newMessage}
@@ -1212,7 +1285,7 @@ function extractParticipantMessages(parsedResponse: any) {
                       </div>
                       <Button 
                         onClick={sendMessage}
-                        disabled={!newMessage.trim() || simulation.status === 'Completed' || isLoadingMessages}
+                        disabled={(!newMessage.trim() && attachedImages.length === 0) || simulation.status === 'Completed' || isLoadingMessages}
                       >
                         Send
                       </Button>
@@ -1311,7 +1384,7 @@ function extractParticipantMessages(parsedResponse: any) {
       </div>
 
       {/* Stimulus Modal */}
-      {selectedStimulusIndex !== null && simulation.stimulus_media_url && (
+      {selectedStimulusIndex !== null && signedStimulusUrls.length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="relative bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-hidden">
             <button
@@ -1326,7 +1399,7 @@ function extractParticipantMessages(parsedResponse: any) {
             
             <div className="p-4">
               <h3 className="text-lg font-semibold mb-4 text-center">
-                {simulation.stimulus_media_url && getFilenameFromUrl(
+                {signedStimulusUrls[selectedStimulusIndex] && getFilenameFromUrl(
                   Array.isArray(simulation.stimulus_media_url) 
                     ? simulation.stimulus_media_url[selectedStimulusIndex]
                     : simulation.stimulus_media_url as string
@@ -1334,13 +1407,9 @@ function extractParticipantMessages(parsedResponse: any) {
               </h3>
               
               <div className="flex justify-center">
-                {simulation.stimulus_media_url && (
+                {signedStimulusUrls[selectedStimulusIndex] && (
                   <MediaViewer 
-                    url={
-                      Array.isArray(simulation.stimulus_media_url) 
-                        ? simulation.stimulus_media_url[selectedStimulusIndex]
-                        : simulation.stimulus_media_url as string
-                    } 
+                    url={signedStimulusUrls[selectedStimulusIndex]} 
                     className="max-w-full max-h-[70vh] object-contain"
                   />
                 )}

@@ -12,7 +12,7 @@ export function buildMessagesForOpenAI({
   simulation: Simulation,
   messages: SimulationMessage[],
   personas: Persona[],
-}, study_type: string, userInstruction?: string) {
+}, study_type: string, userInstruction?: string, attachedImages?: {url: string, name: string}[]) {
   const { study_title, topic, discussion_questions } = simulation;
   const personaMap = Object.fromEntries(personas.map(p => [p.id, p.name]));
 
@@ -106,16 +106,45 @@ EXAMPLE:
   });
 
   // CONVERSATION HISTORY
-  for (const m of messages) {
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
     let name =
       m.sender_type === "moderator"
         ? "Moderator"
         : personaMap[m.sender_id ?? ""] ?? "Unknown";
 
-    openAIMessages.push({
-      role: m.sender_type === "moderator" ? "user" : "assistant",
-      content: `${name}: ${m.message}`,
-    });
+    // Check if this is the last moderator message and we have attached images
+    const isLastMessage = i === messages.length - 1;
+    const isModeratorMessage = m.sender_type === "moderator";
+    const hasAttachedImages = attachedImages && attachedImages.length > 0;
+
+    if (isLastMessage && isModeratorMessage && hasAttachedImages) {
+      // Format the last moderator message with images using OpenAI vision format
+      const content: any[] = [
+        { type: "text", text: `${name}: ${m.message}` }
+      ];
+
+      // Add each attached image
+      for (const image of attachedImages) {
+        content.push({
+          type: "image_url",
+          image_url: {
+            url: image.url
+          }
+        });
+      }
+
+      openAIMessages.push({
+        role: "user",
+        content: content,
+      });
+    } else {
+      // Regular text-only message
+      openAIMessages.push({
+        role: m.sender_type === "moderator" ? "user" : "assistant",
+        content: `${name}: ${m.message}`,
+      });
+    }
   }
 
   return openAIMessages;

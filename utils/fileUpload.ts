@@ -196,4 +196,49 @@ export function revokeFilePreview(url: string): void {
   if (url) {
     URL.revokeObjectURL(url)
   }
+}
+
+/**
+ * Gets a signed URL for displaying a stored file
+ * Converts stored public URLs back to file paths and generates signed URLs
+ */
+export async function getSignedUrlForDisplay(url: string): Promise<string> {
+  try {
+    // If it's already a signed URL (has token parameter), return as-is
+    if (url.includes('token=')) {
+      return url;
+    }
+
+    // Extract file path from public URL
+    // URL format: https://[project].supabase.co/storage/v1/object/public/simulation-media/path/to/file.jpg
+    const urlParts = url.split('/storage/v1/object/public/simulation-media/');
+    if (urlParts.length !== 2) {
+      console.error('Invalid URL format:', url);
+      return url; // Return original URL as fallback
+    }
+
+    const filePath = urlParts[1];
+
+    // Generate signed URL via API
+    const response = await fetch(`/api/storage?path=${encodeURIComponent(filePath)}&bucket=simulation-media`);
+    
+    if (!response.ok) {
+      console.error('Failed to get signed URL for:', filePath);
+      return url; // Return original URL as fallback
+    }
+
+    const data = await response.json();
+    return data.url || url;
+  } catch (error) {
+    console.error('Error getting signed URL:', error);
+    return url; // Return original URL as fallback
+  }
+}
+
+/**
+ * Gets signed URLs for multiple files
+ */
+export async function getSignedUrlsForDisplay(urls: string[]): Promise<string[]> {
+  const signedUrlPromises = urls.map(url => getSignedUrlForDisplay(url));
+  return Promise.all(signedUrlPromises);
 } 

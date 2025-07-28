@@ -299,12 +299,13 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
 
   const nextStep = async () => {
     // If moving from step 3 to step 4, upload media files first
+    console.log('amit-nextStep-selectedFiles', selectedFiles);
     if (step === 3 && selectedFiles.length > 0) {
       try {
         setIsUploading(true);
         const mediaUrls = await uploadMedia();
         console.log('amit-nextStep-mediaUrls', mediaUrls);
-        
+        console.log('amit-nextStep-simulationData', simulationData.stimulus_media_url);
         // Update simulation data with uploaded URLs
         setSimulationData(prev => ({
           ...prev,
@@ -578,7 +579,10 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       // Update simulationData to indicate files are pending upload
       setSimulationData(prev => ({
         ...prev,
-        stimulus_media_url: Array(selectedFiles.length + newFiles.length).fill('pending_upload'),
+        stimulus_media_url: [
+          ...(prev.stimulus_media_url || []),           // Preserve existing URLs
+          ...Array(newFiles.length).fill('pending_upload')  // Add placeholders for new files only
+        ]
       }));
     }
   };
@@ -619,7 +623,10 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       // Update simulationData with pending upload indicators
       setSimulationData(prev => ({
         ...prev,
-        stimulus_media_url: Array(selectedFiles.length + newFiles.length).fill('pending_upload'),
+        stimulus_media_url: [
+          ...(prev.stimulus_media_url || []),           // Preserve existing URLs
+          ...Array(newFiles.length).fill('pending_upload')  // Add placeholders for new files only
+        ]
       }));
     }
   };

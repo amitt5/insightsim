@@ -78,7 +78,9 @@ export default function SimulationViewPage() {
   const [isLoadingFollowUpQuestions, setIsLoadingFollowUpQuestions] = useState(false)
   const [followUpQuestions, setFollowUpQuestions] = useState<{question: string}[]>([])
   const [isParticipantsCollapsed, setIsParticipantsCollapsed] = useState(false)
+  const [isStimulusCollapsed, setIsStimulusCollapsed] = useState(false)
   const [isDiscussionQuestionsCollapsed, setIsDiscussionQuestionsCollapsed] = useState(false)
+  const [selectedStimulusIndex, setSelectedStimulusIndex] = useState<number | null>(null)
   const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
@@ -99,6 +101,18 @@ export default function SimulationViewPage() {
   const getPersonaColor = (personaId: string, personas: Persona[]) => {
     const index = personas.findIndex(p => p.id === personaId);
     return index !== -1 ? personaColors[index % personaColors.length] : personaColors[0];
+  };
+
+  // Function to extract filename from URL for display
+  const getFilenameFromUrl = (url: string) => {
+    try {
+      const urlParts = url.split('/');
+      const filename = urlParts[urlParts.length - 1];
+      // Remove query parameters if any
+      return filename.split('?')[0] || `Stimulus ${urlParts.length}`;
+    } catch (error) {
+      return `Stimulus File`;
+    }
   };
 
   // Ref for the textarea to enable scrolling and focusing
@@ -797,26 +811,7 @@ function extractParticipantMessages(parsedResponse: any) {
         </Button>
         <div>
               <h1 className="text-2xl font-bold">{simulation.topic}</h1>
-              {simulation.stimulus_media_url && (
-                <div className="mt-4 mb-4">
-                  {Array.isArray(simulation.stimulus_media_url) ? (
-                    simulation.stimulus_media_url.length > 0 ? (
-                      <MediaSlideshow 
-                        urls={simulation.stimulus_media_url} 
-                        triggerLabel="View Stimulus"
-                      />
-                    ) : (
-                      <p className="text-sm text-gray-500">No media attached to this simulation</p>
-                    )
-                  ) : (
-                    // Backward compatibility - handle single URL string
-                    <MediaSlideshow 
-                      urls={[simulation.stimulus_media_url as string]} 
-                      triggerLabel="View Stimulus" 
-                    />
-                  )}
-                </div>
-              )}
+
           <div className="flex items-center gap-2 text-sm text-gray-500">
                 <span>{new Date(simulation.created_at).toLocaleDateString()}</span>
             <span>•</span>
@@ -874,6 +869,72 @@ function extractParticipantMessages(parsedResponse: any) {
                               </p>
                               <p className="mt-1 text-xs text-gray-600">{participant.bio}</p>
                             </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Stimulus Section */}
+            <Card className="h-fit">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold">Stimulus</h2>
+                  <button
+                    onClick={() => setIsStimulusCollapsed(!isStimulusCollapsed)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title={isStimulusCollapsed ? "Expand stimulus" : "Collapse stimulus"}
+                  >
+                    {isStimulusCollapsed ? (
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                
+                {!isStimulusCollapsed && (
+                  <>
+                    {!simulation.stimulus_media_url || 
+                     (Array.isArray(simulation.stimulus_media_url) && simulation.stimulus_media_url.length === 0) ? (
+                      <div className="text-center py-4 text-gray-500">
+                        No stimulus media attached to this simulation
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {(Array.isArray(simulation.stimulus_media_url) 
+                          ? simulation.stimulus_media_url 
+                          : [simulation.stimulus_media_url as string]
+                        ).map((url, index) => (
+                          <div 
+                            key={index} 
+                            className="flex flex-col items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-transparent hover:border-primary/20"
+                          >
+                            <p className="text-sm font-medium mb-2 text-center text-gray-700">
+                              {getFilenameFromUrl(url)}
+                            </p>
+                            <button
+                              onClick={() => setSelectedStimulusIndex(index)}
+                              className="flex items-center justify-center w-12 h-12 bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                              title="Click to view full size"
+                            >
+                              <svg 
+                                className="w-6 h-6 text-primary" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path 
+                                  strokeLinecap="round" 
+                                  strokeLinejoin="round" 
+                                  strokeWidth={2} 
+                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
+                                />
+                              </svg>
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -1235,6 +1296,74 @@ function extractParticipantMessages(parsedResponse: any) {
           )}
         </div>
       </div>
+
+      {/* Stimulus Modal */}
+      {selectedStimulusIndex !== null && simulation.stimulus_media_url && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="relative bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-hidden">
+            <button
+              onClick={() => setSelectedStimulusIndex(null)}
+              className="absolute top-4 right-4 z-10 p-2 bg-black bg-opacity-20 hover:bg-opacity-30 rounded-full text-white transition-colors"
+              title="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-4 text-center">
+                {simulation.stimulus_media_url && getFilenameFromUrl(
+                  Array.isArray(simulation.stimulus_media_url) 
+                    ? simulation.stimulus_media_url[selectedStimulusIndex]
+                    : simulation.stimulus_media_url as string
+                )}
+              </h3>
+              
+              <div className="flex justify-center">
+                {simulation.stimulus_media_url && (
+                  <MediaViewer 
+                    url={
+                      Array.isArray(simulation.stimulus_media_url) 
+                        ? simulation.stimulus_media_url[selectedStimulusIndex]
+                        : simulation.stimulus_media_url as string
+                    } 
+                    className="max-w-full max-h-[70vh] object-contain"
+                  />
+                )}
+              </div>
+              
+              {/* Navigation buttons for multiple stimuli */}
+              {(() => {
+                const mediaUrls = simulation.stimulus_media_url;
+                return Array.isArray(mediaUrls) && mediaUrls.length > 1 && (
+                  <div className="flex justify-center gap-4 mt-4">
+                    <button
+                      onClick={() => setSelectedStimulusIndex(
+                        selectedStimulusIndex > 0 ? selectedStimulusIndex - 1 : mediaUrls.length - 1
+                      )}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <span className="flex items-center px-4 py-2 text-sm text-gray-600">
+                      {selectedStimulusIndex + 1} of {mediaUrls.length}
+                    </span>
+                    <button
+                      onClick={() => setSelectedStimulusIndex(
+                        selectedStimulusIndex < mediaUrls.length - 1 ? selectedStimulusIndex + 1 : 0
+                      )}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

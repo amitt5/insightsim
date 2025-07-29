@@ -16,16 +16,55 @@ export function MediaViewer({ url, title, className = "" }: MediaViewerProps) {
   const [mediaUrl, setMediaUrl] = useState<string>(url)
   const [usingSignedUrl, setUsingSignedUrl] = useState(false)
 
-  // Determine file type from URL
-  const isPDF = url.toLowerCase().endsWith('.pdf')
-  const isImage = /\.(jpeg|jpg|png|gif|webp)$/i.test(url)
+  // Check if the URL is already a signed URL
+  const isSignedUrl = (url: string) => {
+    return url.includes('/storage/v1/object/sign/') && url.includes('token=')
+  }
+
+  // If URL is already signed, mark it as such
+  useEffect(() => {
+    if (isSignedUrl(url)) {
+      setUsingSignedUrl(true)
+    }
+    
+    // Reset states when URL changes
+    setIsLoading(true)
+    setError(null)
+    
+    // Set a timeout to catch stuck loading states
+    const timeout = setTimeout(() => {
+      setIsLoading(current => {
+        if (current) {
+          setError("Image took too long to load")
+          return false
+        }
+        return current
+      })
+    }, 10000) // 10 second timeout
+    
+    return () => clearTimeout(timeout)
+  }, [url])
+
+  // Determine file type from URL (handle query parameters)
+  const getFileExtension = (url: string) => {
+    // Remove query parameters first, then get extension
+    const urlWithoutQuery = url.split('?')[0]
+    return urlWithoutQuery.toLowerCase()
+  }
+  
+  const cleanUrl = getFileExtension(url)
+  const isPDF = cleanUrl.endsWith('.pdf')
+  const isImage = /\.(jpeg|jpg|png|gif|webp)$/i.test(cleanUrl)
 
   // Fetch a signed URL as fallback if direct access fails
   const fetchSignedUrl = async () => {
     try {
-      console.log("Falling back to signed URL for:", url)
+      // If it's already a signed URL, we can't fetch another one
+      if (isSignedUrl(url)) {
+        return false
+      }
       
-      // Extract bucket and path from the URL
+      // Extract bucket and path from the URL (for public URLs)
       const match = url.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)/)
       if (!match) {
         console.error("Could not parse Supabase URL:", url)
@@ -33,12 +72,9 @@ export function MediaViewer({ url, title, className = "" }: MediaViewerProps) {
       }
       
       const [, bucket, path] = match
-      console.log("Extracted - Bucket:", bucket, "Path:", path)
       
       // Fetch signed URL from our API
       const apiUrl = `/api/storage?path=${encodeURIComponent(path)}&bucket=${encodeURIComponent(bucket)}`
-      console.log("Requesting signed URL from:", apiUrl)
-      
       const response = await fetch(apiUrl)
       
       if (!response.ok) {
@@ -52,7 +88,6 @@ export function MediaViewer({ url, title, className = "" }: MediaViewerProps) {
         throw new Error("No URL returned from API")
       }
       
-      console.log("Using signed URL instead:", data.url)
       setMediaUrl(data.url)
       setUsingSignedUrl(true)
       setIsLoading(false)
@@ -74,7 +109,6 @@ export function MediaViewer({ url, title, className = "" }: MediaViewerProps) {
     if (usingSignedUrl || !await fetchSignedUrl()) {
       setIsLoading(false)
       setError("Failed to load media")
-      console.error("Media loading error for URL:", mediaUrl)
     }
   }
 

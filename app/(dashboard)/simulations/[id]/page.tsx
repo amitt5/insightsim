@@ -79,12 +79,12 @@ export default function SimulationViewPage() {
   const [isLoadingFollowUpQuestions, setIsLoadingFollowUpQuestions] = useState(false)
   const [followUpQuestions, setFollowUpQuestions] = useState<{question: string}[]>([])
   const [isParticipantsCollapsed, setIsParticipantsCollapsed] = useState(false)
-  const [isStimulusCollapsed, setIsStimulusCollapsed] = useState(false)
   const [isDiscussionQuestionsCollapsed, setIsDiscussionQuestionsCollapsed] = useState(false)
   const [selectedStimulusIndex, setSelectedStimulusIndex] = useState<number | null>(null)
   const [attachedImages, setAttachedImages] = useState<{url: string, name: string}[]>([])
   const [signedStimulusUrls, setSignedStimulusUrls] = useState<string[]>([])
   const [isLoadingSignedUrls, setIsLoadingSignedUrls] = useState(false)
+  const [selectedStimulusImages, setSelectedStimulusImages] = useState<boolean[]>([])
   const [askedQuestionIndices, setAskedQuestionIndices] = useState<number[]>([])
   // const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
@@ -120,6 +120,42 @@ export default function SimulationViewPage() {
     }
   };
 
+  // Handle stimulus checkbox changes
+  const handleStimulusCheckboxChange = async (index: number, checked: boolean) => {
+    // Update checkbox states
+    const newSelectedStimulus = [...selectedStimulusImages];
+    newSelectedStimulus[index] = checked;
+    setSelectedStimulusImages(newSelectedStimulus);
+
+    // Update attached images
+    if (checked) {
+      // Add image to attached images
+      const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
+        ? simulationData.simulation.stimulus_media_url[index] 
+        : simulationData?.simulation?.stimulus_media_url as string;
+      
+      const imageName = getFilenameFromUrl(originalUrl);
+      const signedUrl = await getSignedUrlForDisplay(originalUrl);
+      const imageObj = { url: signedUrl, name: imageName };
+      
+      setAttachedImages(prev => {
+        const exists = prev.some(img => img.name === imageName);
+        if (!exists) {
+          return [...prev, imageObj];
+        }
+        return prev;
+      });
+    } else {
+      // Remove image from attached images
+      const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
+        ? simulationData.simulation.stimulus_media_url[index] 
+        : simulationData?.simulation?.stimulus_media_url as string;
+      
+      const imageName = getFilenameFromUrl(originalUrl);
+      setAttachedImages(prev => prev.filter(img => img.name !== imageName));
+    }
+  };
+
   // Load signed URLs for stimulus images
   useEffect(() => {
     const loadSignedUrls = async () => {
@@ -136,6 +172,8 @@ export default function SimulationViewPage() {
 
         const signedUrls = await getSignedUrlsForDisplay(urls);
         setSignedStimulusUrls(signedUrls);
+        // Initialize checkbox states
+        setSelectedStimulusImages(new Array(urls.length).fill(false));
       } catch (error) {
         console.error('Error loading signed URLs:', error);
         // Fallback to original URLs
@@ -143,6 +181,7 @@ export default function SimulationViewPage() {
           ? simulationData.simulation.stimulus_media_url
           : [simulationData.simulation.stimulus_media_url];
         setSignedStimulusUrls(urls);
+        setSelectedStimulusImages(new Array(urls.length).fill(false));
       } finally {
         setIsLoadingSignedUrls(false);
       }
@@ -475,6 +514,7 @@ export default function SimulationViewPage() {
       const currentAttachedImages = [...attachedImages]; // Store current images before clearing
       setNewMessage('');
       setAttachedImages([]); // Clear attached images after sending
+      setSelectedStimulusImages(new Array(signedStimulusUrls.length).fill(false)); // Reset checkboxes
      
       if(messageFetched) {
          //3. build the messages for openai with attached images
@@ -941,97 +981,6 @@ export default function SimulationViewPage() {
               </CardContent>
             </Card>
 
-            {/* Stimulus Section */}
-            <Card className="h-fit">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold">Stimulus</h2>
-                  <button
-                    onClick={() => setIsStimulusCollapsed(!isStimulusCollapsed)}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    title={isStimulusCollapsed ? "Expand stimulus" : "Collapse stimulus"}
-                  >
-                    {isStimulusCollapsed ? (
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
-                    ) : (
-                      <ChevronUp className="h-4 w-4 text-gray-500" />
-                    )}
-                  </button>
-                </div>
-                
-                {!isStimulusCollapsed && (
-                  <>
-                    {!simulation.stimulus_media_url || 
-                     (Array.isArray(simulation.stimulus_media_url) && simulation.stimulus_media_url.length === 0) ? (
-                      <div className="text-center py-4 text-gray-500">
-                        No stimulus media attached to this simulation
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {signedStimulusUrls.map((url, index) => {
-                          const originalUrl = Array.isArray(simulation.stimulus_media_url) 
-                            ? simulation.stimulus_media_url[index] 
-                            : simulation.stimulus_media_url as string;
-                          return (
-                          <div 
-                            key={index} 
-                            className="flex flex-col items-center p-3 bg-gray-50 rounded-lg border border-transparent"
-                          >
-                            <p className="text-sm font-medium mb-2 text-center text-gray-700">
-                              {getFilenameFromUrl(url)}
-                            </p>
-                            <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg mb-2">
-                              <svg 
-                                className="w-6 h-6 text-primary" 
-                                fill="none" 
-                                stroke="currentColor" 
-                                viewBox="0 0 24 24"
-                              >
-                                <path 
-                                  strokeLinecap="round" 
-                                  strokeLinejoin="round" 
-                                  strokeWidth={2} 
-                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
-                                />
-                              </svg>
-                            </div>
-                            <div className="flex flex-col gap-1 w-full">
-                              <button
-                                onClick={() => setSelectedStimulusIndex(index)}
-                                className="text-xs text-primary hover:text-primary/80 underline hover:no-underline transition-colors"
-                              >
-                                View Image
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  const imageName = getFilenameFromUrl(originalUrl);
-                                  // Use signed URL for the image
-                                  const signedUrl = await getSignedUrlForDisplay(originalUrl);
-                                  const imageObj = { url: signedUrl, name: imageName };
-                                  
-                                  // Add image to attached images if not already there
-                                  setAttachedImages(prev => {
-                                    const exists = prev.some(img => img.url === signedUrl);
-                                    if (!exists) {
-                                      return [...prev, imageObj];
-                                    }
-                                    return prev;
-                                  });
-                                }}
-                                className="text-xs text-primary hover:text-primary/80 underline hover:no-underline transition-colors"
-                              >
-                                Add to Chat
-                              </button>
-                            </div>
-                          </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
 
             {/* Discussion Questions Section */}
             <Card className="h-fit">
@@ -1230,7 +1179,7 @@ export default function SimulationViewPage() {
                     <button
                       type="button"
                       className="block text-xs text-primary underline hover:text-primary/80 focus:outline-none"
-                      onClick={handleFollowUpQuestions}
+                      onClick={() => handleFollowUpQuestions()}
                     >
                       {showFollowUpQuestions ? "Hide follow-up questions" : "Suggest follow-up questions"}
                     </button>
@@ -1348,6 +1297,42 @@ export default function SimulationViewPage() {
                     </div>
                   {/* )} */}
                   
+                  {/* Stimulus Images Section */}
+                  {signedStimulusUrls.length > 0 && (
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
+                      <h4 className="text-sm font-medium mb-3 text-gray-700">Attach Images:</h4>
+                      <div className="space-y-2">
+                        {signedStimulusUrls.map((url, index) => {
+                          const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
+                            ? simulationData.simulation.stimulus_media_url[index] 
+                            : simulationData?.simulation?.stimulus_media_url as string;
+                          const imageName = getFilenameFromUrl(originalUrl);
+                          
+                          return (
+                            <div key={index} className="flex items-center space-x-3">
+                              <input
+                                type="checkbox"
+                                id={`stimulus-${index}`}
+                                checked={selectedStimulusImages[index] || false}
+                                onChange={(e) => handleStimulusCheckboxChange(index, e.target.checked)}
+                                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                              />
+                              <label 
+                                htmlFor={`stimulus-${index}`} 
+                                className="text-sm text-primary hover:text-primary/80 underline cursor-pointer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setSelectedStimulusIndex(index);
+                                }}
+                              >
+                                {imageName}
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* End discussion button */}
                   {formattedMessages.length > 0 && (

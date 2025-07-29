@@ -63,6 +63,14 @@ export interface Persona {
     attitude?: string;
     user_id?: string;
     editable?: boolean;
+    family_status?: string;
+    education_level?: string;
+    income_level?: string;
+    lifestyle?: string;
+    category_products?: string[];
+    product_relationship?: string;
+    category_habits?: string;
+    tags?: string[];
 }
 
 export interface AIPersonaGeneration {

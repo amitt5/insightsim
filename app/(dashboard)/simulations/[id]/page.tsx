@@ -85,7 +85,8 @@ export default function SimulationViewPage() {
   const [attachedImages, setAttachedImages] = useState<{url: string, name: string}[]>([])
   const [signedStimulusUrls, setSignedStimulusUrls] = useState<string[]>([])
   const [isLoadingSignedUrls, setIsLoadingSignedUrls] = useState(false)
-  const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
+  const [askedQuestionIndices, setAskedQuestionIndices] = useState<number[]>([])
+  // const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
   const personaColors = [
@@ -154,8 +155,14 @@ export default function SimulationViewPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Function to handle discussion question selection
-  const handleQuestionSelect = (question: string) => {
+  const handleQuestionSelect = (question: string, questionIndex?: number) => {
     setNewMessage(question);
+    
+    // Mark question as asked if index is provided
+    if (questionIndex !== undefined && !askedQuestionIndices.includes(questionIndex)) {
+      setAskedQuestionIndices(prev => [...prev, questionIndex]);
+    }
+    
     // Scroll to and focus the textarea after a brief delay to ensure the text is set
     setTimeout(() => {
       if (textareaRef.current) {
@@ -168,11 +175,27 @@ export default function SimulationViewPage() {
     }, 100);
   };
 
+  // Function to handle "Ask next question" functionality
+  const handleNextQuestion = () => {
+    if (!simulation.discussion_questions) return;
+    
+    // Find the next unasked question
+    const nextQuestionIndex = simulation.discussion_questions.findIndex((_, index) => 
+      !askedQuestionIndices.includes(index)
+    );
+    
+    if (nextQuestionIndex !== -1) {
+      const nextQuestion = simulation.discussion_questions[nextQuestionIndex];
+      handleQuestionSelect(nextQuestion, nextQuestionIndex);
+    }
+  };
+
   // Function to handle follow-up questions
-  const handleFollowUpQuestions = async () => {
+  const handleFollowUpQuestions = async (messagesOverride?: SimulationMessage[]) => {
     console.log('amit-handleFollowUpQuestions', showFollowUpQuestions)
     if (!showFollowUpQuestions) {
       setShowFollowUpQuestions(true)
+      console.log('amit-handleFollowUpQuestions-true', followUpQuestions)
       setIsLoadingFollowUpQuestions(true)
       
       // Get only the most recent message exchange (last moderator question + respondent answers)
@@ -195,7 +218,10 @@ export default function SimulationViewPage() {
         return messages.slice(lastModeratorIndex);
       };
       
-      const recentMessages = getRecentMessageExchange(simulationMessages || []);
+      // Use provided messages or fall back to state
+      const messagesToUse = messagesOverride || simulationMessages || [];
+      console.log('simulationMessages', messagesToUse);
+      const recentMessages = getRecentMessageExchange(messagesToUse);
       
       const sample = {
         simulation: simulationData?.simulation || {} as Simulation,
@@ -325,8 +351,8 @@ export default function SimulationViewPage() {
       
       setFormattedMessages(formatted);
       
-      // return formatted;
-      return data.messages
+      // return the raw messages for further processing
+      return data.messages || []
     } catch (err: any) {
       console.error("Error fetching simulation messages:", err);
     } finally {
@@ -363,11 +389,7 @@ export default function SimulationViewPage() {
 
   const runSimulation = async (customPrompt?: ChatCompletionMessageParam[]) => {
     console.log('runSimulationCalled', simulationData);
-    if (availableCredits && availableCredits < 10) {
-      setErrorMessage("You have low credit balance. Please purchase more credits to continue.");
-      setShowErrorPopup(true);
-      return;
-    }
+    
     if(simulationData?.simulation && simulationData?.personas) {
       const prompt = customPrompt 
       ? customPrompt 
@@ -377,7 +399,7 @@ export default function SimulationViewPage() {
         setIsSimulationRunning(true);
         const data = await runSimulationAPI(prompt, modelInUse);
         console.log('API response:', data);
-        setAvailableCredits(data.creditInfo.remaining_credits);
+        // setAvailableCredits(data.creditInfo.remaining_credits);
         
         if (data.reply) {
           // Parse the response into messages
@@ -389,41 +411,45 @@ export default function SimulationViewPage() {
           
           // // Fetch updated messages after saving
           if (saveResult && simulationData.simulation.id) {
-            await fetchSimulationMessages(simulationData.simulation.id);
+            const updatedMessages = await fetchSimulationMessages(simulationData.simulation.id);
+            // Call handleFollowUpQuestions with the fresh messages
+            if (updatedMessages) {
+              handleFollowUpQuestions(updatedMessages);
+            }
           }
         }
       } catch (error) {
         console.error("Error running simulation:", error);
       } finally {
         setIsSimulationRunning(false);
-        // handleFollowUpQuestions();
+        // Don't call handleFollowUpQuestions here - it will be called after fetchSimulationMessages
       }
     }
   }
 
   // Function to extract participant array from any JSON structure
-function extractParticipantMessages(parsedResponse: any) {
-  // If it's already an array, return it directly
-  if (Array.isArray(parsedResponse)) {
-    return parsedResponse;
-  }
-  
-  // Look for any property that contains an array of objects with name/message
-  for (const [key, value] of Object.entries(parsedResponse)) {
-    if (Array.isArray(value) && value.length > 0) {
-      // Check if the first item has name and message properties
-      const firstItem = value[0];
-      if (firstItem && typeof firstItem === 'object' && 
-          ('name' in firstItem || 'Name' in firstItem) && 
-          ('message' in firstItem || 'Message' in firstItem)) {
-        return value;
+  function extractParticipantMessages(parsedResponse: any) {
+    // If it's already an array, return it directly
+    if (Array.isArray(parsedResponse)) {
+      return parsedResponse;
+    }
+    
+    // Look for any property that contains an array of objects with name/message
+    for (const [key, value] of Object.entries(parsedResponse)) {
+      if (Array.isArray(value) && value.length > 0) {
+        // Check if the first item has name and message properties
+        const firstItem = value[0];
+        if (firstItem && typeof firstItem === 'object' && 
+            ('name' in firstItem || 'Name' in firstItem) && 
+            ('message' in firstItem || 'Message' in firstItem)) {
+          return value;
+        }
       }
     }
+    
+    // If no valid array found, return empty array
+    return [];
   }
-  
-  // If no valid array found, return empty array
-  return [];
-}
 
 
   const sendMessage = async () => {
@@ -460,7 +486,7 @@ function extractParticipantMessages(parsedResponse: any) {
         const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction, currentAttachedImages);
         console.log('prompt1111',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
-        //4. send the messages to openai
+          //4. send the messages to openai
         runSimulation(prompt);
         // rest of the steps handled in run simulation
       }
@@ -541,42 +567,42 @@ function extractParticipantMessages(parsedResponse: any) {
 
   // Function to parse the simulation response
   const testParseSimulationResponse = (responseString: string) => {
-  try {
-    // Remove the initial "=" and any whitespace if it exists
-    const cleanedString = responseString.trim()
-    .replace(/^```json\s*/i, '') // remove leading ```json
-    .replace(/^```\s*/i, '')     // or just ```
-    .replace(/```$/, '')
-    .replace(/^\s*=\s*/, '');
-    const parsed = JSON.parse(cleanedString);
-    setMessages(parsed);
-    return parsed;
-  } catch (error) {
+    try {
+      // Remove the initial "=" and any whitespace if it exists
+      const cleanedString = responseString.trim()
+      .replace(/^```json\s*/i, '') // remove leading ```json
+      .replace(/^```\s*/i, '')     // or just ```
+      .replace(/```$/, '')
+      .replace(/^\s*=\s*/, '');
+      const parsed = JSON.parse(cleanedString);
+      setMessages(parsed);
+      return parsed;
+    } catch (error) {
 
-    // Show error popup instead of chat message
-    setErrorMessage("We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment.");
-    setShowErrorPopup(true);
-     // --- Fallback single-speaker parser ---
-     const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
-     console.log('fallbackMatch', fallbackMatch);
-     if (fallbackMatch) {
-       const [_, name, message] = fallbackMatch;
-       const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
-       setMessages(fallbackParsed);
-       return fallbackParsed;
-     }
+      // Show error popup instead of chat message
+      setErrorMessage("We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment.");
+      setShowErrorPopup(true);
+      // --- Fallback single-speaker parser ---
+      const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
+      console.log('fallbackMatch', fallbackMatch);
+      if (fallbackMatch) {
+        const [_, name, message] = fallbackMatch;
+        const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
+        setMessages(fallbackParsed);
+        return fallbackParsed;
+      }
 
-     // Show user-friendly error message
-     setMessages([{
-      name: "System",
-      message: "We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment."
-    }]);
+      // Show user-friendly error message
+      setMessages([{
+        name: "System",
+        message: "We are experiencing some difficulties connecting to OpenAI. Please try sending the previous message again in a moment."
+      }]);
 
-     // --- Log final error if both parsing strategies fail ---
-    console.error("Error parsing simulation response:", error);
-    return [];
-  }
-};
+      // --- Log final error if both parsing strategies fail ---
+      console.error("Error parsing simulation response:", error);
+      return [];
+    }
+  };
 
   // Function to save messages to the database
   const saveMessagesToDatabase = async (parsedMessages: Array<{name: string, message: string}>) => {
@@ -734,7 +760,7 @@ function extractParticipantMessages(parsedResponse: any) {
       try {
         const data = await runSimulationAPI(prompt);
         console.log('API response:', data);
-        setAvailableCredits(data.creditInfo.remaining_credits);
+        // setAvailableCredits(data.creditInfo.remaining_credits);
         
         if (data.reply) {
           // Parse the response into messages
@@ -762,9 +788,9 @@ function extractParticipantMessages(parsedResponse: any) {
     navigator.clipboard.writeText(transcript);
   };
   
-  useEffect(() => {
-      fetchUserCredits();
-  }, [params.user_id]);
+  // useEffect(() => {
+  //     fetchUserCredits();
+  // }, [params.user_id]);
 
   // Save instruction handler (expand as needed)
   const saveInstruction = async () => {
@@ -1033,19 +1059,34 @@ function extractParticipantMessages(parsedResponse: any) {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {simulation.discussion_questions.map((question, index) => (
-                          <div 
-                            key={index} 
-                            className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors border border-transparent hover:border-primary/20"
-                            onClick={() => handleQuestionSelect(question)}
-                            title="Click to add this question to your message"
-                          >
-                            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-medium">
-                              {index + 1}
+                        {simulation.discussion_questions.map((question, index) => {
+                          const isAsked = askedQuestionIndices.includes(index);
+                          return (
+                            <div 
+                              key={index} 
+                              className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border ${
+                                isAsked 
+                                  ? 'bg-green-50 border-green-200 opacity-75' 
+                                  : 'bg-gray-50 hover:bg-gray-100 border-transparent hover:border-primary/20'
+                              }`}
+                              onClick={() => handleQuestionSelect(question, index)}
+                              title={isAsked ? "This question has been asked" : "Click to add this question to your message"}
+                            >
+                              <div className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                                isAsked 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : 'bg-primary/10 text-primary'
+                              }`}>
+                                {isAsked ? '✓' : index + 1}
+                              </div>
+                              <p className={`text-sm leading-relaxed ${
+                                isAsked ? 'text-gray-500 line-through' : 'text-gray-700'
+                              }`}>
+                                {question}
+                              </p>
                             </div>
-                            <p className="text-sm text-gray-700 leading-relaxed">{question}</p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </>
@@ -1171,6 +1212,21 @@ function extractParticipantMessages(parsedResponse: any) {
                       {showInstructionBox ? "Hide AI instruction box" : "Not happy with the response? Instruct AI to improve its replies."}
                     </button>
                     
+                    {/* Ask Next Question Button */}
+                    {simulation.discussion_questions && simulation.discussion_questions.length > 0 && (
+                      <button
+                        type="button"
+                        className="block text-xs text-primary underline hover:text-primary/80 focus:outline-none mb-1"
+                        onClick={handleNextQuestion}
+                        disabled={askedQuestionIndices.length >= simulation.discussion_questions.length}
+                      >
+                        {askedQuestionIndices.length >= simulation.discussion_questions.length 
+                          ? "All questions asked" 
+                          : `Ask next question (${askedQuestionIndices.length + 1} of ${simulation.discussion_questions.length})`
+                        }
+                      </button>
+                    )}
+                    
                     <button
                       type="button"
                       className="block text-xs text-primary underline hover:text-primary/80 focus:outline-none"
@@ -1277,7 +1333,7 @@ function extractParticipantMessages(parsedResponse: any) {
                           <SelectContent>
                             {Object.entries(CREDIT_RATES).map(([model, rates]) => (
                               <SelectItem key={model} value={model}>
-                                {model} ({rates.usage})
+                                {model} 
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1292,12 +1348,6 @@ function extractParticipantMessages(parsedResponse: any) {
                     </div>
                   {/* )} */}
                   
-                  {/* Available credits display */}
-                  {availableCredits !== null && (
-                    <div className="text-right">
-                      <span className="text-sm text-gray-600">Available credits: {availableCredits.toFixed(2)}</span>
-                    </div>
-                  )}
                   
                   {/* End discussion button */}
                   {formattedMessages.length > 0 && (

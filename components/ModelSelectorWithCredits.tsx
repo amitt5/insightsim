@@ -11,7 +11,6 @@ import React from "react";
 interface ModelSelectorWithCreditsProps {
   modelInUse: string;
   setModelInUse: (model: string) => void;
-  availableCredits: number | null;
 }
 
 export const ModelSelectorWithCredits: React.FC<ModelSelectorWithCreditsProps> = ({ modelInUse, setModelInUse, availableCredits }) => (
@@ -26,13 +25,10 @@ export const ModelSelectorWithCredits: React.FC<ModelSelectorWithCreditsProps> =
       <SelectContent>
         {Object.entries(CREDIT_RATES).map(([model, rates]) => (
           <SelectItem key={model} value={model}>
-            {model} ({rates.usage})
+            {model} 
           </SelectItem>
         ))}
       </SelectContent>
     </Select>
-    <span className="text-sm text-gray-500">
-      Available credits: {availableCredits !== null ? availableCredits.toFixed(2) : '...'}
-    </span>
   </div>
 ); 

@@ -19,7 +19,7 @@ async function getSupabaseAndUser() {
   return { supabase, userId, userData }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { supabase, userId } = await getSupabaseAndUser()
      // Get the current session
@@ -44,6 +44,17 @@ export async function GET() {
     if (userData?.role !== 'admin') {
       query = query.or(`user_id.eq.${userId},user_id.is.null`)
     }
+    
+    // Add tag filtering if tags query parameter is provided
+    const url = new URL(request.url);
+    const tagsParam = url.searchParams.get('tags');
+    
+    if (tagsParam) {
+      const tags = tagsParam.split(',').map(tag => tag.trim());
+      // PostgreSQL array overlap operator - check if any of the requested tags exist in the persona's tags array
+      query = query.overlaps('tags', tags);
+    }
+    
     console.log('query111',userId, userData, query)
     const { data, error } = await query
 
@@ -115,6 +126,14 @@ export async function PUT(request: Request) {
         traits: personaData.traits,
         goal: personaData.goal,
         attitude: personaData.attitude,
+        family_status: personaData.family_status,
+        education_level: personaData.education_level,
+        income_level: personaData.income_level,
+        lifestyle: personaData.lifestyle,
+        category_products: personaData.category_products,
+        product_relationship: personaData.product_relationship,
+        category_habits: personaData.category_habits,
+        tags: personaData.tags,
         editable: true
       })
       .eq('id', personaData.id)

@@ -1312,165 +1312,223 @@ export default function LandingPage() {
         {/* Pricing Section */}
         <section id="pricing" className="py-20 bg-gray-50">
           <div className="container">
-            <div className="mx-auto max-w-6xl">
+            <div className="mx-auto max-w-7xl">
               {/* Section Header */}
               <div className="text-center mb-16">
                 <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
-                  Choose Your Research Approach
+                  Simple, Transparent Pricing
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  Whether you prefer hands-on control or want us to handle everything, we have the perfect solution for your research needs.
+                  Choose the plan that fits your research needs. Start small or go big - we've got you covered.
                 </p>
               </div>
 
-              {/* Main Two-Column Pricing Table */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+              {/* Three-Tier Pricing Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
                 
                 {/* Starter Plan */}
                 <div className="bg-white rounded-xl p-8 border-2 border-gray-200 h-full flex flex-col">
                   <div className="flex-grow">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Professional</h3>
-                    <p className="text-gray-600 text-sm mb-6">Best for Hands-on Researchers & Insight Managers</p>
-                                         <div className="mb-8">
-                       <div className="flex items-end">
-                        <p className="text-4xl font-bold text-gray-900 mb-2">$200</p>
-                         {/* <span className="text-5xl font-bold text-gray-900">$200/month</span> */}
-                         {/* <span className="text-lg font-medium text-gray-600 mb-1 ml-1">/month</span> */}
-                       </div>
-                       <p className="text-sm text-gray-600 mt-2">Per month</p>
-
-                     </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Starter</h3>
+                    <p className="text-gray-600 text-sm mb-6">Perfect for getting started with AI research</p>
+                    <div className="mb-8">
+                      <div className="flex items-end mb-2">
+                        <span className="text-4xl font-bold text-gray-900">Free</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="line-through text-gray-400">$20/month</span>
+                        <span className="ml-2 text-green-600 font-semibold">Introductory offer</span>
+                      </div>
+                    </div>
                     <ul className="space-y-4 text-gray-600">
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">Unlimited studies & simulations</span></span>
+                        <span className="text-base"><span className="font-semibold">5 simulations</span> per month</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">Unlimited AI personas</span></span>
+                        <span className="text-base"><span className="font-semibold">6 AI personas</span> per month</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">Full platform access</span></span>
+                        <span className="text-base"><span className="font-semibold">5 active studies</span> at a time</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base">Premium LLM models</span>
+                        <span className="text-base">Basic support</span>
                       </li>
                       <li className="flex items-start">
-                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base">Export to PDF/Word/Excel</span>
-                      </li>
-                      <li className="flex items-start">
-                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base">Priority email support</span>
+                        <svg className="w-5 h-5 text-red-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        <span className="text-base text-gray-400">No stimulus images</span>
                       </li>
                     </ul>
                   </div>
                   <Link href="/signup?plan=starter" className="mt-8">
-                    <Button className="w-full text-lg py-3">Get Started</Button>
+                    <Button className="w-full text-lg py-3">Get Started Free</Button>
                   </Link>
                 </div>
 
-                {/* Insight Partner Plan */}
+                {/* Professional Plan - Most Popular */}
                 <div className="bg-white rounded-xl p-8 border-2 border-primary h-full flex flex-col relative">
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-primary text-white px-4 py-1 rounded-full text-sm font-medium">Full Service</span>
+                    <span className="bg-primary text-white px-4 py-1 rounded-full text-sm font-medium">Most Popular</span>
                   </div>
                   <div className="flex-grow">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Insight Partner</h3>
-                    <p className="text-gray-600 text-sm mb-6"> Best for When You Need Expert-Led Research</p>
-                                         <div className="mb-8">
-                       <div className="flex items-end">
-                        <p className="text-4xl font-bold text-gray-900 mb-2">$2,300</p>
-                       </div>
-                       <p className="text-sm text-gray-600 mt-2">One-time engagement</p>
-                     </div>
-                    <div className="mb-6">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4">We do everything for you:</h4>
-                      <ul className="space-y-4 text-gray-600">
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                          <span className="text-base"><span className="font-semibold">Strategic Partnership</span></span>
-                        </li>
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                          <span className="text-base"><span className="font-semibold">Full Execution</span> (4-6 studies)</span>
-                        </li>
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                          <span className="text-base"><span className="font-semibold">Actionable Insights Report</span></span>
-                        </li>
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                          <span className="text-base">Dedicated research manager</span>
-                        </li>
-                        {/* <li className="flex items-start">
-                          <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                          <span className="text-base">Weekly progress updates</span>
-                        </li> */}
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                          <span className="text-base">Presentation-ready deliverables</span>
-                        </li>
-                      </ul>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Professional</h3>
+                    <p className="text-gray-600 text-sm mb-6">For serious researchers and insight teams</p>
+                    <div className="mb-8">
+                      <div className="flex items-end mb-2">
+                        <span className="text-4xl font-bold text-gray-900">$99</span>
+                        <span className="text-lg text-gray-600 ml-1">/month</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="line-through text-gray-400">$199/month</span>
+                        <span className="ml-2 text-green-600 font-semibold">Introductory offer</span>
+                      </div>
                     </div>
+                    <ul className="space-y-4 text-gray-600">
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base"><span className="font-semibold">100 simulations</span> per month</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base"><span className="font-semibold">8 AI personas</span> per month</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base"><span className="font-semibold">Unlimited active studies</span></span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base"><span className="font-semibold">Unlimited participants</span></span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base">Priority support</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base"><span className="font-semibold">Summary & themes</span></span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base"><span className="font-semibold">Stimulus images</span></span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base">Early access to beta features</span>
+                      </li>
+                    </ul>
                   </div>
-                                     <a href="mailto:amit@insightsim.ai?subject=Insight Partner Plan - Let's Discuss Your Research Needs" className="mt-8">
-                     <Button className="w-full text-lg py-3">Contact Sales</Button>
-                   </a>
+                  <Link href="/signup?plan=professional" className="mt-8">
+                    <Button className="w-full text-lg py-3">Start Professional</Button>
+                  </Link>
+                </div>
+
+                {/* Enterprise Plan */}
+                <div className="bg-white rounded-xl p-8 border-2 border-gray-200 h-full flex flex-col">
+                  <div className="flex-grow">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
+                    <p className="text-gray-600 text-sm mb-6">For large teams and organizations</p>
+                    <div className="mb-8">
+                      <div className="flex items-end mb-2">
+                        <span className="text-2xl font-bold text-gray-900">Contact for pricing</span>
+                      </div>
+                      <p className="text-sm text-gray-600">Custom solutions for your needs</p>
+                    </div>
+                    <ul className="space-y-4 text-gray-600">
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base"><span className="font-semibold">Unlimited everything</span></span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base">Multi-user accounts</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base">Team management</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base">Custom onboarding</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base">Dedicated account manager</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <span className="text-base">Dedicated support</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <a href="mailto:amit@insightsim.ai?subject=Enterprise Plan - Let's Discuss Your Needs" className="mt-8">
+                    <Button variant="outline" className="w-full text-lg py-3">Contact Sales</Button>
+                  </a>
                 </div>
 
               </div>
 
-              {/* Add-On Service Section */}
+              {/* Full Service Add-On Section */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 border border-blue-200">
                 <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Optional Add-On for Insight Partners</h3>
-                  <h4 className="text-xl font-semibold text-primary">Quantitative Validation</h4>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Additional Offer</h3>
+                  <h4 className="text-xl font-semibold text-primary">Full Service Research</h4>
                 </div>
                 
                 <div className="max-w-4xl mx-auto">
                   <p className="text-gray-700 text-center mb-8 text-lg">
-                    For clients who need to validate our qualitative findings at scale, we offer a seamless follow-up service.
+                    We conduct qualitative research using InsightSim and then validate findings with quantitative studies using real respondents.
                   </p>
                   
                   <div className="grid md:grid-cols-2 gap-8 items-center">
                     <div>
-                      <h5 className="text-lg font-semibold text-gray-900 mb-4">Service:</h5>
-                      <p className="text-gray-700 mb-6">
-                        We design and execute a full quantitative study based on the insights from our deep dive.
-                      </p>
+                      <h5 className="text-lg font-semibold text-gray-900 mb-4">What We Deliver:</h5>
                       <ul className="space-y-3 text-gray-700">
                         <li className="flex items-start">
                           <svg className="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                          <span>Survey design based on qualitative insights</span>
+                          <span><span className="font-semibold">Qualitative deep-dive</span> using AI personas</span>
                         </li>
                         <li className="flex items-start">
                           <svg className="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                          <span>Statistical validation of key findings</span>
+                          <span><span className="font-semibold">Survey design</span> based on qualitative insights</span>
                         </li>
                         <li className="flex items-start">
                           <svg className="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                          <span>Comprehensive quantitative report</span>
+                          <span><span className="font-semibold">Quantitative validation</span> with real respondents</span>
+                        </li>
+                        <li className="flex items-start">
+                          <svg className="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                          <span><span className="font-semibold">Statistical analysis</span> and validation</span>
+                        </li>
+                        <li className="flex items-start">
+                          <svg className="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                          <span><span className="font-semibold">Executive summary</span> with actionable recommendations</span>
+                        </li>
+                        <li className="flex items-start">
+                          <svg className="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                          <span>Presentation-ready deliverables</span>
                         </li>
                       </ul>
                     </div>
                     
-                    
                     <div className="bg-white rounded-lg p-6 border border-blue-200">
-                      <h5 className="text-lg font-semibold text-gray-900 mb-4">Investment:</h5>
+                      <h5 className="text-lg font-semibold text-gray-900 mb-4 text-center">Investment:</h5>
                       <div className="text-center">
-
-                        
-                        <p className="text-4xl font-bold text-gray-900 mb-2">$1,800</p>
-                        <p className="text-gray-600 mb-4">+ Fieldwork Costs</p>
-                        <p className="text-sm text-gray-500">(Fieldwork costs billed separately at cost)</p>
+                        <p className="text-2xl font-bold text-gray-900 mb-2">Contact for pricing</p>
+                        <p className="text-gray-600 mb-4">Tailored to your research scope</p>
                       </div>
                       <div className="mt-6 pt-4 border-t border-gray-200">
                         <p className="text-sm text-gray-600 text-center">
-                          Typical fieldwork costs: $1,000-$7,000 depending on sample size and targeting
+                          Pricing depends on study complexity, sample size, and research objectives
                         </p>
+                      </div>
+                      <div className="mt-4">
+                        <a href="mailto:amit@insightsim.ai?subject=Full Service Research - Let's Discuss Your Project" className="w-full">
+                          <Button variant="outline" className="w-full">Get Proposal</Button>
+                        </a>
                       </div>
                     </div>
                   </div>

@@ -309,7 +309,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         // Update simulation data with uploaded URLs
         setSimulationData(prev => ({
           ...prev,
-          stimulus_media_url: [...prev.stimulus_media_url.filter(url => url !== 'pending_upload'), ...mediaUrls]
+          stimulus_media_url: [...getStimulusUrlsAsArray(prev.stimulus_media_url).filter(url => url !== 'pending_upload'), ...mediaUrls]
         }));
         
         // Also save to database immediately
@@ -733,9 +733,16 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     return imageExtensions.some(ext => url.toLowerCase().includes(ext));
   };
 
+  // Helper function to ensure stimulus_media_url is always treated as an array
+  const getStimulusUrlsAsArray = (urls: any) => {
+    if (!urls) return [];
+    return Array.isArray(urls) ? urls : [urls];
+  };
+
   // Get uploaded files that aren't pending
   const getUploadedFiles = () => {
-    return simulationData.stimulus_media_url.filter(url => url !== 'pending_upload');
+    const urls = getStimulusUrlsAsArray(simulationData.stimulus_media_url);
+    return urls.filter(url => url !== 'pending_upload');
   };
 
   

@@ -133,6 +133,7 @@ export async function PUT(request: Request) {
         category_products: personaData.category_products,
         product_relationship: personaData.product_relationship,
         category_habits: personaData.category_habits,
+        category_traits: personaData.category_traits,
         tags: personaData.tags,
         editable: true
       })

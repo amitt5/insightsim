@@ -121,6 +121,15 @@ const CATEGORY_HABITS_EXAMPLES = [
   "Shops for clothes seasonally during sales. Prefers to try on items in-store rather than buying online. Follows fashion influencers for style inspiration."
 ];
 
+const CATEGORY_TRAITS_EXAMPLES = [
+  "Oily skin, prone to acne. Dark brown hair, prefers short hairstyles. Lactose intolerant. Vegetarian for ethical reasons.",
+  "Sensitive skin, allergic to fragrances. Natural blonde hair, wavy texture. Gluten-free diet. Prefers organic and cruelty-free products.",
+  "Combination skin, T-zone gets oily. Black curly hair, uses sulfate-free products. Pescatarian diet. Has a nut allergy.",
+  "Dry skin, especially in winter. Red hair, straight and fine. Vegan lifestyle. Prefers sustainable and eco-friendly brands.",
+  "Normal skin, rarely breaks out. Brown hair with gray streaks. Keto diet follower. Has Type 2 diabetes, watches sugar intake.",
+  "Mature skin with fine lines. Silver hair, professionally colored monthly. Mediterranean diet. Takes supplements for joint health."
+];
+
 const TAG_SUGGESTIONS = [
   "tech-savvy", "budget-conscious", "luxury-buyer", "early-adopter", "traditionalist", "millennial", "gen-z", "gen-x", "baby-boomer", "urban", "suburban", "rural", "health-conscious", "eco-friendly", "brand-loyal", "price-sensitive", "convenience-focused", "social-media-active", "research-oriented", "impulse-buyer", "quality-focused", "trendsetter", "risk-averse", "adventurous", "family-oriented", "career-driven", "lifestyle-focused", "value-seeker", "premium-preferred", "mobile-first", "online-shopper", "in-store-preferred", "influencer-driven", "peer-influenced", "expert-opinion", "review-dependent", "feature-focused", "brand-conscious", "sustainability-minded", "innovation-seeker"
 ];
@@ -158,6 +167,7 @@ export function CreatePersonaDialog({
     category_products: "",
     product_relationship: "",
     category_habits: "",
+    category_traits: "",
   });
 
   // State for tags
@@ -196,6 +206,7 @@ export function CreatePersonaDialog({
           : initialData.category_products || "",
         product_relationship: initialData.product_relationship || "",
         category_habits: initialData.category_habits || "",
+        category_traits: initialData.category_traits || "",
       });
       
       // Set tags from initialData
@@ -311,6 +322,8 @@ export function CreatePersonaDialog({
           category_products: "",
           product_relationship: "",
           category_habits: "",
+          category_traits: "",
+          category_traits: "",
         });
       }
       
@@ -912,6 +925,78 @@ export function CreatePersonaDialog({
                     </TooltipTrigger>
                     <TooltipContent side="left">
                       Generate random category habits with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category_traits">Category Traits</Label>
+            <div className="relative">
+              <Textarea 
+                id="category_traits" 
+                rows={3}
+                placeholder="Describe physical traits, dietary preferences, allergies..." 
+                value={formData.category_traits}
+                onChange={(e) => handleChange("category_traits", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 top-0">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("category_traits", pickRandom(CATEGORY_TRAITS_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6 mt-2"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate random category traits with AI
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category_traits">Category Traits</Label>
+            <div className="relative">
+              <Textarea 
+                id="category_traits" 
+                rows={3}
+                placeholder="Describe physical traits, dietary preferences, allergies..." 
+                value={formData.category_traits}
+                onChange={(e) => handleChange("category_traits", e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 top-0">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleChange("category_traits", pickRandom(CATEGORY_TRAITS_EXAMPLES))}
+                        tabIndex={-1}
+                        className="p-0 h-6 w-6 mt-2"
+                        style={{ minWidth: 0 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Generate random category traits with AI
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

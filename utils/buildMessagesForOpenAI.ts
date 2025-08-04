@@ -490,6 +490,7 @@ interface Persona {
   category_products?: string[]; // e.g., ["Metrobank Rewards Visa", "GCash", "BDO Amex"]
   product_relationship?: string; // Qualitative relationship with products used
   category_habits?: string; // Specific behaviors and routines related to product category
+  category_traits?: string; // Specific traits related to product category
 }
 \`\`\`
 
@@ -520,7 +521,7 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation): stri
   const systemPrompt = `You are an expert persona generator for qualitative market research with 15 years of experience at top agencies like Kantar and Ipsos. You specialize in analyzing research briefs and creating realistic, diverse personas that represent the target audience described in the brief. Your output must be a valid JSON array.`;
 
   // 2. Define the task with brief-specific context
-  const taskDefinition = `Your task is to analyze the provided research brief and generate 3 distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
+  const taskDefinition = `Your task is to analyze the provided research brief and generate 7-8 distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
 
   // 3. Provide the research context
   const researchContext = `
@@ -546,7 +547,7 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation): stri
 
     // 5. Specify the exact output format
     const outputFormatInstruction = `
-  Your response MUST be a single, valid JSON array containing 3-5 persona objects. The structure of each object must conform to the following TypeScript interface:
+  Your response MUST be a single, valid JSON array containing 7-8 persona objects. The structure of each object must conform to the following TypeScript interface:
   \`\`\`typescript
   interface Persona {
     name: string; // e.g., "Sarah Mitchell"
@@ -566,6 +567,7 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation): stri
     category_products?: string[]; // e.g., ["Sunsilk Damage Repair", "Head & Shoulders Cool Menthol"]
     product_relationship?: string; // Qualitative relationship with products used
     category_habits?: string; // Specific behaviors and routines related to product category
+    category_traits?: string; // Specific traits related to product category
   }
   \`\`\`
 

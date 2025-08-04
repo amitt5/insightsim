@@ -249,6 +249,12 @@ export function PersonaCard({
                 <p className="text-xs text-gray-600 line-clamp-3">{persona.category_habits}</p>
               </div>
             )}
+            {persona.category_traits && (
+              <div className="mb-2">
+                <span className="text-xs font-medium text-gray-500">CATEGORY TRAITS</span>
+                <p className="text-xs text-gray-600 line-clamp-3">{persona.category_traits}</p>
+              </div>
+            )}
 
           </div>
         </CardContent>

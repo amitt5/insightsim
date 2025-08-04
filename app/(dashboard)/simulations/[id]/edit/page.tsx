@@ -1277,6 +1277,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
           category_products: persona.category_products,
           product_relationship: persona.product_relationship,
           category_habits: persona.category_habits,
+          category_traits: persona.category_traits,
           tags: persona.tags,
         };
         

@@ -1101,7 +1101,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         study_type: simulationData.study_type,
         mode: simulationData.mode,
         topic: simulationData.topic,
-        stimulus_media_url: simulationData.stimulus_media_url.join(','),
+        stimulus_media_url: '',
         turn_based: simulationData.turn_based,
         num_turns: parseInt(simulationData.num_turns),
         brief_text: simulationData.brief_text,

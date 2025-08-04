@@ -217,6 +217,10 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       setIsSaving(true);
       setSaveError(null);
       
+      const questionsString = Array.isArray(simulationData.discussion_questions) 
+      ? simulationData.discussion_questions.join('\n')
+      : simulationData.discussion_questions;
+
       const response = await fetch(`/api/simulations/${id}`, {
         method: 'PUT',
         headers: {
@@ -224,8 +228,8 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         },
         body: JSON.stringify({
           ...simulationData,
-          discussion_questions: simulationData.discussion_questions
-            ? simulationData.discussion_questions.split('\n').filter(line => line.trim() !== '')
+          discussion_questions: questionsString
+            ? questionsString.split('\n').filter(line => line.trim() !== '')
             : [],
           num_turns: parseInt(simulationData.num_turns),
           personas: selectedPersonas,
@@ -1084,6 +1088,10 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     setIsGeneratingPersonas(true);
     try {
       // Create simulation object for the prompt - cast to any to avoid type issues
+      console.log('simulationData111', simulationData);
+      const questionsString = Array.isArray(simulationData.discussion_questions) 
+    ? simulationData.discussion_questions.join('\n')
+    : simulationData.discussion_questions;
       const simulationForPrompt = {
         id: id,
         user_id: '',
@@ -1098,8 +1106,8 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         num_turns: parseInt(simulationData.num_turns),
         brief_text: simulationData.brief_text,
         brief_source: simulationData.brief_source,
-        discussion_questions: simulationData.discussion_questions
-          ? simulationData.discussion_questions.split('\n').filter(line => line.trim() !== '')
+        discussion_questions: questionsString
+          ? questionsString.split('\n').filter(line => line.trim() !== '')
           : []
       } as Simulation;
 

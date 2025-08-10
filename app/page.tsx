@@ -1329,29 +1329,23 @@ export default function LandingPage() {
                 {/* Starter Plan */}
                 <div className="bg-white rounded-xl p-8 border-2 border-gray-200 h-full flex flex-col">
                   <div className="flex-grow">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Starter</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">Starter</h3>
+                    <Link href="/signup?plan=starter" className="block mb-4">
+                      <Button className="w-full text-lg py-3">Get Started Free</Button>
+                    </Link>
                     <p className="text-gray-600 text-sm mb-6">Perfect for getting started with AI research</p>
-                    <div className="mb-8">
-                      <div className="flex items-end mb-2">
-                        <span className="text-4xl font-bold text-gray-900">Free</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="line-through text-gray-400">$20/month</span>
-                        <span className="ml-2 text-green-600 font-semibold">Introductory offer</span>
-                      </div>
-                    </div>
-                    <ul className="space-y-4 text-gray-600">
+                    <ul className="space-y-4 text-gray-600 mb-8">
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">5 simulations</span> per month</span>
+                        <span className="text-base">5 simulations per month</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">6 AI personas</span> per month</span>
+                        <span className="text-base">6 AI personas per month</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">5 active studies</span> at a time</span>
+                        <span className="text-base">5 active studies at a time</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -1363,9 +1357,6 @@ export default function LandingPage() {
                       </li>
                     </ul>
                   </div>
-                  <Link href="/signup?plan=starter" className="mt-8">
-                    <Button className="w-full text-lg py-3">Get Started Free</Button>
-                  </Link>
                 </div>
 
                 {/* Professional Plan - Most Popular */}
@@ -1374,34 +1365,27 @@ export default function LandingPage() {
                     <span className="bg-primary text-white px-4 py-1 rounded-full text-sm font-medium">Most Popular</span>
                   </div>
                   <div className="flex-grow">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Professional</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">Professional</h3>
+                    <a href="mailto:amit@insightsim.ai?subject=Professional Plan Demo Request" className="block mb-4">
+                      <Button className="w-full text-lg py-3">Book a Demo</Button>
+                    </a>
                     <p className="text-gray-600 text-sm mb-6">For serious researchers and insight teams</p>
-                    <div className="mb-8">
-                      <div className="flex items-end mb-2">
-                        <span className="text-4xl font-bold text-gray-900">$99</span>
-                        <span className="text-lg text-gray-600 ml-1">/month</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="line-through text-gray-400">$199/month</span>
-                        <span className="ml-2 text-green-600 font-semibold">Introductory offer</span>
-                      </div>
-                    </div>
-                    <ul className="space-y-4 text-gray-600">
+                    <ul className="space-y-4 text-gray-600 mb-8">
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">100 simulations</span> per month</span>
+                        <span className="text-base">100 simulations per month</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">8 AI personas</span> per month</span>
+                        <span className="text-base">8 AI personas per month</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">Unlimited active studies</span></span>
+                        <span className="text-base">Unlimited active studies</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">Unlimited participants</span></span>
+                        <span className="text-base">Unlimited participants</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -1409,11 +1393,11 @@ export default function LandingPage() {
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">Summary & themes</span></span>
+                        <span className="text-base">Summary & themes</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">Stimulus images</span></span>
+                        <span className="text-base">Stimulus images</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -1421,26 +1405,20 @@ export default function LandingPage() {
                       </li>
                     </ul>
                   </div>
-                  <Link href="/signup?plan=professional" className="mt-8">
-                    <Button className="w-full text-lg py-3">Start Professional</Button>
-                  </Link>
                 </div>
 
                 {/* Enterprise Plan */}
                 <div className="bg-white rounded-xl p-8 border-2 border-gray-200 h-full flex flex-col">
                   <div className="flex-grow">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">Enterprise</h3>
+                    <a href="mailto:amit@insightsim.ai?subject=Enterprise Plan - Let's Discuss Your Needs" className="block mb-4">
+                      <Button variant="outline" className="w-full text-lg py-3">Contact Sales</Button>
+                    </a>
                     <p className="text-gray-600 text-sm mb-6">For large teams and organizations</p>
-                    <div className="mb-8">
-                      <div className="flex items-end mb-2">
-                        <span className="text-2xl font-bold text-gray-900">Contact for pricing</span>
-                      </div>
-                      <p className="text-sm text-gray-600">Custom solutions for your needs</p>
-                    </div>
-                    <ul className="space-y-4 text-gray-600">
+                    <ul className="space-y-4 text-gray-600 mb-8">
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        <span className="text-base"><span className="font-semibold">Unlimited everything</span></span>
+                        <span className="text-base">Unlimited everything</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="w-5 h-5 text-green-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -1464,9 +1442,6 @@ export default function LandingPage() {
                       </li>
                     </ul>
                   </div>
-                  <a href="mailto:amit@insightsim.ai?subject=Enterprise Plan - Let's Discuss Your Needs" className="mt-8">
-                    <Button variant="outline" className="w-full text-lg py-3">Contact Sales</Button>
-                  </a>
                 </div>
 
               </div>

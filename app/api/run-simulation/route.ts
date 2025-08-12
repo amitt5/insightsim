@@ -10,6 +10,13 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+const openRouterai = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+});
+
+
+
 export async function POST(req: Request) {
   let userId: string | undefined;
   
@@ -20,21 +27,32 @@ export async function POST(req: Request) {
     userId = session?.user?.id;
     
     const { messages, model } = await req.json();
-    console.log('prompt123', messages);
-    
-    // Call OpenAI
-    const completion = await openai.chat.completions.create({
+    console.log('prompt123', messages, model);
+    let completion;
+    // Call OpenAI or groq
+    if (model === 'groq') {
+      completion = await openRouterai.chat.completions.create({
+        model: 'anthropic/claude-3-haiku',
+        messages,
+        temperature: 0.9,
+        max_tokens: 3000,
+        response_format: { "type": "json_object" }
+      });
+    } else {
+    completion = await openai.chat.completions.create({
       model: model,
       messages,
       temperature: 0.9,
       max_tokens: 3000,
       response_format: { "type": "json_object" }
     });
-
+    }
     // Extract usage info
     const usage = completion.usage;
     console.log('amit-runSimulationAPI-completion', completion);
     console.log('amit-runSimulationAPI-completion', completion.choices[0].message);
+    const finishReason = completion.choices[0].finish_reason;
+    console.log('amit-runSimulationAPI-finishReason', finishReason);
     console.log("Input tokens:", usage?.prompt_tokens);
     console.log("Output tokens:", usage?.completion_tokens);
     console.log("Total tokens:", usage?.total_tokens);

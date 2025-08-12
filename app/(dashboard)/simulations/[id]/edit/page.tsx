@@ -1116,9 +1116,14 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       console.log('Brief persona generation prompt:', prompt);
       
       const messages: ChatCompletionMessageParam[] = [
-        { role: "system", content: prompt }
+        { 
+          role: "system", 
+          content: "You are a persona generator. You MUST return exactly 3 personas as a valid JSON array. Never return just 1 persona. Always return an array with exactly 3 objects." 
+        },
+        { 
+          role: "user", content: prompt }
       ];
-      const result = await runSimulationAPI(messages);
+      const result = await runSimulationAPI(messages, 'groq');
 
       try {
         // Parse the JSON response

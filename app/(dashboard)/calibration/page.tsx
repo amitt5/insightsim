@@ -7,8 +7,11 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Eye, Play, BarChart2 } from "lucide-react"
 import { CalibrationSession } from "@/utils/types"
 import { useState, useEffect } from "react"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function CalibrationPage() {
+  const { user, loading: authLoading } = useAuth()
+  const isAdmin = user?.role === 'admin'
   // Mock data for calibrations
   const calibrations = [
     {
@@ -117,12 +120,19 @@ export default function CalibrationPage() {
     <div className="space-y-6 px-2 sm:px-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold">Real vs AI Calibration</h1>
-        <Link href="/calibration/new">
-          <Button className="w-full sm:w-auto">
+        {isAdmin ? (
+          <Link href="/calibration/new">
+            <Button className="w-full sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              New Calibration
+            </Button>
+          </Link>
+        ) : (
+          <Button className="w-full sm:w-auto" disabled title="Admins only">
             <Plus className="mr-2 h-4 w-4" />
             New Calibration
           </Button>
-        </Link>
+        )}
       </div>
     {loading && <div>Loading...</div>}
     {error && <div>{error}</div>}

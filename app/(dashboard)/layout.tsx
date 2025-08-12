@@ -108,12 +108,12 @@ export default function DashboardLayout({
                       </div>
                     </div>
                     {/* {user?.role === 'admin' && ( */}
-                    <button
+                    {/* <button
                       onClick={handleUpgrade}
                       className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                     >
                       Upgrade to Premium
-                    </button>
+                    </button> */}
                     {/* )} */}
                     {/* Mobile-only navigation links */}
                     <div className="lg:hidden">

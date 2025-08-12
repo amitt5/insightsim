@@ -1867,8 +1867,8 @@ Key Questions:
 
                 {/* AI Persona Assistant Dialog - Placeholder for now */}
                 <Dialog open={aiPersonaAssistantOpen} onOpenChange={setAiPersonaAssistantOpen}>
-                  <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden">
-                    <DialogHeader>
+                  <DialogContent className="sm:max-w-[600px] max-h-[90vh] p-0 flex flex-col">
+                    <DialogHeader className="px-6 pt-6">
                       <DialogTitle className="flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-primary" />
                         AI Persona Assistant
@@ -1892,7 +1892,7 @@ Key Questions:
                       </div>
                     </DialogHeader>
 
-                    <div className="space-y-6 py-6">
+                    <div className="space-y-6 px-6 py-6 flex-1 overflow-y-auto">
                       {/* Step 1: Problem Solved (Mandatory) */}
                       {aiPersonaStep === 1 && (
                         <div className="space-y-4">
@@ -2114,7 +2114,7 @@ Key Questions:
                       )}
                     </div>
 
-                    <DialogFooter className="flex justify-between">
+                    <DialogFooter className="flex justify-between px-6 py-4 border-t">
                       <div className="flex gap-2">
                         {aiPersonaStep > 1 && (
                           <Button variant="outline" onClick={handleAiPersonaBack}>

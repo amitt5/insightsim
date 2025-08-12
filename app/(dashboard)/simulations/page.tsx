@@ -69,7 +69,7 @@ export default function SimulationsPage() {
       }
 
       const result = await response.json();
-      console.log('Simulation deleted successfully:', result);
+      // replaceme: console.log('Simulation deleted successfully:', result);
       
       // Remove from local state
       setSimulations(prev => prev.filter(sim => sim.id !== deleteConfirmId));
@@ -150,7 +150,7 @@ export default function SimulationsPage() {
         }
         
         const data: SimulationsApiResponse = await response.json();
-        console.log('SimulationsApiResponse', data);
+        // replaceme: console.log('SimulationsApiResponse', data);
         // Map the API data to the view model
         const mappedSimulations = data.simulations.map(sim => ({
           id: sim.id,

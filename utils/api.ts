@@ -34,7 +34,7 @@ export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], mod
         }
         
         const data = await response.json();
-        console.log('API Response:', data);
+        // replaceme: console.log('API Response:', data);
 
         // Call deduct-credits endpoint after successful simulation
         // const deductResponse = await fetch('/api/deduct-credits', {

@@ -78,7 +78,7 @@ export default function LoginPage() {
       setLoading(true)
       const supabase = createClientComponentClient()
       
-      console.log("🚪 Calling signInWithPassword...")
+      // replaceme: console.log("🚪 Calling signInWithPassword...")
       
       // Create auth state change listener
       let authStateResolver: any = null
@@ -94,10 +94,10 @@ export default function LoginPage() {
         authStateRejector = reject
         
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          console.log("🔄 Auth state changed:", event, !!session)
+          // replaceme: console.log("🔄 Auth state changed:", event, !!session)
           
           if (event === 'SIGNED_IN' && session) {
-            console.log("✅ Auth state: SIGNED_IN detected")
+            // replaceme: console.log("✅ Auth state: SIGNED_IN detected")
             subscription.unsubscribe()
             resolve({ data: { session, user: session.user }, error: null })
           }
@@ -119,14 +119,14 @@ export default function LoginPage() {
       // Handle the signIn response for immediate errors (like invalid credentials)
       signInPromise.then(response => {
         if (response.error) {
-          console.log("❌ SignIn immediate error:", response.error.message)
+          // replaceme: console.log("❌ SignIn immediate error:", response.error.message)
           // Cancel the auth state listener
           if (authStateRejector) {
             authStateRejector(response.error)
           }
         }
       }).catch(error => {
-        console.log("❌ SignIn promise error:", error)
+        // replaceme: console.log("❌ SignIn promise error:", error)
         if (authStateRejector) {
           authStateRejector(error)
         }
@@ -136,7 +136,7 @@ export default function LoginPage() {
       const result = await authStatePromise
       
       if (result.error) {
-        console.log("❌ Login error:", result.error.message)
+        // replaceme: console.log("❌ Login error:", result.error.message)
         
         // Log the authentication error
         logErrorNonBlocking(
@@ -166,16 +166,16 @@ export default function LoginPage() {
         return
       }
       
-      console.log("✅ Login success via auth state change!")
+      // replaceme: console.log("✅ Login success via auth state change!")
       
       // Small delay to ensure session is fully established
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      console.log("🔄 About to redirect to /simulations...")
+      // replaceme: console.log("🔄 About to redirect to /simulations...")
       router.push("/simulations")
       
     } catch (error: any) {
-      console.log("💥 Catch block error:", error.message)
+      // replaceme: console.log("💥 Catch block error:", error.message)
       
       // Log the catch block error
       logErrorNonBlocking(
@@ -209,7 +209,7 @@ export default function LoginPage() {
         })
       }
     } finally {
-      console.log("🏁 Finally block - setting loading to false")
+      // replaceme: console.log("🏁 Finally block - setting loading to false")
       setLoading(false)
     }
   }

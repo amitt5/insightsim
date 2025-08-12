@@ -101,7 +101,7 @@ export default function CalibrationDetailPage() {
   }
 
   const generateAiTranscript = () => {
-    console.log('generateAiTranscript', calibration)
+    // replaceme: console.log('generateAiTranscript', calibration)
     runSimulation();
   }
 
@@ -113,16 +113,16 @@ export default function CalibrationDetailPage() {
   // }, [params.user_id]);
 
   const compareTranscripts = async() => {
-    console.log('compareTranscripts', calibrationSession)
+    // replaceme: console.log('compareTranscripts', calibrationSession)
 
     const prompt = buildPersonaImprovementPrompt(calibrationSession?.transcript_text || '',calibrationSession?.simulated_transcript || '', calibrationPersonas,calibrationSession?.persona_mapping || {} );
-    console.log('prompt-compareTranscripts', prompt);
+    // replaceme: console.log('prompt-compareTranscripts', prompt);
 
     const savedResponse = getSavedOpenAIResponse();
     if (savedResponse) {
-      console.log("Loaded saved response:", savedResponse);
+      // replaceme: console.log("Loaded saved response:", savedResponse);
       const parsedSavedResponse: any = parseSimulationResponse(savedResponse.reply);
-      console.log('Parsed saved response:', parsedSavedResponse);
+      // replaceme: console.log('Parsed saved response:', parsedSavedResponse);
       saveComparisonSummary(parsedSavedResponse.transcript_differences);
       savePersonaImprovement(parsedSavedResponse.persona_improvements);
     } else {
@@ -133,7 +133,7 @@ export default function CalibrationDetailPage() {
   }
 
   const saveComparisonSummary = async(transcript_differences: string[]) => {
-    console.log('savePersonaImprovement', calibrationSession)
+    // replaceme: console.log('savePersonaImprovement', calibrationSession)
     // setCalibrationSession({
     //   ...calibrationSession,
     //   user_id: calibrationSession?.user_id || "",
@@ -154,17 +154,17 @@ export default function CalibrationDetailPage() {
       }),
     });
     if (response.ok) {
-      console.log('response', response)
+      // replaceme: console.log('response', response)
       fetchCalibrationSessionData();
     }
   }
 
   const makeOpenAIRequest = async(prompt: any) => {
-    console.log('compareTranscripts', calibrationSession)
+    // replaceme: console.log('compareTranscripts', calibrationSession)
 
     try {
       const data = await runSimulationAPI(prompt, modelInUse);
-      console.log('API response:', data);
+      // replaceme: console.log('API response:', data);
       // setAvailableCredits(data.creditInfo.remaining_credits);
      
       saveOpenAIResponse(data);
@@ -172,7 +172,7 @@ export default function CalibrationDetailPage() {
       if (data.reply) {
         // Parse the response into messages
         const parsedResponse: any = parseSimulationResponse(data.reply);
-        console.log('Parsed messages:', parsedResponse);
+        // replaceme: console.log('Parsed messages:', parsedResponse);
         saveComparisonSummary(parsedResponse.transcript_differences);
         savePersonaImprovement(parsedResponse.persona_improvements);
       }
@@ -199,7 +199,7 @@ export default function CalibrationDetailPage() {
   }
 
   const savePersonaImprovement = async(persona_improvements: PersonaImprovement[]) => {
-    console.log('savePersonaImprovement', persona_improvements)
+    // replaceme: console.log('savePersonaImprovement', persona_improvements)
     
     try {
       // Prepare the data for API call
@@ -224,7 +224,7 @@ export default function CalibrationDetailPage() {
       }
       
       const result = await response.json();
-      console.log('Saved persona improvements:', result.data);
+      // replaceme: console.log('Saved persona improvements:', result.data);
       
       // Optionally update UI or show success message
       // setSuccessMessage('Persona improvements saved successfully');
@@ -239,7 +239,7 @@ export default function CalibrationDetailPage() {
   }
 
   const runSimulation = async () => {
-    console.log('runSimulationCalled', calibrationSession);
+    // replaceme: console.log('runSimulationCalled', calibrationSession);
     // if (availableCredits && availableCredits < 10) {
     //   setErrorMessage("You have low credit balance. Please purchase more credits to continue.");
     //   setShowErrorPopup(true);
@@ -259,16 +259,16 @@ export default function CalibrationDetailPage() {
         created_at: calibrationSession.created_at || ''
       }
       const prompt = prepareInitialPrompt(simulation, calibrationPersonas);
-      console.log('prompt123', prompt);
+      // replaceme: console.log('prompt123', prompt);
     
       try {
         const data = await runSimulationAPI(prompt, modelInUse);
-        console.log('API response:', data);
+        // replaceme: console.log('API response:', data);
         // setAvailableCredits(data.creditInfo.remaining_credits);
         if (data.reply) {
           // Parse the response into messages
           const parsedMessages = parseSimulationResponse(data.reply);
-          console.log('Parsed messages111:', parsedMessages);
+          // replaceme: console.log('Parsed messages111:', parsedMessages);
           // setSimulatedTranscript(parsedMessages)
           formatAndSaveTranscript(parsedMessages)
         }
@@ -283,15 +283,15 @@ export default function CalibrationDetailPage() {
     if (!parsedMessages.length) return;
     // Build the transcript string
     const transcript = parsedMessages.map(m => `${m.name}: ${m.message}`).join("\n");
-    console.log('copyTranscript', parsedMessages);
-    console.log('copyTranscript1', transcript);
+    // replaceme: console.log('copyTranscript', parsedMessages);
+    // replaceme: console.log('copyTranscript1', transcript);
     setCalibrationSession({
       ...calibrationSession,
       user_id: calibrationSession?.user_id || "",
       simulated_transcript: transcript,
       status: "completed"
     });
-    console.log('calibrationSession123', calibrationSession);
+    // replaceme: console.log('calibrationSession123', calibrationSession);
 
     const response = await fetch(`/api/calibration_sessions/${calibrationSession?.id}`, {
       method: 'PATCH',
@@ -306,7 +306,7 @@ export default function CalibrationDetailPage() {
       }),
     });
     if (response.ok) {
-      console.log('response', response)
+      // replaceme: console.log('response', response)
       fetchCalibrationSessionData();
     }
 
@@ -388,7 +388,7 @@ export default function CalibrationDetailPage() {
         throw new Error(result.error);
       }
       
-      console.log('Fetched persona improvements:', result.data);
+      // replaceme: console.log('Fetched persona improvements:', result.data);
       setPersonaImprovements(result.data || []);
     } catch (err: any) {
       console.error("Failed to fetch persona improvements:", err);

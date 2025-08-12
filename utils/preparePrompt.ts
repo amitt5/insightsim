@@ -24,7 +24,7 @@ interface  PersonaMapping  {
     // Step 1: Participants
     prompt += `\nThere are ${personas.length} participants:\n`;
     personas.forEach((persona, index) => {
-      console.log('persona:' + index, persona);
+      // replaceme: console.log('persona:' + index, persona);
       prompt += `Participant ${index + 1}: ${persona.name}`;
       if (persona.gender) {
         prompt += ` (${persona.gender})`;

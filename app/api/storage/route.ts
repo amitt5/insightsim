@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log(`Creating signed URL for bucket: ${bucket}, path: ${path}`);
+    // replaceme: console.log(`Creating signed URL for bucket: ${bucket}, path: ${path}`);
     
     const supabase = createRouteHandlerClient({ cookies });
 
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log(`Successfully created signed URL for ${path}`);
+    // replaceme: console.log(`Successfully created signed URL for ${path}`);
     return NextResponse.json({ url: data.signedUrl });
   } catch (error: any) {
     console.error('Error in storage API:', error);
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
 
 
 
-    console.log(`Uploading file to bucket: ${bucket}, path: ${filePath}`);
+    // replaceme: console.log(`Uploading file to bucket: ${bucket}, path: ${filePath}`);
 
     // Upload to Supabase storage
     const { data, error } = await supabase.storage
@@ -153,7 +153,7 @@ export async function POST(request: Request) {
       .from(bucket)
       .getPublicUrl(filePath);
 
-    console.log(`Successfully uploaded file: ${filePath}`);
+    // replaceme: console.log(`Successfully uploaded file: ${filePath}`);
     
     return NextResponse.json({
       success: true,

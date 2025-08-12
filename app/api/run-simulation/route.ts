@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     userId = session?.user?.id;
     
     const { messages, model } = await req.json();
-    console.log('prompt123', messages, model);
+    // replaceme: console.log('prompt123', messages, model);
     let completion;
     // Call OpenAI or groq
     if (model === 'groq') {
@@ -49,13 +49,13 @@ export async function POST(req: Request) {
     }
     // Extract usage info
     const usage = completion.usage;
-    console.log('amit-runSimulationAPI-completion', completion);
-    console.log('amit-runSimulationAPI-completion', completion.choices[0].message);
+    // replaceme: console.log('amit-runSimulationAPI-completion', completion);
+    // replaceme: console.log('amit-runSimulationAPI-completion', completion.choices[0].message);
     const finishReason = completion.choices[0].finish_reason;
-    console.log('amit-runSimulationAPI-finishReason', finishReason);
-    console.log("Input tokens:", usage?.prompt_tokens);
-    console.log("Output tokens:", usage?.completion_tokens);
-    console.log("Total tokens:", usage?.total_tokens);
+    // replaceme: console.log('amit-runSimulationAPI-finishReason', finishReason);
+    // replaceme: console.log("Input tokens:", usage?.prompt_tokens);
+    // replaceme: console.log("Output tokens:", usage?.completion_tokens);
+    // replaceme: console.log("Total tokens:", usage?.total_tokens);
     const reply = completion.choices[0].message.content;
 
     return NextResponse.json({ 

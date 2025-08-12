@@ -303,13 +303,13 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
 
   const nextStep = async () => {
     // If moving from step 3 to step 4, upload media files first
-    console.log('amit-nextStep-selectedFiles', selectedFiles);
+    // replaceme: console.log('amit-nextStep-selectedFiles', selectedFiles);
     if (step === 3 && selectedFiles.length > 0) {
       try {
         setIsUploading(true);
         const mediaUrls = await uploadMedia();
-        console.log('amit-nextStep-mediaUrls', mediaUrls);
-        console.log('amit-nextStep-simulationData', simulationData.stimulus_media_url);
+        // replaceme: console.log('amit-nextStep-mediaUrls', mediaUrls);
+        // replaceme: console.log('amit-nextStep-simulationData', simulationData.stimulus_media_url);
         // Update simulation data with uploaded URLs
         setSimulationData(prev => ({
           ...prev,
@@ -376,7 +376,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
             ...prev,
             [fileIndex]: result.success ? 100 : 0
           }));
-          console.log(`File ${fileIndex + 1} upload result:`, result);
+          // replaceme: console.log(`File ${fileIndex + 1} upload result:`, result);
         }
       );
       
@@ -416,7 +416,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
 
   // Function to save simulation to database
   const saveSimulation = async () => {
-    console.log('amit-saveSimulation', selectedFiles)
+    // replaceme: console.log('amit-saveSimulation', selectedFiles)
     try {
       setIsUploading(true);
       
@@ -531,7 +531,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       ...prev,
       turn_based: e.target.checked
     }));
-    console.log('simulationData3', simulationData)
+    // replaceme: console.log('simulationData3', simulationData)
   };
 
   // Handle radio group change with auto-save
@@ -752,7 +752,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   
   const handlePlayingAround = () => {
     const randomSimulation: any = getRandomSimulation();
-    console.log('handlePlayingAround',randomSimulation);
+    // replaceme: console.log('handlePlayingAround',randomSimulation);
     setSimulationData({
       ...randomSimulation,
       brief_text: "",
@@ -790,7 +790,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       // For now, we'll just extract a simple title from the brief
       // Later this will be replaced with API call
       const prompt = createBriefExtractionPrompt(briefText);
-      console.log('prompt111', prompt);
+      // replaceme: console.log('prompt111', prompt);
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: prompt }
       ];
@@ -801,7 +801,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       try {
         // Parse the JSON response
         let responseText = result.reply || "";
-        console.log('titles111', responseText);
+        // replaceme: console.log('titles111', responseText);
         
         // Clean the response string (remove any markdown formatting)
         responseText = responseText
@@ -817,7 +817,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         topic = parsedResponse.topic || '';
         discussionQuestions = parsedResponse.questions || [];
 
-        console.log('titles333',parsedResponse, title, topic);
+        // replaceme: console.log('titles333',parsedResponse, title, topic);
         // setTitleSuggestions(titles);
         
       } catch (error) {
@@ -837,7 +837,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       };
       
       setSimulationData(updatedData);
-      console.log('updatedData111', updatedData);
+      // replaceme: console.log('updatedData111', updatedData);
       // Save to database
       const response = await fetch(`/api/simulations/${id}`, {
         method: 'PUT',
@@ -890,7 +890,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     // For now, just show the hardcoded suggestions
     const prompt = createTitleGenerationPrompt(titleGenerationInput);
 
-    console.log('prompt111', prompt);
+    // replaceme: console.log('prompt111', prompt);
     const messages: ChatCompletionMessageParam[] = [
       { role: "system", content: prompt }
     ];
@@ -899,7 +899,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     try {
       // Parse the JSON response
       let responseText = result.reply || "";
-      console.log('titles111', responseText);
+      // replaceme: console.log('titles111', responseText);
       
       // Clean the response string (remove any markdown formatting)
       responseText = responseText
@@ -912,7 +912,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       
       // Extract questions array
       const titles = parsedResponse.titles || [];
-      console.log('titles222', titles);
+      // replaceme: console.log('titles222', titles);
       setTitleSuggestions(titles);
       // Join questions as textarea value (one per line)
       // setSimulationData(prev => ({
@@ -928,7 +928,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       // questions = questions.replace(/```[a-z]*[\s\S]*?```/gi, '');
       // let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
       // lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
-      // console.log('lines111', lines);
+      // // replaceme: console.log('lines111', lines);
       // setSimulationData(prev => ({
       //   ...prev,
       //   discussion_questions: lines.join("\n")
@@ -1088,7 +1088,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     setIsGeneratingPersonas(true);
     try {
       // Create simulation object for the prompt - cast to any to avoid type issues
-      console.log('simulationData111', simulationData);
+      // replaceme: console.log('simulationData111', simulationData);
       const questionsString = Array.isArray(simulationData.discussion_questions) 
     ? simulationData.discussion_questions.join('\n')
     : simulationData.discussion_questions;
@@ -1113,7 +1113,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
 
       // Call createBriefPersonaGenerationPrompt
       const prompt = createBriefPersonaGenerationPrompt(simulationForPrompt);
-      console.log('Brief persona generation prompt:', prompt);
+      // replaceme: console.log('Brief persona generation prompt:', prompt);
       
       const messages: ChatCompletionMessageParam[] = [
         { 
@@ -1128,7 +1128,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       try {
         // Parse the JSON response
         let responseText = result.reply || "";
-        console.log('Brief personas response:', responseText);
+        // replaceme: console.log('Brief personas response:', responseText);
         
         // Clean the response string (remove any markdown formatting)
         responseText = responseText
@@ -1146,7 +1146,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
           editable: true // Make them editable
         }));
         
-        console.log('Brief generated personas:', briefGeneratedPersonas);
+        // replaceme: console.log('Brief generated personas:', briefGeneratedPersonas);
         setGeneratedPersonas(briefGeneratedPersonas);
         
         // Open dialog and go directly to step 7
@@ -1184,7 +1184,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     try {
       // call createPersonaGenerationPrompt passing the aiPersonaData
       const prompt = createPersonaGenerationPrompt(aiPersonaData);
-      console.log('prompt333', prompt);
+      // replaceme: console.log('prompt333', prompt);
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: prompt }
       ];
@@ -1193,7 +1193,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       try {
         // Parse the JSON response
         let responseText = result.reply || "";
-        console.log('personas111', responseText);
+        // replaceme: console.log('personas111', responseText);
         
         // Clean the response string (remove any markdown formatting)
         responseText = responseText
@@ -1210,7 +1210,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
           id: persona.id || `generated-${Date.now()}-${index}`, // Ensure unique ID
           editable: true // Make them editable
         }));
-        console.log('personas222', AiGeneratedPersonas);
+        // replaceme: console.log('personas222', AiGeneratedPersonas);
         setGeneratedPersonas(AiGeneratedPersonas);
         setAiPersonaStep(7);
       } catch (error) {
@@ -2386,7 +2386,7 @@ Key Questions:
                                   simulationData.study_title,
                                   simulationData.topic,
                                 );
-                                console.log('prompt111', prompt);
+                                // replaceme: console.log('prompt111', prompt);
                                 const messages: ChatCompletionMessageParam[] = [
                                   { role: "system", content: prompt }
                                 ];
@@ -2422,7 +2422,7 @@ Key Questions:
                                   questions = questions.replace(/```[a-z]*[\s\S]*?```/gi, '');
                                   let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
                                   lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
-                                  console.log('lines111', lines);
+                                  // replaceme: console.log('lines111', lines);
                                   setSimulationData(prev => ({
                                     ...prev,
                                     discussion_questions: lines.join("\n")

@@ -40,7 +40,7 @@ export default function NewCalibrationPage() {
       
     // Use it for both state updates
     setSelectedPersonas(newSelectedPersonas);
-    console.log('togglePersona', personas, newSelectedPersonas, calibrationSession);
+    // replaceme: console.log('togglePersona', personas, newSelectedPersonas, calibrationSession);
     setCalibrationSession({...calibrationSession, selected_persona_ids: newSelectedPersonas});
   }
 
@@ -49,13 +49,13 @@ export default function NewCalibrationPage() {
 
   const handleSubmit = async () => {
     // In a real app, we would submit the form data here
-    console.log('handleSubmit', calibrationSession)
+    // replaceme: console.log('handleSubmit', calibrationSession)
     // create a new object with the calibrationSession object but with the transcript_participants property removed
     let sendObject = {
       ...calibrationSession,
     }
     delete sendObject.transcript_participants;
-    console.log('sendObject', sendObject)
+    // replaceme: console.log('sendObject', sendObject)
     // add code to call post request in api/calibration_sessions/create/route.ts
     const response = await fetch('/api/calibration_sessions/create', {
       method: 'POST',
@@ -96,12 +96,12 @@ export default function NewCalibrationPage() {
     .map(name => name.trim())        // Trim spaces from each line
     .filter(name => name.length > 0); // Remove empty lines
     setRealParticipants(participantsArray);
-    console.log('namesSet11',participantsArray);
+    // replaceme: console.log('namesSet11',participantsArray);
   }
   
   const handleParticipantMapping = (personaId: string, participantId: string) => {
     setCalibrationSession({...calibrationSession, persona_mapping: {...calibrationSession.persona_mapping, [personaId]: participantId}})
-    console.log('handleParticipantMapping', calibrationSession)
+    // replaceme: console.log('handleParticipantMapping', calibrationSession)
   }
 
 
@@ -213,7 +213,7 @@ export default function NewCalibrationPage() {
                   onChange={(e) => { 
                     setCalibrationSession({...calibrationSession, transcript_text: e.target.value})
                     const names = extractSpeakerNames(e.target.value);
-                    console.log('names', names);
+                    // replaceme: console.log('names', names);
                   }}
                 />
               </div>

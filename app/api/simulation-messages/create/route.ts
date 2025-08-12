@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No messages provided" }, { status: 400 })
     }
     
-    console.log(`Saving ${messages.length} messages to the database`)
+    // replaceme: console.log(`Saving ${messages.length} messages to the database`)
     
     // Insert all messages into the simulation_messages table
     const { data, error } = await supabase

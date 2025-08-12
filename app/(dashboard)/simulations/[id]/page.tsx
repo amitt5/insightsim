@@ -231,10 +231,10 @@ export default function SimulationViewPage() {
 
   // Function to handle follow-up questions
   const handleFollowUpQuestions = async (messagesOverride?: SimulationMessage[]) => {
-    console.log('amit-handleFollowUpQuestions', showFollowUpQuestions)
+    // replaceme: console.log('amit-handleFollowUpQuestions', showFollowUpQuestions)
     if (!showFollowUpQuestions) {
       setShowFollowUpQuestions(true)
-      console.log('amit-handleFollowUpQuestions-true', followUpQuestions)
+      // replaceme: console.log('amit-handleFollowUpQuestions-true', followUpQuestions)
       setIsLoadingFollowUpQuestions(true)
       
       // Get only the most recent message exchange (last moderator question + respondent answers)
@@ -259,7 +259,7 @@ export default function SimulationViewPage() {
       
       // Use provided messages or fall back to state
       const messagesToUse = messagesOverride || simulationMessages || [];
-      console.log('simulationMessages', messagesToUse);
+      // replaceme: console.log('simulationMessages', messagesToUse);
       const recentMessages = getRecentMessageExchange(messagesToUse);
       
       const sample = {
@@ -268,12 +268,12 @@ export default function SimulationViewPage() {
         personas: simulationData?.personas || [] as Persona[]
       }
       const prompt = buildFollowUpQuestionsPrompt(sample)
-      console.log('prompt-followup', prompt);
-      console.log('recent-messages-used', recentMessages);
+      // replaceme: console.log('prompt-followup', prompt);
+      // replaceme: console.log('recent-messages-used', recentMessages);
       const data = await runSimulationAPI(prompt, modelInUse);
-      // console.log('data', data);
+      // // replaceme: console.log('data', data);
       const parsedMessages = parseSimulationResponse(data.reply);
-      console.log('parsedMessages-amit', parsedMessages);
+      // replaceme: console.log('parsedMessages-amit', parsedMessages);
       setFollowUpQuestions(parsedMessages.questions)
       setIsLoadingFollowUpQuestions(false)
     } else {
@@ -297,7 +297,7 @@ export default function SimulationViewPage() {
         if (data.error) {
           throw new Error(data.error);
         }
-        console.log('data111', data);
+        // replaceme: console.log('data111', data);
         setSimulationData(data);
         setError(null);
       } catch (err: any) {
@@ -314,7 +314,7 @@ export default function SimulationViewPage() {
 
   // Call fetchSimulationMessages when simulation data is loaded
   useEffect(() => {
-    console.log('simulationData111', simulationData);
+    // replaceme: console.log('simulationData111', simulationData);
     if (simulationData?.simulation?.id) {
       fetchSimulationMessages(simulationData.simulation.id);
       if(simulationData?.simulation?.status === "Completed") {
@@ -415,7 +415,7 @@ export default function SimulationViewPage() {
         console.error("API error:", data.error);
       } else {
         // if there are messages, check how many times moderator has spoken and then set the new message to the next question
-        console.log('summaries loaded', data);
+        // replaceme: console.log('summaries loaded', data);
         setSimulationSummaries(data);
       }
       return data.messages
@@ -427,23 +427,23 @@ export default function SimulationViewPage() {
   };
 
   const runSimulation = async (customPrompt?: ChatCompletionMessageParam[]) => {
-    console.log('runSimulationCalled', simulationData);
+    // replaceme: console.log('runSimulationCalled', simulationData);
     
     if(simulationData?.simulation && simulationData?.personas) {
       const prompt = customPrompt 
       ? customPrompt 
       : prepareInitialPrompt(simulationData?.simulation, simulationData?.personas);
-      console.log('prompt123', prompt, nameToPersonaIdMap);
+      // replaceme: console.log('prompt123', prompt, nameToPersonaIdMap);
       try {
         setIsSimulationRunning(true);
         const data = await runSimulationAPI(prompt, modelInUse);
-        console.log('API response:', data);
+        // replaceme: console.log('API response:', data);
         // setAvailableCredits(data.creditInfo.remaining_credits);
         
         if (data.reply) {
           // Parse the response into messages
           const parsedMessages = parseSimulationResponse(data.reply);
-          console.log('Parsed messages111:', parsedMessages);
+          // replaceme: console.log('Parsed messages111:', parsedMessages);
           const extractedParticipantMessages = extractParticipantMessages(parsedMessages);
           // Save the messages to the database
           const saveResult = await saveMessagesToDatabase(extractedParticipantMessages);
@@ -524,20 +524,20 @@ export default function SimulationViewPage() {
           personas: simulationData?.personas || []
         }
         const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction, currentAttachedImages);
-        console.log('prompt1111',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
+        // replaceme: console.log('prompt1111',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
           //4. send the messages to openai
         runSimulation(prompt);
         // rest of the steps handled in run simulation
       }
     }
-    console.log('amit-handleFollowUpQuestions111', showFollowUpQuestions)
+    // replaceme: console.log('amit-handleFollowUpQuestions111', showFollowUpQuestions)
   }
 
   const sendMessageTest = async () => {
     const message = `Michael Rodriguez: To identify macroeconomic trends, I usually rely on economic reports from government agencies, central banks, and reputable financial institutions. I look at indicators like GDP growth, inflation rates, employment numbers, and interest rates to understand the broader economic environment. Additionally, I pay attention to geopolitical events and global trade dynamics that could impact the sector or market I'm analyzing.;`
     const parsedMessages = testParseSimulationResponse(message);
-    console.log('parsedMessages', parsedMessages);
+    // replaceme: console.log('parsedMessages', parsedMessages);
   }
 
   // function to set initial message in case of human moderator
@@ -563,7 +563,7 @@ export default function SimulationViewPage() {
       return parsed;
     } catch (error) {
       // --- Fallback single-speaker parser ---
-      console.log('error in parsing', error, responseString);
+      // replaceme: console.log('error in parsing', error, responseString);
       const match = responseString.trim().match(/^([^:]+):\s*([\s\S]+)$/);
       if (match) {
         const [, name, message] = match;
@@ -573,9 +573,9 @@ export default function SimulationViewPage() {
       }
       
       const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
-      console.log('error in parsing-fallbackMatch', fallbackMatch);
+      // replaceme: console.log('error in parsing-fallbackMatch', fallbackMatch);
       if (fallbackMatch) {
-        console.log('error in parsing-fallbackMatch-if', fallbackMatch);
+        // replaceme: console.log('error in parsing-fallbackMatch-if', fallbackMatch);
         const [_, name, message] = fallbackMatch;
         const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
         setMessages(fallbackParsed);
@@ -624,7 +624,7 @@ export default function SimulationViewPage() {
       setShowErrorPopup(true);
       // --- Fallback single-speaker parser ---
       const fallbackMatch = responseString.trim().match(/^([^:]+):\s*(.+)$/);
-      console.log('fallbackMatch', fallbackMatch);
+      // replaceme: console.log('fallbackMatch', fallbackMatch);
       if (fallbackMatch) {
         const [_, name, message] = fallbackMatch;
         const fallbackParsed = [{ name: name.trim(), message: message.trim() }];
@@ -658,7 +658,7 @@ export default function SimulationViewPage() {
       const isModerator = msg.name.toLowerCase() === 'moderator';
       // Try to find persona ID using the full name first, then fallback to first name
       let senderId = null;
-      console.log('msg.name',index, isModerator, msg, msg.name, nameToPersonaIdMap);
+      // replaceme: console.log('msg.name',index, isModerator, msg, msg.name, nameToPersonaIdMap);
       if (!isModerator) {
         // Check full name first
         if (nameToPersonaIdMap[msg.name]) {
@@ -694,7 +694,7 @@ export default function SimulationViewPage() {
       }
       
       const data = await response.json();
-      console.log('Messages saved successfully:', data);
+      // replaceme: console.log('Messages saved successfully:', data);
       return data;
     } catch (error) {
       console.error("Error saving messages to database:", error);
@@ -732,7 +732,7 @@ export default function SimulationViewPage() {
       }
       
       const data = await response.json();
-      console.log('Summary and themes saved successfully:', data);
+      // replaceme: console.log('Summary and themes saved successfully:', data);
       return data;
     } catch (error) {
       console.error("Error saving summary to database:", error);
@@ -795,17 +795,17 @@ export default function SimulationViewPage() {
 
     if(simulationData?.simulation && simulationMessages) {
       const prompt = prepareSummaryPrompt(simulationData?.simulation, simulationMessages);
-      console.log('prompt12345',simulationMessages,simulationData?.simulation, prompt, nameToPersonaIdMap);
+      // replaceme: console.log('prompt12345',simulationMessages,simulationData?.simulation, prompt, nameToPersonaIdMap);
     
       try {
         const data = await runSimulationAPI(prompt);
-        console.log('API response:', data);
+        // replaceme: console.log('API response:', data);
         // setAvailableCredits(data.creditInfo.remaining_credits);
         
         if (data.reply) {
           // Parse the response into messages
           const parsedMessages = parseSimulationResponse(data.reply);
-          console.log('Parsed messages222:', parsedMessages);
+          // replaceme: console.log('Parsed messages222:', parsedMessages);
           
           // Save the summary and themes to the database
           const saveResult = await saveSummaryToDatabase(parsedMessages);
@@ -885,7 +885,7 @@ export default function SimulationViewPage() {
     return map;
   }, {} as Record<string, string>);
   
-  // console.log('Name to Persona ID Map:', nameToPersonaIdMap);
+  // // replaceme: console.log('Name to Persona ID Map:', nameToPersonaIdMap);
 
   return (
     <div className="min-h-screen bg-background">

@@ -58,7 +58,7 @@ export async function GET(request: Request) {
             if (creditsError) {
               console.error('Error creating initial credits:', creditsError)
             } else {
-              console.log('✅ User profile and credits created for Google user')
+              // replaceme: console.log('✅ User profile and credits created for Google user')
             }
           }
         }

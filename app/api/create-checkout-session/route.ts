@@ -7,7 +7,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST() {
   try {
-    console.log("🔥 Starting checkout session creation");
+    // replaceme: console.log("🔥 Starting checkout session creation");
     
     const supabase = createRouteHandlerClient({ cookies });
 
@@ -16,11 +16,11 @@ export async function POST() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      console.log("❌ User not authenticated");
+      // replaceme: console.log("❌ User not authenticated");
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    console.log("✅ User authenticated:", user.id);
+    // replaceme: console.log("✅ User authenticated:", user.id);
 
     const { data: dbUser, error } = await supabase
       .from("users")
@@ -29,28 +29,28 @@ export async function POST() {
       .single();
 
     if (error) {
-      console.log("❌ Database error:", error);
+      // replaceme: console.log("❌ Database error:", error);
       return NextResponse.json({ error: "User not found in DB" }, { status: 400 });
     }
 
     if (!dbUser) {
-      console.log("❌ No user found in database");
+      // replaceme: console.log("❌ No user found in database");
       return NextResponse.json({ error: "User not found in DB" }, { status: 400 });
     }
 
-    console.log("✅ Database user found:", dbUser);
+    // replaceme: console.log("✅ Database user found:", dbUser);
 
     let customerId = dbUser.stripe_customer_id;
 
     if (!customerId) {
-      console.log("🔄 Creating new Stripe customer");
+      // replaceme: console.log("🔄 Creating new Stripe customer");
       const customer = await stripe.customers.create({
         email: dbUser.email,
         metadata: { supabase_uid: user.id },
       });
 
       customerId = customer.id;
-      console.log("✅ Stripe customer created:", customerId);
+      // replaceme: console.log("✅ Stripe customer created:", customerId);
 
       await supabase
         .from("users")
@@ -58,7 +58,7 @@ export async function POST() {
         .eq("user_id", user.id);
     }
 
-    console.log("🔄 Creating checkout session");
+    // replaceme: console.log("🔄 Creating checkout session");
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
@@ -75,7 +75,7 @@ export async function POST() {
       },
     });
 
-    console.log("✅ Checkout session created:", session.id);
+    // replaceme: console.log("✅ Checkout session created:", session.id);
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error("❌ Error in create-checkout-session:", error);

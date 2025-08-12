@@ -16,7 +16,7 @@ export default function PersonasPage() {
   const [filteredPersonas, setFilteredPersonas] = useState<Persona[]>([])
 
   const handleSavePersona = (personaData: any) => {
-    console.log("Save persona:", personaData)
+    // replaceme: console.log("Save persona:", personaData)
     // Here you would implement the save functionality
   }
 

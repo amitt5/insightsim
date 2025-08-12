@@ -14,7 +14,7 @@ async function getSupabaseAndUser() {
     const { data } = await supabase.from('users').select('role').eq('id', userId).single()
     userData = data
   }
-  console.log('query1112',userId, userData)
+  // replaceme: console.log('query1112',userId, userData)
   
   return { supabase, userId, userData }
 }
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
       query = query.overlaps('tags', tags);
     }
     
-    console.log('query111',userId, userData, query)
+    // replaceme: console.log('query111',userId, userData, query)
     const { data, error } = await query
 
     if (error) {

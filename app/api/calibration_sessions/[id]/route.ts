@@ -28,7 +28,7 @@ export async function GET(
     
    
     // const personaIds = calibrationSession.selected_persona_ids
-    console.log('personaIds111',calibrationSession,  calibrationSession.selected_persona_ids)
+    // replaceme: console.log('personaIds111',calibrationSession,  calibrationSession.selected_persona_ids)
     // Step 3: If there are persona IDs, fetch the persona details
     let personas = []
     if (calibrationSession.selected_persona_ids.length > 0) {

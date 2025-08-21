@@ -250,7 +250,7 @@ export default function CalibrationDetailPage() {
         id: calibrationSession.id || '',
         study_title: calibrationSession.title,
         study_type: "focus-group",
-        mode: "ai-both",
+        mode: "human-mod",
         discussion_questions: calibrationSession.discussion_questions,
         turn_based: true,
         num_turns: 5,

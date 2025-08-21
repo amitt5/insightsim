@@ -1657,7 +1657,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
                   </DialogContent>
                 </Dialog>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Label>Simulation Mode</Label>
                     <TooltipProvider>
@@ -1690,7 +1690,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
                       <Label htmlFor="ai-both">AI {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'} + AI {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'} </Label>
                     </div>
                   </RadioGroup>
-                </div>
+                </div> */}
 
                 {/* Simulation Mode Help Dialog */}
                 <Dialog open={simulationModeHelpOpen} onOpenChange={setSimulationModeHelpOpen}>

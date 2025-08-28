@@ -154,12 +154,12 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
               >
                 Features
               </button>
-              <button 
+              {/* <button 
                 onClick={() => scrollToSection('demo')}
                 className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"
               >
                 Demo
-              </button>
+              </button> */}
               <button 
                 onClick={() => scrollToSection('pricing')}
                 className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"

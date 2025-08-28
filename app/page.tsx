@@ -483,11 +483,11 @@ export default function LandingPage() {
                     Try for Free
                   </Button>
                 </Link>
-                <Link href="#demo">
+                {/* <Link href="#demo">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto button">
                     Watch Demo
                   </Button>
-                </Link>
+                </Link> */}
               </div>
 
               {/*add later Trust indicator: "Trusted by 500+ Market Researchers" */}
@@ -525,7 +525,7 @@ export default function LandingPage() {
 
 
         {/* Loom Video Demo Section */}
-        <section id="demo" className="min-h-screen flex items-center justify-center py-20 bg-white border-t demo-section">
+        {/* <section id="demo" className="min-h-screen flex items-center justify-center py-20 bg-white border-t demo-section">
           <div className="container max-w-3xl mx-auto flex flex-col items-center">
             <h2 className="mb-2 text-center text-3xl font-bold demo-section-title">See How InsightSim Works</h2>
             <p className="mb-10 text-center text-gray-500 text-lg">Watch a quick demo of how to run your first AI-powered focus group</p>
@@ -539,7 +539,6 @@ export default function LandingPage() {
                   className="w-full h-full min-h-[320px]"
                   allowFullScreen
                 ></iframe>
-                {/* Play button overlay for animation (optional, visually hidden since Loom has its own) */}
                 <div className="play-button absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-white rounded-full p-4 shadow-lg cursor-pointer" style={{ pointerEvents: 'none', opacity: 0 }}>
                   <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="currentColor" opacity="0.2"/><polygon points="13,10 24,16 13,22" fill="currentColor"/></svg>
                 </div>
@@ -549,7 +548,7 @@ export default function LandingPage() {
               <Link href="/signup">Try It Yourself</Link>
             </Button>
           </div>
-        </section>
+        </section> */}
 
         {/* Problem Statement Section */}
         <section className="min-h-screen flex items-center justify-center py-20 bg-gray-50">

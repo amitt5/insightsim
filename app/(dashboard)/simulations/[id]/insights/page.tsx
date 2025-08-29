@@ -533,30 +533,13 @@ export default function SimulationInsightsPage() {
               </TabsContent>
 
               <TabsContent value="validation">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      🌐 Web Validation
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-medium text-blue-800 mb-2">About Web Validation</h4>
-                      <p className="text-sm text-blue-700">
-                        This feature validates your simulation insights against real-world data. 
-                        It searches the web for current information to verify, support, or provide context for each insight.
-                      </p>
-                    </div>
-                    
-                    {transcript ? (
-                      <InsightValidator transcript={transcript} />
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <p>Loading discussion transcript for validation...</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                {transcript ? (
+                  <InsightValidator transcript={transcript} />
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>Loading discussion transcript for validation...</p>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </div>

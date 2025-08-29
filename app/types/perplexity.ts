@@ -20,19 +20,13 @@ export interface TranscriptSummaryRequest {
   
   export interface InsightValidationResponse {
     validation: string;
-    citations?: Citation[];
-  }
-  
-  export interface Citation {
-    url: string;
-    title: string;
-    snippet: string;
+    citations?: string[];
   }
   
   export interface ValidationResult {
     insight: string;
     validation: string;
-    citations?: Citation[];
+    citations?: string[];
   }
   
   export interface PerplexityError {

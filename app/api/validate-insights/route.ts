@@ -14,7 +14,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<InsightValida
     }
     
     const response = await perplexity.chat.completions.create({
-      model: 'sonar-pro',
+      model: 'sonar-small-online',
       messages: [
         {
           role: 'system',
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<InsightValida
           content: `Find web evidence and social media mentions that validate this insight: "${insight}"`
         }
       ],
-      max_tokens: 1000,
+      max_tokens: 500,
       temperature: 0.3
     });
 

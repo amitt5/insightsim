@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ValidationResult, Citation } from '@/app/types/perplexity';
+import { ValidationResult } from '@/app/types/perplexity';
 
 interface InsightValidatorProps {
   transcript: string;
@@ -28,45 +28,45 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
     console.log('transcript', transcript);
     
     try {
-      // Step 1: Summarize transcript
-    //   const summaryRes = await fetch('/api/summarize-transcript', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ transcript })
-    //   });
+    //   Step 1: Summarize transcript
+      const summaryRes = await fetch('/api/summarize-transcript', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript })
+      });
       
-    //   if (!summaryRes.ok) {
-    //     throw new Error('Failed to summarize transcript');
-    //   }
+      if (!summaryRes.ok) {
+        throw new Error('Failed to summarize transcript');
+      }
       
-    //   const summaryData = await summaryRes.json();
-    //   setSummary(summaryData.summary);
-    //   console.log('summary', summaryData.summary);
-    //   // Step 2: Extract insights
-    //   const insightsRes = await fetch('/api/extract-insights', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ transcript })
-    //   });
+      const summaryData = await summaryRes.json();
+      setSummary(summaryData.summary);
+      console.log('summary', summaryData.summary);
+      // Step 2: Extract insights
+      const insightsRes = await fetch('/api/extract-insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript })
+      });
       
-    //   if (!insightsRes.ok) {
-    //     throw new Error('Failed to extract insights');
-    //   }
+      if (!insightsRes.ok) {
+        throw new Error('Failed to extract insights');
+      }
       
-    //   const insightsData = await insightsRes.json();
-    //   setInsights(insightsData.insights);
-    //   console.log('insights', insightsData.insights);
-    //   // Step 3: Validate each insight
-    //   const insightList = extractInsightLines(insightsData.insights);
-    //   console.log('insightList', insightList);
-    // if (insightList1.length === 0) {
-    //     setValidations([]);
-    //     return;
-    //   }
+      const insightsData = await insightsRes.json();
+      setInsights(insightsData.insights);
+      console.log('insights', insightsData.insights);
+      // Step 3: Validate each insight
+      const insightList = extractInsightLines(insightsData.insights);
+      console.log('insightList', insightList);
+     if (insightList.length === 0) {
+        setValidations([]);
+        return;
+      }
       const insightList1 = ['**Mobile app usability is a primary driver of satisfaction and loyalty.**', '**Cashback and rewards for online shopping are highly valued, but not universally understood.**', '**Family-oriented rewards and transparency are key for certain segments.**', '**Travel perks and low international fees attract …-driven consumers, but expectations are rising.**', '**Customer service reputation influences trust and card selection.**', '**Pain points include a desire for more specialized features and clearer value communication.**', '**Behavioral patterns show digital-first, value-seeking, and lifestyle-aligned usage.**', '**Unexpected finding: App engagement directly builds brand loyalty.**'] 
       
 
-      const validationPromises = insightList1.map(async (insight: string): Promise<ValidationResult> => {
+      const validationPromises = insightList.map(async (insight: string): Promise<ValidationResult> => {
         try {
           const validationRes = await fetch('/api/validate-insights', {
             method: 'POST',
@@ -110,18 +110,18 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="w-full">
       <div className="mb-6">
         <button 
           onClick={handleAnalyzeTranscript}
           disabled={loading || !transcript.trim()}
-          className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? 'Analyzing...' : 'Analyze Transcript'}
         </button>
         
         {error && (
-          <div className="mt-4 p-4 bg-red-100 border border-red-300 rounded-lg text-red-700">
+          <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
             <strong>Error:</strong> {error}
           </div>
         )}
@@ -129,10 +129,10 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
 
       {summary && (
         <div className="mb-8">
-          <h3 className="text-xl font-bold mb-3 text-gray-800">📄 Summary</h3>
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+          <h3 className="text-xl font-bold mb-3">📄 Summary</h3>
+          <div className="bg-muted border-l-4 border-primary p-4 rounded-r-lg">
             <div className="prose prose-sm max-w-none">
-              <pre className="whitespace-pre-wrap font-sans">{summary}</pre>
+              <pre className="whitespace-pre-wrap font-sans text-foreground">{summary}</pre>
             </div>
           </div>
         </div>
@@ -140,10 +140,10 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
 
       {insights && (
         <div className="mb-8">
-          <h3 className="text-xl font-bold mb-3 text-gray-800">💡 Key Insights</h3>
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+          <h3 className="text-xl font-bold mb-3">💡 Key Insights</h3>
+          <div className="bg-secondary border-l-4 border-primary p-4 rounded-r-lg">
             <div className="prose prose-sm max-w-none">
-              <pre className="whitespace-pre-wrap font-sans">{insights}</pre>
+              <pre className="whitespace-pre-wrap font-sans text-foreground">{insights}</pre>
             </div>
           </div>
         </div>
@@ -151,43 +151,42 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
 
       {validations.length > 0 && (
         <div className="mb-8">
-          <h3 className="text-xl font-bold mb-4 text-gray-800">🌐 Web Validations</h3>
           <div className="space-y-6">
           {validations.map((item: ValidationResult, index: number) => (
-            <div key={index} className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+            <div key={index} className="border rounded-lg p-6 bg-card shadow-sm">
                 <div className="mb-4">
-                <h4 className="font-semibold text-blue-600 mb-2">Insight #{index + 1}:</h4>
-                <p className="text-gray-700 bg-blue-50 p-3 rounded italic">"{item.insight}"</p>
+                <h4 className="font-semibold text-primary mb-2">Insight #{index + 1}:</h4>
+                <p className="text-foreground bg-muted p-3 rounded italic">"{item.insight}"</p>
                 </div>
                 
                 <div className="mb-4">
-                <h4 className="font-semibold text-green-600 mb-2">Web Evidence:</h4>
-                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                <h4 className="font-semibold text-primary mb-2">Web Evidence:</h4>
+                <div className="bg-secondary border border-border p-4 rounded-lg">
                     <div className="prose prose-sm max-w-none">
-                    <pre className="whitespace-pre-wrap font-sans text-gray-800">{item.validation}</pre>
+                    <pre className="whitespace-pre-wrap font-sans text-foreground">{item.validation}</pre>
                     </div>
                 </div>
                 </div>
 
                 {/* Display Citations */}
+                
+
+                {/* Display Citations */}
                 {item.citations && item.citations.length > 0 && (
                 <div>
-                    <h4 className="font-semibold text-purple-600 mb-2">Sources & Citations:</h4>
-                    <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
+                    <h4 className="font-semibold text-primary mb-2">Sources & Citations:</h4>
+                    <div className="bg-muted border border-border p-4 rounded-lg">
                     <ul className="space-y-2">
-                        {item.citations.map((citation: Citation, citIndex: number) => (
+                        {item.citations.map((citationUrl: string, citIndex: number) => (
                         <li key={citIndex} className="text-sm">
                             <a 
-                            href={citation.url} 
+                            href={citationUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline"
+                            className="text-primary hover:text-primary/80 underline break-all"
                             >
-                            [{citIndex + 1}] {citation.title || citation.url}
+                            [{citIndex + 1}] {citationUrl}
                             </a>
-                            {citation.snippet && (
-                            <p className="text-gray-600 mt-1 ml-4">{citation.snippet}</p>
-                            )}
                         </li>
                         ))}
                     </ul>
@@ -203,8 +202,8 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
       
       {loading && (
         <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          <p className="mt-2 text-gray-600">Processing with Perplexity AI...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="mt-2 text-muted-foreground">Processing with Perplexity AI...</p>
         </div>
       )}
     </div>

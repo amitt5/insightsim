@@ -14,7 +14,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<TranscriptSum
     }
     
     const response = await perplexity.chat.completions.create({
-      model: 'sonar-pro',
+      model: 'sonar-small-online',
       messages: [
         {
           role: 'system',
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<TranscriptSum
           content: `Summarize this focus group transcript:\n\n${transcript}`
         }
       ],
-      max_tokens: 1000,
+      max_tokens: 500,
       temperature: 0.3
     });
 

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<InsightExtrac
     }
     
     const response = await perplexity.chat.completions.create({
-      model: 'sonar-pro',
+      model: 'sonar-small-online',
       messages: [
         {
           role: 'system',
@@ -32,8 +32,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<InsightExtrac
           content: `Extract key insights from this transcript:\n\n${transcript}`
         }
       ],
-      max_tokens: 800,
-      temperature: 0.2
+      max_tokens: 500,
+      temperature: 0.2,
+      
     });
 
     return NextResponse.json({ 

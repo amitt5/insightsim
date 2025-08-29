@@ -537,14 +537,13 @@ export default function SimulationInsightsPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       🌐 Web Validation
-                      <Badge variant="outline" className="text-xs">Powered by Perplexity AI</Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                       <h4 className="font-medium text-blue-800 mb-2">About Web Validation</h4>
                       <p className="text-sm text-blue-700">
-                        This feature validates your simulation insights against real-world data using Perplexity AI. 
+                        This feature validates your simulation insights against real-world data. 
                         It searches the web for current information to verify, support, or provide context for each insight.
                       </p>
                     </div>

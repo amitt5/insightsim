@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import perplexity from '@/lib/perplexity';
-import { InsightValidationRequest, InsightValidationResponse, PerplexityError } from '@/app/types/perplexity';
+import { InsightValidationRequest, InsightValidationResponse, PerplexityError } from '@/types/perplexity';
 
 export async function POST(req: NextRequest): Promise<NextResponse<InsightValidationResponse | PerplexityError>> {
   try {
@@ -35,13 +35,16 @@ export async function POST(req: NextRequest): Promise<NextResponse<InsightValida
         }
       ],
       max_tokens: 1000,
-      temperature: 0.3,
-      return_related_questions: true
+      temperature: 0.3
     });
 
+    // Extract citations from the response
+    const validationText = response.choices[0].message.content || 'No validation found';
+    const citations = (response as any).citations || [];
+
     return NextResponse.json({ 
-      validation: response.choices[0].message.content || 'No validation found',
-      citations: [] // Perplexity automatically includes citations in the response text
+      validation: validationText,
+      citations: citations
     });
   } catch (error) {
     console.error('Validation error:', error);

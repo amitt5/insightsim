@@ -32,6 +32,7 @@ export interface TranscriptSummaryRequest {
   export interface ValidationResult {
     insight: string;
     validation: string;
+    citations?: Citation[];
   }
   
   export interface PerplexityError {

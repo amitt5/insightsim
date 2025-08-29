@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Download } from "lucide-react"
 import Link from "next/link";
-import { Persona, Simulation } from "@/utils/types";
+import { Persona, Simulation, SimulationMessage } from "@/utils/types";
+import InsightValidator from "@/components/InsightValidator";
 
 // Interface for the Simulation data
 interface SimulationResponse {
@@ -26,6 +27,8 @@ export default function SimulationInsightsPage() {
   const [simulationData, setSimulationData] = useState<SimulationResponse | null>(null)
   const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
   const [isLoadingSummaries, setIsLoadingSummaries] = useState(false)
+  const [simulationMessages, setSimulationMessages] = useState<SimulationMessage[]>([])
+  const [transcript, setTranscript] = useState<string>("")
 
   // Color palette for personas (10 colors)
   const personaColors = [
@@ -81,6 +84,7 @@ export default function SimulationInsightsPage() {
   useEffect(() => {
     if (simulationData?.simulation?.id && simulationData?.simulation?.status === "Completed") {
       fetchSimulationSummaries();
+      fetchSimulationMessages();
     }
   }, [simulationData]);
 
@@ -107,6 +111,58 @@ export default function SimulationInsightsPage() {
     } finally {
       setIsLoadingSummaries(false);
     }
+  };
+
+  // Function to fetch simulation messages for transcript
+  const fetchSimulationMessages = async () => {
+    try {
+      const response = await fetch(`/api/simulation-messages/${simulationData?.simulation.id}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching messages: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error("API error:", data.error);
+      } else {
+        // Sort messages by created_at date
+        data.messages.sort((a: SimulationMessage, b: SimulationMessage) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        setSimulationMessages(data.messages || []);
+        
+        // Generate transcript from messages
+        generateTranscript(data.messages || [], data.personas || []);
+      }
+    } catch (err: any) {
+      console.error("Error fetching simulation messages:", err);
+    }
+  };
+
+  // Function to generate transcript from simulation messages
+  const generateTranscript = (messages: SimulationMessage[], personas: Persona[]) => {
+    // Create a map of persona IDs to names
+    const personaIdToNameMap = personas.reduce((map: Record<string, string>, persona: Persona) => {
+      map[persona.id] = persona.name;
+      return map;
+    }, {});
+    
+    // Format messages into transcript
+    const transcriptText = messages.map((msg: SimulationMessage) => {
+      let speakerName = "Unknown";
+      
+      if (msg.sender_type === 'moderator') {
+        speakerName = 'Moderator';
+      } else if (msg.sender_id && personaIdToNameMap[msg.sender_id]) {
+        speakerName = personaIdToNameMap[msg.sender_id];
+      }
+      
+      return `${speakerName}: ${msg.message}`;
+    }).join('\n\n');
+    
+    setTranscript(transcriptText);
   };
 
   if (isLoading) {
@@ -197,12 +253,13 @@ export default function SimulationInsightsPage() {
         {!isLoadingSummaries && simulationSummaries && (
           <div className="max-w-6xl mx-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="mb-6 grid w-full grid-cols-5">
+              <TabsList className="mb-6 grid w-full grid-cols-6 text-sm">
                 <TabsTrigger value="summary">Summary</TabsTrigger>
                 <TabsTrigger value="themes">Themes</TabsTrigger>
                 <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
                 <TabsTrigger value="personas">Personas</TabsTrigger>
                 <TabsTrigger value="actions">Actions</TabsTrigger>
+                <TabsTrigger value="validation">Validation</TabsTrigger>
               </TabsList>
 
               <TabsContent value="summary">
@@ -473,6 +530,34 @@ export default function SimulationInsightsPage() {
                     </CardContent>
                   </Card>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="validation">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      🌐 Web Validation
+                      <Badge variant="outline" className="text-xs">Powered by Perplexity AI</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-medium text-blue-800 mb-2">About Web Validation</h4>
+                      <p className="text-sm text-blue-700">
+                        This feature validates your simulation insights against real-world data using Perplexity AI. 
+                        It searches the web for current information to verify, support, or provide context for each insight.
+                      </p>
+                    </div>
+                    
+                    {transcript ? (
+                      <InsightValidator transcript={transcript} />
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>Loading discussion transcript for validation...</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>

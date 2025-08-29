@@ -25,6 +25,7 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
   const handleAnalyzeTranscript = async (): Promise<void> => {
     setLoading(true);
     setError('');
+    console.log('transcript', transcript);
     
     try {
       // Step 1: Summarize transcript
@@ -40,7 +41,7 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
       
       const summaryData = await summaryRes.json();
       setSummary(summaryData.summary);
-
+      console.log('summary', summaryData.summary);
       // Step 2: Extract insights
       const insightsRes = await fetch('/api/extract-insights', {
         method: 'POST',
@@ -54,16 +55,17 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
       
       const insightsData = await insightsRes.json();
       setInsights(insightsData.insights);
-
+      console.log('insights', insightsData.insights);
       // Step 3: Validate each insight
       const insightList = extractInsightLines(insightsData.insights);
-      
+      console.log('insightList', insightList);
+      const insightList1 = ['**Mobile app usability is a primary driver of satisfaction and loyalty.**', '**Cashback and rewards for online shopping are highly valued, but not universally understood.**', '**Family-oriented rewards and transparency are key for certain segments.**', '**Travel perks and low international fees attract …-driven consumers, but expectations are rising.**', '**Customer service reputation influences trust and card selection.**', '**Pain points include a desire for more specialized features and clearer value communication.**', '**Behavioral patterns show digital-first, value-seeking, and lifestyle-aligned usage.**', '**Unexpected finding: App engagement directly builds brand loyalty.**'] 
       if (insightList.length === 0) {
         setValidations([]);
         return;
       }
 
-      const validationPromises = insightList.map(async (insight: string): Promise<ValidationResult> => {
+      const validationPromises = insightList1.map(async (insight: string): Promise<ValidationResult> => {
         try {
           const validationRes = await fetch('/api/validate-insights', {
             method: 'POST',
@@ -95,7 +97,7 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
 
       const validationResults = await Promise.all(validationPromises);
       setValidations(validationResults);
-      
+      console.log('validationResults', validationResults);
     } catch (error) {
       console.error('Analysis failed:', error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');

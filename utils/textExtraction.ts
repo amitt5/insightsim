@@ -1,3 +1,5 @@
+import { extractTextWithPython, checkPythonServiceHealth } from './pythonService';
+
 export interface ExtractionResult {
   success: boolean;
   text?: string;
@@ -6,10 +8,36 @@ export interface ExtractionResult {
 }
 
 /**
- * Extract text from PDF buffer
+ * Extract text from PDF buffer using Python service with fallback
  */
 export async function extractTextFromPDF(buffer: Buffer, fileName: string): Promise<ExtractionResult> {
+  // Try Python service first (PyMuPDF4LLM)
   try {
+    const isServiceAvailable = await checkPythonServiceHealth();
+    
+    if (isServiceAvailable) {
+      console.log(`Using Python service for ${fileName}`);
+      const result = await extractTextWithPython(buffer, fileName);
+      
+      if (result.success && result.text) {
+        return {
+          success: true,
+          text: result.text, // PyMuPDF4LLM already provides clean text
+          fileName
+        };
+      } else {
+        console.warn(`Python service failed for ${fileName}, falling back to pdf-parse:`, result.error);
+      }
+    } else {
+      console.warn(`Python service unavailable for ${fileName}, using fallback`);
+    }
+  } catch (error) {
+    console.warn(`Python service error for ${fileName}, falling back:`, error);
+  }
+  
+  // Fallback to pdf-parse
+  try {
+    console.log(`Using pdf-parse fallback for ${fileName}`);
     // Use eval to prevent webpack from bundling test files
     const pdfParse = eval('require')('pdf-parse');
     

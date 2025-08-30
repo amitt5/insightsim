@@ -68,6 +68,87 @@ export async function uploadMultipleFilesToServer(
 }
 
 /**
+ * Uploads documents specifically for RAG
+ */
+export async function uploadDocumentsForRAG(
+  files: File[],
+  simulationId: string,
+  onProgress?: (fileIndex: number, result: UploadResponse) => void
+): Promise<UploadResponse[]> {
+  return uploadMultipleFilesToServer(files, simulationId, 'rag-documents', onProgress);
+}
+
+/**
+ * Saves document metadata to database after successful upload
+ */
+export async function saveDocumentMetadata(
+  simulationId: string,
+  documents: Array<{
+    file_name: string;
+    file_path: string;
+    file_type: string;
+    file_size: number;
+  }>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`/api/rag/documents/${simulationId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ documents }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to save document metadata'
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Save document metadata error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    };
+  }
+}
+
+/**
+ * Fetches all documents for a simulation
+ */
+export async function getSimulationDocuments(
+  simulationId: string
+): Promise<{ success: boolean; documents?: any[]; error?: string }> {
+  try {
+    const response = await fetch(`/api/rag/documents/${simulationId}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to fetch documents'
+      };
+    }
+
+    return {
+      success: true,
+      documents: data.documents
+    };
+  } catch (error) {
+    console.error('Get documents error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    };
+  }
+}
+
+/**
  * Gets a signed URL for a file
  */
 export async function getSignedUrl(

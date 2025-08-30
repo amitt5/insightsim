@@ -19,8 +19,10 @@ import { Simulation, Persona, AIPersonaGeneration } from "@/utils/types"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { v4 as uuidv4 } from 'uuid'
 import { useToast } from "@/hooks/use-toast"
-import { uploadMultipleFilesToServer } from '@/utils/uploadApi'
+import { uploadMultipleFilesToServer, getSimulationDocuments } from '@/utils/uploadApi'
 import { validateFile, createFilePreview, revokeFilePreview } from '@/utils/fileUpload'
+import { DocumentUploader } from '@/components/DocumentUploader'
+import { SimulationDocument } from '@/utils/types'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import { runSimulationAPI } from "@/utils/api"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
@@ -40,6 +42,8 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   const [fileError, setFileError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({})
+  const [documents, setDocuments] = useState<SimulationDocument[]>([])
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [titleGenerationOpen, setTitleGenerationOpen] = useState(false)
   const [titleGenerationInput, setTitleGenerationInput] = useState('')
@@ -187,7 +191,31 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     };
 
     loadSimulation();
+    loadDocuments();
   }, [id, router, toast]);
+
+  // Load existing documents
+  const loadDocuments = async () => {
+    try {
+      setIsLoadingDocuments(true);
+      const result = await getSimulationDocuments(id);
+      
+      if (result.success && result.documents) {
+        setDocuments(result.documents);
+      } else {
+        console.error('Failed to load documents:', result.error);
+      }
+    } catch (error) {
+      console.error('Error loading documents:', error);
+    } finally {
+      setIsLoadingDocuments(false);
+    }
+  };
+
+  // Handle document changes from DocumentUploader
+  const handleDocumentsChange = (newDocuments: SimulationDocument[]) => {
+    setDocuments(newDocuments);
+  };
 
   // Cleanup preview URLs when component unmounts
   useEffect(() => {
@@ -432,6 +460,9 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       }
       // Use existing media URLs (already uploaded in step 3)
       const finalMediaUrls = simulationData.stimulus_media_url;
+      
+      // Prepare document URLs for simulation
+      const documentUrls = documents.map(doc => doc.file_path);
 
       // Update the existing simulation (now we're editing, not creating)
       const response = await fetch(`/api/simulations/${id}`, {
@@ -442,6 +473,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         body: JSON.stringify({
           ...simulationData,
           stimulus_media_url: finalMediaUrls,
+          rag_documents_url: documentUrls,
           discussion_questions: discussionQuestionsArray,
           num_turns: parseInt(simulationData.num_turns),
           personas: selectedPersonas,
@@ -2464,6 +2496,14 @@ Key Questions:
                     )}
                   </div>
                 </div>
+
+                {/* Document Upload Section */}
+                <DocumentUploader
+                  simulationId={id}
+                  uploadedDocuments={documents}
+                  onDocumentsChange={handleDocumentsChange}
+                  disabled={isUploading}
+                />
 
               </CardContent>
               <CardFooter className="justify-between">

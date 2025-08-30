@@ -88,11 +88,27 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    // Validate file type based on bucket
+    const mediaTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    const documentTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'text/markdown',
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    
+    const allowedTypes = bucket === 'rag-documents' ? documentTypes : mediaTypes;
+    const fileTypeMessage = bucket === 'rag-documents' 
+      ? 'Invalid file type. Please upload PDF, DOCX, DOC, TXT, MD, CSV, or XLSX files only.'
+      : 'Invalid file type. Please upload JPG, PNG, or PDF files only.';
+    
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Please upload JPG, PNG, or PDF files only.' },
+        { error: fileTypeMessage },
         { status: 400 }
       );
     }

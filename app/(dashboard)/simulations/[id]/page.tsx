@@ -13,7 +13,8 @@ import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Persona,Simulation } from "@/utils/types";
+import { Persona, Simulation, SimulationDocument } from "@/utils/types";
+import { getSimulationDocuments, getSignedUrl } from "@/utils/uploadApi";
 import { logErrorNonBlocking } from "@/utils/errorLogger";
 import { MediaViewer } from "@/components/media-viewer";
 import { MediaSlideshow } from "@/components/media-slideshow";
@@ -85,6 +86,9 @@ export default function SimulationViewPage() {
   const [isLoadingSignedUrls, setIsLoadingSignedUrls] = useState(false)
   const [selectedStimulusImages, setSelectedStimulusImages] = useState<boolean[]>([])
   const [askedQuestionIndices, setAskedQuestionIndices] = useState<number[]>([])
+  const [documents, setDocuments] = useState<SimulationDocument[]>([])
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false)
+  const [isDocumentsCollapsed, setIsDocumentsCollapsed] = useState(false)
   // const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
@@ -316,6 +320,7 @@ export default function SimulationViewPage() {
     console.log('simulationData111', simulationData);
     if (simulationData?.simulation?.id) {
       fetchSimulationMessages(simulationData.simulation.id);
+      fetchSimulationDocuments(simulationData.simulation.id);
       // Set userInstruction from simulation data if available
       if (simulationData.simulation.user_instructions) {
         setUserInstruction(simulationData.simulation.user_instructions);
@@ -394,7 +399,62 @@ export default function SimulationViewPage() {
     }
   };
 
+  // Function to fetch simulation documents
+  const fetchSimulationDocuments = async (simId: string) => {
+    try {
+      setIsLoadingDocuments(true);
+      const result = await getSimulationDocuments(simId);
+      
+      if (result.success && result.documents) {
+        setDocuments(result.documents);
+      } else {
+        console.error('Failed to load documents:', result.error);
+      }
+    } catch (error) {
+      console.error('Error fetching simulation documents:', error);
+    } finally {
+      setIsLoadingDocuments(false);
+    }
+  };
 
+  // Function to handle document download
+  const handleDocumentDownload = async (doc: SimulationDocument) => {
+    try {
+      const result = await getSignedUrl(doc.file_path, 'rag-documents');
+      
+      if (result.success && result.url) {
+        // Create a temporary link to download the file
+        const link = document.createElement('a');
+        link.href = result.url;
+        link.download = doc.file_name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        console.error('Failed to get download URL:', result.error);
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
+    }
+  };
+
+  // Get file type icon for documents
+  const getDocumentIcon = (fileType: string) => {
+    if (fileType.includes('pdf')) return '📄';
+    if (fileType.includes('word') || fileType.includes('document')) return '📝';
+    if (fileType.includes('text') || fileType.includes('markdown')) return '📄';
+    if (fileType.includes('csv') || fileType.includes('excel') || fileType.includes('sheet')) return '📊';
+    return '📄';
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   const runSimulation = async (customPrompt?: ChatCompletionMessageParam[]) => {
     console.log('runSimulationCalled', simulationData);
@@ -1006,6 +1066,71 @@ export default function SimulationViewPage() {
                             </div>
                           );
                         })}
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Documents Section */}
+            <Card className="h-auto min-h-fit">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold">
+                    Documents {documents.length > 0 && `(${documents.length})`}
+                  </h2>
+                  <button
+                    onClick={() => setIsDocumentsCollapsed(!isDocumentsCollapsed)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title={isDocumentsCollapsed ? "Expand documents" : "Collapse documents"}
+                  >
+                    {isDocumentsCollapsed ? (
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+                
+                {!isDocumentsCollapsed && (
+                  <>
+                    {isLoadingDocuments ? (
+                      <div className="text-center py-4 text-gray-500">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="h-2 w-2 bg-primary rounded-full animate-bounce" />
+                          <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                          <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                          <span className="ml-2">Loading documents...</span>
+                        </div>
+                      </div>
+                    ) : documents.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500">
+                        No documents uploaded for this simulation
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {documents.map((document) => (
+                          <div 
+                            key={document.id} 
+                            className="flex items-start gap-3 p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 transition-colors"
+                          >
+                            <div className="text-lg">{getDocumentIcon(document.file_type)}</div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm truncate">{document.file_name}</h4>
+                              <p className="text-xs text-gray-500">
+                                {formatFileSize(document.file_size)} • {new Date(document.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleDocumentDownload(document)}
+                              className="p-1 hover:bg-gray-200 rounded transition-colors"
+                              title="Download document"
+                            >
+                              <Download className="h-4 w-4 text-primary" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </>

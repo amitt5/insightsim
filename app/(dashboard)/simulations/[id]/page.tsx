@@ -1115,9 +1115,35 @@ export default function SimulationViewPage() {
                             key={document.id} 
                             className="flex items-start gap-3 p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 transition-colors"
                           >
+                            <input
+                              type="checkbox"
+                              id={`doc-${document.id}`}
+                              className="w-4 h-4 mt-1 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                            />
                             <div className="text-lg">{getDocumentIcon(document.file_type)}</div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-sm truncate">{document.file_name}</h4>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-sm truncate">{document.file_name}</h4>
+                                {document.context_processed_at && (
+                                  <div 
+                                    className="text-green-500" 
+                                    title="Document processed"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
                               <p className="text-xs text-gray-500">
                                 {formatFileSize(document.file_size)} • {new Date(document.created_at).toLocaleDateString()}
                               </p>

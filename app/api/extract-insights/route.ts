@@ -1,20 +1,13 @@
+// app/api/extract-insights/route.ts
+import {openai} from '@/lib/openai';  // Changed from perplexity
 import { NextRequest, NextResponse } from 'next/server';
-import perplexity from '@/lib/perplexity';
-import { InsightExtractionRequest, InsightExtractionResponse, PerplexityError } from '@/app/types/perplexity';
 
-export async function POST(req: NextRequest): Promise<NextResponse<InsightExtractionResponse | PerplexityError>> {
+export async function POST(req: NextRequest) {
   try {
-    const { transcript }: InsightExtractionRequest = await req.json();
+    const { transcript } = await req.json();
     
-    if (!transcript) {
-      return NextResponse.json(
-        { error: 'Transcript is required' }, 
-        { status: 400 }
-      );
-    }
-    
-    const response = await perplexity.chat.completions.create({
-      model: 'sonar-small-online',
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
       messages: [
         {
           role: 'system',
@@ -32,9 +25,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<InsightExtrac
           content: `Extract key insights from this transcript:\n\n${transcript}`
         }
       ],
-      max_tokens: 500,
-      temperature: 0.2,
-      
+      max_tokens: 600,
+      temperature: 0.2
     });
 
     return NextResponse.json({ 

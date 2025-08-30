@@ -1,31 +1,24 @@
+// app/api/summarize-transcript/route.ts
+import { openai } from '@/lib/openai';  // Changed from perplexity
 import { NextRequest, NextResponse } from 'next/server';
-import perplexity from '@/lib/perplexity';
-import { TranscriptSummaryRequest, TranscriptSummaryResponse, PerplexityError } from '@/app/types/perplexity';
 
-export async function POST(req: NextRequest): Promise<NextResponse<TranscriptSummaryResponse | PerplexityError>> {
+export async function POST(req: NextRequest) {
   try {
-    const { transcript }: TranscriptSummaryRequest = await req.json();
+    const { transcript } = await req.json();
     
-    if (!transcript) {
-      return NextResponse.json(
-        { error: 'Transcript is required' }, 
-        { status: 400 }
-      );
-    }
-    
-    const response = await perplexity.chat.completions.create({
-      model: 'sonar-small-online',
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo', // Much cheaper than GPT-4
       messages: [
         {
           role: 'system',
-          content: 'You are an expert market research analyst. Summarize focus group transcripts clearly and concisely, highlighting key themes and participant insights. Structure your response with clear headings and bullet points.'
+          content: 'You are an expert market research analyst. Summarize focus group transcripts clearly and concisely, highlighting key themes and participant insights.'
         },
         {
           role: 'user',
           content: `Summarize this focus group transcript:\n\n${transcript}`
         }
       ],
-      max_tokens: 500,
+      max_tokens: 800,
       temperature: 0.3
     });
 

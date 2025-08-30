@@ -59,14 +59,26 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
       // Step 3: Validate each insight
       const insightList = extractInsightLines(insightsData.insights);
       console.log('insightList', insightList);
-     if (insightList.length === 0) {
-        setValidations([]);
-        return;
-      }
-      const insightList1 = ['**Mobile app usability is a primary driver of satisfaction and loyalty.**', '**Cashback and rewards for online shopping are highly valued, but not universally understood.**', '**Family-oriented rewards and transparency are key for certain segments.**', '**Travel perks and low international fees attract …-driven consumers, but expectations are rising.**', '**Customer service reputation influences trust and card selection.**', '**Pain points include a desire for more specialized features and clearer value communication.**', '**Behavioral patterns show digital-first, value-seeking, and lifestyle-aligned usage.**', '**Unexpected finding: App engagement directly builds brand loyalty.**'] 
-      
+        if (insightList.length === 0) {
+            setValidations([]);
+            return;
+        }
+      const insightList1 = [
+        '**Mobile app usability is a primary driver of satisfaction and loyalty.**', 
+        '**Cashback and rewards for online shopping are highly valued, but not universally understood.**', 
+        '**Family-oriented rewards and transparency are key for certain segments.**', 
+        '**Travel perks and low international fees attract …-driven consumers, but expectations are rising.**', 
+        '**Customer service reputation influences trust and card selection.**', 
+        '**Pain points include a desire for more specialized features and clearer value communication.**', 
+        '**Behavioral patterns show digital-first, value-seeking, and lifestyle-aligned usage.**', '**Unexpected finding: App engagement directly builds brand loyalty.**'
+    ] 
+    const insightList2 = [
+        // insightList[0]
+        'multiple credit cards automatically harm credit scores'
+        // 'common misconceptions about multiple credit cards is that multiple credit cards automatically harm credit scores'
+    ]
 
-      const validationPromises = insightList.map(async (insight: string): Promise<ValidationResult> => {
+      const validationPromises = insightList2.map(async (insight: string): Promise<ValidationResult> => {
         try {
           const validationRes = await fetch('/api/validate-insights', {
             method: 'POST',
@@ -203,7 +215,7 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
       {loading && (
         <div className="text-center py-8">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <p className="mt-2 text-muted-foreground">Processing with Perplexity AI...</p>
+          <p className="mt-2 text-muted-foreground">Processing...</p>
         </div>
       )}
     </div>

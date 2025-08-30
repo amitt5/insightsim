@@ -177,4 +177,79 @@ export async function getSignedUrl(
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
     };
   }
+}
+
+/**
+ * Process documents for CAG (Context Augmented Generation)
+ */
+export async function processDocumentsForCAG(
+  simulationId: string
+): Promise<{ 
+  success: boolean; 
+  contextString?: string;
+  warnings?: string[];
+  processedCount?: number;
+  totalDocuments?: number;
+  contextLength?: number;
+  error?: string;
+}> {
+  try {
+    const response = await fetch(`/api/process-documents/${simulationId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to process documents'
+      };
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error processing documents:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
+
+/**
+ * Get simulation context information
+ */
+export async function getSimulationContext(
+  simulationId: string
+): Promise<{ 
+  success: boolean; 
+  contextString?: string;
+  contextProcessedAt?: string;
+  contextLength?: number;
+  error?: string;
+}> {
+  try {
+    const response = await fetch(`/api/process-documents/${simulationId}`);
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to fetch context'
+      };
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching simulation context:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
 } 

@@ -19,7 +19,7 @@ import { Simulation, Persona, AIPersonaGeneration } from "@/utils/types"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { v4 as uuidv4 } from 'uuid'
 import { useToast } from "@/hooks/use-toast"
-import { uploadMultipleFilesToServer, getSimulationDocuments } from '@/utils/uploadApi'
+import { uploadMultipleFilesToServer, getSimulationDocuments, processDocumentsForCAG, getSimulationContext } from '@/utils/uploadApi'
 import { validateFile, createFilePreview, revokeFilePreview } from '@/utils/fileUpload'
 import { DocumentUploader } from '@/components/DocumentUploader'
 import { SimulationDocument } from '@/utils/types'
@@ -44,6 +44,12 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({})
   const [documents, setDocuments] = useState<SimulationDocument[]>([])
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false)
+  const [isProcessingDocuments, setIsProcessingDocuments] = useState(false)
+  const [processingWarnings, setProcessingWarnings] = useState<string[]>([])
+  const [contextInfo, setContextInfo] = useState<{
+    contextLength: number;
+    processedAt: string | null;
+  }>({ contextLength: 0, processedAt: null })
   const [isLoading, setIsLoading] = useState(true)
   const [titleGenerationOpen, setTitleGenerationOpen] = useState(false)
   const [titleGenerationInput, setTitleGenerationInput] = useState('')
@@ -192,6 +198,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
 
     loadSimulation();
     loadDocuments();
+    loadContextInfo();
   }, [id, router, toast]);
 
   // Load existing documents
@@ -212,9 +219,76 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     }
   };
 
+  // Load context information
+  const loadContextInfo = async () => {
+    try {
+      const result = await getSimulationContext(id);
+      
+      if (result.success) {
+        setContextInfo({
+          contextLength: result.contextLength || 0,
+          processedAt: result.contextProcessedAt || null
+        });
+      }
+    } catch (error) {
+      console.error('Error loading context info:', error);
+    }
+  };
+
+  // Process documents for CAG
+  const processDocuments = async () => {
+    try {
+      setIsProcessingDocuments(true);
+      setProcessingWarnings([]);
+      
+      const result = await processDocumentsForCAG(id);
+      
+      if (result.success) {
+        // Update context info
+        setContextInfo({
+          contextLength: result.contextLength || 0,
+          processedAt: new Date().toISOString()
+        });
+        
+        // Show warnings if any
+        if (result.warnings && result.warnings.length > 0) {
+          setProcessingWarnings(result.warnings);
+        }
+        
+        toast({
+          title: "Documents Processed",
+          description: `Successfully processed ${result.processedCount}/${result.totalDocuments} documents. Context length: ${result.contextLength} characters.`,
+        });
+      } else {
+        toast({
+          title: "Processing Failed",
+          description: result.error || "Failed to process documents",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error processing documents:', error);
+      toast({
+        title: "Processing Error",
+        description: "An unexpected error occurred while processing documents",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingDocuments(false);
+    }
+  };
+
   // Handle document changes from DocumentUploader
-  const handleDocumentsChange = (newDocuments: SimulationDocument[]) => {
+  const handleDocumentsChange = async (newDocuments: SimulationDocument[]) => {
     setDocuments(newDocuments);
+    
+    // Auto-trigger processing when documents change
+    if (newDocuments.length > 0) {
+      // Small delay to ensure document metadata is saved
+      setTimeout(() => {
+        processDocuments();
+      }, 1000);
+    }
   };
 
   // Cleanup preview URLs when component unmounts
@@ -2504,6 +2578,63 @@ Key Questions:
                   onDocumentsChange={handleDocumentsChange}
                   disabled={isUploading}
                 />
+
+                {/* Document Processing Status */}
+                {documents.length > 0 && (
+                  <div className="mt-6 p-4 border rounded-lg bg-muted/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium">Document Processing Status</h3>
+                      <Button
+                        onClick={processDocuments}
+                        disabled={isProcessingDocuments}
+                        size="sm"
+                        variant="outline"
+                      >
+                        {isProcessingDocuments ? (
+                          <>
+                            <div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
+                            Processing...
+                          </>
+                        ) : (
+                          'Process Documents'
+                        )}
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Context Length:</span>
+                        <span>{contextInfo.contextLength.toLocaleString()} characters</span>
+                      </div>
+                      
+                      {contextInfo.processedAt && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Last Processed:</span>
+                          <span>{new Date(contextInfo.processedAt).toLocaleString()}</span>
+                        </div>
+                      )}
+                      
+                      {processingWarnings.length > 0 && (
+                        <div className="mt-3">
+                          <h4 className="font-medium text-destructive mb-2">Processing Warnings:</h4>
+                          <div className="space-y-1">
+                            {processingWarnings.map((warning, index) => (
+                              <div key={index} className="text-xs p-2 bg-destructive/10 border border-destructive/20 rounded text-destructive">
+                                {warning}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {contextInfo.contextLength === 0 && documents.length > 0 && (
+                        <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded p-2">
+                          Documents need to be processed to generate context for simulations
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
               </CardContent>
               <CardFooter className="justify-between">

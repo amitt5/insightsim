@@ -1,5 +1,3 @@
-import pdf from 'pdf-parse';
-
 export interface ExtractionResult {
   success: boolean;
   text?: string;
@@ -12,7 +10,10 @@ export interface ExtractionResult {
  */
 export async function extractTextFromPDF(buffer: Buffer, fileName: string): Promise<ExtractionResult> {
   try {
-    const data = await pdf(buffer);
+    // Use eval to prevent webpack from bundling test files
+    const pdfParse = eval('require')('pdf-parse');
+    
+    const data = await pdfParse(buffer);
     return {
       success: true,
       text: data.text,
@@ -90,8 +91,8 @@ export function generateContextString(extractions: ExtractionResult[]): {
   
   const contextString = contextParts.join('\n\n');
   
-  // Check context size (50,000 character limit)
-  const maxContextLength = 50000;
+  // Check context size (150,000 character limit)
+  const maxContextLength = 150000;
   if (contextString.length > maxContextLength) {
     warnings.push(`Context is too large (${contextString.length} characters). Consider removing some documents or using shorter documents.`);
     // Truncate context but keep document headers intact

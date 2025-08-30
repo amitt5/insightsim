@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { extractTextFromFile, generateContextString, ExtractionResult } from '@/utils/textExtraction';
 
 export async function POST(
@@ -7,16 +8,14 @@ export async function POST(
   { params }: { params: { simulationId: string } }
 ) {
   try {
-    const supabase = createClient();
+    const supabase = createRouteHandlerClient({ cookies });
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
     const { simulationId } = params;
-
     // Verify simulation exists and user has access
     const { data: simulation, error: simError } = await supabase
       .from('simulations')
@@ -31,7 +30,6 @@ export async function POST(
     if (simulation.user_id !== user.id) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
-
     // Fetch all documents for this simulation
     const { data: documents, error: docsError } = await supabase
       .from('simulation_documents')
@@ -144,7 +142,7 @@ export async function GET(
   { params }: { params: { simulationId: string } }
 ) {
   try {
-    const supabase = createClient();
+    const supabase = createRouteHandlerClient({ cookies });
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();

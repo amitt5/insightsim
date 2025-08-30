@@ -90,4 +90,6 @@ export interface SimulationDocument {
   file_type: string;
   file_size: number;
   created_at: string;
+  context_string?: string;
+  context_processed_at?: string;
 }

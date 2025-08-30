@@ -242,7 +242,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       setProcessingWarnings([]);
       
       const result = await processDocumentsForCAG(id);
-      
+
       if (result.success) {
         // Update context info
         setContextInfo({
@@ -257,7 +257,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         
         toast({
           title: "Documents Processed",
-          description: `Successfully processed ${result.processedCount}/${result.totalDocuments} documents. Context length: ${result.contextLength} characters.`,
+          description: `Successfully processed ${result.processedCount}/${result.totalDocuments} documents. Total context: ${result.contextLength?.toLocaleString()} characters.`,
         });
       } else {
         toast({

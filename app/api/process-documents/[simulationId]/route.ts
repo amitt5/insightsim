@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { extractTextFromFile, generateContextString, ExtractionResult } from '@/utils/textExtraction';
+import { extractTextFromFile, generateContextString, ExtractionResult, cleanText } from '@/utils/textExtraction';
 
 export async function POST(
   request: NextRequest,
@@ -65,8 +65,10 @@ export async function POST(
       });
     }
 
-    // Process each document
-    const extractions: ExtractionResult[] = [];
+    // Process each document individually
+    const warnings: string[] = [];
+    let processedCount = 0;
+    let totalContextLength = 0;
     
     for (const doc of documents) {
       try {
@@ -76,11 +78,7 @@ export async function POST(
           .download(doc.file_path);
 
         if (downloadError || !fileData) {
-          extractions.push({
-            success: false,
-            error: `Failed to download file: ${downloadError?.message || 'Unknown error'}`,
-            fileName: doc.file_name
-          });
+          warnings.push(`Failed to download "${doc.file_name}": ${downloadError?.message || 'Unknown error'}`);
           continue;
         }
 
@@ -89,43 +87,42 @@ export async function POST(
         
         // Extract text based on file type
         const extraction = await extractTextFromFile(buffer, doc.file_name, doc.file_type);
-        extractions.push(extraction);
+        
+        if (extraction.success && extraction.text) {
+          // Clean the text
+          const cleanedText = cleanText(extraction.text);
+          
+          // Update document with context
+          const { error: updateError } = await supabase
+            .from('simulation_documents')
+            .update({ 
+              context_string: cleanedText,
+              context_processed_at: new Date().toISOString()
+            })
+            .eq('id', doc.id);
+
+          if (updateError) {
+            console.error(`Error updating document ${doc.id} context:`, updateError);
+            warnings.push(`Failed to save context for "${doc.file_name}"`);
+          } else {
+            processedCount++;
+            totalContextLength += cleanedText.length;
+          }
+        } else {
+          warnings.push(`Failed to extract text from "${doc.file_name}": ${extraction.error}`);
+        }
 
       } catch (error) {
-        extractions.push({
-          success: false,
-          error: `Processing error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          fileName: doc.file_name
-        });
+        warnings.push(`Processing error for "${doc.file_name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
-    // Generate context string
-    const { contextString, warnings } = generateContextString(extractions);
-
-    // Update simulation with context
-    const { error: updateError } = await supabase
-      .from('simulations')
-      .update({ 
-        context_string: contextString || null,
-        context_processed_at: new Date().toISOString()
-      })
-      .eq('id', simulationId);
-
-    if (updateError) {
-      console.error('Error updating simulation context:', updateError);
-      return NextResponse.json({ error: 'Failed to save context' }, { status: 500 });
-    }
-
-    const successfulExtractions = extractions.filter(e => e.success).length;
-
     return NextResponse.json({
       success: true,
-      contextString,
       warnings,
-      processedCount: successfulExtractions,
+      processedCount,
       totalDocuments: documents.length,
-      contextLength: contextString.length
+      contextLength: totalContextLength
     });
 
   } catch (error) {
@@ -152,10 +149,10 @@ export async function GET(
 
     const { simulationId } = params;
 
-    // Get simulation context info
+    // Verify simulation exists and user has access
     const { data: simulation, error: simError } = await supabase
       .from('simulations')
-      .select('context_string, context_processed_at, user_id')
+      .select('id, user_id')
       .eq('id', simulationId)
       .single();
 
@@ -167,11 +164,46 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
+    // Get all documents with their contexts
+    const { data: documents, error: docsError } = await supabase
+      .from('simulation_documents')
+      .select('*')
+      .eq('simulation_id', simulationId)
+      .order('created_at', { ascending: true });
+
+    if (docsError) {
+      return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 });
+    }
+
+    // Aggregate context from all processed documents
+    let aggregatedContext = '';
+    let latestProcessedAt: string | null = null;
+    let totalContextLength = 0;
+
+    if (documents && documents.length > 0) {
+      const processedDocs = documents.filter(doc => doc.context_string);
+      
+      processedDocs.forEach((doc, index) => {
+        if (doc.context_string) {
+          const documentHeader = `\n=== Document ${index + 1}: ${doc.file_name} ===\n`;
+          aggregatedContext += documentHeader + doc.context_string + '\n\n';
+          totalContextLength += doc.context_string.length;
+          
+          // Track latest processing time
+          if (!latestProcessedAt || (doc.context_processed_at && doc.context_processed_at > latestProcessedAt)) {
+            latestProcessedAt = doc.context_processed_at;
+          }
+        }
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      contextString: simulation.context_string,
-      contextProcessedAt: simulation.context_processed_at,
-      contextLength: simulation.context_string?.length || 0
+      contextString: aggregatedContext.trim(),
+      contextProcessedAt: latestProcessedAt,
+      contextLength: totalContextLength,
+      documentsWithContext: documents?.filter(doc => doc.context_string).length || 0,
+      totalDocuments: documents?.length || 0
     });
 
   } catch (error) {

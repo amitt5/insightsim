@@ -2228,6 +2228,104 @@ Key Questions:
                   />
                 </div>
 
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="questions">Discussion Questions</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="p-0 h-6 w-6 bg-transparent border-none cursor-pointer"
+                            tabIndex={-1}
+                            disabled={isGeneratingQuestions}
+                            onClick={async () => {
+                              if (isGeneratingQuestions) return;
+                              setIsGeneratingQuestions(true);
+                              try {
+                                const prompt = buildDiscussionQuestionsPrompt(
+                                  simulationData.study_title,
+                                  simulationData.topic,
+                                );
+                                console.log('prompt111', prompt);
+                                const messages: ChatCompletionMessageParam[] = [
+                                  { role: "system", content: prompt }
+                                ];
+                                const result = await runSimulationAPI(messages);
+
+                                try {
+                                  // Parse the JSON response
+                                  let responseText = result.reply || "";
+                                  
+                                  // Clean the response string (remove any markdown formatting)
+                                  responseText = responseText
+                                  .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
+                                  .replace(/```$/, '')            // Remove trailing ```
+                                  .trim();
+                                  
+                                  // Parse the JSON
+                                  const parsedResponse = JSON.parse(responseText);
+                                  
+                                  // Extract questions array
+                                  const questions = parsedResponse.questions || [];
+                                  
+                                  // Join questions as textarea value (one per line)
+                                  setSimulationData(prev => ({
+                                    ...prev,
+                                    discussion_questions: questions.join("\n")
+                                  }));
+                                  
+                                } catch (error) {
+                                  console.error("Error parsing discussion questions JSON:", error);
+                                  
+                                  // Fallback: try to parse as the old numbered list format
+                                  let questions = result.reply || "";
+                                  questions = questions.replace(/```[a-z]*[\s\S]*?```/gi, '');
+                                  let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+                                  lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
+                                  console.log('lines111', lines);
+                                  setSimulationData(prev => ({
+                                    ...prev,
+                                    discussion_questions: lines.join("\n")
+                                  }));
+                                }
+
+                
+                              } catch (err) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to generate questions. Please try again.",
+                                  variant: "destructive",
+                                  duration: 5000,
+                                });
+                              } finally {
+                                setIsGeneratingQuestions(false);
+                              }
+                            }}
+                          >
+                            {isGeneratingQuestions ? (
+                              <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4 w-4 text-primary" />
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          Generate discussion questions with AI
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Textarea style={{ minHeight: '250px' }}
+                    id="questions"
+                    placeholder="Enter your discussion questions here..."
+                    rows={5}
+                    value={simulationData.discussion_questions}
+                    onChange={handleInputChange('discussion_questions')}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label>
                     Upload Media 
@@ -2367,102 +2465,6 @@ Key Questions:
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="questions">Discussion Questions</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="p-0 h-6 w-6 bg-transparent border-none cursor-pointer"
-                            tabIndex={-1}
-                            disabled={isGeneratingQuestions}
-                            onClick={async () => {
-                              if (isGeneratingQuestions) return;
-                              setIsGeneratingQuestions(true);
-                              try {
-                                const prompt = buildDiscussionQuestionsPrompt(
-                                  simulationData.study_title,
-                                  simulationData.topic,
-                                );
-                                console.log('prompt111', prompt);
-                                const messages: ChatCompletionMessageParam[] = [
-                                  { role: "system", content: prompt }
-                                ];
-                                const result = await runSimulationAPI(messages);
-
-                                try {
-                                  // Parse the JSON response
-                                  let responseText = result.reply || "";
-                                  
-                                  // Clean the response string (remove any markdown formatting)
-                                  responseText = responseText
-                                  .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
-                                  .replace(/```$/, '')            // Remove trailing ```
-                                  .trim();
-                                  
-                                  // Parse the JSON
-                                  const parsedResponse = JSON.parse(responseText);
-                                  
-                                  // Extract questions array
-                                  const questions = parsedResponse.questions || [];
-                                  
-                                  // Join questions as textarea value (one per line)
-                                  setSimulationData(prev => ({
-                                    ...prev,
-                                    discussion_questions: questions.join("\n")
-                                  }));
-                                  
-                                } catch (error) {
-                                  console.error("Error parsing discussion questions JSON:", error);
-                                  
-                                  // Fallback: try to parse as the old numbered list format
-                                  let questions = result.reply || "";
-                                  questions = questions.replace(/```[a-z]*[\s\S]*?```/gi, '');
-                                  let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
-                                  lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
-                                  console.log('lines111', lines);
-                                  setSimulationData(prev => ({
-                                    ...prev,
-                                    discussion_questions: lines.join("\n")
-                                  }));
-                                }
-
-                
-                              } catch (err) {
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to generate questions. Please try again.",
-                                  variant: "destructive",
-                                  duration: 5000,
-                                });
-                              } finally {
-                                setIsGeneratingQuestions(false);
-                              }
-                            }}
-                          >
-                            {isGeneratingQuestions ? (
-                              <Loader2 className="h-4 w-4 text-primary animate-spin" />
-                            ) : (
-                              <Sparkles className="h-4 w-4 text-primary" />
-                            )}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          Generate discussion questions with AI
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <Textarea
-                    id="questions"
-                    placeholder="Enter your discussion questions here..."
-                    rows={5}
-                    value={simulationData.discussion_questions}
-                    onChange={handleInputChange('discussion_questions')}
-                  />
-                </div>
               </CardContent>
               <CardFooter className="justify-between">
                 <Button variant="outline" onClick={prevStep}>

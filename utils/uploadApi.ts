@@ -252,4 +252,36 @@ export async function getSimulationContext(
       error: error instanceof Error ? error.message : 'Unknown error' 
     };
   }
+}
+
+/**
+ * Delete a simulation document
+ */
+export async function deleteSimulationDocument(
+  simulationId: string,
+  documentId: string,
+  filePath: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`/api/rag/documents/${simulationId}?documentId=${encodeURIComponent(documentId)}&filePath=${encodeURIComponent(filePath)}`, {
+      method: 'DELETE',
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to delete document'
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Delete document error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    };
+  }
 } 

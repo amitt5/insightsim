@@ -12,6 +12,7 @@ interface DocumentUploaderProps {
   simulationId: string;
   uploadedDocuments: SimulationDocument[];
   onDocumentsChange: (documents: SimulationDocument[]) => void;
+  onDocumentDelete?: (documentId: string) => Promise<void>;
   disabled?: boolean;
 }
 
@@ -19,12 +20,14 @@ export function DocumentUploader({
   simulationId, 
   uploadedDocuments, 
   onDocumentsChange, 
+  onDocumentDelete,
   disabled = false 
 }: DocumentUploaderProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<Record<string, boolean>>({})
   const [fileError, setFileError] = useState<string>("")
+  const [deletingDocuments, setDeletingDocuments] = useState<Set<string>>(new Set())
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -318,14 +321,29 @@ export function DocumentUploader({
                     </div>
                     <button 
                       type="button"
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        // Handle document removal (will implement in parent)
+                        if (onDocumentDelete && !deletingDocuments.has(doc.id)) {
+                          setDeletingDocuments(prev => new Set(prev).add(doc.id));
+                          try {
+                            await onDocumentDelete(doc.id);
+                          } finally {
+                            setDeletingDocuments(prev => {
+                              const newSet = new Set(prev);
+                              newSet.delete(doc.id);
+                              return newSet;
+                            });
+                          }
+                        }
                       }}
                       className="text-red-500 hover:text-red-700 p-1"
-                      disabled={disabled}
+                      disabled={disabled || deletingDocuments.has(doc.id)}
                     >
-                      <X className="h-4 w-4" />
+                      {deletingDocuments.has(doc.id) ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <X className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 ))}

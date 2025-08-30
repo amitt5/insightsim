@@ -19,7 +19,7 @@ import { Simulation, Persona, AIPersonaGeneration } from "@/utils/types"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { v4 as uuidv4 } from 'uuid'
 import { useToast } from "@/hooks/use-toast"
-import { uploadMultipleFilesToServer, getSimulationDocuments, processDocumentsForCAG, getSimulationContext } from '@/utils/uploadApi'
+import { uploadMultipleFilesToServer, getSimulationDocuments, processDocumentsForCAG, getSimulationContext, deleteSimulationDocument } from '@/utils/uploadApi'
 import { validateFile, createFilePreview, revokeFilePreview } from '@/utils/fileUpload'
 import { DocumentUploader } from '@/components/DocumentUploader'
 import { SimulationDocument } from '@/utils/types'
@@ -275,6 +275,61 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       });
     } finally {
       setIsProcessingDocuments(false);
+    }
+  };
+
+  // Handle document deletion
+  const handleDocumentDelete = async (documentId: string) => {
+    try {
+      // Find the document to get its file path
+      const documentToDelete = documents.find(doc => doc.id === documentId);
+      if (!documentToDelete) {
+        toast({
+          title: "Delete Failed",
+          description: "Document not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const result = await deleteSimulationDocument(id, documentId, documentToDelete.file_path);
+      
+      if (result.success) {
+        // Remove document from local state
+        const updatedDocuments = documents.filter(doc => doc.id !== documentId);
+        setDocuments(updatedDocuments);
+        
+        // Clear any existing warnings
+        setProcessingWarnings([]);
+        
+        // Auto-trigger reprocessing if there are still documents
+        if (updatedDocuments.length > 0) {
+          setTimeout(() => {
+            processDocuments();
+          }, 500);
+        } else {
+          // Clear context info if no documents left
+          setContextInfo({ contextLength: 0, processedAt: null });
+        }
+        
+        toast({
+          title: "Document Deleted",
+          description: "Document has been successfully removed",
+        });
+      } else {
+        toast({
+          title: "Delete Failed",
+          description: result.error || "Failed to delete document",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast({
+        title: "Delete Error",
+        description: "An unexpected error occurred while deleting the document",
+        variant: "destructive",
+      });
     }
   };
 
@@ -2576,6 +2631,7 @@ Key Questions:
                   simulationId={id}
                   uploadedDocuments={documents}
                   onDocumentsChange={handleDocumentsChange}
+                  onDocumentDelete={handleDocumentDelete}
                   disabled={isUploading}
                 />
 

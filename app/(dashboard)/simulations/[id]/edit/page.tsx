@@ -19,7 +19,7 @@ import { Simulation, Persona, AIPersonaGeneration } from "@/utils/types"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { v4 as uuidv4 } from 'uuid'
 import { useToast } from "@/hooks/use-toast"
-import { uploadMultipleFilesToServer, getSimulationDocuments, processDocumentsForCAG, getSimulationContext, deleteSimulationDocument } from '@/utils/uploadApi'
+import { uploadMultipleFilesToServer, getSimulationDocuments, processDocumentWithAI, getSimulationContext, deleteSimulationDocument, getSignedUrl } from '@/utils/uploadApi'
 import { validateFile, createFilePreview, revokeFilePreview } from '@/utils/fileUpload'
 import { DocumentUploader } from '@/components/DocumentUploader'
 import { SimulationDocument } from '@/utils/types'
@@ -235,37 +235,72 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  // Process documents for CAG
+  // Process documents with Google Document AI
   const processDocuments = async () => {
     try {
       setIsProcessingDocuments(true);
       setProcessingWarnings([]);
       
-      const result = await processDocumentsForCAG(id);
+      let successCount = 0;
+      let failureCount = 0;
+      const warnings: string[] = [];
 
-      if (result.success) {
-        // Update context info
-        setContextInfo({
-          contextLength: result.contextLength || 0,
-          processedAt: new Date().toISOString()
-        });
-        
-        // Show warnings if any
-        if (result.warnings && result.warnings.length > 0) {
-          setProcessingWarnings(result.warnings);
+      // Process each document individually
+      for (const doc of documents) {
+        // Get the file from storage
+        const signedUrlResult = await getSignedUrl(doc.file_path, 'rag-documents');
+        if (!signedUrlResult.success || !signedUrlResult.url) {
+          failureCount++;
+          warnings.push(`Failed to access document: ${doc.file_name}`);
+          continue;
         }
+        console.log('amit-signedUrlResult', signedUrlResult);
+                  // Fetch the file content
+          const fileResponse = await fetch(signedUrlResult.url);
+          console.log('amit-fileResponse', fileResponse);
+          if (!fileResponse.ok) {
+            failureCount++;
+            warnings.push(`Failed to download document: ${doc.file_name} (${fileResponse.status})`);
+            continue;
+          }
+          const fileBlob = await fileResponse.blob();
+        const file = new File([fileBlob], doc.file_name, { type: doc.file_type });
+
+        // Process with Document AI
+        const result = await processDocumentWithAI(id, file, doc.id);
         
-        toast({
-          title: "Documents Processed",
-          description: `Successfully processed ${result.processedCount}/${result.totalDocuments} documents. Total context: ${result.contextLength?.toLocaleString()} characters.`,
-        });
-      } else {
-        toast({
-          title: "Processing Failed",
-          description: result.error || "Failed to process documents",
-          variant: "destructive",
-        });
+        if (result.success) {
+          successCount++;
+        } else {
+          failureCount++;
+          warnings.push(`Failed to process document: ${doc.file_name} - ${result.error}`);
+        }
       }
+
+      // // Update warnings state
+      // setProcessingWarnings(warnings);
+
+      // // Update context info
+      // setContextInfo({
+      //   contextLength: successCount,
+      //   processedAt: new Date().toISOString()
+      // });
+
+      // // Refresh documents list to get updated processing status
+      // await loadDocuments();
+
+      // if (successCount > 0) {
+      //   toast({
+      //     title: "Documents Processed",
+      //     description: `Successfully processed ${successCount} out of ${documents.length} documents.${failureCount > 0 ? ` ${failureCount} documents failed.` : ''}`,
+      //   });
+      // } else {
+      //   toast({
+      //     title: "Processing Failed",
+      //     description: "Failed to process documents",
+      //     variant: "destructive",
+      //   });
+      // }
     } catch (error) {
       console.error('Error processing documents:', error);
       toast({

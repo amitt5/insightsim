@@ -1,215 +1,157 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { extractTextFromFile, generateContextString, ExtractionResult, cleanText } from '@/utils/textExtraction';
+import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
+import { NextResponse } from 'next/server';
+// import { createClient } from '@/lib/supabase';
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { simulationId: string } }
-) {
-  try {
-    const supabase = createRouteHandlerClient({ cookies });
-    
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const { simulationId } = params;
-    // Verify simulation exists and user has access
-    const { data: simulation, error: simError } = await supabase
-      .from('simulations')
-      .select('id, user_id')
-      .eq('id', simulationId)
-      .single();
+// Initialize Document AI client
+const client = new DocumentProcessorServiceClient({
+  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+});
 
-    if (simError || !simulation) {
-      return NextResponse.json({ error: 'Simulation not found' }, { status: 404 });
-    }
+const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
+const location = process.env.GOOGLE_CLOUD_LOCATION || 'us';
+const processorId = process.env.GOOGLE_CLOUD_PROCESSOR_ID;
 
-    if (simulation.user_id !== user.id) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-    // Fetch all documents for this simulation
-    const { data: documents, error: docsError } = await supabase
-      .from('simulation_documents')
-      .select('*')
-      .eq('simulation_id', simulationId)
-      .order('created_at', { ascending: true });
-
-    if (docsError) {
-      console.error('Error fetching documents:', docsError);
-      return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 });
-    }
-
-    if (!documents || documents.length === 0) {
-      // No documents to process - clear context
-      const { error: updateError } = await supabase
-        .from('simulations')
-        .update({ 
-          context_string: null,
-          context_processed_at: new Date().toISOString()
-        })
-        .eq('id', simulationId);
-
-      if (updateError) {
-        console.error('Error clearing context:', updateError);
-        return NextResponse.json({ error: 'Failed to update simulation' }, { status: 500 });
-      }
-
-      return NextResponse.json({
-        success: true,
-        contextString: '',
-        warnings: [],
-        processedCount: 0
-      });
-    }
-
-    // Process each document individually
-    const warnings: string[] = [];
-    let processedCount = 0;
-    let totalContextLength = 0;
-    
-    for (const doc of documents) {
-      try {
-        // Download file from Supabase storage
-        const { data: fileData, error: downloadError } = await supabase.storage
-          .from('rag-documents')
-          .download(doc.file_path);
-
-        if (downloadError || !fileData) {
-          warnings.push(`Failed to download "${doc.file_name}": ${downloadError?.message || 'Unknown error'}`);
-          continue;
-        }
-
-        // Convert to buffer
-        const buffer = Buffer.from(await fileData.arrayBuffer());
-        
-        // Extract text based on file type
-        const extraction = await extractTextFromFile(buffer, doc.file_name, doc.file_type);
-        
-        if (extraction.success && extraction.text) {
-          // Clean the text
-          const cleanedText = cleanText(extraction.text);
-          
-          // Update document with context
-          const { error: updateError } = await supabase
-            .from('simulation_documents')
-            .update({ 
-              context_string: cleanedText,
-              context_processed_at: new Date().toISOString()
-            })
-            .eq('id', doc.id);
-
-          if (updateError) {
-            console.error(`Error updating document ${doc.id} context:`, updateError);
-            warnings.push(`Failed to save context for "${doc.file_name}"`);
-          } else {
-            processedCount++;
-            totalContextLength += cleanedText.length;
-          }
-        } else {
-          warnings.push(`Failed to extract text from "${doc.file_name}": ${extraction.error}`);
-        }
-
-      } catch (error) {
-        warnings.push(`Processing error for "${doc.file_name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      warnings,
-      processedCount,
-      totalDocuments: documents.length,
-      contextLength: totalContextLength
-    });
-
-  } catch (error) {
-    console.error('Document processing error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+if (!projectId || !processorId) {
+  throw new Error('Missing required environment variables for Document AI');
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { simulationId: string } }
-) {
+const processorName = `projects/${projectId}/locations/${location}/processors/${processorId}`;
+
+export async function GET(req: Request, { params }: { params: { simulationId: string } }) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { simulationId } = params;
+    const supabase = createRouteHandlerClient({ cookies });
 
-    // Verify simulation exists and user has access
-    const { data: simulation, error: simError } = await supabase
-      .from('simulations')
-      .select('id, user_id')
-      .eq('id', simulationId)
-      .single();
-
-    if (simError || !simulation) {
-      return NextResponse.json({ error: 'Simulation not found' }, { status: 404 });
-    }
-
-    if (simulation.user_id !== user.id) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    // Get all documents with their contexts
-    const { data: documents, error: docsError } = await supabase
+    // Get all documents for this simulation
+    const { data: documents, error } = await supabase
       .from('simulation_documents')
-      .select('*')
-      .eq('simulation_id', simulationId)
-      .order('created_at', { ascending: true });
+      .select('context_string, context_processed_at')
+      .eq('simulation_id', simulationId);
 
-    if (docsError) {
-      return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 });
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to fetch documents' },
+        { status: 500 }
+      );
     }
 
-    // Aggregate context from all processed documents
-    let aggregatedContext = '';
+    // Calculate total context length and get latest processed time
+    let contextLength = 0;
     let latestProcessedAt: string | null = null;
-    let totalContextLength = 0;
 
-    if (documents && documents.length > 0) {
-      const processedDocs = documents.filter(doc => doc.context_string);
-      
-      processedDocs.forEach((doc, index) => {
-        if (doc.context_string) {
-          const documentHeader = `\n=== Document ${index + 1}: ${doc.file_name} ===\n`;
-          aggregatedContext += documentHeader + doc.context_string + '\n\n';
-          totalContextLength += doc.context_string.length;
-          
-          // Track latest processing time
-          if (!latestProcessedAt || (doc.context_processed_at && doc.context_processed_at > latestProcessedAt)) {
-            latestProcessedAt = doc.context_processed_at;
-          }
+    documents?.forEach(doc => {
+      if (doc.context_string) {
+        contextLength += doc.context_string.length;
+      }
+      if (doc.context_processed_at) {
+        if (!latestProcessedAt || new Date(doc.context_processed_at) > new Date(latestProcessedAt)) {
+          latestProcessedAt = doc.context_processed_at;
         }
-      });
-    }
+      }
+    });
 
     return NextResponse.json({
       success: true,
-      contextString: aggregatedContext.trim(),
-      contextProcessedAt: latestProcessedAt,
-      contextLength: totalContextLength,
-      documentsWithContext: documents?.filter(doc => doc.context_string).length || 0,
-      totalDocuments: documents?.length || 0
+      contextLength,
+      contextProcessedAt: latestProcessedAt
     });
 
   } catch (error) {
     console.error('Error fetching context:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch context' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(req: Request, { params }: { params: { simulationId: string } }) {
+  try {
+    const { simulationId } = params;
+    const formData = await req.formData();
+    const file = formData.get('file') as File;
+    const documentId = formData.get('documentId') as string;
+
+    if (!file || !documentId) {
+      return NextResponse.json(
+        { error: 'File and document ID are required' },
+        { status: 400 }
+      );
+    }
+
+    // Convert File to Buffer
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Get mime type
+    const mimeType = file.type;
+    console.log('amit-mimeType',process.env.GOOGLE_APPLICATION_CREDENTIALS, mimeType, client);
+    // Process document with Document AI
+    const [result] = await client.processDocument({
+      name: processorName,
+      rawDocument: {
+        content: buffer,
+        mimeType: mimeType,
+      },
+    });
+
+    const document = result.document;
+
+    // Structure the extracted information
+    const processedData = {
+      text: document?.text || '',
+      pages: document?.pages?.map(page => ({
+        pageNumber: page.pageNumber,
+        text: page.text,
+      })) || [],
+      entities: document?.entities?.map(entity => ({
+        type: entity.type,
+        text: entity.mentionText,
+        confidence: entity.confidence,
+      })) || [],
+      tables: document?.tables?.map(table => ({
+        headerRows: table.headerRows?.map(row => 
+          row.cells?.map(cell => cell.text).filter(Boolean)
+        ),
+        bodyRows: table.bodyRows?.map(row => 
+          row.cells?.map(cell => cell.text).filter(Boolean)
+        ),
+        data: table.text,
+      })) || [],
+      images: document?.images?.map(image => ({
+        description: image.text,
+      })) || [],
+    };
+
+    // Update the document in the database
+    const supabase = createRouteHandlerClient({ cookies })
+    const { error: updateError } = await supabase
+      .from('simulation_documents')
+      .update({
+        context_string: JSON.stringify(processedData),
+        context_processed_at: new Date().toISOString(),
+      })
+      .eq('id', documentId);
+
+    if (updateError) {
+      console.error('Error updating document:', updateError);
+      return NextResponse.json(
+        { error: 'Failed to update document in database' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Document processed successfully',
+      data: processedData,
+    });
+
+  } catch (error) {
+    console.error('Error processing document:', error);
+    return NextResponse.json(
+      { error: 'Failed to process document' },
       { status: 500 }
     );
   }

@@ -180,25 +180,44 @@ export async function getSignedUrl(
 }
 
 /**
- * Process documents for CAG (Context Augmented Generation)
+ * Process a document with Google Document AI
  */
-export async function processDocumentsForCAG(
-  simulationId: string
-): Promise<{ 
-  success: boolean; 
-  contextString?: string;
-  warnings?: string[];
-  processedCount?: number;
-  totalDocuments?: number;
-  contextLength?: number;
+export async function processDocumentWithAI(
+  simulationId: string,
+  file: File,
+  documentId: string
+): Promise<{
+  success: boolean;
+  data?: {
+    text: string;
+    pages: Array<{
+      pageNumber: number;
+      text: string;
+    }>;
+    entities: Array<{
+      type: string;
+      text: string;
+      confidence: number;
+    }>;
+    tables: Array<{
+      headerRows: string[][];
+      bodyRows: string[][];
+      data: string;
+    }>;
+    images: Array<{
+      description: string;
+    }>;
+  };
   error?: string;
 }> {
   try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('documentId', documentId);
+    console.log('amit-formData111', formData);
     const response = await fetch(`/api/process-documents/${simulationId}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      body: formData,
     });
     
     const data = await response.json();
@@ -206,13 +225,16 @@ export async function processDocumentsForCAG(
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || 'Failed to process documents'
+        error: data.error || 'Failed to process document'
       };
     }
     
-    return data;
+    return {
+      success: true,
+      data: data.data
+    };
   } catch (error) {
-    console.error('Error processing documents:', error);
+    console.error('Error processing document:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 

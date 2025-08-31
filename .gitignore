@@ -26,4 +26,6 @@ api/.env
 
 # typescript
 *.tsbuildinfo
-next-env.d.tssecrets/
+next-env.d.ts
+secrets/
+secrets/google-credentials.json

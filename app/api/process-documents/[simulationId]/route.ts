@@ -1,8 +1,46 @@
-import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
+import { DocumentProcessorServiceClient, protos } from '@google-cloud/documentai';
 import { NextResponse } from 'next/server';
-// import { createClient } from '@/lib/supabase';
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
+import { PDFDocument } from 'pdf-lib';
+
+// Define interfaces based on the actual structure we receive
+interface DocumentPage {
+  pageNumber: number | undefined;
+  text: string | undefined;
+}
+
+interface DocumentEntity {
+  type: string | undefined;
+  mentionText: string | undefined;
+  confidence: number | undefined;
+}
+
+interface DocumentCell {
+  text: string | undefined;
+}
+
+interface DocumentRow {
+  cells: DocumentCell[] | undefined;
+}
+
+interface DocumentTable {
+  headerRows: DocumentRow[] | undefined;
+  bodyRows: DocumentRow[] | undefined;
+  text: string | undefined;
+}
+
+interface DocumentImage {
+  text: string | undefined;
+}
+
+interface ProcessedDocument {
+  text: string | undefined;
+  pages: DocumentPage[];
+  entities: DocumentEntity[];
+  tables: DocumentTable[];
+  images: DocumentImage[];
+}
 
 // Initialize Document AI client
 const client = new DocumentProcessorServiceClient({
@@ -83,34 +121,96 @@ export async function POST(req: Request, { params }: { params: { simulationId: s
 
     // Convert File to Buffer
     const buffer = Buffer.from(await file.arrayBuffer());
-
-    // Get mime type
     const mimeType = file.type;
-    console.log('amit-mimeType',process.env.GOOGLE_APPLICATION_CREDENTIALS, mimeType, client);
-    // Process document with Document AI
-    const [result] = await client.processDocument({
-      name: processorName,
-      rawDocument: {
-        content: buffer,
-        mimeType: mimeType,
-      },
-    });
 
-    const document = result.document;
+    // If it's a PDF, split into chunks
+    let results = [];
+    if (mimeType === 'application/pdf') {
+      // Load PDF document
+      const pdfDoc = await PDFDocument.load(buffer);
+      const totalPages = pdfDoc.getPageCount();
+      
+      // Split into chunks of 14 pages
+      const CHUNK_SIZE = 14;
+      const chunks = [];
+      
+      for (let i = 0; i < totalPages; i += CHUNK_SIZE) {
+        const chunkDoc = await PDFDocument.create();
+        const pages = await chunkDoc.copyPages(pdfDoc, Array.from(Array(Math.min(CHUNK_SIZE, totalPages - i)), (_, index) => i + index));
+        pages.forEach(page => chunkDoc.addPage(page));
+        
+        const chunkBytes = await chunkDoc.save();
+        chunks.push(Buffer.from(chunkBytes));
+      }
+
+      // Process each chunk
+      for (const chunk of chunks) {
+        const [chunkResult] = await client.processDocument({
+          name: processorName,
+          rawDocument: {
+            content: chunk,
+            mimeType: mimeType,
+          },
+        });
+        results.push(chunkResult);
+      }
+    } else {
+      // For non-PDF files, process normally
+      const [result] = await client.processDocument({
+        name: processorName,
+        rawDocument: {
+          content: buffer,
+          mimeType: mimeType,
+        },
+      });
+      results = [result];
+    }
+
+    // Combine results if multiple chunks
+    const combinedResult: { document: ProcessedDocument } = {
+      document: {
+        text: results.map(r => r.document?.text || '').join('\n'),
+        pages: results.flatMap(r => r.document?.pages || []).map(page => ({
+          pageNumber: page.pageNumber || undefined,
+          text: (page as any).text || undefined
+        })),
+        entities: results.flatMap(r => r.document?.entities || []).map(entity => ({
+          type: entity.type || undefined,
+          mentionText: entity.mentionText || undefined,
+          confidence: entity.confidence || undefined
+        })),
+        tables: results.flatMap(r => (r.document as any)?.tables || []).map(table => ({
+          headerRows: table.headerRows?.map((row: any) => ({
+            cells: row.cells?.map((cell: any) => ({ 
+              text: cell.text || undefined 
+            }))
+          })),
+          bodyRows: table.bodyRows?.map((row: any) => ({
+            cells: row.cells?.map((cell: any) => ({ 
+              text: cell.text || undefined 
+            }))
+          })),
+          text: table.text || undefined
+        })),
+        images: results.flatMap(r => (r.document as any)?.images || []).map(image => ({
+          text: image.text || undefined
+        }))
+      }
+    };
 
     // Structure the extracted information
     const processedData = {
-      text: document?.text || '',
-      pages: document?.pages?.map(page => ({
+      text: combinedResult.document.text,
+      pages: combinedResult.document.pages?.map(page => ({
         pageNumber: page.pageNumber,
         text: page.text,
       })) || [],
-      entities: document?.entities?.map(entity => ({
+      entities: combinedResult.document.entities?.map(entity => ({
         type: entity.type,
         text: entity.mentionText,
         confidence: entity.confidence,
       })) || [],
-      tables: document?.tables?.map(table => ({
+      tables: combinedResult.document.tables?.map(table => ({
         headerRows: table.headerRows?.map(row => 
           row.cells?.map(cell => cell.text).filter(Boolean)
         ),
@@ -119,7 +219,7 @@ export async function POST(req: Request, { params }: { params: { simulationId: s
         ),
         data: table.text,
       })) || [],
-      images: document?.images?.map(image => ({
+      images: combinedResult.document.images?.map(image => ({
         description: image.text,
       })) || [],
     };

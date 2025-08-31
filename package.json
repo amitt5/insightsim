@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"next dev\" \"npm run python-service\"",
+    "dev": "concurrently \"next dev\" \"npm run python-services\"",
     "dev:next-only": "next dev",
-    "python-service": "cd python-rag-service && python3 app.py",
+    "python-services": "concurrently \"npm run chunking-service\" \"npm run rag-service\"",
+    "chunking-service": "cd python-chunking-service && source venv/bin/activate && python3 app.py",
+    "rag-service": "cd python-rag-service && source venv/bin/activate && python3 app.py",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

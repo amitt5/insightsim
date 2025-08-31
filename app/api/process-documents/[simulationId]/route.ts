@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { extractTextFromFile, generateContextString, ExtractionResult, cleanText } from '@/utils/textExtraction';
+import { chunkText, checkChunkingServiceHealth } from '@/utils/chunkingService';
 
 export async function POST(
   request: NextRequest,
@@ -91,13 +92,32 @@ export async function POST(
         if (extraction.success && extraction.text) {
           // Clean the text
           const cleanedText = cleanText(extraction.text);
+
+          // Check if chunking service is available
+          const isChunkingAvailable = await checkChunkingServiceHealth();
+          
+          if (isChunkingAvailable) {
+            // Split text into chunks
+            const chunkingResult = await chunkText(cleanedText, {
+              document_id: doc.id,
+              file_name: doc.file_name,
+              file_type: doc.file_type
+            });
+            
+            if (!chunkingResult.success || !chunkingResult.chunks) {
+              console.error(`Chunking failed for document ${doc.id}:`, chunkingResult.error);
+              warnings.push(`Failed to chunk text for "${doc.file_name}": ${chunkingResult.error}`);
+            }
+            // Note: Successfully chunked text will be handled in the next step (embeddings + vector DB)
+          }
           
           // Update document with context
           const { error: updateError } = await supabase
             .from('simulation_documents')
             .update({ 
               context_string: cleanedText,
-              context_processed_at: new Date().toISOString()
+              context_processed_at: new Date().toISOString(),
+              chunks_processed: isChunkingAvailable
             })
             .eq('id', doc.id);
 

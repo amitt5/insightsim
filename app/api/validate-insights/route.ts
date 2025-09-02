@@ -16,23 +16,23 @@ export async function POST(req: NextRequest): Promise<NextResponse<InsightValida
     const response = await perplexity.chat.completions.create({
       model: 'sonar',
       messages: [
-        // {
-        //   role: 'system',
-        //   content: `Search social media, forums, and discussion boards to find real examples that validate or contradict the given insight. 
+        {
+          role: 'system',
+          content: `Search social media, forums, and discussion boards to find real examples that validate or contradict the given insight. 
 
-        //   Focus on finding:
-        //   - Reddit discussions and comments
-        //   - Twitter/X posts and replies  
-        //   - Forum threads and posts
-        //   - Blog comments and discussions
-        //   - Q&A platforms like Quora
+          Focus on finding:
+          - Reddit discussions and comments
+          - Twitter/X posts and replies  
+          - Forum threads and posts
+          - Blog comments and discussions
+          - Q&A platforms like Quora
 
-        //   Provide specific examples with context and explain how they relate to the insight. Include direct quotes when possible and mention the platform/source.`
-        // },
-        // {
-        //   role: 'user',
-        //   content: `Find web evidence and social media mentions that validate this insight: "${insight}"`
-        // }
+          Provide specific examples with context and explain how they relate to the insight. Include direct quotes when possible and mention the platform/source.`
+        },
+        {
+          role: 'user',
+          content: `Find web evidence and social media mentions that validate this insight: "${insight}"`
+        }
 
 
 
@@ -62,14 +62,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<InsightValida
         //     content: `Search for social media discussions about: "${insight}"`
         //   }
 
-        {
-            role: 'system',
-            content: 'Search for examples of people expressing incorrect beliefs, asking confused questions, or stating misconceptions. Look for social media posts, forum discussions, and Q&A sites where people demonstrate these misunderstandings.'
-          },
-          {
-            role: 'user',
-            content: `Find examples of people who believe that "${insight}". Look for posts, questions, and discussions where people express this belief or confusion.`
-          }
+        // {
+        //     role: 'system',
+        //     content: 'Search for examples of people expressing incorrect beliefs, asking confused questions, or stating misconceptions. Look for social media posts, forum discussions, and Q&A sites where people demonstrate these misunderstandings.'
+        //   },
+        //   {
+        //     role: 'user',
+        //     content: `Find examples of people who believe that "${insight}". Look for posts, questions, and discussions where people express this belief or confusion.`
+        //   }
       ],
       max_tokens: 500,
       temperature: 0.3

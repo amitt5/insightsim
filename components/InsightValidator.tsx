@@ -73,8 +73,8 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
         '**Behavioral patterns show digital-first, value-seeking, and lifestyle-aligned usage.**', '**Unexpected finding: App engagement directly builds brand loyalty.**'
     ] 
     const insightList2 = [
-        // insightList[0]
-        'multiple credit cards automatically harm credit scores'
+        insightList[0]
+        // 'multiple credit cards automatically harm credit scores'
         // 'common misconceptions about multiple credit cards is that multiple credit cards automatically harm credit scores'
     ]
 

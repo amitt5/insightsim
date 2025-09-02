@@ -10,7 +10,7 @@ export async function POST(
 ) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
-    
+    console.log('Processing documents for simulation:');
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -117,7 +117,7 @@ export async function POST(
             .update({ 
               context_string: cleanedText,
               context_processed_at: new Date().toISOString(),
-              chunks_processed: isChunkingAvailable
+              // chunks_processed: isChunkingAvailable
             })
             .eq('id', doc.id);
 

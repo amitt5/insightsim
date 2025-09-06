@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { ValidationResult } from '@/app/types/perplexity';
+import { extractAndParseJSON } from '@/utils/helper';
+import { FocusGroupAnalysis } from '@/utils/types';
 
 interface InsightValidatorProps {
   transcript: string;
@@ -29,6 +31,44 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
     
     try {
     //   Step 1: Summarize transcript
+
+    const summary1 = ` Key Themes and Participant Insights:
+
+1. **Role of Credit Cards in Daily Life**:
+   - Liam views credit cards as essential tools for managing cash flow, earning rewards, and building credit responsibly.
+   - Marloes sees credit cards as crucial for managing family finances securely and efficiently.
+   - Johan approaches credit cards cautiously, prioritizing security and fee transparency to protect his financial stability.
+
+2. **Positive and Negative Experiences**:
+   - Liam had a positive experience booking a last-minute flight for a conference but also faced a security alert, highlighting the importance of security measures.
+   - Marloes found relief and satisfaction in using her credit card wisely to replace a broken appliance.
+   - Johan faced frustration when his card was declined abroad due to not informing the bank of his travel plans, emphasizing the need for proactive communication.
+
+3. **Financial Decision-Making**:
+   - Participants shared instances of impulse buying and regretful purchases, emphasizing the importance of aligning spending with needs and involving family in significant financial decisions.
+   - Transparency and communication emerged as crucial aspects of responsible financial behavior, as seen in instances where participants made purchases without informing their families.
+
+Overall, the focus group highlighted the diverse roles credit cards play in individuals' lives, the impact of positive and negative experiences on perceptions, and the significance of responsible financial decision-making and communication within families.`
+
+const insights1 = ` 1. **Insight:** Credit cards serve different purposes for individuals based on their life stage and financial priorities.
+   - **Action:** Tailoring credit card offerings to specific customer segments based on their needs and concerns can enhance customer satisfaction and loyalty.
+
+2. **Insight:** Consumers value the convenience and benefits of credit cards, such as rewards, cashback, and travel perks, but also prioritize security and transparency in fees.
+   - **Action:** Emphasizing security features and transparent fee structures in credit card offerings can build trust and address consumer concerns.
+
+3. **Insight:** Impulse buying is a common challenge for credit card users, leading to feelings of guilt, frustration, and regret.
+   - **Action:** Providing tools or reminders to help users differentiate between 'wants' and 'needs' can promote responsible spending habits and reduce impulsive purchases.
+
+4. **Insight:** Open communication and transparency within families regarding financial decisions, especially related to credit card spending, are crucial for maintaining trust and financial harmony.
+   - **Action:** Encouraging family discussions around purchases and setting clear guidelines for financial decisions can prevent misunderstandings and promote shared responsibility.
+
+5. **Insight:** Unexpected situations, such as card declines during travel due to lack of communication with the bank, can cause stress and inconvenience.
+   - **Action:** Educating customers on the importance of informing banks about travel plans and providing easy channels for communication can prevent such issues and improve the overall customer experience.`
+      // setSummary(summary1);
+
+      // setInsights(insights1);
+
+
       const summaryRes = await fetch('/api/summarize-transcript', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -38,31 +78,35 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
       if (!summaryRes.ok) {
         throw new Error('Failed to summarize transcript');
       }
+
+      console.log('summaryRes', summaryRes);
       
       const summaryData = await summaryRes.json();
-      setSummary(summaryData.summary);
-      console.log('summary', summaryData.summary);
-      // Step 2: Extract insights
-      const insightsRes = await fetch('/api/extract-insights', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript })
-      });
+      // setSummary(summaryData.summary);
+      console.log('summaryData', summaryData);
+      const cleanSummaryData: FocusGroupAnalysis = extractAndParseJSON(summaryData.summary);
+      console.log('cleanSummaryData', cleanSummaryData);
+      // // Step 2: Extract insights
+      // const insightsRes = await fetch('/api/extract-insights', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ transcript })
+      // });
       
-      if (!insightsRes.ok) {
-        throw new Error('Failed to extract insights');
-      }
+      // if (!insightsRes.ok) {
+      //   throw new Error('Failed to extract insights');
+      // }
       
-      const insightsData = await insightsRes.json();
-      setInsights(insightsData.insights);
-      console.log('insights', insightsData.insights);
-      // Step 3: Validate each insight
-      const insightList = extractInsightLines(insightsData.insights);
-      console.log('insightList', insightList);
-        if (insightList.length === 0) {
-            setValidations([]);
-            return;
-        }
+      // const insightsData = await insightsRes.json();
+      // setInsights(insightsData.insights);
+      // console.log('insights', insightsData.insights);
+      // // Step 3: Validate each insight
+      // const insightList = extractInsightLines(insightsData.insights);
+      // console.log('insightList', insightList);
+      //   if (insightList.length === 0) {
+      //       setValidations([]);
+      //       return;
+      //   }
       const insightList1 = [
         '**Mobile app usability is a primary driver of satisfaction and loyalty.**', 
         '**Cashback and rewards for online shopping are highly valued, but not universally understood.**', 
@@ -72,47 +116,47 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
         '**Pain points include a desire for more specialized features and clearer value communication.**', 
         '**Behavioral patterns show digital-first, value-seeking, and lifestyle-aligned usage.**', '**Unexpected finding: App engagement directly builds brand loyalty.**'
     ] 
-    const insightList2 = [
-        insightList[0]
-        // 'multiple credit cards automatically harm credit scores'
-        // 'common misconceptions about multiple credit cards is that multiple credit cards automatically harm credit scores'
-    ]
+    // const insightList2 = [
+    //     insightList[0]
+    //     // 'multiple credit cards automatically harm credit scores'
+    //     // 'common misconceptions about multiple credit cards is that multiple credit cards automatically harm credit scores'
+    // ]
 
-      const validationPromises = insightList2.map(async (insight: string): Promise<ValidationResult> => {
-        try {
-          const validationRes = await fetch('/api/validate-insights', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ insight })
-          });
+      // const validationPromises = insightList2.map(async (insight: string): Promise<ValidationResult> => {
+      //   try {
+      //     const validationRes = await fetch('/api/validate-insights', {
+      //       method: 'POST',
+      //       headers: { 'Content-Type': 'application/json' },
+      //       body: JSON.stringify({ insight })
+      //     });
           
-          if (!validationRes.ok) {
-            throw new Error(`Failed to validate insight: ${insight.substring(0, 50)}...`);
-          }
+      //     if (!validationRes.ok) {
+      //       throw new Error(`Failed to validate insight: ${insight.substring(0, 50)}...`);
+      //     }
           
-          const validationData = await validationRes.json();
+      //     const validationData = await validationRes.json();
           
-          await new Promise(resolve => setTimeout(resolve, 500));
+      //     await new Promise(resolve => setTimeout(resolve, 500));
           
-          return { 
-            insight, 
-            validation: validationData.validation,
-            citations: validationData.citations || []
-          };
-        } catch (error) {
-          console.error('Validation failed for insight:', insight, error);
-          return {
-            insight,
-            validation: 'Failed to validate this insight',
-            citations: []
-          };
-        }
-      });
+      //     return { 
+      //       insight, 
+      //       validation: validationData.validation,
+      //       citations: validationData.citations || []
+      //     };
+      //   } catch (error) {
+      //     console.error('Validation failed for insight:', insight, error);
+      //     return {
+      //       insight,
+      //       validation: 'Failed to validate this insight',
+      //       citations: []
+      //     };
+      //   }
+      // });
       
 
-      const validationResults = await Promise.all(validationPromises);
-      setValidations(validationResults);
-      console.log('validationResults', validationResults);
+      // const validationResults = await Promise.all(validationPromises);
+      // setValidations(validationResults);
+      // console.log('validationResults', validationResults);
     } catch (error) {
       console.error('Analysis failed:', error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');

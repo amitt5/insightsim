@@ -51,6 +51,12 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Custom color palette
+        darkTeal: "#255e65",
+        beige: "#d9bea1",
+        gray: "#a2a8a9",
+        brown: "#a88565",
+        lightTeal: "#3591a0",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -73,35 +79,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [
-    require("tailwindcss-animate"),
-    // Polyfill for custom scrollbars
-    function({ addUtilities }) {
-      const newUtilities = {
-        '.scrollbar-thin': {
-          scrollbarWidth: 'thin',
-          '&::-webkit-scrollbar': {
-            width: '8px',
-            height: '8px',
-          },
-        },
-        '.scrollbar-thumb-rounded': {
-          '&::-webkit-scrollbar-thumb': {
-            borderRadius: '0.25rem',
-          },
-        },
-        '.scrollbar-thumb-gray-300': {
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: '#d1d5db',
-          },
-          '&::-webkit-scrollbar-track': {
-            backgroundColor: 'transparent',
-          },
-        },
-      }
-      addUtilities(newUtilities, ['responsive', 'hover'])
-    },
-  ],
+  plugins: [require("tailwindcss-animate")],
 }
 
 export default config

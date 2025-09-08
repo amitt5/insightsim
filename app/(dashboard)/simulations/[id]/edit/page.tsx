@@ -2458,7 +2458,7 @@ Key Questions:
                   <Textarea
                     id="questions"
                     placeholder="Enter your discussion questions here..."
-                    rows={5}
+                    rows={15}
                     value={simulationData.discussion_questions}
                     onChange={handleInputChange('discussion_questions')}
                   />

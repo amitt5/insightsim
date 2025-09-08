@@ -167,6 +167,45 @@ const insights1 = ` 1. **Insight:** Credit cards serve different purposes for in
   };
 
   const [analysisData, setAnalysisData] = useState<FocusGroupAnalysis | null>(null);
+  const [validatingInsights, setValidatingInsights] = useState<Record<number, boolean>>({});
+  const [validationResults, setValidationResults] = useState<Record<number, ValidationResult>>({});
+
+  const handleValidateInsight = async (insight: string, index: number) => {
+    setValidatingInsights(prev => ({ ...prev, [index]: true }));
+    try {
+      const validationRes = await fetch('/api/validate-insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ insight })
+      });
+      
+      if (!validationRes.ok) {
+        throw new Error(`Failed to validate insight: ${insight.substring(0, 50)}...`);
+      }
+      
+      const validationData = await validationRes.json();
+      setValidationResults(prev => ({
+        ...prev,
+        [index]: {
+          insight,
+          validation: validationData.validation,
+          citations: validationData.citations || []
+        }
+      }));
+    } catch (error) {
+      console.error('Validation failed for insight:', insight, error);
+      setValidationResults(prev => ({
+        ...prev,
+        [index]: {
+          insight,
+          validation: 'Failed to validate this insight',
+          citations: []
+        }
+      }));
+    } finally {
+      setValidatingInsights(prev => ({ ...prev, [index]: false }));
+    }
+  };
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
@@ -279,9 +318,61 @@ const insights1 = ` 1. **Insight:** Credit cards serve different purposes for in
                       ))}
                     </ul>
                   </div>
-                  <div className="bg-blue-50 p-3 rounded">
+                  <div className="bg-blue-50 p-3 rounded mb-3">
                     <h4 className="font-medium mb-1">Recommended Action:</h4>
                     <p className="text-gray-700">{insight.recommended_action}</p>
+                  </div>
+
+                  <div className="mt-4 border-t pt-4">
+                    <button
+                      onClick={() => handleValidateInsight(insight.insight, index)}
+                      disabled={validatingInsights[index]}
+                      className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {validatingInsights[index] ? (
+                        <>
+                          <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                          Validating...
+                        </>
+                      ) : (
+                        'Validate from Web'
+                      )}
+                    </button>
+
+                    {validationResults[index] && (
+                      <div className="mt-4 space-y-4">
+                        <div className="bg-secondary border border-border p-4 rounded-lg">
+                          <h4 className="font-medium mb-2">Web Evidence:</h4>
+                          <div className="prose prose-sm max-w-none">
+                            <pre className="whitespace-pre-wrap font-sans text-foreground">
+                              {validationResults[index].validation}
+                            </pre>
+                          </div>
+                        </div>
+
+                        {validationResults[index].citations && validationResults[index].citations.length > 0 && (
+                          <div>
+                            <h4 className="font-medium mb-2">Sources & Citations:</h4>
+                            <div className="bg-muted border border-border p-4 rounded-lg">
+                              <ul className="space-y-2">
+                                {validationResults[index].citations.map((citationUrl: string, citIndex: number) => (
+                                  <li key={citIndex} className="text-sm">
+                                    <a
+                                      href={citationUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:text-primary/80 underline break-all"
+                                    >
+                                      [{citIndex + 1}] {citationUrl}
+                                    </a>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

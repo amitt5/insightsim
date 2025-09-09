@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ValidationResult } from '@/app/types/perplexity';
 import { extractAndParseJSON } from '@/utils/helper';
 import { FocusGroupAnalysis } from '@/utils/types';
@@ -190,23 +190,20 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
     }
   };
 
+  // Auto-analyze when transcript is available
+  useEffect(() => {
+    if (transcript.trim() && !loading && !analysisData) {
+      handleAnalyzeTranscript();
+    }
+  }, [transcript]);
+
   return (
     <div className="w-full">
-      <div className="mb-6">
-        <button 
-          onClick={handleAnalyzeTranscript}
-          disabled={loading || !transcript.trim()}
-          className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {loading ? 'Analyzing...' : 'Analyze Transcript'}
-        </button>
-        
-        {error && (
-          <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
-            <strong>Error:</strong> {error}
-          </div>
-        )}
-      </div>
+      {error && (
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
 
       {analysisData && (
         <div className="space-y-8">

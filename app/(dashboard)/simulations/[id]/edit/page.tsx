@@ -1498,10 +1498,11 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -1998,24 +1999,37 @@ Key Questions:
               </CardHeader>
               <CardContent>
                 <div className="mb-4 flex justify-end gap-2">
-                  <Button
-                    variant="default"
-                    onClick={handleGeneratePersonasClick}
-                    disabled={isGeneratingPersonas}
-                    className="flex items-center gap-2"
-                  >
-                    {isGeneratingPersonas ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4" />
-                        Generate Personas
-                      </>
-                    )}
-                  </Button>
+                  <Tooltip delayDuration={50}>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Button
+                          variant="default"
+                          onClick={handleGeneratePersonasClick}
+                          disabled={isGeneratingPersonas || !simulationData?.brief_text}
+                          className="flex items-center gap-2"
+                        >
+                          {isGeneratingPersonas ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4" />
+                              Generate Personas
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[300px]">
+                      {!simulationData?.brief_text ? (
+                        <p>Please add a brief in the previous step to generate personas</p>
+                      ) : (
+                        <p>Generate AI personas based on your brief</p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
                   <CreatePersonaDialog
                     open={openPersonaModal}
                     onOpenChange={setOpenPersonaModal}
@@ -2787,5 +2801,6 @@ Key Questions:
         </div>
       )}
     </div>
+    </TooltipProvider>
   )
 }

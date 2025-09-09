@@ -27,6 +27,7 @@ export default function SimulationInsightsPage() {
   const [simulationData, setSimulationData] = useState<SimulationResponse | null>(null)
   const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
   const [isLoadingSummaries, setIsLoadingSummaries] = useState(false)
+  const [showTabs, setShowTabs] = useState(false)
   const [simulationMessages, setSimulationMessages] = useState<SimulationMessage[]>([])
   const [transcript, setTranscript] = useState<string>("")
 
@@ -252,6 +253,18 @@ export default function SimulationInsightsPage() {
         {/* Insights Content */}
         {!isLoadingSummaries && simulationSummaries && (
           <div className="max-w-6xl mx-auto">
+              {/* Removed other tabs, showing only validation */}
+              <div className="w-full">
+              {transcript ? (
+                <InsightValidator transcript={transcript} />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>Loading discussion transcript for validation...</p>
+                </div>
+              )}
+            </div>
+            {/* Commented out tabs for future reference */}
+            {showTabs && (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="mb-6 grid w-full grid-cols-6 text-sm">
                 <TabsTrigger value="summary">Summary</TabsTrigger>
@@ -541,7 +554,7 @@ export default function SimulationInsightsPage() {
                   </div>
                 )}
               </TabsContent>
-            </Tabs>
+            </Tabs>)}
           </div>
         )}
 

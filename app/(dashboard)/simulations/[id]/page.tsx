@@ -755,40 +755,43 @@ export default function SimulationViewPage() {
             status: 'Completed'
           }
         } : null);
+
+        // Redirect to insights page
+        router.push(`/simulations/${simulationData.simulation.id}/insights`);
       }
 
     } catch (error) {
       console.error('Error ending discussion:', error);
     } finally {
-      setIsEndingDiscussion(false);
-    }
-
-    if(simulationData?.simulation && simulationMessages) {
-      const prompt = prepareSummaryPrompt(simulationData?.simulation, simulationMessages);
-      console.log('prompt12345',simulationMessages,simulationData?.simulation, prompt, nameToPersonaIdMap);
-    
-      try {
-        const data = await runSimulationAPI(prompt);
-        console.log('API response:', data);
-        // setAvailableCredits(data.creditInfo.remaining_credits);
-        
-        if (data.reply) {
-          // Parse the response into messages
-          const parsedMessages = parseSimulationResponse(data.reply);
-          console.log('Parsed messages222:', parsedMessages);
-          
-          // Save the summary and themes to the database
-          const saveResult = await saveSummaryToDatabase(parsedMessages);
-          
-          // Redirect to insights page after saving
-          if (saveResult && simulationData?.simulation?.id) {
-            router.push(`/simulations/${simulationData.simulation.id}/insights`);
-          }
-        }
-      } catch (error) {
-        console.error("Error running simulation:", error);
+        setIsEndingDiscussion(false);
       }
-    }
+
+    // if(simulationData?.simulation && simulationMessages) {
+    //   const prompt = prepareSummaryPrompt(simulationData?.simulation, simulationMessages);
+    //   console.log('prompt12345',simulationMessages,simulationData?.simulation, prompt, nameToPersonaIdMap);
+    
+    //   try {
+    //     const data = await runSimulationAPI(prompt);
+    //     console.log('API response:', data);
+    //     // setAvailableCredits(data.creditInfo.remaining_credits);
+        
+    //     if (data.reply) {
+    //       // Parse the response into messages
+    //       const parsedMessages = parseSimulationResponse(data.reply);
+    //       console.log('Parsed messages222:', parsedMessages);
+          
+    //       // Save the summary and themes to the database
+    //       const saveResult = await saveSummaryToDatabase(parsedMessages);
+          
+    //       // Redirect to insights page after saving
+    //       if (saveResult && simulationData?.simulation?.id) {
+    //         router.push(`/simulations/${simulationData.simulation.id}/insights`);
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error("Error running simulation:", error);
+    //   }
+    // }
   };
 
   const copyTranscript = () => {

@@ -15,10 +15,10 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
 
-    // Get filter parameters
-    const status = searchParams.get('status');
-    const search = searchParams.get('search');
-    const simulationId = searchParams.get('simulation_id');
+    // TODO: Add filter parameters later
+    // const status = searchParams.get('status');
+    // const search = searchParams.get('search');
+    // const simulationId = searchParams.get('simulation_id');
 
     // Get authenticated user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -40,15 +40,10 @@ export async function GET(request: Request) {
     }
 
     // Get simulations owned by this user
-    let simulationsQuery = supabase
+    const simulationsQuery = supabase
       .from('simulations')
       .select('id')
       .eq('user_id', user.id);
-
-    // If specific simulation is requested, filter by it
-    if (simulationId) {
-      simulationsQuery = simulationsQuery.eq('id', simulationId);
-    }
 
     const { data: simulations, error: simError } = await simulationsQuery;
 
@@ -67,8 +62,9 @@ export async function GET(request: Request) {
     }
 
     const simulationIds = simulations.map(s => s.id);
+
     // Build respondents query
-    let respondentsQuery = supabase
+    const respondentsQuery = supabase
       .from('human_respondents')
       .select(`
         *,
@@ -79,25 +75,11 @@ export async function GET(request: Request) {
       `)
       .in('simulation_id', simulationIds);
 
-    // Apply filters
-    if (status) {
-      respondentsQuery = respondentsQuery.eq('status', status);
-    }
-
-    if (search) {
-      respondentsQuery = respondentsQuery.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
-    }
-
     // Get total count for pagination
     const { count: totalCount, error: countError } = await supabase
       .from('human_respondents')
       .select('*', { count: 'exact', head: true })
-      .in('simulation_id', simulationIds)
-      // .eq(status ? 'status' : '', status || '')
-      // .or(search ? `name.ilike.%${search}%,email.ilike.%${search}%` : '');
-    
-    
-
+      .in('simulation_id', simulationIds);
     if (countError) {
       throw countError;
     }
@@ -110,7 +92,6 @@ export async function GET(request: Request) {
       console.error('Respondents query error:', respError);
       throw respError;
     }
-
 
     // Get message counts for each respondent
     const respondentsWithCounts = await Promise.all(
@@ -150,7 +131,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching respondents:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch respondents11' },
+      { error: 'Failed to fetch respondents' },
       { status: 500 }
     );
   }

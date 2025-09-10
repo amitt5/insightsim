@@ -3,9 +3,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft, ChevronRight, Search, Filter } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 
 interface Respondent {
@@ -44,20 +42,21 @@ export default function RespondentsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Filter state
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [simulationFilter, setSimulationFilter] = useState<string>("");
+  // TODO: Add filter state later
+  // const [searchTerm, setSearchTerm] = useState("");
+  // const [statusFilter, setStatusFilter] = useState<string>("");
+  // const [simulationFilter, setSimulationFilter] = useState<string>("");
 
   const fetchRespondents = async (page = 1) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '10',
-        ...(searchTerm && { search: searchTerm }),
-        ...(statusFilter && { status: statusFilter }),
-        ...(simulationFilter && { simulation_id: simulationFilter })
+        limit: '10'
+        // TODO: Add filters later
+        // ...(searchTerm && { search: searchTerm }),
+        // ...(statusFilter && { status: statusFilter }),
+        // ...(simulationFilter && { simulation_id: simulationFilter })
       });
 
       const response = await fetch(`/api/respondents?${params}`);
@@ -82,7 +81,7 @@ export default function RespondentsPage() {
 
   useEffect(() => {
     fetchRespondents();
-  }, [searchTerm, statusFilter, simulationFilter]);
+  }, []); // TODO: Add filter dependencies later
 
   const handlePageChange = (page: number) => {
     fetchRespondents(page);
@@ -134,8 +133,8 @@ export default function RespondentsPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
+      {/* TODO: Add filters later */}
+      {/* <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
@@ -165,12 +164,11 @@ export default function RespondentsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Simulations</SelectItem>
-                {/* We'll need to fetch available simulations */}
               </SelectContent>
             </Select>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

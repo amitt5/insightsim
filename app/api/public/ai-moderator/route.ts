@@ -77,7 +77,7 @@ ${is_first_message ? "Start by introducing yourself and asking the first questio
 
     // Get AI response
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-3.5-turbo",
       messages: [
         { role: "system", content: systemMessage },
         ...conversationHistory

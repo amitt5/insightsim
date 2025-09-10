@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
     // Prepare conversation history for OpenAI
     const conversationHistory = messages?.map(msg => ({
-      role: msg.sender_type === 'moderator' ? 'assistant' : 'user',
+      role: msg.sender_type === 'moderator' ? 'assistant' : 'user' as 'assistant' | 'user',
       content: msg.message
     })) || [];
 

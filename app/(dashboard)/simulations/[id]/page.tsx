@@ -1304,6 +1304,18 @@ export default function SimulationViewPage() {
                         View Insights & Analysis
                       </Link>
                     </Button>
+
+                    
+                    
+                  )}
+                   {simulation.status === 'Completed' && (
+                    <Button
+                      className="w-full"
+                      asChild
+                    >
+                      Share with Human Respondents
+                    </Button>
+                    
                   )}
                 </div>}
 

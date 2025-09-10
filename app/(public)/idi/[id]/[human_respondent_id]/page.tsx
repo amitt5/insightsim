@@ -3,6 +3,8 @@ import { useParams } from "next/navigation";
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 
 interface HumanRespondent {
   id: string;
@@ -27,6 +29,59 @@ export default function InterviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [respondentData, setRespondentData] = useState<HumanRespondent | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  const fetchMessages = async () => {
+    try {
+      const response = await fetch(`/api/public/human-conversations?human_respondent_id=${humanRespondentId}&simulation_id=${simulationId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching messages: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setMessages(data.messages || []);
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || isSending) return;
+
+    setIsSending(true);
+    try {
+      const response = await fetch('/api/public/human-conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          simulation_id: simulationId,
+          human_respondent_id: humanRespondentId,
+          message: newMessage.trim()
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const data = await response.json();
+      setMessages(prev => [...prev, data]);
+      setNewMessage('');
+      
+      // Fetch updated messages after sending
+      await fetchMessages();
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('Failed to send message. Please try again.');
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   useEffect(() => {
     const fetchRespondentData = async () => {
@@ -51,6 +106,9 @@ export default function InterviewPage() {
         
         setRespondentData(data);
         setError(null);
+        
+        // After loading respondent data, fetch messages
+        await fetchMessages();
       } catch (err: any) {
         console.error("Failed to fetch respondent data:", err);
         setError(err.message || "Failed to load interview data");
@@ -105,8 +163,67 @@ export default function InterviewPage() {
         {/* Chat Window */}
         <Card className="h-[600px]">
           <CardContent className="p-4 h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto">
-              {/* Chat messages will go here */}
+            <div className="flex-1 overflow-y-auto space-y-6">
+              {messages.map((message, i) => {
+                const isRespondent = message.sender_type === 'respondent';
+                
+                return (
+                  <div key={i} className={`flex gap-4 items-end ${isRespondent ? "" : "flex-row-reverse"}`}>
+                    <div 
+                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white font-medium"
+                      style={{ backgroundColor: isRespondent ? '#4CAF50' : '#9238FF' }}
+                    >
+                      {isRespondent ? respondentData?.name[0] : "M"}
+                    </div>
+                    <div className={`flex-1 ${!isRespondent ? "text-right" : ""}`}>
+                      <div className={`inline-block rounded-lg px-4 py-2 max-w-[80%] ${
+                        !isRespondent 
+                          ? "bg-primary text-primary-foreground" 
+                          : "bg-muted"
+                      }`}>
+                        {isRespondent && (
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-semibold text-sm text-green-600">
+                              {respondentData?.name}
+                            </span>
+                            <span className="text-xs text-gray-500 ml-2">
+                              {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        )}
+                        {!isRespondent && (
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-primary-foreground/70">
+                              {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <span className="font-semibold text-sm text-primary-foreground ml-2">
+                              Moderator
+                            </span>
+                          </div>
+                        )}
+                        <p className="text-sm">{message.message}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Message Input */}
+            <div className="mt-4 border-t pt-4 space-y-4">
+              <Textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="min-h-[100px]"
+              />
+              <Button 
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim() || isSending}
+                className="w-full"
+              >
+                {isSending ? "Sending..." : "Send Message"}
+              </Button>
             </div>
           </CardContent>
         </Card>

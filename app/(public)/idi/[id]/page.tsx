@@ -1,45 +1,36 @@
 "use client"
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Persona, Simulation, SimulationMessage } from "@/utils/types";
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Simulation } from "@/utils/types";
 
-// Interface for the Simulation data
 interface SimulationResponse {
   simulation: Simulation;
-  personas: Persona[];
   error?: string;
 }
 
 export default function PublicIDIPage() {
   const params = useParams();
+  const router = useRouter();
   const simulationId = params.id as string;
 
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [simulationData, setSimulationData] = useState<SimulationResponse | null>(null)
-  const [simulationMessages, setSimulationMessages] = useState<SimulationMessage[]>([])
-  const [formattedMessages, setFormattedMessages] = useState<{
-    speaker: string;
-    text: string;
-    time: string;
-    sender_id?: string | null;
-    sender_type?: string;
-  }[]>([])
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [simulationData, setSimulationData] = useState<SimulationResponse | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Color palette for personas (10 colors)
-  const personaColors = [
-    '#E91E63', '#673AB7', '#3F51B5', '#2196F3', '#00BCD4',
-    '#009688', '#4CAF50', '#FF9800', '#F44336', '#795548'
-  ];
-
-  // Function to get color for a persona
-  const getPersonaColor = (personaId: string, personas: Persona[]) => {
-    const index = personas.findIndex(p => p.id === personaId);
-    return index !== -1 ? personaColors[index % personaColors.length] : personaColors[0];
-  };
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    age: "",
+    gender: "",
+    email: ""
+  });
 
   useEffect(() => {
     const fetchSimulationData = async () => {
@@ -71,81 +62,45 @@ export default function PublicIDIPage() {
     fetchSimulationData();
   }, [simulationId]);
 
-  // Call fetchSimulationMessages when simulation data is loaded
-  // useEffect(() => {
-  //   if (simulationData?.simulation?.id) {
-  //     fetchSimulationMessages(simulationData.simulation.id);
-  //   }
-  // }, [simulationData]);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  // Function to fetch simulation messages
-  // const fetchSimulationMessages = async (simId: string) => {
-  //   try {
-  //     const response = await fetch(`/api/public/idi-messages/${simId}`);
-      
-  //     if (!response.ok) {
-  //       throw new Error(`Error fetching messages: ${response.status}`);
-  //     }
-      
-  //     const data = await response.json();
-      
-  //     if (data.error) {
-  //       console.error("API error:", data.error);
-  //       return;
-  //     }
-      
-  //     // sort messages by created_at date
-  //     data.messages.sort((a: SimulationMessage, b: SimulationMessage) => 
-  //       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-  //     );
-      
-  //     // Store the raw messages
-  //     setSimulationMessages(data.messages || []);
-      
-  //     // Create a map of persona IDs to names
-  //     const personaIdToNameMap = (data.personas || []).reduce((map: Record<string, string>, persona: { id: string, name: string }) => {
-  //       map[persona.id] = persona.name;
-  //       return map;
-  //     }, {});
-      
-  //     // Format messages for display
-  //     const formatted = (data.messages || []).map((msg: SimulationMessage) => {
-  //       let speakerName = "Unknown";
-        
-  //       if (msg.sender_type === 'moderator') {
-  //         speakerName = 'Interviewer';
-  //       } else if (msg.sender_id && personaIdToNameMap[msg.sender_id]) {
-  //         speakerName = personaIdToNameMap[msg.sender_id];
-  //       }
-        
-  //       // Format timestamp
-  //       const timestamp = msg.created_at 
-  //         ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  //         : `${msg.turn_number}`;
-        
-  //       return {
-  //         speaker: speakerName,
-  //         text: msg.message,
-  //         time: timestamp,
-  //         sender_id: msg.sender_id,
-  //         sender_type: msg.sender_type
-  //       };
-  //     });
-      
-  //     setFormattedMessages(formatted);
-  //   } catch (err: any) {
-  //     console.error("Error fetching simulation messages:", err);
-  //   }
-  // };
+    try {
+      const response = await fetch('/api/public/human-respondents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          simulation_id: simulationId,
+          ...formData,
+          age: parseInt(formData.age)
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit form');
+      }
+
+      const data = await response.json();
+      router.push(`/idi/${simulationId}/${data.id}`);
+    } catch (err) {
+      console.error('Error submitting form:', err);
+      setError('Failed to submit form. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-[70vh]">Loading interview data...</div>;
+    return <div className="flex items-center justify-center h-[70vh]">Loading...</div>;
   }
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] space-y-4">
-        <div className="text-xl font-semibold text-red-500">Error loading interview</div>
+        <div className="text-xl font-semibold text-red-500">Error</div>
         <div className="text-gray-500">{error}</div>
       </div>
     );
@@ -159,7 +114,7 @@ export default function PublicIDIPage() {
     );
   }
 
-  const { simulation, personas } = simulationData;
+  const { simulation } = simulationData;
 
   return (
     <div className="min-h-screen bg-background">
@@ -172,101 +127,77 @@ export default function PublicIDIPage() {
               <span>{new Date(simulation.created_at).toLocaleDateString()}</span>
               <span>•</span>
               <span>In-Depth Interview</span>
-              <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
-                {simulation.status}
-              </Badge>
             </div>
           </div>
         </div>
 
-        {/* Main Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Participant Info - Side Column */}
-          <div className="col-span-1 lg:col-span-3 space-y-4">
-            <Card className="h-fit">
-              <CardContent className="p-4">
-                <h2 className="font-semibold mb-4">Participant</h2>
-                {personas.length > 0 && (
-                  <div className="space-y-4">
-                    {personas.map((participant) => (
-                      <div key={participant.id} className="flex items-start gap-2">
-                        <div 
-                          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-white text-xs font-medium"
-                          style={{ backgroundColor: getPersonaColor(participant.id, personas) }}
-                        >
-                          {participant.name[0]}
-                        </div>
-                        <div>
-                          <h3 className="font-medium">{participant.name}</h3>
-                          <p className="text-sm text-gray-500">
-                            {participant.age} • {participant.occupation}
-                          </p>
-                          <p className="mt-1 text-xs text-gray-600">{participant.bio}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+        {/* Form */}
+        <Card className="max-w-xl mx-auto">
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                />
+              </div>
 
-          {/* Chat Window - Main Content */}
-          <div className="col-span-1 lg:col-span-9">
-            <Card className="h-full">
-              <CardContent className="p-4">
-                <h2 className="font-semibold mb-4">Interview Transcript</h2>
-                <div className="space-y-6">
-                  {formattedMessages.map((message, i) => {
-                    const isModeratorMessage = message.speaker === "Interviewer";
-                    const personaColor = !isModeratorMessage && message.sender_id 
-                      ? getPersonaColor(message.sender_id, personas) 
-                      : '#9238FF';
-                    
-                    return (
-                      <div key={i} className={`flex gap-4 items-end ${isModeratorMessage ? "flex-row-reverse" : ""}`}>
-                        <div 
-                          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white font-medium"
-                          style={{ backgroundColor: personaColor }}
-                        >
-                          {isModeratorMessage ? "I" : message.speaker[0]}
-                        </div>
-                        <div className={`flex-1 ${isModeratorMessage ? "text-right" : ""}`}>
-                          <div className={`inline-block rounded-lg px-4 py-2 max-w-[80%] ${
-                            isModeratorMessage 
-                              ? "bg-primary text-primary-foreground" 
-                              : "bg-muted"
-                          }`}>
-                            {!isModeratorMessage && (
-                              <div className="flex items-center justify-between mb-1">
-                                <span 
-                                  className="font-semibold text-sm"
-                                  style={{ color: personaColor }}
-                                >
-                                  {message.speaker}
-                                </span>
-                                <span className="text-xs text-gray-500 ml-2">{message.time}</span>
-                              </div>
-                            )}
-                            {isModeratorMessage && (
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs text-primary-foreground/70">{message.time}</span>
-                                <span className="font-semibold text-sm text-primary-foreground ml-2">
-                                  Interviewer
-                                </span>
-                              </div>
-                            )}
-                            <p className="text-sm">{message.text}</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              <div className="space-y-2">
+                <Label htmlFor="age">Age</Label>
+                <Input
+                  id="age"
+                  type="number"
+                  min="18"
+                  max="100"
+                  value={formData.age}
+                  onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Starting Interview..." : "Start Interview"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

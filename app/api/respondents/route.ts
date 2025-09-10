@@ -67,7 +67,6 @@ export async function GET(request: Request) {
     }
 
     const simulationIds = simulations.map(s => s.id);
-    console.log('amit1111')
     // Build respondents query
     let respondentsQuery = supabase
       .from('human_respondents')
@@ -98,7 +97,6 @@ export async function GET(request: Request) {
       // .or(search ? `name.ilike.%${search}%,email.ilike.%${search}%` : '');
     
     
-    console.log('amit3333', status,totalCount, simulationIds, offset, limit)
 
     if (countError) {
       throw countError;
@@ -108,7 +106,6 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    console.log('amit4444', respError)
     if (respError) {
       console.error('Respondents query error:', respError);
       throw respError;
@@ -141,7 +138,6 @@ export async function GET(request: Request) {
         };
       })
     );
-    console.log('amit5555')
 
     return NextResponse.json({
       respondents: respondentsWithCounts,

@@ -4,50 +4,80 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 198 45% 20%;
-    --card: 0 0% 100%;
-    --card-foreground: 198 45% 20%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 198 45% 20%;
-    --primary: 198 45% 20%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 35 35% 85%;
-    --secondary-foreground: 198 45% 20%;
-    --muted: 35 35% 85%;
-    --muted-foreground: 200 8% 64%;
-    --accent: 35 35% 85%;
-    --accent-foreground: 198 45% 20%;
-    --destructive: 0 84.2% 60.2%;
+    --background: 33 41% 96%; /* Very light beige for backgrounds */
+    --foreground: 185 43% 15%; /* Dark teal for text */
+
+    --card: 33 41% 94%; /* Light beige for cards */
+    --card-foreground: 185 43% 20%; /* Dark teal for card text */
+
+    --popover: 33 41% 96%;
+    --popover-foreground: 185 43% 15%;
+
+    --primary: 189 48% 42%; /* lightTeal */
+    --primary-foreground: 33 41% 96%; /* Light beige text on primary */
+
+    --secondary: 33 25% 53%; /* brown */
+    --secondary-foreground: 33 41% 96%; /* Light beige text on secondary */
+
+    --muted: 33 41% 88%; /* Muted beige */
+    --muted-foreground: 185 43% 30%; /* Dark teal for muted text */
+
+    --accent: 33 41% 84%; /* Accent beige */
+    --accent-foreground: 185 43% 25%; /* Dark teal for accent text */
+
+    --destructive: 0 84% 60%; /* Keep red for destructive actions */
     --destructive-foreground: 0 0% 98%;
-    --border: 200 8% 64%;
-    --input: 200 8% 64%;
-    --ring: 198 45% 20%;
+
+    --border: 186 4% 80%; /* Light gray for borders */
+    --input: 186 4% 85%; /* Light gray for inputs */
+    --ring: 189 48% 42%; /* lightTeal for focus rings */
+
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 198 45% 20%;
-    --foreground: 0 0% 98%;
-    --card: 198 45% 20%;
-    --card-foreground: 0 0% 98%;
-    --popover: 198 45% 20%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 188 48% 42%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 35 25% 45%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 35 25% 45%;
-    --muted-foreground: 200 8% 64%;
-    --accent: 35 25% 45%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 185 43% 8%; /* Very dark teal background */
+    --foreground: 33 41% 88%; /* Light beige for text */
+
+    --card: 185 43% 12%; /* Dark teal for cards */
+    --card-foreground: 33 41% 85%; /* Light beige for card text */
+
+    --popover: 185 43% 10%;
+    --popover-foreground: 33 41% 88%;
+
+    --primary: 189 48% 55%; /* Brighter lightTeal for dark mode */
+    --primary-foreground: 185 43% 8%; /* Dark background for primary text */
+
+    --secondary: 33 25% 65%; /* Lighter brown for dark mode */
+    --secondary-foreground: 185 43% 8%;
+
+    --muted: 185 43% 20%; /* Muted dark teal */
+    --muted-foreground: 186 4% 70%; /* Gray for muted text */
+
+    --accent: 185 43% 25%; /* Accent dark teal */
+    --accent-foreground: 33 41% 85%; /* Light beige for accent text */
+
+    --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 35 25% 45%;
-    --input: 35 25% 45%;
-    --ring: 188 48% 42%;
+
+    --border: 185 43% 25%; /* Dark teal borders */
+    --input: 185 43% 22%; /* Dark teal inputs */
+    --ring: 189 48% 55%; /* Brighter lightTeal for focus rings */
   }
 }
+
+/* Optional: Add custom color utilities for direct use */
+.text-dark-teal { color: #255e65; }
+.text-light-teal { color: #3591a0; }
+.text-beige { color: #d9bea1; }
+.text-brown { color: #a88565; }
+.text-gray { color: #a2a8a9; }
+
+.bg-dark-teal { background-color: #255e65; }
+.bg-light-teal { background-color: #3591a0; }
+.bg-beige { background-color: #d9bea1; }
+.bg-brown { background-color: #a88565; }
+.bg-gray { background-color: #a2a8a9; }
 
 @layer base {
   * {

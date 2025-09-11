@@ -11,8 +11,9 @@ import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePromp
 import { buildMessagesForOpenAI, buildFollowUpQuestionsPrompt } from "@/utils/buildMessagesForOpenAI";
 import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
+import Link from "next/link";
 import { Persona,Simulation } from "@/utils/types";
 import { logErrorNonBlocking } from "@/utils/errorLogger";
 import { MediaViewer } from "@/components/media-viewer";
@@ -56,6 +57,7 @@ export default function SimulationViewPage() {
   const params = useParams(); // Use useParams() to get the business_id
   const simulationId = params.id as string;
   const router = useRouter();
+  const { toast } = useToast();
 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -1311,11 +1313,18 @@ export default function SimulationViewPage() {
                    {simulation.status === 'Completed' && (
                     <Button
                       className="w-full"
-                      asChild
+                      onClick={() => {
+                        const shareUrl = `${window.location.origin}/idi/${simulationId}`;
+                        navigator.clipboard.writeText(shareUrl);
+                        toast({
+                          title: "Link copied!",
+                          description: "Share link has been copied to clipboard",
+                          duration: 2000,
+                        });
+                      }}
                     >
                       Share with Human Respondents
                     </Button>
-                    
                   )}
                 </div>}
 

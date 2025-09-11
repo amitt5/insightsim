@@ -285,20 +285,21 @@ export default function InterviewPage() {
                       }`}>
                         {isRespondent && (
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-semibold text-sm text-green-600">
-                              {respondentData?.name}
+                            <span className="font-semibold text-sm text-primary-foreground ml-2">
+                              {/* {respondentData?.name} */}
                             </span>
-                            <span className="text-xs text-gray-500 ml-2">
+                            <span className="text-xs text-primary-foreground/70">
+                            {/* <span className="text-xs text-gray-500 ml-2"> */}
                               {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
                         )}
                         {!isRespondent && (
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-primary-foreground/70">
+                            <span className="text-xs text-gray-500">
                               {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
-                            <span className="font-semibold text-sm text-primary-foreground ml-2">
+                            <span className="font-semibold text-sm text-gray-500 ml-2">
                               Moderator
                             </span>
                           </div>

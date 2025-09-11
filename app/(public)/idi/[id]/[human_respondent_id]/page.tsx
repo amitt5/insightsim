@@ -208,16 +208,16 @@ export default function InterviewPage() {
                   return (
                     <>
                       {/* Render the last message */}
-                      <div key={`message-${i}`} className={`flex gap-4 items-end ${message.sender_type === 'respondent' ? "" : "flex-row-reverse"}`}>
+                      <div key={`message-${i}`} className={`flex gap-4 items-end ${message.sender_type !== 'respondent' ? "" : "flex-row-reverse"}`}>
                         <div 
                           className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white font-medium"
                           style={{ backgroundColor: message.sender_type === 'respondent' ? '#4CAF50' : '#9238FF' }}
                         >
                           {message.sender_type === 'respondent' ? respondentData?.name[0] : "M"}
                         </div>
-                        <div className={`flex-1 ${message.sender_type !== 'respondent' ? "text-right" : ""}`}>
+                        <div className={`flex-1 ${message.sender_type === 'respondent' ? "text-right" : ""}`}>
                           <div className={`inline-block rounded-lg px-4 py-2 max-w-[80%] ${
-                            message.sender_type !== 'respondent'
+                            message.sender_type === 'respondent'
                               ? "bg-primary text-primary-foreground" 
                               : "bg-muted"
                           }`}>
@@ -247,14 +247,14 @@ export default function InterviewPage() {
                       </div>
                       
                       {/* AI typing indicator */}
-                      <div className="flex gap-4 items-end flex-row-reverse">
+                      <div className="flex gap-4 items-end">
                         <div 
                           className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white font-medium"
                           style={{ backgroundColor: '#9238FF' }}
                         >
                           M
                         </div>
-                        <div className="flex-1 text-right">
+                        <div className="flex-1">
                           <div className="inline-block rounded-lg px-4 py-2 bg-primary/50">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 bg-white rounded-full animate-bounce" />
@@ -270,16 +270,16 @@ export default function InterviewPage() {
                 const isRespondent = message.sender_type === 'respondent';
                 
                 return (
-                  <div key={i} className={`flex gap-4 items-end ${isRespondent ? "" : "flex-row-reverse"}`}>
+                  <div key={i} className={`flex gap-4 items-end ${!isRespondent ? "" : "flex-row-reverse"}`}>
                     <div 
                       className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white font-medium"
                       style={{ backgroundColor: isRespondent ? '#4CAF50' : '#9238FF' }}
                     >
                       {isRespondent ? respondentData?.name[0] : "M"}
                     </div>
-                    <div className={`flex-1 ${!isRespondent ? "text-right" : ""}`}>
+                    <div className={`flex-1 ${isRespondent ? "text-right" : ""}`}>
                       <div className={`inline-block rounded-lg px-4 py-2 max-w-[80%] ${
-                        !isRespondent 
+                        isRespondent 
                           ? "bg-primary text-primary-foreground" 
                           : "bg-muted"
                       }`}>

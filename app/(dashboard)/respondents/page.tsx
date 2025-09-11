@@ -3,8 +3,14 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, MoreVertical } from "lucide-react"
 import Link from "next/link"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Respondent {
   id: string;
@@ -218,30 +224,21 @@ export default function RespondentsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium">Name</th>
-                      <th className="text-left py-3 px-4 font-medium">Contact</th>
-                      <th className="text-left py-3 px-4 font-medium">Demographics</th>
+                      <th className="text-left py-3 px-4 font-medium">Respondent</th>
                       <th className="text-left py-3 px-4 font-medium">Status</th>
-                      <th className="text-left py-3 px-4 font-medium">Started</th>
-                      <th className="text-left py-3 px-4 font-medium">Last Activity</th>
-                      <th className="text-left py-3 px-4 font-medium">Messages</th>
+                      <th className="text-left py-3 px-4 font-medium">Started/Last Active</th>
                       <th className="text-left py-3 px-4 font-medium">Simulation</th>
-                      <th className="text-left py-3 px-4 font-medium">Actions</th>
+                      <th className="text-right py-3 px-4 font-medium"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {respondents.map((respondent) => (
                       <tr key={respondent.id} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium">{respondent.name}</td>
                         <td className="py-3 px-4">
-                          <div>
-                            <div className="text-sm">{respondent.email}</div>
+                          <div className="font-medium">
+                            {respondent.name} {respondent.age}{respondent.gender.charAt(0).toUpperCase()}
                           </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="text-sm">
-                            {respondent.age}, {respondent.gender}
-                          </div>
+                          <div className="text-sm text-gray-600">{respondent.email}</div>
                         </td>
                         <td className="py-3 px-4">
                           <Badge className={getStatusColor(respondent.status)}>
@@ -249,40 +246,46 @@ export default function RespondentsPage() {
                           </Badge>
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-600">
-                          {formatDate(respondent.created_at)}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">
+                          {new Date(respondent.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          <br />
                           {respondent.last_message_at
-                            ? formatDate(respondent.last_message_at)
+                            ? new Date(respondent.last_message_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                             : 'No activity'
                           }
                         </td>
-                        <td className="py-3 px-4 text-center">
-                          {respondent.message_count}
-                        </td>
                         <td className="py-3 px-4">
-                          <div className="text-sm max-w-xs truncate">
-                            {respondent.simulation.topic}
-                          </div>
+                          <Link 
+                            href={`/simulations/${respondent.simulation_id}`}
+                            className="text-sm text-blue-600 hover:underline"
+                          >
+                            <div className="max-w-[200px] truncate">
+                              {respondent.simulation.topic}
+                            </div>
+                          </Link>
                         </td>
-                        <td className="py-3 px-4">
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleStatusChange(
-                                respondent.id,
-                                respondent.status === 'in_progress' ? 'completed' : 'in_progress'
-                              )}
-                            >
-                              {respondent.status === 'in_progress' ? 'Complete' : 'Restart'}
-                            </Button>
-                            <Button variant="outline" size="sm" asChild>
-                              <Link href={`/simulations/${respondent.simulation_id}/respondents/${respondent.id}`}>
-                                View
-                              </Link>
-                            </Button>
-                          </div>
+                        <td className="py-3 px-4 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleStatusChange(
+                                  respondent.id,
+                                  respondent.status === 'in_progress' ? 'completed' : 'in_progress'
+                                )}
+                              >
+                                {respondent.status === 'in_progress' ? 'Complete' : 'Restart'}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/simulations/${respondent.simulation_id}/respondents/${respondent.id}`}>
+                                  View Details
+                                </Link>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </td>
                       </tr>
                     ))}

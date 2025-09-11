@@ -134,8 +134,8 @@ export default function RespondentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Respondents</h1>
-          <p className="text-gray-600">Manage your interview respondents</p>
+          <h1 className="text-3xl font-bold">Human Interviews</h1>
+          <p className="text-gray-600">Manage your Interviews</p>
         </div>
       </div>
 
@@ -280,7 +280,7 @@ export default function RespondentsPage() {
                                 {respondent.status === 'in_progress' ? 'Complete' : 'Restart'}
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
-                                <Link href={`/simulations/${respondent.simulation_id}/respondents/${respondent.id}`}>
+                                <Link href={`/idi/${respondent.simulation_id}/${respondent.id}`}>
                                   View Details
                                 </Link>
                               </DropdownMenuItem>

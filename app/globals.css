@@ -87,3 +87,6 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* "rm -rf .next" when updating theme */

@@ -206,9 +206,9 @@ export default function InterviewPage() {
                 // Show AI typing indicator after the last message if AI is responding
                 if (i === messages.length - 1 && isAiResponding) {
                   return (
-                    <>
+                    <div key={`message-group-${message.id || i}`}>
                       {/* Render the last message */}
-                      <div key={`message-${i}`} className={`flex gap-4 items-end ${message.sender_type !== 'respondent' ? "" : "flex-row-reverse"}`}>
+                      <div key={`message-${message.id || i}`} className={`flex gap-4 items-end ${message.sender_type !== 'respondent' ? "" : "flex-row-reverse"}`}>
                         <div 
                           className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white font-medium"
                           style={{ backgroundColor: message.sender_type === 'respondent' ? '#4CAF50' : '#9238FF' }}
@@ -247,7 +247,7 @@ export default function InterviewPage() {
                       </div>
                       
                       {/* AI typing indicator */}
-                      <div className="flex gap-4 items-end">
+                      <div key="ai-typing-indicator" className="flex gap-4 items-end">
                         <div 
                           className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white font-medium"
                           style={{ backgroundColor: '#9238FF' }}
@@ -264,13 +264,13 @@ export default function InterviewPage() {
                           </div>
                         </div>
                       </div>
-                    </>
+                    </div>
                   );
                 }
                 const isRespondent = message.sender_type === 'respondent';
                 
                 return (
-                  <div key={i} className={`flex gap-4 items-end ${!isRespondent ? "" : "flex-row-reverse"}`}>
+                  <div key={`message-${message.id || i}`} className={`flex gap-4 items-end ${!isRespondent ? "" : "flex-row-reverse"}`}>
                     <div 
                       className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white font-medium"
                       style={{ backgroundColor: isRespondent ? '#4CAF50' : '#9238FF' }}

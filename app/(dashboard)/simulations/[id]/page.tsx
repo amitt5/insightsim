@@ -12,7 +12,7 @@ import { buildMessagesForOpenAI, buildFollowUpQuestionsPrompt } from "@/utils/bu
 import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Persona,Simulation } from "@/utils/types";
 import { logErrorNonBlocking } from "@/utils/errorLogger";
@@ -1313,14 +1313,23 @@ export default function SimulationViewPage() {
                    {simulation.status === 'Completed' && (
                     <Button
                       className="w-full"
-                      onClick={() => {
-                        const shareUrl = `${window.location.origin}/idi/${simulationId}`;
-                        navigator.clipboard.writeText(shareUrl);
-                        toast({
-                          title: "Link copied!",
-                          description: "Share link has been copied to clipboard",
-                          duration: 2000,
-                        });
+                      onClick={async () => {
+                        try {
+                          const shareUrl = `${window.location.origin}/idi/${simulationId}`;
+                          await navigator.clipboard.writeText(shareUrl);
+                          toast({
+                            title: "Link copied!",
+                            description: "Share link has been copied to clipboard",
+                            duration: 2000,
+                          });
+                        } catch (err) {
+                          toast({
+                            title: "Failed to copy",
+                            description: "Could not copy link to clipboard",
+                            variant: "destructive",
+                            duration: 2000,
+                          });
+                        }
                       }}
                     >
                       Share with Human Respondents

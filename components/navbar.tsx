@@ -1,5 +1,6 @@
 "use client"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { UserCircle } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -121,12 +122,13 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
     >
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-r from-darkTeal to-lightTeal">
-              <span className="text-lg font-bold text-white">IS</span>
-            </div>
-            <span className="text-xl font-bold">InsightSim</span>
-          </Link>
+        <Image
+                src="/MAIRA-logo.png"
+                alt="InsightSim Logo"
+                width={100}
+                height={48}
+                priority
+              />
 
           {isAuthenticated && (
             <div className="ml-10 hidden space-x-4 md:flex">

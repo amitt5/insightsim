@@ -13,9 +13,9 @@ export const metadata = {
   description: "Simulate focus group discussions with AI personas",
   generator: 'v0.dev',
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    icon: '/maira-favicon.png',
+    shortcut: '/maira-favicon.png',
+    apple: '/maira-favicon.png',
   },
 }
 

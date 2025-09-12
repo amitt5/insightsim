@@ -1,5 +1,6 @@
 "use client"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { CheckCircle, ChevronDown } from "lucide-react"
@@ -12,16 +13,16 @@ export default function LandingPage() {
   // FAQ data (flattened, not grouped)
   const faqList = [
     {
-      q: "What is InsightSim?",
-      a: "InsightSim is an AI-powered qualitative research platform that simulates focus groups and in-depth interviews using intelligent personas.",
+      q: "What is Maira?",
+      a: "Maira is an AI-powered qualitative research platform that simulates focus groups and in-depth interviews using intelligent personas.",
     },
     {
-      q: "Who is InsightSim for?",
+      q: "Who is Maira for?",
       a: "Researchers, UX professionals, and product teams who want faster insights without the need for participant recruitment every time.",
     },
     {
       q: "Do I need technical expertise to use it?",
-      a: "No. InsightSim is built for researchers. Calibration is user-friendly, and we offer demos and support to help you through it.",
+      a: "No. Maira is built for researchers. Calibration is user-friendly, and we offer demos and support to help you through it.",
     },
     {
       q: "How are the AI personas created?",
@@ -37,15 +38,15 @@ export default function LandingPage() {
     },
     {
       q: "How can I improve the quality of results?",
-      a: "InsightSim lets you calibrate personas with transcripts or insights from real research. The more calibration you do, the more realistic the AI behavior becomes. Watch a demo or request a walkthrough—it's slightly technical but very doable with support.",
+      a: "Maira lets you calibrate personas with transcripts or insights from real research. The more calibration you do, the more realistic the AI behavior becomes. Watch a demo or request a walkthrough—it's slightly technical but very doable with support.",
     },
     {
       q: "What is calibration, and how does it work?",
-      a: "You upload past research, and InsightSim adjusts the persona's dialogue behavior to match real-world patterns—making responses more authentic.",
+      a: "You upload past research, and Maira adjusts the persona's dialogue behavior to match real-world patterns—making responses more authentic.",
     },
     {
       q: "Can I combine AI and human moderators?",
-      a: "Yes. Use full AI moderation or guide conversations yourself. InsightSim also learns from your moderating style over time.",
+      a: "Yes. Use full AI moderation or guide conversations yourself. Maira also learns from your moderating style over time.",
     },
     {
       q: "Can I simulate both FGDs and IDIs?",
@@ -501,7 +502,7 @@ export default function LandingPage() {
         {/* Who Is This Product For Section */}
         <section className="min-h-screen flex items-center justify-center py-20 bg-gray-50 border-t">
           <div className="container max-w-5xl mx-auto">
-            <h2 className="mb-2 text-center text-3xl font-bold">Who Is InsightSim For?</h2>
+            <h2 className="mb-2 text-center text-3xl font-bold">Who Is Maira For?</h2>
             <p className="mb-10 text-center text-gray-500 text-lg">Our platform is designed for professionals who need deep qualitative insights without the traditional time and cost constraints.</p>
             <div className="grid gap-8 md:grid-cols-3">
               <div className="rounded-lg bg-white p-6 shadow-sm flex flex-col items-center">
@@ -527,13 +528,13 @@ export default function LandingPage() {
         {/* Loom Video Demo Section */}
         {/* <section id="demo" className="min-h-screen flex items-center justify-center py-20 bg-white border-t demo-section">
           <div className="container max-w-3xl mx-auto flex flex-col items-center">
-            <h2 className="mb-2 text-center text-3xl font-bold demo-section-title">See How InsightSim Works</h2>
+            <h2 className="mb-2 text-center text-3xl font-bold demo-section-title">See How Maira Works</h2>
             <p className="mb-10 text-center text-gray-500 text-lg">Watch a quick demo of how to run your first AI-powered focus group</p>
             <div className="w-full flex justify-center mb-8">
               <div className="w-full max-w-2xl aspect-video rounded-lg overflow-hidden shadow bg-gray-100 flex items-center justify-center video-container animate-element">
                 <iframe
                   src="https://www.loom.com/embed/8529302263914ee9bc00e2ed0619e8ec"
-                  title="InsightSim Demo Video"
+                  title="Maira Demo Video"
                   allow="autoplay; fullscreen"
                   frameBorder="0"
                   className="w-full h-full min-h-[320px]"
@@ -645,7 +646,7 @@ export default function LandingPage() {
               {/* Section Header */}
               <div className="text-center mb-10">
                 <h2 className="text-3xl font-bold text-gray-900 mb-3 sm:text-4xl">
-                  How InsightSim Enhances Your Research Process
+                  How Maira Enhances Your Research Process
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
                   Don't replace your research—enhance it. Test, refine, and validate your approach before investing in expensive fieldwork.
@@ -763,14 +764,14 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* USP Section - Why Researchers Choose InsightSim */}
+        {/* USP Section - Why Researchers Choose Maira */}
         <section className="py-20 bg-gradient-to-br from-indigo-50 to-purple-50">
           <div className="container">
             <div className="mx-auto max-w-6xl">
               {/* Section Header */}
               <div className="text-center mb-16">
                 <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
-                  Why Researchers Choose InsightSim
+                  Why Researchers Choose Maira
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
                   Overcome the impossible challenges of traditional research with AI-powered simulation
@@ -884,7 +885,7 @@ export default function LandingPage() {
 
               {/* Bottom Comparison */}
               {/* <div className="mt-16 bg-white rounded-xl p-8 border border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-900 text-center mb-8">Traditional Research vs. InsightSim</h3>
+                <h3 className="text-xl font-semibold text-gray-900 text-center mb-8">Traditional Research vs. Maira</h3>
                 <div className="grid md:grid-cols-2 gap-8">
                   <div>
                     <h4 className="font-semibold text-red-600 mb-4 flex items-center">
@@ -907,7 +908,7 @@ export default function LandingPage() {
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      InsightSim Advantages
+                      Maira Advantages
                     </h4>
                     <ul className="space-y-2 text-sm text-gray-600">
                       <li>• Instant simulation start</li>
@@ -1062,7 +1063,7 @@ export default function LandingPage() {
               {/* Section Header */}
               <div className="text-center mb-16">
                 <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
-                  How Researchers Use InsightSim
+                  How Researchers Use Maira
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
                   Real scenarios from market researchers, UX researchers, and insight managers who enhance their research process with AI simulation
@@ -1085,7 +1086,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <p className="text-gray-700 mb-4">
-                    "Before we invest $15K in recruitment and fieldwork, we run our discussion guide through InsightSim with different persona mixes. Last month, we caught three weak questions that would have derailed our automotive study."
+                    "Before we invest $15K in recruitment and fieldwork, we run our discussion guide through Maira with different persona mixes. Last month, we caught three weak questions that would have derailed our automotive study."
                   </p>
                   <div className="bg-white rounded-lg p-4 border border-blue-200">
                     <p className="text-sm text-gray-600 font-medium mb-2">Typical Workflow:</p>
@@ -1112,7 +1113,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <p className="text-gray-700 mb-4">
-                    "We had competing hypotheses about Gen Z vs Millennial attitudes toward sustainable packaging. InsightSim let us test both scenarios instantly, helping us focus our real research on the most promising angles."
+                    "We had competing hypotheses about Gen Z vs Millennial attitudes toward sustainable packaging. Maira let us test both scenarios instantly, helping us focus our real research on the most promising angles."
                   </p>
                   <div className="bg-white rounded-lg p-4 border border-purple-200">
                     <p className="text-sm text-gray-600 font-medium mb-2">Typical Workflow:</p>
@@ -1139,7 +1140,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <p className="text-gray-700 mb-4">
-                    "New hires practice moderation skills with InsightSim before their first real focus group. They learn how to probe deeper, manage dominant participants, and keep discussions on track—all without the pressure of a live session."
+                    "New hires practice moderation skills with Maira before their first real focus group. They learn how to probe deeper, manage dominant participants, and keep discussions on track—all without the pressure of a live session."
                   </p>
                   <div className="bg-white rounded-lg p-4 border border-green-200">
                     <p className="text-sm text-gray-600 font-medium mb-2">Typical Workflow:</p>
@@ -1166,7 +1167,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <p className="text-gray-700 mb-4">
-                    "When stakeholders need quick insights for sprint planning, we use InsightSim to test user scenarios and validate assumptions. It gives us directional data to inform decisions while we plan comprehensive user research."
+                    "When stakeholders need quick insights for sprint planning, we use Maira to test user scenarios and validate assumptions. It gives us directional data to inform decisions while we plan comprehensive user research."
                   </p>
                   <div className="bg-white rounded-lg p-4 border border-orange-200">
                     <p className="text-sm text-gray-600 font-medium mb-2">Typical Workflow:</p>
@@ -1214,7 +1215,7 @@ export default function LandingPage() {
                   Trusted by Research Professionals
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  See how market researchers and UX professionals are enhancing their research process with InsightSim
+                  See how market researchers and UX professionals are enhancing their research process with Maira
                 </p>
               </div>
 
@@ -1251,7 +1252,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <p className="text-gray-700 text-sm">
-                    "InsightSim saved us from a costly research failure. We caught three problematic questions in our discussion guide that would have compromised our entire automotive study. The AI personas gave us realistic responses that helped refine our approach."
+                    "Maira saved us from a costly research failure. We caught three problematic questions in our discussion guide that would have compromised our entire automotive study. The AI personas gave us realistic responses that helped refine our approach."
                   </p>
                 </div>
 
@@ -1266,7 +1267,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <p className="text-gray-700 text-sm">
-                    "Perfect for rapid concept validation. When stakeholders need quick insights for sprint planning, InsightSim gives us directional data while we plan comprehensive user research. It's become essential to our workflow."
+                    "Perfect for rapid concept validation. When stakeholders need quick insights for sprint planning, Maira gives us directional data while we plan comprehensive user research. It's become essential to our workflow."
                   </p>
                 </div>
 
@@ -1281,7 +1282,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <p className="text-gray-700 text-sm">
-                    "We use InsightSim to train junior researchers on moderation techniques. They practice with challenging personas before their first real focus group. It's dramatically improved our team's confidence and skills."
+                    "We use Maira to train junior researchers on moderation techniques. They practice with challenging personas before their first real focus group. It's dramatically improved our team's confidence and skills."
                   </p>
                 </div>
               </div>
@@ -1454,7 +1455,7 @@ export default function LandingPage() {
                 
                 <div className="max-w-4xl mx-auto">
                   <p className="text-gray-700 text-center mb-8 text-lg">
-                    We conduct qualitative research using InsightSim and then validate findings with quantitative studies using real respondents.
+                    We conduct qualitative research using Maira and then validate findings with quantitative studies using real respondents.
                   </p>
                   
                   <div className="grid md:grid-cols-2 gap-8 items-center">
@@ -1540,7 +1541,7 @@ export default function LandingPage() {
                 <div className="bg-white rounded-xl p-8 border-2 border-gray-200 relative">
                   <div className="text-center mb-6">
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">Free Trial</h3>
-                    <p className="text-gray-600 text-sm mb-4">Perfect for trying InsightSim</p>
+                    <p className="text-gray-600 text-sm mb-4">Perfect for trying Maira</p>
                     <div className="mb-4">
                       <span className="text-3xl font-bold text-gray-900">$0</span>
                       <span className="text-gray-600">/14 days</span>
@@ -1922,7 +1923,7 @@ export default function LandingPage() {
            Frequently Asked Questions
          </h2>
          <p className="text-lg text-gray-600">
-           Everything you need to know about InsightSim and how it enhances your research process
+           Everything you need to know about Maira and how it enhances your research process
          </p>
        </div>
 
@@ -1942,7 +1943,7 @@ export default function LandingPage() {
            </button>
            {openNewFaq === 0 && (
              <div className="px-6 pb-6 text-gray-600">
-               No, InsightSim enhances your research process—it doesn't replace it. Think of it as a testing ground for your methodology. Use it to refine discussion guides, test hypotheses, and validate your approach before investing in expensive fieldwork. The insights are directional and help you prepare for more effective real research with human participants.
+               No, Maira enhances your research process—it doesn't replace it. Think of it as a testing ground for your methodology. Use it to refine discussion guides, test hypotheses, and validate your approach before investing in expensive fieldwork. The insights are directional and help you prepare for more effective real research with human participants.
              </div>
            )}
          </div>
@@ -2018,7 +2019,7 @@ export default function LandingPage() {
            </button>
            {openNewFaq === 4 && (
              <div className="px-6 pb-6 text-gray-600">
-               InsightSim fits naturally into your existing process. Use it in the planning phase to test discussion guides, during proposal development to provide directional insights, or for training junior researchers. Many users run simulations before client presentations to anticipate questions and refine their approach. It's designed to complement, not disrupt, your established methodology.
+               Maira fits naturally into your existing process. Use it in the planning phase to test discussion guides, during proposal development to provide directional insights, or for training junior researchers. Many users run simulations before client presentations to anticipate questions and refine their approach. It's designed to complement, not disrupt, your established methodology.
              </div>
            )}
          </div>
@@ -2037,7 +2038,7 @@ export default function LandingPage() {
            </button>
            {openNewFaq === 5 && (
              <div className="px-6 pb-6 text-gray-600">
-               InsightSim supports focus groups, in-depth interviews, and concept testing scenarios. You can simulate various participant demographics, test different discussion guide approaches, and explore multiple hypotheses. Coming soon: quantitative survey simulation to validate qualitative findings and persona calibration using your existing research data.
+               Maira supports focus groups, in-depth interviews, and concept testing scenarios. You can simulate various participant demographics, test different discussion guide approaches, and explore multiple hypotheses. Coming soon: quantitative survey simulation to validate qualitative findings and persona calibration using your existing research data.
              </div>
            )}
          </div>
@@ -2062,10 +2063,13 @@ export default function LandingPage() {
         <div className="container">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-r from-purple-500 to-violet-600">
-                <span className="text-lg font-bold text-white">IS</span>
-              </div>
-              <span className="text-xl font-bold">InsightSim</span>
+              <Image
+                  src="/MAIRA-logo.png"
+                  alt="Maira Logo"
+                  width={100}
+                  height={48}
+                  priority
+                />
             </div>
             <div className="flex gap-6">
               <Link href="#" className="text-sm text-gray-600 hover:text-primary">

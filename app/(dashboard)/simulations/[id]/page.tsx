@@ -175,7 +175,7 @@ export default function SimulationViewPage() {
         // Initialize checkbox states
         setSelectedStimulusImages(new Array(urls.length).fill(false));
       } catch (error) {
-        console.error('Error loading signed URLs:', error);
+        console.error('Error loading signed URLs :', error);
         // Fallback to original URLs
         const urls = Array.isArray(simulationData.simulation.stimulus_media_url) 
           ? simulationData.simulation.stimulus_media_url

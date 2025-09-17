@@ -638,6 +638,147 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Features Section */}
+        <section id="features" className="min-h-screen flex items-center justify-center py-20 bg-white">
+          <div className="container">
+            <div className="mx-auto max-w-6xl">
+              {/* Section Header */}
+              <div className="text-center mb-16">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
+                  Powerful Features for Modern Research
+                </h2>
+                <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                  Everything you need to conduct, analyze, and validate qualitative research at scale
+                </p>
+              </div>
+
+              {/* Features Grid */}
+              <div className="grid gap-8 md:grid-cols-3">
+                {/* Custom Research Briefs */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Custom Research Briefs</h3>
+                  <p className="text-gray-600">Create tailored research objectives, target demographics, and study parameters that align perfectly with your business goals and research questions.</p>
+                </div>
+
+                {/* Dynamic Participant Generation */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Dynamic Participant Generation</h3>
+                  <p className="text-gray-600">AI automatically generates diverse synthetic participants based on your research brief, ensuring authentic responses from your exact target audience.</p>
+                </div>
+
+                {/* Discussion Guide Generation */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Discussion Guide Generation</h3>
+                  <p className="text-gray-600">Let AI craft comprehensive interview scripts and focus group guides tailored to your research objectives and participant profiles.</p>
+                </div>
+
+                {/* Upload Visual Stimulus */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Upload Visual Stimulus</h3>
+                  <p className="text-gray-600">Seamlessly integrate images, advertisements, product mockups, and brand materials into your research sessions for richer participant feedback.</p>
+                </div>
+
+                {/* Country-Specific LLM Integration */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Country-Specific LLM Integration</h3>
+                  <p className="text-gray-600">Choose from locally-trained language models optimized for specific countries and cultures, ensuring culturally relevant and authentic responses.</p>
+                </div>
+
+                {/* AI-Powered Focus Groups & Interviews */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">AI-Powered Focus Groups & Interviews</h3>
+                  <p className="text-gray-600">Conduct realistic qualitative research sessions with AI participants that respond naturally to questions and engage in meaningful discussions.</p>
+                </div>
+
+                {/* Real-Time Follow-Up Questions */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Real-Time Follow-Up Questions</h3>
+                  <p className="text-gray-600">Probe deeper instantly during sessions with dynamic follow-up questions, without the constraints of traditional research scheduling.</p>
+                </div>
+
+                {/* Automated Insight Generation */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Automated Insight Generation</h3>
+                  <p className="text-gray-600">AI extracts key themes, patterns, and actionable insights from transcripts, delivering comprehensive analysis in minutes instead of weeks.</p>
+                </div>
+
+                {/* Web Validation with Citations */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Web Validation with Citations</h3>
+                  <p className="text-gray-600">Automatically verify and validate research insights against current web data, providing credible citations to support your findings.</p>
+                </div>
+
+                {/* Cross-Validation with Real Users */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Cross-Validation with Real Users</h3>
+                  <p className="text-gray-600">Compare AI-generated insights with actual human responses to ensure accuracy and build confidence in your research results.</p>
+                </div>
+
+                {/* RAG-Powered Research */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-violet-100 rounded-lg flex items-center justify-center mb-6">
+                    <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">RAG-Powered Research</h3>
+                  <p className="text-gray-600">Upload existing reports and documents to conduct research sessions informed by your company's knowledge base and industry data.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Solution Overview Section */}
         <section className="min-h-screen flex items-center justify-center py-12 bg-white">
           <div className="container">

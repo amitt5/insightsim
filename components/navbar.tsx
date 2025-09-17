@@ -125,8 +125,7 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
         <Image
                 src="/MAIRA-logo.png"
                 alt="InsightSim Logo"
-                width={130}
-                style={{position: 'relative', left: '-50px'}}
+                width={120}
                 height={48}
                 priority
               />

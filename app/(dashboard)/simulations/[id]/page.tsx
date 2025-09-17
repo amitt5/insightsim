@@ -12,6 +12,7 @@ import { buildMessagesForOpenAI, buildFollowUpQuestionsPrompt } from "@/utils/bu
 import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Persona,Simulation } from "@/utils/types";
 import { logErrorNonBlocking } from "@/utils/errorLogger";
 import { MediaViewer } from "@/components/media-viewer";
@@ -54,8 +55,8 @@ interface FormattedMessage {
 export default function SimulationViewPage() {
   const params = useParams(); // Use useParams() to get the business_id
   const simulationId = params.id as string;
+  const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState("summary")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showErrorPopup, setShowErrorPopup] = useState(false)
@@ -66,11 +67,9 @@ export default function SimulationViewPage() {
   const [simulationMessages, setSimulationMessages] = useState<SimulationMessage[]>([])
   const [formattedMessages, setFormattedMessages] = useState<FormattedMessage[]>([])
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
-  const [isLoadingSummaries, setIsLoadingSummaries] = useState(false)
   const [newMessage, setNewMessage] = useState("")
   const [isEndingDiscussion, setIsEndingDiscussion] = useState(false)
   const [isStartingDiscussion, setIsStartingDiscussion] = useState(false)
-  const [simulationSummaries, setSimulationSummaries] = useState<{summaries: any[], themes: any[]} | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [modelInUse, setModelInUse] = useState<string>('gpt-4o-mini')
   const [showInstructionBox, setShowInstructionBox] = useState(false)
@@ -317,10 +316,6 @@ export default function SimulationViewPage() {
     console.log('simulationData111', simulationData);
     if (simulationData?.simulation?.id) {
       fetchSimulationMessages(simulationData.simulation.id);
-      if(simulationData?.simulation?.status === "Completed") {
-        // Fetch summary and themes messages 
-        fetchSimulationSummaries();
-      }
       // Set userInstruction from simulation data if available
       if (simulationData.simulation.user_instructions) {
         setUserInstruction(simulationData.simulation.user_instructions);
@@ -399,32 +394,7 @@ export default function SimulationViewPage() {
     }
   };
 
-   // Function to fetch simulation messages
-   const fetchSimulationSummaries = async () => {
-    try {
-      setIsLoadingSummaries(true);
-      const response = await fetch(`/api/simulation-summaries/${simulationData?.simulation.id}`);
-      
-      if (!response.ok) {
-        throw new Error(`Error fetching summaries: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.error) {
-        console.error("API error:", data.error);
-      } else {
-        // if there are messages, check how many times moderator has spoken and then set the new message to the next question
-        console.log('summaries loaded', data);
-        setSimulationSummaries(data);
-      }
-      return data.messages
-    } catch (err: any) {
-      console.error("Error fetching simulation messages:", err);
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  };
+
 
   const runSimulation = async (customPrompt?: ChatCompletionMessageParam[]) => {
     console.log('runSimulationCalled', simulationData);
@@ -785,40 +755,43 @@ export default function SimulationViewPage() {
             status: 'Completed'
           }
         } : null);
+
+        // Redirect to insights page
+        router.push(`/simulations/${simulationData.simulation.id}/insights`);
       }
 
     } catch (error) {
       console.error('Error ending discussion:', error);
     } finally {
-      setIsEndingDiscussion(false);
-    }
-
-    if(simulationData?.simulation && simulationMessages) {
-      const prompt = prepareSummaryPrompt(simulationData?.simulation, simulationMessages);
-      console.log('prompt12345',simulationMessages,simulationData?.simulation, prompt, nameToPersonaIdMap);
-    
-      try {
-        const data = await runSimulationAPI(prompt);
-        console.log('API response:', data);
-        // setAvailableCredits(data.creditInfo.remaining_credits);
-        
-        if (data.reply) {
-          // Parse the response into messages
-          const parsedMessages = parseSimulationResponse(data.reply);
-          console.log('Parsed messages222:', parsedMessages);
-          
-          // Save the summary and themes to the database
-          const saveResult = await saveSummaryToDatabase(parsedMessages);
-          
-          // Fetch summary and themes messages after saving
-          if (saveResult && simulationData?.simulation?.id) {
-            await fetchSimulationSummaries();
-          }
-        }
-      } catch (error) {
-        console.error("Error running simulation:", error);
+        setIsEndingDiscussion(false);
       }
-    }
+
+    // if(simulationData?.simulation && simulationMessages) {
+    //   const prompt = prepareSummaryPrompt(simulationData?.simulation, simulationMessages);
+    //   console.log('prompt12345',simulationMessages,simulationData?.simulation, prompt, nameToPersonaIdMap);
+    
+    //   try {
+    //     const data = await runSimulationAPI(prompt);
+    //     console.log('API response:', data);
+    //     // setAvailableCredits(data.creditInfo.remaining_credits);
+        
+    //     if (data.reply) {
+    //       // Parse the response into messages
+    //       const parsedMessages = parseSimulationResponse(data.reply);
+    //       console.log('Parsed messages222:', parsedMessages);
+          
+    //       // Save the summary and themes to the database
+    //       const saveResult = await saveSummaryToDatabase(parsedMessages);
+          
+    //       // Redirect to insights page after saving
+    //       if (saveResult && simulationData?.simulation?.id) {
+    //         router.push(`/simulations/${simulationData.simulation.id}/insights`);
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error("Error running simulation:", error);
+    //   }
+    // }
   };
 
   const copyTranscript = () => {
@@ -1044,11 +1017,8 @@ export default function SimulationViewPage() {
             </Card>
           </div>
 
-          {/* Chat Window - Full width on mobile */}
-          <div className={`col-span-1 ${
-            simulationData?.simulation?.status === 'Completed' && simulationSummaries ? 
-            'lg:col-span-6' : 'lg:col-span-9'
-          }`}>
+          {/* Chat Window - Full width */}
+          <div className="col-span-1 lg:col-span-9">
             <Card className="h-full flex flex-col">
               <CardContent className="p-4 flex-1 overflow-auto">
               <h2 className="font-semibold mb-4 flex items-center gap-2">
@@ -1313,14 +1283,26 @@ export default function SimulationViewPage() {
                   )}
                   
                   {/* End discussion button */}
-                  {formattedMessages.length > 0 && (
+                  {formattedMessages.length > 0 && simulation.status !== 'Completed' && (
                     <Button
                       className="w-full"
                       variant="destructive"
                       onClick={endDiscussion}
-                      disabled={simulation.status === 'Completed' || isEndingDiscussion}
+                      disabled={isEndingDiscussion}
                     >
                       {isEndingDiscussion ? "Ending..." : "End Discussion and generate insights"}
+                    </Button>
+                  )}
+                  
+                  {/* View Insights button - only show when completed */}
+                  {simulation.status === 'Completed' && (
+                    <Button
+                      className="w-full"
+                      asChild
+                    >
+                      <Link href={`/simulations/${simulationId}/insights`}>
+                        View Insights & Analysis
+                      </Link>
                     </Button>
                   )}
                 </div>}
@@ -1331,68 +1313,7 @@ export default function SimulationViewPage() {
           </Card>
         </div>
 
-          {/* Summary Tabs - Only show when discussion is completed and summary is available */}
-          {simulationData?.simulation?.status === 'Completed' && simulationSummaries && (
-            <div className="col-span-1 lg:col-span-3">
-              <Card className="h-full">
-                <CardContent className="p-4">
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                      <TabsList className="mb-4 grid w-full grid-cols-2">
-                        {/* <TabsTrigger value="transcript">Transcript</TabsTrigger> */}
-                      <TabsTrigger value="summary">Summary</TabsTrigger>
-                      <TabsTrigger value="themes">Themes</TabsTrigger>
-                    </TabsList>
 
-                      {/* <TabsContent value="transcript" className="flex-1 overflow-auto">
-                      <div className="space-y-4">
-                          {discussion.map((message, i) => (
-                          <div key={i} className="border-b pb-2">
-                            <div className="flex justify-between">
-                              <span className="font-medium">{message.speaker}</span>
-                              <span className="text-xs text-gray-500">{message.time}</span>
-                            </div>
-                            <p className="text-sm text-gray-700">{message.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                      </TabsContent> */}
-
-                    <TabsContent value="summary" className="flex-1 overflow-auto">
-                      <h3 className="font-medium mb-3">Key Insights</h3>
-                      <ul className="space-y-2">
-                          {simulationSummaries?.summaries.map((insight, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">
-                              {i + 1}
-                            </span>
-                              <span className="text-sm">{insight.summary}</span>
-                          </li>
-                        ))}
-                      </ul>
-
-                        {/* <div className="mt-6">
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <Download className="h-4 w-4" />
-                          Download Report
-                          </Button> uncomment me Amit
-                        </div> */}
-                    </TabsContent>
-
-                    <TabsContent value="themes" className="flex-1 overflow-auto">
-                      <h3 className="font-medium mb-3">Emerging Themes</h3>
-                      <div className="flex flex-wrap gap-2">
-                          {simulationSummaries?.themes.map((theme, i) => (
-                          <div key={i} className="rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-                              {theme.theme}
-                          </div>
-                        ))}
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </div>
       </div>
 

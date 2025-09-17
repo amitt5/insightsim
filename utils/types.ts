@@ -81,3 +81,43 @@ export interface AIPersonaGeneration {
   primaryGoals: string;
   frustrations: string;
 }
+
+
+// Main analysis interface
+export interface FocusGroupAnalysis {
+  analysis_overview: AnalysisOverview;
+  summary_themes: SummaryTheme[];
+  key_insights: KeyInsight[];
+  research_recommendations: string[];
+}
+
+// Analysis overview section
+export interface AnalysisOverview {
+  summary: string;
+  participant_count: number;
+  session_topic: string;
+  analysis_date: string;
+}
+
+// Summary themes section
+export interface SummaryTheme {
+  theme_title: string;
+  theme_description: string;
+  sentiment: 'positive' | 'negative' | 'mixed' | 'neutral';
+  participant_perspectives: ParticipantPerspective[];
+}
+
+export interface ParticipantPerspective {
+  participant: string;
+  perspective: string;
+  emotion: 'confident' | 'frustrated' | 'excited' | 'concerned' | 'neutral' | 'surprised' | 'disappointed' | 'hopeful';
+}
+
+// Key insights section
+export interface KeyInsight {
+  insight: string;
+  category: 'Behavioral Patterns' | 'Pain Points' | 'Unexpected Findings' | 'Misconceptions' | 'Attitudes';
+  supporting_evidence: string[];
+  recommended_action: string;
+  priority: 'high' | 'medium' | 'low';
+}

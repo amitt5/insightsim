@@ -1204,44 +1204,25 @@ export default function SimulationViewPage() {
 
                 {((simulationData?.simulation?.mode === "human-mod") || (formattedMessages.length > 0)) &&
                 <div className="mt-2 space-y-2">
-                  {/* Full width multiline textbox */}
-                  <textarea 
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                    rows={3}
-                    disabled={simulation.status === 'Completed'}
-                    ref={textareaRef}
-                  />
-                  
-                  {/* Model selector and Send button row */}
-                  {/* {availableCredits !== null && ( */}
-                    <div className="flex gap-2 items-center">
-                      <div className="flex-1">
-                        {/* <Select
-                          value={modelInUse}
-                          onValueChange={(value: string) => setModelInUse(value)}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select model" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(CREDIT_RATES).map(([model, rates]) => (
-                              <SelectItem key={model} value={model}>
-                                {model} 
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select> */}
-                      </div>
-                      <Button 
-                        onClick={sendMessage}
-                        disabled={(!newMessage.trim() && attachedImages.length === 0) || simulation.status === 'Completed' || isLoadingMessages}
-                      >
-                        Send
-                      </Button>
-                    </div>
+                  {/* Message input row with send button */}
+                  <div className="flex gap-2 items-end">
+                    <textarea 
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type your message..."
+                      className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      rows={3}
+                      disabled={simulation.status === 'Completed'}
+                      ref={textareaRef}
+                    />
+                    <Button 
+                      onClick={sendMessage}
+                      disabled={(!newMessage.trim() && attachedImages.length === 0) || simulation.status === 'Completed' || isLoadingMessages}
+                      className="px-6 h-10"
+                    >
+                      Send
+                    </Button>
+                  </div>
                   {/* )} */}
                   
                   {/* Stimulus Images Section */}

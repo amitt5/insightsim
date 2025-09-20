@@ -1204,7 +1204,6 @@ export default function SimulationViewPage() {
 
                 {((simulationData?.simulation?.mode === "human-mod") || (formattedMessages.length > 0)) &&
                 <div className="mt-2 space-y-2">
-                
                   {/* Full width multiline textbox */}
                   <textarea 
                     value={newMessage}
@@ -1220,7 +1219,7 @@ export default function SimulationViewPage() {
                   {/* {availableCredits !== null && ( */}
                     <div className="flex gap-2 items-center">
                       <div className="flex-1">
-                        <Select
+                        {/* <Select
                           value={modelInUse}
                           onValueChange={(value: string) => setModelInUse(value)}
                         >
@@ -1234,7 +1233,7 @@ export default function SimulationViewPage() {
                               </SelectItem>
                             ))}
                           </SelectContent>
-                        </Select>
+                        </Select> */}
                       </div>
                       <Button 
                         onClick={sendMessage}

@@ -19,6 +19,8 @@ const openRouterai = new OpenAI({
 
 export async function POST(req: Request) {
   let userId: string | undefined;
+  let completion;
+  let model: string = 'gpt-4o-mini';
   
   try {
     // Get user ID for error logging
@@ -26,9 +28,9 @@ export async function POST(req: Request) {
     const { data: { session } } = await supabase.auth.getSession();
     userId = session?.user?.id;
     
-    const { messages, model } = await req.json();
+    const { messages, model: reqModel } = await req.json();
+    model = reqModel;
     console.log('prompt123', messages, model);
-    let completion;
     // Call OpenAI or groq
     if (model === 'groq') {
       completion = await openRouterai.chat.completions.create({
@@ -49,14 +51,19 @@ export async function POST(req: Request) {
     }
     // Extract usage info
     const usage = completion.usage;
-    console.log('amit-runSimulationAPI-completion', completion);
-    console.log('amit-runSimulationAPI-completion', completion.choices[0].message);
-    const finishReason = completion.choices[0].finish_reason;
-    console.log('amit-runSimulationAPI-finishReason', finishReason);
-    console.log("Input tokens:", usage?.prompt_tokens);
-    console.log("Output tokens:", usage?.completion_tokens);
-    console.log("Total tokens:", usage?.total_tokens);
-    const reply = completion.choices[0].message.content;
+    const rawResponse = completion.choices[0].message.content;
+    console.log('Raw LLM response:', rawResponse);
+    
+    // Try parsing the response as JSON to catch any JSON formatting issues early
+    let reply;
+    try {
+      // If it's not valid JSON, this will throw
+      JSON.parse(rawResponse  || '');
+      reply = rawResponse;
+    } catch (jsonError) {
+      console.error('LLM returned invalid JSON:', rawResponse);
+      throw new Error('LLM returned invalid JSON response');
+    }
 
     return NextResponse.json({ 
       reply,
@@ -69,13 +76,18 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error(error);
     
+    // Get the raw response if available
+    const rawResponse = error instanceof Error && error.message === 'LLM returned invalid JSON response'
+      ? completion?.choices?.[0]?.message?.content
+      : undefined;
+    
     // Log the error with context
     await logError(
       'openai_simulation_api',
       error instanceof Error ? error : String(error),
-      undefined,
+      rawResponse || '', // Include the raw response in the error log
       {
-        model: req.body ? JSON.parse(await req.text()).model : 'unknown',
+        model: model || 'unknown',
         error_type: error instanceof Error ? error.name : 'unknown_error',
         timestamp: new Date().toISOString()
       },

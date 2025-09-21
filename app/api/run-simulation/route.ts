@@ -1,4 +1,5 @@
 // app/api/run-simulation/route.ts
+export const runtime = 'edge';
 
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
@@ -34,7 +35,8 @@ export async function POST(req: Request) {
     // Call OpenAI or groq
     if (model === 'groq') {
       completion = await openRouterai.chat.completions.create({
-        model: 'anthropic/claude-3-haiku',
+        // model: 'anthropic/claude-3-haiku',
+        model: 'gpt-4o-mini',
         messages,
         temperature: 0.9,
         max_tokens: 3000,

@@ -269,7 +269,7 @@ export default function SimulationViewPage() {
       const prompt = buildFollowUpQuestionsPrompt(sample)
       console.log('prompt-followup', prompt);
       console.log('recent-messages-used', recentMessages);
-      const data = await runSimulationAPI(prompt, modelInUse);
+      const data = await runSimulationAPI(prompt, modelInUse, 'followup');
       // console.log('data', data);
       const parsedMessages = parseSimulationResponse(data.reply);
       console.log('parsedMessages-amit', parsedMessages);
@@ -406,7 +406,7 @@ export default function SimulationViewPage() {
       console.log('prompt123', prompt, nameToPersonaIdMap);
       try {
         setIsSimulationRunning(true);
-        const data = await runSimulationAPI(prompt, modelInUse);
+        const data = await runSimulationAPI(prompt, modelInUse, 'chat');
         console.log('API response:', data);
         // setAvailableCredits(data.creditInfo.remaining_credits);
         

@@ -2,7 +2,7 @@
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import { logErrorNonBlocking } from "@/utils/errorLogger";
 
-export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], model: string = 'gpt-4o-mini'): Promise<{ reply: string, usage: any, creditInfo: { remaining_credits: number } }> {
+export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], model: string = 'gpt-4o-mini', step?:string): Promise<{ reply: string, usage: any, creditInfo: { remaining_credits: number } }> {
     try {
         const response = await fetch('/api/run-simulation', {
             method: 'POST',
@@ -81,7 +81,7 @@ export async function runSimulationAPI(prompt: ChatCompletionMessageParam[], mod
         
         // Log the API utility error
         logErrorNonBlocking(
-            'simulation_api_utility_error',
+            'simulation_api_utility_error:' + step,
             error instanceof Error ? error : String(error),
             undefined,
             {

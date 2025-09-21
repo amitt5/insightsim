@@ -794,7 +794,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: prompt }
       ];
-      const result = await runSimulationAPI(messages);
+      const result = await runSimulationAPI(messages,'gpt-4o-mini', 'generate-personas');
       let title = '';
       let topic = '';
       let discussionQuestions = [];
@@ -894,7 +894,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     const messages: ChatCompletionMessageParam[] = [
       { role: "system", content: prompt }
     ];
-    const result = await runSimulationAPI(messages);
+    const result = await runSimulationAPI(messages,'gpt-4o-mini', 'generate-titles');
 
     try {
       // Parse the JSON response
@@ -1123,7 +1123,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         { 
           role: "user", content: prompt }
       ];
-      const result = await runSimulationAPI(messages, 'groq');
+      const result = await runSimulationAPI(messages, 'groq', 'generate-personas');
 
       try {
         // Parse the JSON response
@@ -1188,7 +1188,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: prompt }
       ];
-      const result = await runSimulationAPI(messages);
+      const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'create-personas');
 
       try {
         // Parse the JSON response
@@ -2404,7 +2404,7 @@ Key Questions:
                                 const messages: ChatCompletionMessageParam[] = [
                                   { role: "system", content: prompt }
                                 ];
-                                const result = await runSimulationAPI(messages);
+                                const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'discussion-questions');
 
                                 try {
                                   // Parse the JSON response

@@ -125,7 +125,7 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
         <Link href="/" className="flex items-center gap-2">
         <Image
                 src="/MAIRA-logo.png"
-                alt="InsightSim Logo"
+                alt="Maira Logo"
                 width={120}
                 height={48}
                 priority
@@ -135,7 +135,7 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-r from-purple-500 to-violet-600">
               <span className="text-lg font-bold text-white">IS</span>
             </div>
-            <span className="text-xl font-bold">InsightSim</span> */}
+            <span className="text-xl font-bold">Maira</span> */}
           </Link>
        
           {isAuthenticated && (

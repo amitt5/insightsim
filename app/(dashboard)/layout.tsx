@@ -40,7 +40,7 @@ export default function DashboardLayout({
       <div className="hidden lg:block lg:w-64 lg:fixed lg:inset-y-0 lg:border-r bg-background">
         <div className="flex flex-col h-full py-4">
           <div className="px-6 py-2">
-            <h2 className="text-xl font-bold">InsightSim</h2>
+            <h2 className="text-xl font-bold">Maira</h2>
           </div>
           <nav className="flex-1 space-y-2 px-4 mt-4">
             <Link 
@@ -83,7 +83,7 @@ export default function DashboardLayout({
         <header className="flex h-16 items-center justify-between border-b bg-background px-6">
           {/* Logo - only visible on mobile */}
           <div className="lg:hidden">
-            <h2 className="text-xl font-bold">InsightSim</h2>
+            <h2 className="text-xl font-bold">Maira</h2>
           </div>
           
           {/* Menu Button - visible on all screens */}

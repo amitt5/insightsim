@@ -36,7 +36,7 @@ export function Sidebar({ className, activePath = "" }: SidebarProps) {
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-r from-purple-500 to-violet-600">
               <span className="text-lg font-bold text-white">IS</span>
             </div>
-            {!isCollapsed && <span className="text-xl font-bold">InsightSim</span>}
+            {!isCollapsed && <span className="text-xl font-bold">Maira</span>}
           </Link>
         </div>
         <nav className="flex-1 space-y-1 p-4">

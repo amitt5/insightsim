@@ -269,8 +269,8 @@ export default function ContactPage() {
           <div className="mt-8 text-center text-sm text-gray-500">
             <p>
               You can also reach us directly at{" "}
-              <a href="mailto:support@insightsim.com" className="text-primary hover:underline">
-                support@insightsim.com
+              <a href="mailto:renato@meetmaira.ai" className="text-primary hover:underline">
+              renato@meetmaira.ai
               </a>
             </p>
           </div>

@@ -450,7 +450,7 @@ JSON OUTPUT:
  */
 export function createPersonaGenerationPrompt(details: AIPersonaGeneration): string {
   // 1. Set the role and expertise for the AI.
-  const systemPrompt = `You are an expert persona generator for a market research platform called Insightsim. You specialize in creating realistic, diverse, and insightful user personas based on initial project details. Your output must be a valid JSON array.`;
+  const systemPrompt = `You are an expert persona generator for a market research platform called Maira. You specialize in creating realistic, diverse, and insightful user personas based on initial project details. Your output must be a valid JSON array.`;
 
   // 2. Clearly define the task and constraints.
   const taskDefinition = `Your task is to analyze the user's input and generate an array of 5 distinct personas that fit the target audience. Each persona should represent a different facet or archetype within the target group. The persona's 'goal' field MUST directly reflect the user's stated 'primaryGoals'.`;

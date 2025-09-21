@@ -877,7 +877,7 @@ export default function SettingsPage() {
                     <Users className="h-5 w-5" />
                     Team Members
                   </CardTitle>
-                  <CardDescription>Manage who has access to your InsightSim workspace</CardDescription>
+                  <CardDescription>Manage who has access to your Maira workspace</CardDescription>
                 </div>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />

@@ -35,8 +35,7 @@ export async function POST(req: Request) {
     // Call OpenAI or groq
     if (model === 'groq') {
       completion = await openRouterai.chat.completions.create({
-        // model: 'anthropic/claude-3-haiku',
-        model: 'gpt-4o-mini',
+        model: 'anthropic/claude-3-haiku',
         messages,
         temperature: 0.9,
         max_tokens: 3000,

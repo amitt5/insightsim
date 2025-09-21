@@ -26,38 +26,124 @@ export default function LoginPage() {
   }
   
   const handleGoogleSignIn = async () => {
-    const supabase = createClientComponentClient()
-    
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      }
-    })
-    
-    if (error) {
-      console.error('Google signin error:', error)
+    try {
+      setLoading(true)
+      const supabase = createClientComponentClient()
       
-      // Log the error
+      // Create auth state change listener before initiating sign in
+      let authStateResolver: any = null
+      let authStateRejector: any = null
+      
+      type AuthStateResult = {
+        data: { session: Session | null; user: User | null } | null;
+        error: Error | null;
+      }
+      
+      const authStatePromise = new Promise<AuthStateResult>((resolve, reject) => {
+        authStateResolver = resolve
+        authStateRejector = reject
+        
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log("🔄 Google Auth state changed:", event, !!session)
+          
+          if (event === 'SIGNED_IN' && session) {
+            console.log("✅ Google Auth state: SIGNED_IN detected")
+            subscription.unsubscribe()
+            resolve({ data: { session, user: session.user }, error: null })
+          }
+        })
+        
+        // Clean up subscription after 15 seconds
+        setTimeout(() => {
+          subscription.unsubscribe()
+          reject(new Error('Authentication timeout'))
+        }, 15000)
+      })
+      
+      // Initiate Google sign in
+      const { error: signInError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      })
+      
+      if (signInError) {
+        console.error('Google signin error:', signInError)
+        
+        // Log the error
+        logErrorNonBlocking(
+          'google_signin',
+          signInError,
+          undefined,
+          { 
+            provider: 'google',
+            redirect_to: `${window.location.origin}/auth/callback`
+          }
+        )
+        
+        toast({
+          title: "Google signin failed",
+          description: signInError.message,
+          variant: "destructive",
+        })
+        return
+      }
+      
+      // Wait for auth state to change
+      const result = await authStatePromise
+      
+      if (result.error) {
+        console.log("❌ Google Login error:", result.error.message)
+        
+        logErrorNonBlocking(
+          'google_auth_state_error',
+          result.error,
+          undefined,
+          { 
+            error_type: result.error.message.includes('timeout') ? 'timeout' : 'auth_error'
+          }
+        )
+        
+        toast({
+          title: "Login failed",
+          description: result.error.message || "Please try again",
+          variant: "destructive",
+        })
+        return
+      }
+      
+      console.log("✅ Google Login success via auth state change!")
+      
+      // Small delay to ensure session is fully established
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      console.log("🔄 About to redirect to /simulations...")
+      router.push("/simulations")
+      
+    } catch (error: any) {
+      console.log("💥 Google signin catch block error:", error.message)
+      
       logErrorNonBlocking(
-        'google_signin',
+        'google_signin_catch_error',
         error,
         undefined,
         { 
-          provider: 'google',
-          redirect_to: `${window.location.origin}/auth/callback`
+          error_type: error.message.includes('timeout') ? 'timeout' : 'unexpected_error'
         }
       )
       
       toast({
-        title: "Google signin failed",
-        description: error.message,
+        title: "An error occurred",
+        description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setLoading(false)
     }
   }
   

@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     }
     
     const supabase = createRouteHandlerClient({ cookies })
-    
+    console.log('amit-user_credits-user_id', user_id)
     const { data, error } = await supabase
       .from('user_credits')
       .insert({

@@ -25,7 +25,6 @@ export default function DashboardPage() {
         title: "Creating simulation...",
         description: "Setting up your new study",
       });
-      console.log('amit-handleCreateNewSimulation-111')
 
       const response = await fetch('/api/simulations/draft', {
         method: 'POST',

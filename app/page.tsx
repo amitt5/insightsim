@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { CheckCircle, ChevronDown } from "lucide-react"
+import Image from "next/image"
 import { useState, useEffect } from "react"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
@@ -2200,14 +2201,21 @@ export default function LandingPage() {
 
       </main>
 
-      <footer className="border-t bg-white py-8">
+      <footer className="border-t bg-white py-2">
         <div className="container">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-r from-purple-500 to-violet-600">
+            <Image
+                src="/MAIRA-logo.png"
+                alt="Maira Logo"
+                width={120}
+                height={48}
+                priority
+              />
+              {/* <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-r from-purple-500 to-violet-600">
                 <span className="text-lg font-bold text-white">IS</span>
               </div>
-              <span className="text-xl font-bold">Maira</span>
+              <span className="text-xl font-bold">Maira</span> */}
             </div>
             <div className="flex gap-6">
               <Link href="#" className="text-sm text-gray-600 hover:text-primary">

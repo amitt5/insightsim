@@ -25,8 +25,26 @@ export interface Simulation {
     created_at: string;
     user_instructions?: string;
     brief_text?: string;
+    project_id?: string; 
     brief_source?: 'upload' | 'playing-around' | null;
   }
+
+  export interface Project {
+    id: string;
+    user_id: string;
+    name: string;
+    objective?: string;
+    target_group?: string;
+    product?: string;
+    brief_text?: string;
+    discussion_questions?: string;
+    created_at: string;
+    updated_at: string;
+    is_deleted: boolean;
+    deleted_at?: string;
+  }
+  
+  
   
   export interface CalibrationSession {
     id?: string; // UUID

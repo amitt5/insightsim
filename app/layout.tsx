@@ -9,7 +9,7 @@ import GoogleAnalytics from "@/components/google-analytics"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "InsightSim - AI-Powered Qualitative Research",
+  title: "Maira - My AI Research Assistant",
   description: "Simulate focus group discussions with AI personas",
   generator: 'v0.dev',
   icons: {

@@ -464,7 +464,7 @@ export default function LandingPage() {
                 <span className="hero-title-part accent block text-primary">No Waiting.</span>
               </h1>
               <p className="mb-10 text-xl text-gray-600 hero-subtitle">
-              Test discussion guides, sharpen hypotheses, and get directional insights before your real research sessions
+              Test discussion guides, sharpen hypotheses, and get directional insights before your real research sessions.
                 {/* Run simulated qualitative research with intelligent AI personas and moderators. */}
                 {/* "Test discussion guides, validate hypotheses, and get directional insights before your real qualitative and quantitative research" */}
 

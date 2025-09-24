@@ -342,6 +342,37 @@ JSON OUTPUT:
   Format each question as a moderator would naturally ask it in the session. Return only valid JSON with no additional text or explanations.`.trim();
 }
 
+// Function to build OpenAI prompt for discussion questions from project brief
+export function buildDiscussionQuestionsFromBrief(projectBrief: string) {
+  return `You are an expert qualitative market researcher.
+
+Generate 6-8 strategic discussion questions for this research study based on the project brief:
+
+Project Brief:
+"${projectBrief}"
+
+Create questions that are suitable for qualitative research (focus group discussions or in-depth interviews):
+- Use open-ended, exploratory language ("How", "What", "Why", "Describe", "Tell me about")
+- Progress from general to specific topics
+- Include both rational and emotional dimensions
+- Encourage storytelling and personal experiences
+- Avoid leading or biased phrasing
+- Include at least one projective or hypothetical scenario question
+- Extract and respond to the key research objectives, target audience, and product/service context from the brief
+
+Return your response as a JSON object with the following structure:
+
+{
+  "questions": [
+    "Question 1 text here",
+    "Question 2 text here",
+    "Question 3 text here"
+  ]
+}
+
+Format each question as a moderator would naturally ask it in a qualitative research session. Return only valid JSON with no additional text or explanations.`.trim();
+}
+
 
 /**
  * Creates a structured prompt for an AI model to extract a single professional study title 

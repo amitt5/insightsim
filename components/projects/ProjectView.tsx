@@ -8,10 +8,11 @@ import { useToast } from "@/hooks/use-toast"
 import { Edit2, Save } from "lucide-react"
 import StudyList from "./StudyList"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
-import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt, createBriefPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt,buildDiscussionQuestionsFromBrief, createBriefPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
 
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { runSimulationAPI } from "@/utils/api"
+import { ArrowLeft, ArrowRight, Upload, X, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
 
 interface ProjectViewProps {
   project: Project;
@@ -128,9 +129,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                               if (isGeneratingQuestions) return;
                               setIsGeneratingQuestions(true);
                               try {
-                                const prompt = buildDiscussionQuestionsPrompt(
+                                const prompt = buildDiscussionQuestionsFromBrief(
                                   'study_title',
-                                  'simulationData.topic',
                                 );
                                 console.log('prompt111', prompt);
                                 const messages: ChatCompletionMessageParam[] = [

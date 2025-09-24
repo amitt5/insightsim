@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { Project } from "@/utils/types"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import ProjectCard from "./ProjectCard"
 
 interface ProjectViewModel {
   id: string;
@@ -35,14 +36,12 @@ export default function ProjectsList() {
         description: "Setting up your new research project",
       });
 
-      const response = await fetch('/api/projects', {
+      const response = await fetch('/api/projects/draft', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: "New Research Project",
-        }),
+        body: JSON.stringify({}), // Empty body for default values
       });
 
       if (response.ok) {

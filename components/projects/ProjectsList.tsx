@@ -78,7 +78,8 @@ export default function ProjectsList() {
       {
         id: "1",
         name: "Gen Z Social Media Habits",
-        objective: "Understand how Gen Z interacts with social media platforms and their content consumption patterns",
+        objective: null,
+        // objective: "Understand how Gen Z interacts with social media platforms and their content consumption patterns",
         target_group: "Gen Z (18-24)",
         product: "Social Media App",
         brief_text: "Deep dive into Gen Z social media behavior",

@@ -43,6 +43,12 @@ export default function DashboardLayout({
             <h2 className="text-xl font-bold">InsightSim</h2>
           </div>
           <nav className="flex-1 space-y-2 px-4 mt-4">
+          <Link 
+              href="/projects"
+              className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
+            >
+              Projects
+            </Link>
             <Link 
               href="/simulations"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"

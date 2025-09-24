@@ -130,7 +130,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                               setIsGeneratingQuestions(true);
                               try {
                                 const prompt = buildDiscussionQuestionsFromBrief(
-                                  'study_title',
+                                  project.brief_text || '',
                                 );
                                 console.log('prompt111', prompt);
                                 const messages: ChatCompletionMessageParam[] = [
@@ -141,7 +141,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                                 try {
                                   // Parse the JSON response
                                   let responseText = result.reply || "";
-                                  
+                                  console.log('responseText111', responseText);
                                   // Clean the response string (remove any markdown formatting)
                                   responseText = responseText
                                   .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
@@ -150,15 +150,15 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                                   
                                   // Parse the JSON
                                   const parsedResponse = JSON.parse(responseText);
-                                  
+                                  console.log('parsedResponse111', parsedResponse);
                                   // Extract questions array
                                   const questions = parsedResponse.questions || [];
                                   
                                   // Join questions as textarea value (one per line)
-                                  // setSimulationData(prev => ({
-                                  //   ...prev,
-                                  //   discussion_questions: questions.join("\n")
-                                  // }));
+                                  setEditedProject(prev => ({
+                                    ...prev,
+                                    discussion_questions: questions.join("\n")
+                                  }));
                                   
                                 } catch (error) {
                                   console.error("Error parsing discussion questions JSON:", error);
@@ -169,10 +169,10 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                                   let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
                                   lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
                                   console.log('lines111', lines);
-                                  // setSimulationData(prev => ({
-                                  //   ...prev,
-                                  //   discussion_questions: lines.join("\n")
-                                  // }));
+                                  setEditedProject(prev => ({
+                                    ...prev,
+                                    discussion_questions: lines.join("\n")
+                                  }));
                                 }
 
                 

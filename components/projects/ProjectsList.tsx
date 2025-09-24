@@ -73,36 +73,56 @@ export default function ProjectsList() {
   };
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/projects');
-        
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const mappedProjects = data.projects.map((project: Project) => ({
-          id: project.id,
-          name: project.name,
-          objective: project.objective || '',
-          target_group: project.target_group || '',
-          created_at: new Date(project.created_at).toISOString().split('T')[0],
-          studies_count: data.studyCounts?.[project.id] || 0
-        }));
-        
-        setProjects(mappedProjects);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to fetch projects:", err);
-        setError("Failed to load projects. Please try again.");
-      } finally {
-        setLoading(false);
+    // Simulate API fetch with fake data
+    const fakeProjects = [
+      {
+        id: "1",
+        name: "Gen Z Social Media Habits",
+        objective: "Understand how Gen Z interacts with social media platforms and their content consumption patterns",
+        target_group: "Gen Z (18-24)",
+        product: "Social Media App",
+        brief_text: "Deep dive into Gen Z social media behavior",
+        created_at: "2024-03-20",
+        studies_count: 3
+      },
+      {
+        id: "2",
+        name: "EV Charging Experience",
+        objective: "Evaluate user experience with electric vehicle charging stations",
+        target_group: "EV Owners",
+        product: "ChargeFast Stations",
+        brief_text: "Research on EV charging pain points",
+        created_at: "2024-03-18",
+        studies_count: 2
+      },
+      {
+        id: "3",
+        name: "Food Delivery App Redesign",
+        objective: "Gather feedback on new UI/UX design for food delivery application",
+        target_group: "Urban food delivery users",
+        product: "FoodNow App",
+        brief_text: "Testing new app interface",
+        created_at: "2024-03-15",
+        studies_count: 4
+      },
+      {
+        id: "4",
+        name: "Smart Home Device Usage",
+        objective: "Understanding smart home device integration and usage patterns",
+        target_group: "Smart home owners",
+        product: "HomeConnect Hub",
+        brief_text: "Smart home ecosystem research",
+        created_at: "2024-03-10",
+        studies_count: 1
       }
-    };
-    
-    fetchProjects();
+    ];
+
+    setLoading(true);
+    // Simulate API delay
+    setTimeout(() => {
+      setProjects(fakeProjects);
+      setLoading(false);
+    }, 1000);
   }, []);
 
   return (

@@ -67,7 +67,7 @@ export default function NewProjectPage() {
     <div className="container mx-auto p-4">
       <Card>
         <CardHeader>
-          <CardTitle>Create New Project</CardTitle>
+          <CardTitle>Create New Project1</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">

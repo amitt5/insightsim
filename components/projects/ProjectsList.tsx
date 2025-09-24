@@ -1,0 +1,181 @@
+"use client"
+
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Plus, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Project } from "@/utils/types"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
+
+interface ProjectViewModel {
+  id: string;
+  name: string;
+  objective: string;
+  target_group: string;
+  created_at: string;
+  studies_count: number;
+}
+
+export default function ProjectsList() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [projects, setProjects] = useState<ProjectViewModel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Function to create new project
+  const handleCreateNewProject = async () => {
+    try {
+      setIsCreating(true);
+      
+      toast({
+        title: "Creating project...",
+        description: "Setting up your new research project",
+      });
+
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: "New Research Project",
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.project?.id) {
+          toast({
+            title: "Project created!",
+            description: "Redirecting to the project...",
+          });
+          router.push(`/projects/${data.project.id}`);
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create project",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create project",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/projects');
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const mappedProjects = data.projects.map((project: Project) => ({
+          id: project.id,
+          name: project.name,
+          objective: project.objective || '',
+          target_group: project.target_group || '',
+          created_at: new Date(project.created_at).toISOString().split('T')[0],
+          studies_count: data.studyCounts?.[project.id] || 0
+        }));
+        
+        setProjects(mappedProjects);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch projects:", err);
+        setError("Failed to load projects. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProjects();
+  }, []);
+
+  return (
+    <div className="container mx-auto p-4">
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800 font-medium">{error}</p>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold">Research Projects</h1>
+          <p className="text-gray-600">Manage your qualitative research projects</p>
+        </div>
+        <Button onClick={handleCreateNewProject} disabled={isCreating}>
+          {isCreating ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Plus className="mr-2 h-4 w-4" />
+          )}
+          {isCreating ? 'Creating...' : 'Create New Project'}
+        </Button>
+      </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {(!loading && !error && projects.length === 0) && (
+        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+          <p className="text-lg font-medium mb-2">No projects found.</p>
+          <p className="mb-4">Click <span className="font-semibold">Create New Project</span> to get started.</p>
+        </div>
+      )}
+
+      {/* Projects Grid */}
+      {!loading && !error && projects.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              studyCount={project.studies_count}
+              onDelete={async (projectId) => {
+                try {
+                  const response = await fetch(`/api/projects/${projectId}`, {
+                    method: 'DELETE',
+                  });
+                  if (!response.ok) throw new Error('Failed to delete project');
+                  setProjects(prev => prev.filter(p => p.id !== projectId));
+                  toast({
+                    title: "Success",
+                    description: "Project deleted successfully",
+                  });
+                } catch (error) {
+                  toast({
+                    title: "Error",
+                    description: "Failed to delete project",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

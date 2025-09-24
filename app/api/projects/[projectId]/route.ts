@@ -43,9 +43,13 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
+    // Await params to get the projectId
+    const { projectId } = await params
+    
+    // Create supabase client
     const supabase = createRouteHandlerClient({ cookies })
     
     // Get session data to verify user is logged in
@@ -67,11 +71,11 @@ export async function PATCH(
     // Add updated_at timestamp
     updates.updated_at = new Date().toISOString()
 
-    // Update project
+    // Update project using the awaited projectId
     const { data: project, error } = await supabase
       .from("projects")
       .update(updates)
-      .eq("id", params.projectId)
+      .eq("id", projectId)
       .eq("user_id", session.user.id)
       .eq("is_deleted", false)
       .select()

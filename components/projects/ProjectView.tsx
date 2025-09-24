@@ -7,6 +7,11 @@ import { Project } from "@/utils/types"
 import { useToast } from "@/hooks/use-toast"
 import { Edit2, Save } from "lucide-react"
 import StudyList from "./StudyList"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
+import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt, createBriefPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
+import { runSimulationAPI } from "@/utils/api"
 
 interface ProjectViewProps {
   project: Project;
@@ -17,8 +22,10 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editedProject, setEditedProject] = useState(project);
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
   const handleSave = async () => {
+    console.log('editedProject-111', editedProject)
     try {
       const response = await fetch(`/api/projects/${project.id}`, {
         method: 'PATCH',
@@ -90,72 +97,112 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         </TabsList>
 
         <TabsContent value="brief" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-500">Objective</label>
-                {isEditing ? (
-                  <textarea
-                    value={editedProject.objective || ''}
-                    onChange={(e) => setEditedProject({ ...editedProject, objective: e.target.value })}
-                    className="w-full mt-1 min-h-[100px] p-2 border rounded-md"
-                    placeholder="Enter project objective..."
-                  />
-                ) : (
-                  <p className="mt-1">{project.objective || 'No objective set'}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-500">Target Group</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedProject.target_group || ''}
-                    onChange={(e) => setEditedProject({ ...editedProject, target_group: e.target.value })}
-                    className="w-full mt-1 p-2 border rounded-md"
-                    placeholder="Enter target group..."
-                  />
-                ) : (
-                  <p className="mt-1">{project.target_group || 'No target group specified'}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-500">Product/Service</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedProject.product || ''}
-                    onChange={(e) => setEditedProject({ ...editedProject, product: e.target.value })}
-                    className="w-full mt-1 p-2 border rounded-md"
-                    placeholder="Enter product or service name..."
-                  />
-                ) : (
-                  <p className="mt-1">{project.product || 'No product specified'}</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-500">Brief</label>
-              {isEditing ? (
-                <textarea
-                  value={editedProject.brief_text || ''}
-                  onChange={(e) => setEditedProject({ ...editedProject, brief_text: e.target.value })}
-                  className="w-full mt-1 min-h-[200px] p-2 border rounded-md"
-                  placeholder="Enter project brief..."
-                />
-              ) : (
-                <p className="mt-1 whitespace-pre-wrap">{project.brief_text || 'No brief added'}</p>
-              )}
-            </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Brief</label>
+            {isEditing ? (
+              <textarea
+                value={editedProject.brief_text || ''}
+                onChange={(e) => setEditedProject({ ...editedProject, brief_text: e.target.value })}
+                className="w-full mt-1 min-h-[400px] p-2 border rounded-md"
+                placeholder="Enter project brief..."
+              />
+            ) : (
+              <p className="mt-1 whitespace-pre-wrap">{project.brief_text || 'No brief added'}</p>
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="discussion" className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-500">Discussion Guide</label>
+
+            <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="p-0 h-6 w-6 bg-transparent border-none cursor-pointer"
+                            tabIndex={-1}
+                            disabled={isGeneratingQuestions}
+                            onClick={async () => {
+                              if (isGeneratingQuestions) return;
+                              setIsGeneratingQuestions(true);
+                              try {
+                                const prompt = buildDiscussionQuestionsPrompt(
+                                  'study_title',
+                                  'simulationData.topic',
+                                );
+                                console.log('prompt111', prompt);
+                                const messages: ChatCompletionMessageParam[] = [
+                                  { role: "system", content: prompt }
+                                ];
+                                const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'discussion-questions');
+
+                                try {
+                                  // Parse the JSON response
+                                  let responseText = result.reply || "";
+                                  
+                                  // Clean the response string (remove any markdown formatting)
+                                  responseText = responseText
+                                  .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
+                                  .replace(/```$/, '')            // Remove trailing ```
+                                  .trim();
+                                  
+                                  // Parse the JSON
+                                  const parsedResponse = JSON.parse(responseText);
+                                  
+                                  // Extract questions array
+                                  const questions = parsedResponse.questions || [];
+                                  
+                                  // Join questions as textarea value (one per line)
+                                  // setSimulationData(prev => ({
+                                  //   ...prev,
+                                  //   discussion_questions: questions.join("\n")
+                                  // }));
+                                  
+                                } catch (error) {
+                                  console.error("Error parsing discussion questions JSON:", error);
+                                  
+                                  // Fallback: try to parse as the old numbered list format
+                                  let questions = result.reply || "";
+                                  questions = questions.replace(/```[a-z]*[\s\S]*?```/gi, '');
+                                  let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+                                  lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
+                                  console.log('lines111', lines);
+                                  // setSimulationData(prev => ({
+                                  //   ...prev,
+                                  //   discussion_questions: lines.join("\n")
+                                  // }));
+                                }
+
+                
+                              } catch (err) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to generate questions. Please try again.",
+                                  variant: "destructive",
+                                  duration: 5000,
+                                });
+                              } finally {
+                                setIsGeneratingQuestions(false);
+                              }
+                            }}
+                          >
+                            {isGeneratingQuestions ? (
+                              <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4 w-4 text-primary" />
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          Generate discussion questions with AI
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+
+
             {isEditing ? (
               <textarea
                 value={editedProject.discussion_questions || ''}

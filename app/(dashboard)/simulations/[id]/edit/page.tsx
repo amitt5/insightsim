@@ -74,6 +74,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   const [isProcessingBrief, setIsProcessingBrief] = useState(false)
 
   const [simulationData, setSimulationData] = useState({
+    project_id: null as string | null,
     study_title: "",
     study_type: "focus-group",
     mode: "human-mod",
@@ -110,12 +111,13 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
           
           // Set simulation status
           setSimulationStatus(simulation.status || 'Draft');
-          
+          console.log('simulation111', simulation)
           // Set the current step from active_step (default to 1 if not set)
           setStep(simulation.active_step || 1);
           
           // Data consistency checks
           const processedData = {
+            project_id: simulation.project_id || null,
             study_title: simulation.study_title || "",
             study_type: simulation.study_type || "focus-group",
             mode: simulation.mode || "human-mod",
@@ -1459,156 +1461,158 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
               </CardHeader>
               <CardContent className="space-y-4">
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Upload Brief Button */}
-                  <div className="space-y-2">
-                    <Button 
-                      variant="default" 
-                      onClick={handleBriefUpload}
-                      className="w-full h-12 text-base font-medium"
-                    >
-                      <Upload className="mr-2 h-5 w-5" />
-                      Upload Brief
-                    </Button>
-                    <p className="text-sm text-gray-500">
-                      Have an existing research brief? Upload it and we'll auto-generate your simulation details.
-                    </p>
-                  </div>
+              {simulationData.project_id === null && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Upload Brief Button */}
+                    <div className="space-y-2">
+                      <Button 
+                        variant="default" 
+                        onClick={handleBriefUpload}
+                        className="w-full h-12 text-base font-medium"
+                      >
+                        <Upload className="mr-2 h-5 w-5" />
+                        Upload Brief
+                      </Button>
+                      <p className="text-sm text-gray-500">
+                        Have an existing research brief? Upload it and we'll auto-generate your simulation details.
+                      </p>
+                    </div>
 
-                  {/* Playing Around Button */}
-                  <div className="space-y-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={handlePlayingAround}
-                      className="w-full h-12 text-base font-medium"
-                    >
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      Playing Around
-                    </Button>
-                    <p className="text-sm text-gray-500">
-                      New to the platform? Try a sample simulation with pre-filled content to explore features.
-                    </p>
+                    {/* Playing Around Button */}
+                    <div className="space-y-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={handlePlayingAround}
+                        className="w-full h-12 text-base font-medium"
+                      >
+                        <Sparkles className="mr-2 h-5 w-5" />
+                        Playing Around
+                      </Button>
+                      <p className="text-sm text-gray-500">
+                        New to the platform? Try a sample simulation with pre-filled content to explore features.
+                      </p>
+                    </div>
                   </div>
                 </div>
+              )}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="studyTitle">Study Title</Label>
+                  <Dialog open={titleGenerationOpen} onOpenChange={setTitleGenerationOpen}>
+                    <DialogTrigger asChild>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="p-0 h-5 w-5 bg-transparent border-none cursor-pointer hover:bg-gray-100 rounded-full flex items-center justify-center"
+                              onClick={() => setTitleGenerationOpen(true)}
+                            >
+                              <Sparkles className="h-4 w-4 text-primary" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            Help me generate title
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[500px]">
+                      <DialogHeader>
+                        <DialogTitle>Generate Study Title</DialogTitle>
+                        <DialogDescription>
+                          Tell us what you want to learn, and we'll suggest some titles for your study.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="titleInput">What is the main thing you want to learn in this study?</Label>
+                          <Textarea
+                            id="titleInput"
+                            placeholder="e.g., I want to understand how consumers perceive our new eco-friendly packaging and whether it influences their purchase decisions..."
+                            rows={4}
+                            value={titleGenerationInput}
+                            onChange={(e) => setTitleGenerationInput(e.target.value)}
+                          />
+                        </div>
+                        {!showTitleSuggestions && (
+                          <Button 
+                            onClick={handleGenerateTitles}
+                            disabled={!titleGenerationInput.trim()}
+                            className="w-full"
+                          >
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Generate Title Suggestions
+                          </Button>
+                        )}
+                        {showTitleSuggestions && (
+                          <div className="space-y-3">
+                            <h4 className="font-medium text-sm">Choose a title:</h4>
+                            <div className="space-y-2">
+                              {titleSuggestions.map((title, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => handleSelectTitle(title)}
+                                  className="w-full text-left p-3 rounded-md border border-gray-200 hover:border-primary hover:bg-gray-50 transition-colors"
+                                >
+                                  <span className="text-sm font-medium">{title}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={handleCloseTitleDialog}>
+                          Cancel
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <Input 
+                  id="studyTitle" 
+                  placeholder="Enter your study title (e.g., New Product Concept Testing, Customer Satisfaction Study)" 
+                  value={simulationData.study_title}
+                  onChange={handleInputChange('study_title')}
+                />
               </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="studyTitle">Study Title</Label>
-                    <Dialog open={titleGenerationOpen} onOpenChange={setTitleGenerationOpen}>
-                      <DialogTrigger asChild>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                className="p-0 h-5 w-5 bg-transparent border-none cursor-pointer hover:bg-gray-100 rounded-full flex items-center justify-center"
-                                onClick={() => setTitleGenerationOpen(true)}
-                              >
-                                <Sparkles className="h-4 w-4 text-primary" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">
-                              Help me generate title
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[500px]">
-                        <DialogHeader>
-                          <DialogTitle>Generate Study Title</DialogTitle>
-                          <DialogDescription>
-                            Tell us what you want to learn, and we'll suggest some titles for your study.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="titleInput">What is the main thing you want to learn in this study?</Label>
-                            <Textarea
-                              id="titleInput"
-                              placeholder="e.g., I want to understand how consumers perceive our new eco-friendly packaging and whether it influences their purchase decisions..."
-                              rows={4}
-                              value={titleGenerationInput}
-                              onChange={(e) => setTitleGenerationInput(e.target.value)}
-                            />
-                          </div>
-                          {!showTitleSuggestions && (
-                            <Button 
-                              onClick={handleGenerateTitles}
-                              disabled={!titleGenerationInput.trim()}
-                              className="w-full"
-                            >
-                              <Sparkles className="mr-2 h-4 w-4" />
-                              Generate Title Suggestions
-                            </Button>
-                          )}
-                          {showTitleSuggestions && (
-                            <div className="space-y-3">
-                              <h4 className="font-medium text-sm">Choose a title:</h4>
-                              <div className="space-y-2">
-                                {titleSuggestions.map((title, index) => (
-                                  <button
-                                    key={index}
-                                    onClick={() => handleSelectTitle(title)}
-                                    className="w-full text-left p-3 rounded-md border border-gray-200 hover:border-primary hover:bg-gray-50 transition-colors"
-                                  >
-                                    <span className="text-sm font-medium">{title}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={handleCloseTitleDialog}>
-                            Cancel
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                  <Input 
-                    id="studyTitle" 
-                    placeholder="Enter your study title (e.g., New Product Concept Testing, Customer Satisfaction Study)" 
-                    value={simulationData.study_title}
-                    onChange={handleInputChange('study_title')}
-                  />
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="studyType">Study Type</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="p-0 h-5 w-5 bg-transparent border-none cursor-pointer hover:bg-gray-100 rounded-full flex items-center justify-center"
+                          onClick={() => setStudyTypeHelpOpen(true)}
+                        >
+                          <HelpCircle className="h-4 w-4 text-gray-500" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        Help me choose study type
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="studyType">Study Type</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="p-0 h-5 w-5 bg-transparent border-none cursor-pointer hover:bg-gray-100 rounded-full flex items-center justify-center"
-                            onClick={() => setStudyTypeHelpOpen(true)}
-                          >
-                            <HelpCircle className="h-4 w-4 text-gray-500" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          Help me choose study type
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <Select 
-                    value={simulationData.study_type}
-                    onValueChange={handleSelectChange('study_type')}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select study type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="focus-group">Focus Group</SelectItem>
-                      <SelectItem value="idi">In-Depth Interview</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Select 
+                  value={simulationData.study_type}
+                  onValueChange={handleSelectChange('study_type')}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select study type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="focus-group">Focus Group</SelectItem>
+                    <SelectItem value="idi">In-Depth Interview</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
 
                 {/* Study Type Help Dialog */}
                 <Dialog open={studyTypeHelpOpen} onOpenChange={setStudyTypeHelpOpen}>

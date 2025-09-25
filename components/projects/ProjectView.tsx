@@ -6,6 +6,7 @@ import { Project } from "@/utils/types"
 import { useToast } from "@/hooks/use-toast"
 import StudyList from "./StudyList"
 import { PersonaCard } from "@/components/persona-card"
+import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt,buildDiscussionQuestionsFromBrief, createBriefPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
 
@@ -25,6 +26,44 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [projectPersonas, setProjectPersonas] = useState<any[]>([]);
   const [isGeneratingPersonas, setIsGeneratingPersonas] = useState(false);
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
+  const [editingPersona, setEditingPersona] = useState<any>(null);
+  const [editPersonaOpen, setEditPersonaOpen] = useState(false);
+
+  const handleEditPersona = (persona: any) => {
+    setEditingPersona(persona);
+    setEditPersonaOpen(true);
+  };
+
+  const handleDeletePersona = async (personaId: string) => {
+    try {
+      const response = await fetch(`/api/projects/${project.id}/personas/${personaId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete persona');
+      }
+
+      setProjectPersonas(prev => prev.filter(p => p.id !== personaId));
+      toast({
+        title: "Success",
+        description: "Persona deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting persona:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete persona",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditPersonaSuccess = (updatedPersona: any) => {
+    setProjectPersonas(prev => prev.map(p => p.id === updatedPersona.id ? updatedPersona : p));
+    setEditPersonaOpen(false);
+    setEditingPersona(null);
+  };
 
   // Fetch project personas when the component mounts
   useEffect(() => {
@@ -86,7 +125,7 @@ if(!project.brief_text){
 
         const parsedResponse = JSON.parse(responseText);
         const generatedPersonas = parsedResponse.personas || [];
-
+        console.log('generatedPersonas111', generatedPersonas)
         // Save the generated personas
         const response = await fetch(`/api/projects/${project.id}/personas`, {
           method: 'POST',
@@ -261,7 +300,7 @@ if(!project.brief_text){
                                   // Join questions as textarea value (one per line)
                                   setEditedProject(prev => ({
                                     ...prev,
-                                    discussion_questions: questions.join("\n")
+                                    discussion_questions: questions
                                   }));
                                   
                                 } catch (error) {
@@ -275,7 +314,7 @@ if(!project.brief_text){
                                   console.log('lines111', lines);
                                   setEditedProject(prev => ({
                                     ...prev,
-                                    discussion_questions: lines.join("\n")
+                                    discussion_questions: lines
                                   }));
                                 }
 
@@ -309,14 +348,14 @@ if(!project.brief_text){
 
             {isEditing ? (
               <textarea
-                value={editedProject.discussion_questions || ''}
-                onChange={(e) => setEditedProject({ ...editedProject, discussion_questions: e.target.value })}
+                value={editedProject.discussion_questions?.join('\n') || ''}
+                onChange={(e) => setEditedProject({ ...editedProject, discussion_questions: e.target.value.split('\n').filter(Boolean) })}
                 className="w-full mt-1 min-h-[400px] p-2 border rounded-md"
                 placeholder="Enter discussion questions..."
               />
             ) : (
               <div className="mt-1 whitespace-pre-wrap">
-                {project.discussion_questions || 'No discussion guide added'}
+                {project.discussion_questions?.join('\n') || 'No discussion guide added'}
               </div>
             )}
           </div>
@@ -355,10 +394,13 @@ if(!project.brief_text){
                   {projectPersonas.map((persona) => (
                     <PersonaCard
                       key={persona.id}
-                      persona={persona}
+                      persona={{ ...persona, editable: true }}
                       selected={false}
                       onToggle={() => {}}
                       selectable={false}
+                      onUpdate={(updatedPersona) => {
+                        setProjectPersonas(prev => prev.map(p => p.id === updatedPersona.id ? updatedPersona : p));
+                      }}
                     />
                   ))}
                   {projectPersonas.length === 0 && !isGeneratingPersonas && (
@@ -369,6 +411,16 @@ if(!project.brief_text){
                 </>
               )}
             </div>
+
+            {/* Edit Persona Dialog */}
+            <CreatePersonaDialog
+              open={editPersonaOpen}
+              onOpenChange={setEditPersonaOpen}
+              onSuccess={handleEditPersonaSuccess}
+              initialData={editingPersona}
+              mode="edit"
+              hideTrigger={true}
+            />
           </div>
         </TabsContent>
 

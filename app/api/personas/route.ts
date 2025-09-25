@@ -161,11 +161,11 @@ export async function DELETE(request: Request) {
     const { supabase, userId } = await getSupabaseAndUser();
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
-    
+    console.log('id111', id)
     if (!id) {
       return NextResponse.json({ error: 'Persona id is required' }, { status: 400 });
     }
-
+    console.log('id222', id)
     // First check if this persona belongs to the user and is editable
     const { data: persona, error: fetchError } = await supabase
       .from('personas')
@@ -174,26 +174,26 @@ export async function DELETE(request: Request) {
       .eq('user_id', userId)
       .eq('editable', true)
       .single();
-
+    console.log('fetchError111', fetchError)
     if (fetchError) {
       return NextResponse.json({ error: fetchError.message }, { status: 500 });
     }
-
+    console.log('persona111', persona)
     if (!persona) {
       return NextResponse.json({ error: 'Persona not found or not editable' }, { status: 404 });
     }
-
+    console.log('persona222', persona)
     // Delete the persona
     const { error: deleteError } = await supabase
       .from('personas')
       .delete()
       .eq('id', id)
       .eq('user_id', userId);
-
+    console.log('deleteError111', deleteError)
     if (deleteError) {
       return NextResponse.json({ error: deleteError.message }, { status: 500 });
     }
-
+    console.log('deleteError222', deleteError)
     return NextResponse.json({ success: true, message: 'Persona deleted successfully' });
   } catch (error: any) {
     console.error('Error deleting persona:', error);

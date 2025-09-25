@@ -425,7 +425,7 @@ if(!project.brief_text){
         </TabsContent>
 
         <TabsContent value="studies">
-          <StudyList projectId={project.id} />
+          <StudyList projectId={project.id} project={project} />
         </TabsContent>
       </Tabs>
     </div>

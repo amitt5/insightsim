@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { Plus, Loader2, Link } from "lucide-react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useToast } from "@/hooks/use-toast"
+import { Project } from "@/utils/types"
 import {
   Table,
   TableBody,
@@ -17,10 +18,13 @@ import { Badge } from "@/components/ui/badge"
 
 interface StudyListProps {
   projectId: string;
+  project: Project;
 }
 
-export default function StudyList({ projectId }: StudyListProps) {
+export default function StudyList({ projectId, project }: StudyListProps) {
   const router = useRouter();
+  const { toast } = useToast();
+  const [isCreating, setIsCreating] = useState(false);
   const [simulations, setSimulations] = useState([
     {
       id: "1",
@@ -51,15 +55,75 @@ export default function StudyList({ projectId }: StudyListProps) {
     }
   ]);
 
+  const handleCreateNewSimulation = async () => {
+    try {
+      setIsCreating(true);
+      
+      toast({
+        title: "Creating simulation...",
+        description: "Setting up your new study",
+      });
+
+      const response = await fetch('/api/simulations/draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_id: projectId,
+          study_title: project.name,
+          brief_text: project.brief_text,
+          discussion_questions: project.discussion_questions || [],
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.simulation?.id) {
+          toast({
+            title: "Simulation created!",
+            description: "Redirecting to the editor...",
+          });
+          router.push(`/simulations/${data.simulation.id}/edit`);
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create simulation",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating draft simulation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create simulation",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Project Simulations</h2>
-        <Button asChild>
-          <Link href={`/projects/${projectId}/studies/new`}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Simulation
-          </Link>
+        <Button 
+          onClick={handleCreateNewSimulation}
+          disabled={isCreating || !project.brief_text}
+        >
+          {isCreating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Plus className="mr-2 h-4 w-4" />
+              New Simulation
+            </>
+          )}
         </Button>
       </div>
 

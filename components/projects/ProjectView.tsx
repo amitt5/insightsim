@@ -237,7 +237,7 @@ if(!project.brief_text){
           <TabsTrigger value="brief">Brief</TabsTrigger>
           <TabsTrigger value="discussion">Discussion Guide</TabsTrigger>
           <TabsTrigger value="personas">Personas</TabsTrigger>
-          <TabsTrigger value="studies">Studies</TabsTrigger>
+          <TabsTrigger value="studies">Simulations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="brief" className="space-y-4">

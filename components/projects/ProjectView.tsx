@@ -1,18 +1,17 @@
 "use client"
-
-import { useState } from "react"
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Project } from "@/utils/types"
 import { useToast } from "@/hooks/use-toast"
-import { Edit2, Save } from "lucide-react"
 import StudyList from "./StudyList"
+import { PersonaCard } from "@/components/persona-card"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt,buildDiscussionQuestionsFromBrief, createBriefPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
 
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { runSimulationAPI } from "@/utils/api"
-import { ArrowLeft, ArrowRight, Upload, X, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
+import { ArrowLeft, ArrowRight, Upload, X,Edit2, Save, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
 
 interface ProjectViewProps {
   project: Project;
@@ -23,6 +22,110 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editedProject, setEditedProject] = useState(project);
+  const [projectPersonas, setProjectPersonas] = useState<any[]>([]);
+  const [isGeneratingPersonas, setIsGeneratingPersonas] = useState(false);
+  const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
+
+  // Fetch project personas when the component mounts
+  useEffect(() => {
+    const fetchProjectPersonas = async () => {
+      setIsLoadingPersonas(true);
+      try {
+        const response = await fetch(`/api/projects/${project.id}/personas`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch personas');
+        }
+        const data = await response.json();
+        setProjectPersonas(data.personas || []);
+      } catch (error) {
+        console.error('Error fetching project personas:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load personas",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingPersonas(false);
+      }
+    };
+
+    fetchProjectPersonas();
+  }, [project.id, toast]);
+
+  const handleGeneratePersonasFromBrief = async () => {
+    if (!project.brief_text) {
+      toast({
+        title: "Error",
+        description: "Please add a brief first to generate personas",
+        variant: "destructive",
+      });
+      return;
+    }
+if(!project.brief_text){
+  toast({
+    title: "Error",
+    description: "Please add a brief first to generate personas",
+    variant: "destructive",
+  });
+  return;
+}
+    setIsGeneratingPersonas(true);
+    try {
+      const prompt = createBriefPersonaGenerationPrompt(project);
+      const messages: ChatCompletionMessageParam[] = [
+        { role: "system", content: prompt }
+      ];
+      const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'persona-generation');
+
+      try {
+        let responseText = result.reply || "";
+        responseText = responseText
+          .replace(/^```[\s\S]*?\n/, '')
+          .replace(/```$/, '')
+          .trim();
+
+        const parsedResponse = JSON.parse(responseText);
+        const generatedPersonas = parsedResponse.personas || [];
+
+        // Save the generated personas
+        const response = await fetch(`/api/projects/${project.id}/personas`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ personas: generatedPersonas }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save personas');
+        }
+
+        const data = await response.json();
+        setProjectPersonas(data.personas);
+        
+        toast({
+          title: "Success",
+          description: `Generated ${generatedPersonas.length} personas`,
+        });
+      } catch (error) {
+        console.error("Error parsing personas:", error);
+        toast({
+          title: "Error",
+          description: "Failed to parse generated personas",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating personas:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate personas",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPersonas(false);
+    }
+  };
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
   const handleSave = async () => {
@@ -94,6 +197,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         <TabsList>
           <TabsTrigger value="brief">Brief</TabsTrigger>
           <TabsTrigger value="discussion">Discussion Guide</TabsTrigger>
+          <TabsTrigger value="personas">Personas</TabsTrigger>
           <TabsTrigger value="studies">Studies</TabsTrigger>
         </TabsList>
 
@@ -215,6 +319,56 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                 {project.discussion_questions || 'No discussion guide added'}
               </div>
             )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="personas">
+          <div className="space-y-4">
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="default"
+                onClick={handleGeneratePersonasFromBrief}
+                disabled={isGeneratingPersonas || !project.brief_text}
+                className="flex items-center gap-2"
+              >
+                {isGeneratingPersonas ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Generate Personas
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+              {isLoadingPersonas ? (
+                <div className="col-span-full flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                </div>
+              ) : (
+                <>
+                  {projectPersonas.map((persona) => (
+                    <PersonaCard
+                      key={persona.id}
+                      persona={persona}
+                      selected={false}
+                      onToggle={() => {}}
+                      selectable={false}
+                    />
+                  ))}
+                  {projectPersonas.length === 0 && !isGeneratingPersonas && (
+                    <div className="col-span-full text-center py-8 text-gray-500">
+                      No personas generated yet. Click "Generate Personas" to create personas based on your brief.
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </TabsContent>
 

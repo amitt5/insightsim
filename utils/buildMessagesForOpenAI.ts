@@ -1,5 +1,5 @@
 // import { SimulationMessage, Persona } from "@/types";
-import { Persona, SimulationMessage, Simulation, AIPersonaGeneration} from "@/utils/types";
+import { Persona, SimulationMessage, Simulation, Project,AIPersonaGeneration} from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
 
@@ -541,7 +541,7 @@ Do not include any other text, explanations, or markdown formatting before or af
  * @param questions - Array of discussion questions
  * @returns A detailed prompt string ready for an LLM.
  */
-export function createBriefPersonaGenerationPrompt(simulation: Simulation): string {
+export function createBriefPersonaGenerationPrompt(simulation: Simulation | Project): string {
   const briefText: string = simulation.brief_text || '';
   const title: string = simulation.study_title || '';
   const topic: string = simulation.topic || '';

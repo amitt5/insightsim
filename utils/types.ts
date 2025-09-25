@@ -33,11 +33,13 @@ export interface Simulation {
     id: string;
     user_id: string;
     name: string;
+    study_title: string;
+    topic?: string;
     objective?: string;
     target_group?: string;
     product?: string;
     brief_text?: string;
-    discussion_questions?: string;
+    discussion_questions?: string[];
     created_at: string;
     updated_at: string;
     is_deleted: boolean;

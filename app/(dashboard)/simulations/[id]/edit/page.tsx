@@ -89,7 +89,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   
   const router = useRouter()
-  const { personas, loading, error, mutate } = usePersonas()
+  const { personas, loading, error, mutate } = usePersonas(simulationData.project_id)
   const supabase = createClientComponentClient();
 
   const [simulationStatus, setSimulationStatus] = useState<string>('Draft')

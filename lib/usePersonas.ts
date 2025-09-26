@@ -19,7 +19,7 @@ const processTraits = (traits: string | string[]) => {
   return processedTraits;
 };
 
-export function usePersonas() {
+export function usePersonas(projectId?: string | null) {
   const [personas, setPersonas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,9 +28,22 @@ export function usePersonas() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/personas");
-      if (!res.ok) throw new Error("Failed to fetch personas");
-      const data = await res.json();
+      let res;
+      let data;
+      
+      if (projectId) {
+        // Fetch personas specific to the project
+        res = await fetch(`/api/projects/${projectId}/personas`);
+        if (!res.ok) throw new Error("Failed to fetch project personas");
+        const responseData = await res.json();
+        data = responseData.personas; // Project personas API returns { personas: [...] }
+      } else {
+        // Fetch all personas (existing behavior)
+        res = await fetch("/api/personas");
+        if (!res.ok) throw new Error("Failed to fetch personas");
+        data = await res.json();
+      }
+      
       // Process traits for each persona
       const processedData = data.map((persona: any) => ({
         ...persona,
@@ -53,7 +66,7 @@ export function usePersonas() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectId]);
 
   
 

@@ -449,7 +449,7 @@ export default function LandingPage() {
                 {/* <span className="hero-title-part block">AI-Powered Focus Groups.</span>
                 <span className="hero-title-part accent block text-primary">Real Insights.</span>
                 <span className="hero-title-part block">No Waiting.</span> */}
-                 <span className="hero-title-part block">AI-Powered Focus Groups.</span>
+                 <span className="hero-title-part block">Instant Insights.</span>
                  {/* Discover Actionable Insights. Guarenteed. Today!
                  find features, discover user pain points, concerns with trying user product and possible solutions
 
@@ -460,10 +460,12 @@ export default function LandingPage() {
 
                  100% satisfaction guaranteed! */}
                 {/* <span className="hero-title-part block ">Directional Insights.</span> */}
-                <span className="hero-title-part accent block text-primary">No Waiting.</span>
+                <span className="hero-title-part accent block text-primary">Independently Verified.</span>
               </h1>
               <p className="mb-10 text-xl text-gray-600 hero-subtitle">
-              Test discussion guides, sharpen hypotheses, and get directional insights before your real research sessions
+              Insights in an hour, with instant validation options from real people and online sources.
+              {/* Get research insights in an hour — validated by real people and the web */}
+              {/* Test discussion guides, sharpen hypotheses, and get directional insights before your real research sessions */}
                 {/* Run simulated qualitative research with intelligent AI personas and moderators. */}
                 {/* "Test discussion guides, validate hypotheses, and get directional insights before your real qualitative and quantitative research" */}
 

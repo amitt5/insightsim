@@ -14,6 +14,7 @@ import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaG
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { runSimulationAPI } from "@/utils/api"
 import { ArrowLeft, ArrowRight, Upload, X,Edit2, Save, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
+import AIBriefAssistant from "./AIBriefAssistant"
 
 interface ProjectViewProps {
   project: Project;
@@ -257,6 +258,7 @@ if(!project.brief_text){
       <Tabs defaultValue="brief" className="space-y-4">
         <TabsList>
           <TabsTrigger value="brief">Brief</TabsTrigger>
+          <TabsTrigger value="ai-brief">AI Brief Assistant</TabsTrigger>
           <TabsTrigger value="discussion">Discussion Guide</TabsTrigger>
           <TabsTrigger value="personas">Personas</TabsTrigger>
           <TabsTrigger value="studies">Simulations</TabsTrigger>
@@ -277,6 +279,18 @@ if(!project.brief_text){
               <p className="mt-1 whitespace-pre-wrap">{project.brief_text || 'No brief added'}</p>
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="ai-brief" className="space-y-4">
+          <AIBriefAssistant 
+            onBriefGenerated={(brief) => {
+              setEditedProject({ ...editedProject, brief_text: brief });
+              toast({
+                title: "Brief Generated",
+                description: "The AI-generated brief has been added to your project. You can edit it in the Brief tab.",
+              });
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="discussion" className="space-y-4">

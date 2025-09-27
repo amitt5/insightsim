@@ -25,42 +25,6 @@ export default function StudyList({ project, simulations }: StudyListProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
-  // const [simulations, setSimulations] = useState([
-  //   {
-  //     id: "1",
-  //     study_title: "Product Usage Patterns",
-  //     study_type: "focus-group",
-  //     mode: "ai-both",
-  //     status: "Draft",
-  //     created_at: "2024-03-20",
-  //     participants: 6
-  //   },
-  //   {
-  //     id: "2",
-  //     study_title: "Feature Feedback Session",
-  //     study_type: "idi",
-  //     mode: "human-mod",
-  //     status: "Completed",
-  //     created_at: "2024-03-19",
-  //     participants: 1
-  //   },
-  //   {
-  //     id: "3",
-  //     study_title: "User Experience Discussion",
-  //     study_type: "focus-group",
-  //     mode: "ai-both",
-  //     status: "Draft",
-  //     created_at: "2024-03-18",
-  //     participants: 4
-  //   }
-  // ]);
-
-
-  // personas when the component mounts
-  useEffect(() => {
-    console.log('simulations111', simulations);
-  }, [simulations]);
-
   const handleCreateNewSimulation = async () => {
     try {
       setIsCreating(true);

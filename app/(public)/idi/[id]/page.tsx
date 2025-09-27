@@ -7,21 +7,21 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Simulation } from "@/utils/types";
+import { Project } from "@/utils/types";
 
-interface SimulationResponse {
-  simulation: Simulation;
+interface ProjectResponse {
+  project: Project;
   error?: string;
 }
 
 export default function PublicIDIPage() {
   const params = useParams();
   const router = useRouter();
-  const simulationId = params.id as string;
+  const projectId = params.id as string;
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [simulationData, setSimulationData] = useState<SimulationResponse | null>(null);
+  const [projectData, setProjectData] = useState<ProjectResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
@@ -33,7 +33,7 @@ export default function PublicIDIPage() {
   });
 
   useEffect(() => {
-    const fetchSimulationData = async () => {
+    const fetchProjectData = async () => {
       try {
         setIsLoading(true);
         const response = await fetch(`/api/public/idi/${params.id}`);
@@ -48,19 +48,19 @@ export default function PublicIDIPage() {
           throw new Error(data.error);
         }
         
-        setSimulationData(data);
+        setProjectData(data);
         setError(null);
       } catch (err: any) {
-        console.error("Failed to fetch simulation:", err);
-        setError(err.message || "Failed to load simulation data");
-        setSimulationData(null);
+        console.error("Failed to fetch project:", err);
+        setError(err.message || "Failed to load project data");
+        setProjectData(null);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchSimulationData();
-  }, [simulationId]);
+    fetchProjectData();
+  }, [projectId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +73,7 @@ export default function PublicIDIPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          simulation_id: simulationId,
+          project_id: projectId,
           ...formData,
           age: parseInt(formData.age)
         }),
@@ -84,7 +84,7 @@ export default function PublicIDIPage() {
       }
 
       const data = await response.json();
-      router.push(`/idi/${simulationId}/${data.id}`);
+      router.push(`/idi/${projectId}/${data.id}`);
     } catch (err) {
       console.error('Error submitting form:', err);
       setError('Failed to submit form. Please try again.');
@@ -106,7 +106,7 @@ export default function PublicIDIPage() {
     );
   }
 
-  if (!simulationData || !simulationData.simulation) {
+  if (!projectData || !projectData.project) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] space-y-4">
         <div className="text-xl font-semibold">Interview not found</div>
@@ -114,7 +114,7 @@ export default function PublicIDIPage() {
     );
   }
 
-  const { simulation } = simulationData;
+  const { project } = projectData;
 
   return (
     <div className="min-h-screen bg-background">
@@ -122,9 +122,9 @@ export default function PublicIDIPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">{simulation.topic}</h1>
+            <h1 className="text-2xl font-bold">{project.name}</h1>
             <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>{new Date(simulation.created_at).toLocaleDateString()}</span>
+              <span>{new Date(project.created_at).toLocaleDateString()}</span>
               <span>•</span>
               <span>In-Depth Interview</span>
             </div>

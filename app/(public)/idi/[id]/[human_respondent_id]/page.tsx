@@ -13,9 +13,9 @@ interface HumanRespondent {
   gender: string;
   email: string;
   status: 'in_progress' | 'completed';
-  simulation: {
+  project: {
     id: string;
-    topic: string;
+    name: string;
     discussion_questions: string[];
     created_at: string;
   };
@@ -23,7 +23,7 @@ interface HumanRespondent {
 
 export default function InterviewPage() {
   const params = useParams();
-  const simulationId = params.id as string;
+  const projectId = params.id as string;
   const humanRespondentId = params.human_respondent_id as string;
 
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +36,7 @@ export default function InterviewPage() {
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch(`/api/public/human-conversations?human_respondent_id=${humanRespondentId}&simulation_id=${simulationId}`);
+      const response = await fetch(`/api/public/human-conversations?human_respondent_id=${humanRespondentId}&project_id=${projectId}`);
       
       if (!response.ok) {
         throw new Error(`Error fetching messages: ${response.status}`);
@@ -58,7 +58,7 @@ export default function InterviewPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          simulation_id: simulationId,
+          project_id: projectId,
           human_respondent_id: humanRespondentId,
           is_first_message: isFirstMessage
         }),
@@ -89,7 +89,7 @@ export default function InterviewPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          simulation_id: simulationId,
+          project_id: projectId,
           human_respondent_id: humanRespondentId,
           message: newMessage.trim()
         }),
@@ -132,9 +132,9 @@ export default function InterviewPage() {
           throw new Error(data.error);
         }
 
-        // Verify this respondent belongs to this simulation
-        if (data.simulation_id !== simulationId) {
-          throw new Error('Invalid simulation ID');
+        // Verify this respondent belongs to this project
+        if (data.project_id !== projectId) {
+          throw new Error('Invalid project ID');
         }
         
         setRespondentData(data);
@@ -157,7 +157,7 @@ export default function InterviewPage() {
     };
     
     fetchRespondentData();
-  }, [simulationId, humanRespondentId]);
+  }, [projectId, humanRespondentId]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-[70vh]">Loading interview...</div>;
@@ -172,7 +172,7 @@ export default function InterviewPage() {
     );
   }
 
-  if (!respondentData || !respondentData.simulation) {
+  if (!respondentData || !respondentData.project) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] space-y-4">
         <div className="text-xl font-semibold">Interview not found</div>
@@ -186,9 +186,9 @@ export default function InterviewPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">{respondentData.simulation.topic}</h1>
+            <h1 className="text-2xl font-bold">{respondentData.project.name}</h1>
             <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>{new Date(respondentData.simulation.created_at).toLocaleDateString()}</span>
+              <span>{new Date(respondentData.project.created_at).toLocaleDateString()}</span>
               <span>•</span>
               <span>In-Depth Interview</span>
               <Badge variant={respondentData.status === "completed" ? "default" : "secondary"}>

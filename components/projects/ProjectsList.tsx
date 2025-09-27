@@ -77,7 +77,7 @@ export default function ProjectsList() {
     const fakeProjects = [
       {
         id: "1",
-        name: "Gen Z Social Media Habits",
+        name: "Gen Z Social Media Habits22",
         objective: null,
         // objective: "Understand how Gen Z interacts with social media platforms and their content consumption patterns",
         target_group: "Gen Z (18-24)",
@@ -121,9 +121,46 @@ export default function ProjectsList() {
     setLoading(true);
     // Simulate API delay
     setTimeout(() => {
-      setProjects(fakeProjects);
+      // setProjects(fakeProjects);
       setLoading(false);
     }, 1000);
+  }, []);
+
+  
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/projects');
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('ProjectsApiResponse', data);
+        setProjects(data.projects);
+        // Map the API data to the view model
+        // const mappedSimulations = data.simulations.map(sim => ({
+        //   id: sim.id,
+        //   name: sim.study_title,
+        //   date: new Date(sim.created_at).toISOString().split('T')[0],
+        //   mode: sim.mode === 'ai-both' ? 'AI Mod + AI Participants' : 'Human Mod + AI Participants',
+        //   status: sim.status,
+        //   participants: data.participantCounts[sim.id] || 0
+        // }));
+        
+        // setSimulations(mappedSimulations);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to fetch simulations:", err);
+        setError("Failed to load simulations. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProjects();
   }, []);
 
   return (

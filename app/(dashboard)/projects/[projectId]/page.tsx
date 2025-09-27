@@ -29,7 +29,7 @@ export default function ProjectPage({
     const fakeProjects = {
       "1": {
         id: "1",
-        name: "Gen Z Social Media Habits",
+        name: "Gen Z Social Media Habits11",
         objective: "Understand how Gen Z interacts with social media platforms and their content consumption patterns. Focus on emerging platforms and features that drive engagement.",
         target_group: "Gen Z (18-24)",
         product: "Social Media App",

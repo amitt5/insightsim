@@ -140,17 +140,6 @@ export default function ProjectsList() {
         const data = await response.json();
         console.log('ProjectsApiResponse', data);
         setProjects(data.projects);
-        // Map the API data to the view model
-        // const mappedSimulations = data.simulations.map(sim => ({
-        //   id: sim.id,
-        //   name: sim.study_title,
-        //   date: new Date(sim.created_at).toISOString().split('T')[0],
-        //   mode: sim.mode === 'ai-both' ? 'AI Mod + AI Participants' : 'Human Mod + AI Participants',
-        //   status: sim.status,
-        //   participants: data.participantCounts[sim.id] || 0
-        // }));
-        
-        // setSimulations(mappedSimulations);
         setError(null);
       } catch (err) {
         console.error("Failed to fetch simulations:", err);

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Project, Simulation } from "@/utils/types"
 import { useToast } from "@/hooks/use-toast"
 import StudyList from "./StudyList"
+import HumanInterviewsTable from "./HumanInterviewsTable"
 import { PersonaCard } from "@/components/persona-card"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
@@ -259,6 +260,7 @@ if(!project.brief_text){
           <TabsTrigger value="discussion">Discussion Guide</TabsTrigger>
           <TabsTrigger value="personas">Personas</TabsTrigger>
           <TabsTrigger value="studies">Simulations</TabsTrigger>
+          <TabsTrigger value="interviews">Human Interviews</TabsTrigger>
         </TabsList>
 
         <TabsContent value="brief" className="space-y-4">
@@ -447,6 +449,10 @@ if(!project.brief_text){
 
         <TabsContent value="studies">
           <StudyList project={project} simulations={simulations} />
+        </TabsContent>
+
+        <TabsContent value="interviews">
+          <HumanInterviewsTable projectId={project.id} />
         </TabsContent>
       </Tabs>
     </div>

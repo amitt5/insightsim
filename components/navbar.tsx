@@ -136,6 +136,9 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
               <Link href="/simulations" className="text-sm font-medium text-gray-700 hover:text-primary">
                 Simulations
               </Link>
+              <Link href="/respondents" className="text-sm font-medium text-gray-700 hover:text-primary">
+                Respondents
+              </Link>
               <Link href="/personas" className="text-sm font-medium text-gray-700 hover:text-primary">
                 Personas
               </Link>

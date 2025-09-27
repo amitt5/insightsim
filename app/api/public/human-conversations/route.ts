@@ -6,9 +6,9 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const human_respondent_id = searchParams.get('human_respondent_id');
-    const simulation_id = searchParams.get('simulation_id');
+    const project_id = searchParams.get('project_id');
 
-    if (!human_respondent_id || !simulation_id) {
+    if (!human_respondent_id || !project_id) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       .from('human_conversations')
       .select('*')
       .eq('human_respondent_id', human_respondent_id)
-      .eq('simulation_id', simulation_id)
+      .eq('project_id', project_id)
       .order('message_order', { ascending: true });
 
     if (messagesError) {
@@ -42,9 +42,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { simulation_id, human_respondent_id, message } = body;
+    const { project_id, human_respondent_id, message } = body;
 
-    if (!simulation_id || !human_respondent_id || !message) {
+    if (!project_id || !human_respondent_id || !message) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       .from('human_conversations')
       .insert([
         {
-          simulation_id,
+          project_id,
           human_respondent_id,
           message,
           sender_type: 'respondent',

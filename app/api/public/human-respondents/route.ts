@@ -5,10 +5,10 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { simulation_id, name, age, gender, email } = body;
+    const { project_id, name, age, gender, email } = body;
 
     // Validate required fields
-    if (!simulation_id || !name || !age || !gender || !email) {
+    if (!project_id || !name || !age || !gender || !email) {
       return NextResponse.json(
         { error: 'All fields are required' },
         { status: 400 }
@@ -34,16 +34,16 @@ export async function POST(request: Request) {
 
     const supabase = createRouteHandlerClient({ cookies });
 
-    // First verify that the simulation exists
-    const { data: simulation, error: simulationError } = await supabase
-      .from('simulations')
+    // First verify that the project exists
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
       .select('id')
-      .eq('id', simulation_id)
+      .eq('id', project_id)
       .single();
 
-    if (simulationError || !simulation) {
+    if (projectError || !project) {
       return NextResponse.json(
-        { error: 'Invalid simulation ID' },
+        { error: 'Invalid project ID' },
         { status: 400 }
       );
     }
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       .from('human_respondents')
       .insert([
         {
-          simulation_id,
+          project_id,
           name,
           age,
           gender,

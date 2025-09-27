@@ -6,14 +6,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
   try {
     const supabase = createRouteHandlerClient({ cookies });
     
-    // Fetch human respondent data along with their simulation
+    // Fetch human respondent data along with their project
     const { data: respondent, error: respondentError } = await supabase
       .from('human_respondents')
       .select(`
         *,
-        simulation:simulations (
+        project:projects (
           id,
-          topic,
+          name,
           discussion_questions,
           created_at
         )

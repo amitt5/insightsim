@@ -10,9 +10,9 @@ const openai = new OpenAI({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { simulation_id, human_respondent_id, is_first_message = false } = body;
+    const { project_id, human_respondent_id, is_first_message = false } = body;
 
-    if (!simulation_id || !human_respondent_id) {
+    if (!project_id || !human_respondent_id) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -21,15 +21,15 @@ export async function POST(request: Request) {
 
     const supabase = createRouteHandlerClient({ cookies });
 
-    // Fetch simulation data
-    const { data: simulation, error: simulationError } = await supabase
-      .from('simulations')
+    // Fetch project data
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
       .select('*')
-      .eq('id', simulation_id)
+      .eq('id', project_id)
       .single();
 
-    if (simulationError || !simulation) {
-      throw new Error('Failed to fetch simulation data');
+    if (projectError || !project) {
+      throw new Error('Failed to fetch project data');
     }
 
     // Fetch human respondent data
@@ -61,8 +61,8 @@ export async function POST(request: Request) {
     })) || [];
 
     // Prepare system message
-    let systemMessage = `You are an expert interviewer conducting a one-on-one interview about "${simulation.topic}". 
-Your goal is to gather detailed insights following this discussion guide: ${JSON.stringify(simulation.discussion_questions)}.
+    let systemMessage = `You are an expert interviewer conducting a one-on-one interview about "${project.name}". 
+Your goal is to gather detailed insights following this discussion guide: ${JSON.stringify(project.discussion_questions)}.
 The respondent's name is ${respondent.name}. They are ${respondent.age} years old and identify as ${respondent.gender}.
 
 Guidelines:
@@ -99,7 +99,7 @@ ${is_first_message ? "Start by introducing yourself and asking the first questio
       .from('human_conversations')
       .insert([
         {
-          simulation_id,
+          project_id,
           human_respondent_id,
           message: moderatorMessage,
           sender_type: 'moderator',

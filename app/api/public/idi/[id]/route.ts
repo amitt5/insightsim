@@ -6,25 +6,23 @@ export async function GET(request: Request, { params }: { params: { id: string }
   try {
     const supabase = createRouteHandlerClient({ cookies });
     
-    // Fetch simulation data
-    const { data: simulation, error: simulationError } = await supabase
-      .from('simulations')
+    // Fetch project data
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
       .select('*')
       .eq('id', params.id)
       .single();
 
-    if (simulationError) {
-      throw simulationError;
+    if (projectError) {
+      throw projectError;
     }
 
-   
-
     return NextResponse.json({
-      simulation,
-      personas:  []
+      project,
+      personas: []
     });
   } catch (error) {
-    console.error('Error fetching simulation:', error);
-    return NextResponse.json({ error: 'Failed to fetch simulation data' }, { status: 500 });
+    console.error('Error fetching project:', error);
+    return NextResponse.json({ error: 'Failed to fetch project data' }, { status: 500 });
   }
 }

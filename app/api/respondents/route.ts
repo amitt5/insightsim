@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     // TODO: Add filter parameters later
     // const status = searchParams.get('status');
     // const search = searchParams.get('search');
-    // const simulationId = searchParams.get('simulation_id');
+    // const projectId = searchParams.get('project_id');
 
     // Get authenticated user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -39,19 +39,19 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get simulations owned by this user
-    const simulationsQuery = supabase
-      .from('simulations')
+    // Get projects owned by this user
+    const projectsQuery = supabase
+      .from('projects')
       .select('id')
       .eq('user_id', user.id);
 
-    const { data: simulations, error: simError } = await simulationsQuery;
+    const { data: projects, error: projError } = await projectsQuery;
 
-    if (simError) {
-      throw simError;
+    if (projError) {
+      throw projError;
     }
 
-    if (!simulations || simulations.length === 0) {
+    if (!projects || projects.length === 0) {
       return NextResponse.json({
         respondents: [],
         total: 0,
@@ -61,25 +61,25 @@ export async function GET(request: Request) {
       });
     }
 
-    const simulationIds = simulations.map(s => s.id);
+    const projectIds = projects.map(p => p.id);
 
     // Build respondents query
     const respondentsQuery = supabase
       .from('human_respondents')
       .select(`
         *,
-        simulation:simulations (
+        project:projects (
           id,
-          topic
+          name
         )
       `)
-      .in('simulation_id', simulationIds);
+      .in('project_id', projectIds);
 
     // Get total count for pagination
     const { count: totalCount, error: countError } = await supabase
       .from('human_respondents')
       .select('*', { count: 'exact', head: true })
-      .in('simulation_id', simulationIds);
+      .in('project_id', projectIds);
     if (countError) {
       throw countError;
     }
@@ -100,14 +100,14 @@ export async function GET(request: Request) {
           .from('human_conversations')
           .select('*', { count: 'exact', head: true })
           .eq('human_respondent_id', respondent.id)
-          .eq('simulation_id', respondent.simulation_id);
+          .eq('project_id', respondent.project_id);
 
         // Get last message timestamp
         const { data: lastMessage, error: lastMsgError } = await supabase
           .from('human_conversations')
           .select('created_at')
           .eq('human_respondent_id', respondent.id)
-          .eq('simulation_id', respondent.simulation_id)
+          .eq('project_id', respondent.project_id)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();

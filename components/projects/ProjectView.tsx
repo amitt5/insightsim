@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Project } from "@/utils/types"
+import { Project, Simulation } from "@/utils/types"
 import { useToast } from "@/hooks/use-toast"
 import StudyList from "./StudyList"
 import { PersonaCard } from "@/components/persona-card"
@@ -24,6 +24,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedProject, setEditedProject] = useState(project);
   const [projectPersonas, setProjectPersonas] = useState<any[]>([]);
+  const [simulations, setSimulations] = useState<Simulation[]>([]);
   const [isGeneratingPersonas, setIsGeneratingPersonas] = useState(false);
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
   const [editingPersona, setEditingPersona] = useState<any>(null);
@@ -88,7 +89,27 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       }
     };
 
+    const fetchProjectSimulations = async () => {
+      try {
+        const response = await fetch(`/api/projects/${project.id}/simulations`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch simulations');
+        }
+        const data = await response.json();
+        console.log('data111', data);
+        setSimulations(data.projectSimulations || []);
+      } catch (error) {
+        console.error('Error fetching project simulations:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load simulations",
+          variant: "destructive",
+        });
+      } 
+    };
+
     fetchProjectPersonas();
+    fetchProjectSimulations();
   }, [project.id, toast]);
 
   const handleGeneratePersonasFromBrief = async () => {
@@ -425,7 +446,7 @@ if(!project.brief_text){
         </TabsContent>
 
         <TabsContent value="studies">
-          <StudyList projectId={project.id} project={project} />
+          <StudyList project={project} simulations={simulations} />
         </TabsContent>
       </Tabs>
     </div>

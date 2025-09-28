@@ -283,6 +283,7 @@ if(!project.brief_text){
 
         <TabsContent value="ai-brief" className="space-y-4">
           <AIBriefAssistant 
+            projectId={project.id}
             onBriefGenerated={(brief) => {
               setEditedProject({ ...editedProject, brief_text: brief });
               toast({

@@ -74,8 +74,31 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     setRagDocuments(prev => [...prev, document]);
   };
 
-  const handleRagDocumentDelete = (documentId: string) => {
-    setRagDocuments(prev => prev.filter(doc => doc.id !== documentId));
+  const handleRagDocumentDelete = async (documentId: string) => {
+    try {
+      const response = await fetch(`/api/projects/${project.id}/rag/documents/${documentId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete document');
+      }
+
+      setRagDocuments(prev => prev.filter(doc => doc.id !== documentId));
+      
+      toast({
+        title: "Document deleted",
+        description: "Document has been deleted successfully",
+      });
+    } catch (error: any) {
+      console.error('Error deleting document:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete document",
+        variant: "destructive",
+      });
+    }
   };
 
   // Fetch project personas when the component mounts
@@ -120,8 +143,27 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       } 
     };
 
+    const fetchRagDocuments = async () => {
+      try {
+        const response = await fetch(`/api/projects/${project.id}/rag/documents`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch RAG documents');
+        }
+        const data = await response.json();
+        setRagDocuments(data.documents || []);
+      } catch (error) {
+        console.error('Error fetching RAG documents:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load RAG documents",
+          variant: "destructive",
+        });
+      }
+    };
+
     fetchProjectPersonas();
     fetchProjectSimulations();
+    fetchRagDocuments();
   }, [project.id, toast]);
 
   const handleGeneratePersonasFromBrief = async () => {

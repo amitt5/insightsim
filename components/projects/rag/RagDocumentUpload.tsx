@@ -65,11 +65,11 @@ export default function RagDocumentUpload({
 
     setUploadingFiles(prev => [...prev, ...newUploadingFiles]);
 
-    // Simulate upload process (will be replaced with real API call)
+    // Upload files to API
     validFiles.forEach((file, index) => {
-      simulateUpload(file, index);
+      uploadFile(file, index);
     });
-  }, [toast]);
+  }, [toast, projectId, onUploadSuccess, onUploadError]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -97,50 +97,76 @@ export default function RagDocumentUpload({
     fileInputRef.current?.click();
   }, []);
 
-  const simulateUpload = async (file: File, index: number) => {
-    // Simulate upload progress
-    for (let progress = 0; progress <= 100; progress += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+  const uploadFile = async (file: File, index: number) => {
+    try {
+      // Create form data for file upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'rag-documents');
+
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadingFiles(prev => 
+          prev.map((uploadingFile, i) => {
+            if (i === index && uploadingFile.progress < 90) {
+              return { ...uploadingFile, progress: uploadingFile.progress + 10 };
+            }
+            return uploadingFile;
+          })
+        );
+      }, 200);
+
+      // Upload file to API
+      const response = await fetch(`/api/projects/${projectId}/rag/documents`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      clearInterval(progressInterval);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const result = await response.json();
+      
+      // Complete progress
+      setUploadingFiles(prev => 
+        prev.map((uploadingFile, i) => 
+          i === index ? { ...uploadingFile, progress: 100, status: 'completed' } : uploadingFile
+        )
+      );
+
+      onUploadSuccess?.(result.document);
+      
+      toast({
+        title: "Upload successful",
+        description: `${file.name} has been uploaded successfully`,
+      });
+
+      // Remove from uploading state after a delay
+      setTimeout(() => {
+        setUploadingFiles(prev => prev.filter((_, i) => i !== index));
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Upload error:', error);
       
       setUploadingFiles(prev => 
         prev.map((uploadingFile, i) => 
-          i === index ? { ...uploadingFile, progress } : uploadingFile
+          i === index ? { ...uploadingFile, status: 'error', error: error.message } : uploadingFile
         )
       );
+
+      onUploadError?.(error.message);
+      
+      toast({
+        title: "Upload failed",
+        description: error.message || 'Failed to upload file',
+        variant: "destructive",
+      });
     }
-
-    // Simulate successful upload
-    const mockDocument: RagDocument = {
-      id: `doc_${Date.now()}_${index}`,
-      project_id: projectId,
-      user_id: 'mock-user-id', // Will be replaced with real user ID from session
-      filename: file.name,
-      original_filename: file.name,
-      file_path: `uploads/${file.name}`,
-      file_size: file.size,
-      mime_type: file.type,
-      status: 'uploaded',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    setUploadingFiles(prev => 
-      prev.map((uploadingFile, i) => 
-        i === index ? { ...uploadingFile, status: 'completed' } : uploadingFile
-      )
-    );
-
-    onUploadSuccess?.(mockDocument);
-    
-    toast({
-      title: "Upload successful",
-      description: `${file.name} has been uploaded successfully`,
-    });
-
-    // Remove from uploading state after a delay
-    setTimeout(() => {
-      setUploadingFiles(prev => prev.filter((_, i) => i !== index));
-    }, 2000);
   };
 
 

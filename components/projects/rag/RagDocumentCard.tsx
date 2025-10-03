@@ -59,10 +59,6 @@ export default function RagDocumentCard({
 
   const handleDelete = () => {
     onDelete(document.id);
-    toast({
-      title: "Document deleted",
-      description: `${document.original_filename} has been deleted`,
-    });
   };
 
   const handleView = () => {

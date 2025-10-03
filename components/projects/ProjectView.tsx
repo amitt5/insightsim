@@ -15,6 +15,7 @@ import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { runSimulationAPI } from "@/utils/api"
 import { ArrowLeft, ArrowRight, Upload, X,Edit2, Save, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
 import AIBriefAssistant from "./AIBriefAssistant"
+import { RagDocumentUpload, RagDocumentList } from "./rag"
 
 interface ProjectViewProps {
   project: Project;
@@ -31,6 +32,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
   const [editingPersona, setEditingPersona] = useState<any>(null);
   const [editPersonaOpen, setEditPersonaOpen] = useState(false);
+  const [ragDocuments, setRagDocuments] = useState<any[]>([]);
 
   const handleEditPersona = (persona: any) => {
     setEditingPersona(persona);
@@ -66,6 +68,14 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     setProjectPersonas(prev => prev.map(p => p.id === updatedPersona.id ? updatedPersona : p));
     setEditPersonaOpen(false);
     setEditingPersona(null);
+  };
+
+  const handleRagDocumentUpload = (document: any) => {
+    setRagDocuments(prev => [...prev, document]);
+  };
+
+  const handleRagDocumentDelete = (documentId: string) => {
+    setRagDocuments(prev => prev.filter(doc => doc.id !== documentId));
   };
 
   // Fetch project personas when the component mounts
@@ -260,6 +270,7 @@ if(!project.brief_text){
           <TabsTrigger value="brief">Brief</TabsTrigger>
           <TabsTrigger value="ai-brief">AI Brief Assistant</TabsTrigger>
           <TabsTrigger value="discussion">Discussion Guide</TabsTrigger>
+          <TabsTrigger value="rag">RAG</TabsTrigger>
           <TabsTrigger value="personas">Personas</TabsTrigger>
           <TabsTrigger value="studies">Simulations</TabsTrigger>
           <TabsTrigger value="interviews">Human Interviews</TabsTrigger>
@@ -397,6 +408,25 @@ if(!project.brief_text){
               </div>
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="rag" className="space-y-6">
+          <div>
+            <label className="text-sm font-medium text-gray-500">RAG Documents</label>
+            <p className="text-sm text-gray-400 mt-1">
+              Upload and manage documents for retrieval-augmented generation
+            </p>
+          </div>
+          
+          <RagDocumentUpload 
+            projectId={project.id}
+            onUploadSuccess={handleRagDocumentUpload}
+          />
+          
+          <RagDocumentList 
+            documents={ragDocuments}
+            onDelete={handleRagDocumentDelete}
+          />
         </TabsContent>
 
         <TabsContent value="personas">

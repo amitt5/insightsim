@@ -1,12 +1,14 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, List
 import PyPDF2
 import io
 import os
 from dotenv import load_dotenv
 import logging
+from llama_index.node_parser import SentenceSplitter
+from llama_index.schema import Document
 
 # Load environment variables
 load_dotenv()
@@ -45,6 +47,18 @@ class TextExtractionResponse(BaseModel):
     file_size: int
     pages_count: int
     text_length: int
+
+class ChunkResponse(BaseModel):
+    text: str
+    metadata: Dict[str, Any]
+
+class ChunkingResponse(BaseModel):
+    success: bool
+    message: str
+    chunks: List[ChunkResponse]
+    filename: str
+    total_chunks: int
+    avg_chunk_size: int
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -112,6 +126,59 @@ def extract_text_from_pdf(file_content: bytes) -> Dict[str, Any]:
         logger.error(f"Error extracting text from PDF: {e}")
         raise HTTPException(status_code=400, detail=f"Failed to extract text from PDF: {str(e)}")
 
+def create_text_chunks(text: str, filename: str) -> List[Dict[str, Any]]:
+    """Create text chunks using LlamaIndex SentenceSplitter"""
+    try:
+        print("🔪 [CHUNKING] Starting text chunking...")
+        logger.info(f"Starting text chunking for: {filename}")
+        print(f"📝 [CHUNKING] Original text length: {len(text)} characters")
+        
+        # Initialize LlamaIndex SentenceSplitter
+        splitter = SentenceSplitter(
+            chunk_size=512,  # tokens
+            chunk_overlap=50,  # tokens
+            separator=" ",
+            paragraph_separator="\n\n",
+            secondary_chunking_regex="[.!?]",
+        )
+        
+        # Create LlamaIndex Document
+        document = Document(text=text, metadata={"filename": filename})
+        
+        # Split into chunks
+        nodes = splitter.get_nodes_from_documents([document])
+        
+        # Convert to our format
+        chunks = []
+        for i, node in enumerate(nodes):
+            chunk_metadata = {
+                "filename": filename,
+                "chunk_index": i,
+                "chunk_start": 0,  # LlamaIndex doesn't provide exact positions
+                "chunk_end": len(node.text),
+                "chunk_size": len(node.text),
+                "estimated_tokens": len(node.text.split()),  # Rough token estimation
+                "chunk_type": "text",
+                "processing_method": "llamaindex"
+            }
+            
+            chunks.append({
+                "text": node.text,
+                "metadata": chunk_metadata
+            })
+        
+        print(f"✅ [CHUNKING] Created {len(chunks)} text chunks")
+        if chunks:
+            avg_size = sum(len(chunk["text"]) for chunk in chunks) / len(chunks)
+            print(f"📊 [CHUNKING] Average chunk size: {avg_size:.0f} characters")
+        
+        return chunks
+        
+    except Exception as e:
+        print(f"💥 [CHUNKING] Error creating text chunks: {e}")
+        logger.error(f"Error creating text chunks: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create text chunks: {str(e)}")
+
 @app.post("/extract-text", response_model=TextExtractionResponse)
 async def extract_text_endpoint(file: UploadFile = File(...)):
     """Extract text from uploaded PDF file"""
@@ -147,6 +214,52 @@ async def extract_text_endpoint(file: UploadFile = File(...)):
     except Exception as e:
         print(f"💥 [API] Unexpected error: {e}")
         logger.error(f"Unexpected error in extract_text_endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.post("/chunk-text", response_model=ChunkingResponse)
+async def chunk_text_endpoint(file: UploadFile = File(...)):
+    """Extract text from PDF and create chunks using LlamaIndex"""
+    try:
+        print(f"📁 [CHUNK API] Received file: {file.filename}")
+        print(f"📁 [CHUNK API] File size: {file.size} bytes")
+        print(f"📁 [CHUNK API] Content type: {file.content_type}")
+        
+        # Validate file type
+        if not file.filename.lower().endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="Only PDF files are supported")
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Step 1: Extract text
+        print("🔍 [CHUNK API] Step 1: Extracting text from PDF...")
+        text_result = extract_text_from_pdf(file_content)
+        extracted_text = text_result["extracted_text"]
+        
+        # Step 2: Create chunks
+        print("🔪 [CHUNK API] Step 2: Creating text chunks...")
+        chunks = create_text_chunks(extracted_text, file.filename)
+        
+        # Calculate average chunk size
+        avg_chunk_size = sum(len(chunk["text"]) for chunk in chunks) / len(chunks) if chunks else 0
+        
+        print(f"✅ [CHUNK API] Processing completed successfully")
+        print(f"📊 [CHUNK API] Results: {len(chunks)} chunks, avg size: {avg_chunk_size:.0f} chars")
+        
+        return ChunkingResponse(
+            success=True,
+            message="Text extracted and chunked successfully",
+            chunks=[ChunkResponse(text=chunk["text"], metadata=chunk["metadata"]) for chunk in chunks],
+            filename=file.filename,
+            total_chunks=len(chunks),
+            avg_chunk_size=int(avg_chunk_size)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"💥 [CHUNK API] Unexpected error: {e}")
+        logger.error(f"Unexpected error in chunk_text_endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 if __name__ == "__main__":

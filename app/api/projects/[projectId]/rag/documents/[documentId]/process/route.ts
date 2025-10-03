@@ -75,7 +75,7 @@ export async function POST(
       formData.append('file', fileData, document.original_filename)
 
       const pythonServiceUrl = process.env.PYTHON_PDF_SERVICE_URL || 'http://localhost:8000'
-      const response = await fetch(`${pythonServiceUrl}/extract-text`, {
+      const response = await fetch(`${pythonServiceUrl}/chunk-text`, {
         method: 'POST',
         body: formData,
       })
@@ -85,8 +85,9 @@ export async function POST(
         throw new Error(errorData.detail || 'Failed to extract text from PDF')
       }
 
-      const extractionResult = await response.json()
-      console.log(`Text extraction successful: ${extractionResult.text_length} characters from ${extractionResult.pages_count} pages`)
+      const chunkingResult = await response.json()
+      console.log(`Text extraction and chunking successful: ${chunkingResult.total_chunks} chunks created`)
+      console.log(`Average chunk size: ${chunkingResult.avg_chunk_size} characters`)
 
       // Update document status to completed
       const { error: completeError } = await supabase
@@ -106,10 +107,10 @@ export async function POST(
       
       return NextResponse.json({
         success: true,
-        message: "Text extracted successfully",
-        extractedText: extractionResult.extracted_text,
-        pagesCount: extractionResult.pages_count,
-        textLength: extractionResult.text_length
+        message: "Text extracted and chunked successfully",
+        totalChunks: chunkingResult.total_chunks,
+        avgChunkSize: chunkingResult.avg_chunk_size,
+        chunks: chunkingResult.chunks
       })
 
     } catch (processingError: any) {

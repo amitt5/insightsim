@@ -4,10 +4,11 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Upload, FileIcon, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { RagDocument } from "@/utils/types";
 
 interface RagDocumentUploadProps {
   projectId: string;
-  onUploadSuccess?: (document: any) => void;
+  onUploadSuccess?: (document: RagDocument) => void;
   onUploadError?: (error: string) => void;
 }
 
@@ -109,13 +110,18 @@ export default function RagDocumentUpload({
     }
 
     // Simulate successful upload
-    const mockDocument = {
+    const mockDocument: RagDocument = {
       id: `doc_${Date.now()}_${index}`,
+      project_id: projectId,
+      user_id: 'mock-user-id', // Will be replaced with real user ID from session
       filename: file.name,
-      originalFilename: file.name,
-      fileSize: file.size,
-      uploadDate: new Date().toISOString(),
-      status: 'uploaded' as const
+      original_filename: file.name,
+      file_path: `uploads/${file.name}`,
+      file_size: file.size,
+      mime_type: file.type,
+      status: 'uploaded',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     setUploadingFiles(prev => 

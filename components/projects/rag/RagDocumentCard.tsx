@@ -6,16 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileIcon, Trash2, Download, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { RagDocument } from "@/utils/types";
 
-interface RagDocument {
-  id: string;
-  filename: string;
-  originalFilename: string;
-  fileSize: number;
-  uploadDate: string;
-  status: 'uploaded' | 'processing' | 'completed' | 'failed';
-  error?: string;
-}
 
 interface RagDocumentCardProps {
   document: RagDocument;
@@ -69,7 +61,7 @@ export default function RagDocumentCard({
     onDelete(document.id);
     toast({
       title: "Document deleted",
-      description: `${document.originalFilename} has been deleted`,
+      description: `${document.original_filename} has been deleted`,
     });
   };
 
@@ -97,15 +89,15 @@ export default function RagDocumentCard({
             
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-medium text-gray-900 truncate">
-                {document.originalFilename}
+                {document.original_filename}
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                {formatFileSize(document.fileSize)} • {formatDate(document.uploadDate)}
+                {formatFileSize(document.file_size)} • {formatDate(document.created_at)}
               </p>
               
-              {document.status === 'failed' && document.error && (
+              {document.status === 'failed' && document.processing_error && (
                 <p className="text-xs text-red-600 mt-1">
-                  Error: {document.error}
+                  Error: {document.processing_error}
                 </p>
               )}
               

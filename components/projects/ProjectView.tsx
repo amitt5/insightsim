@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Project, Simulation } from "@/utils/types"
+import { Project, Simulation, RagDocument } from "@/utils/types"
 import { useToast } from "@/hooks/use-toast"
 import StudyList from "./StudyList"
 import HumanInterviewsTable from "./HumanInterviewsTable"
@@ -32,7 +32,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
   const [editingPersona, setEditingPersona] = useState<any>(null);
   const [editPersonaOpen, setEditPersonaOpen] = useState(false);
-  const [ragDocuments, setRagDocuments] = useState<any[]>([]);
+  const [ragDocuments, setRagDocuments] = useState<RagDocument[]>([]);
 
   const handleEditPersona = (persona: any) => {
     setEditingPersona(persona);
@@ -70,7 +70,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     setEditingPersona(null);
   };
 
-  const handleRagDocumentUpload = (document: any) => {
+  const handleRagDocumentUpload = (document: RagDocument) => {
     setRagDocuments(prev => [...prev, document]);
   };
 

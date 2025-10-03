@@ -1,18 +1,10 @@
 "use client"
 
 import React from 'react';
-import { RagDocumentCard } from './RagDocumentCard';
+import RagDocumentCard from './RagDocumentCard';
 import { FileIcon } from "lucide-react";
+import { RagDocument } from "@/utils/types";
 
-interface RagDocument {
-  id: string;
-  filename: string;
-  originalFilename: string;
-  fileSize: number;
-  uploadDate: string;
-  status: 'uploaded' | 'processing' | 'completed' | 'failed';
-  error?: string;
-}
 
 interface RagDocumentListProps {
   documents: RagDocument[];

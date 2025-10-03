@@ -141,3 +141,45 @@ export interface KeyInsight {
   recommended_action: string;
   priority: 'high' | 'medium' | 'low';
 }
+
+// RAG Document interfaces
+export interface RagDocument {
+  id: string;
+  project_id: string;
+  user_id: string;
+  filename: string;
+  original_filename: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  status: 'uploaded' | 'processing' | 'completed' | 'failed';
+  processing_error?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RagDocumentChunk {
+  id: string;
+  document_id: string;
+  chunk_index: number;
+  chunk_text: string;
+  chunk_embedding?: number[]; // 1536-dimensional vector
+  metadata?: Record<string, any>;
+  created_at: string;
+}
+
+export interface RagDocumentUploadRequest {
+  file: File;
+  projectId: string;
+}
+
+export interface RagDocumentUploadResponse {
+  success: boolean;
+  document?: RagDocument;
+  error?: string;
+}
+
+export interface RagDocumentListResponse {
+  documents: RagDocument[];
+  total: number;
+}

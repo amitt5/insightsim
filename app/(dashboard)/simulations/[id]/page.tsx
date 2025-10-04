@@ -109,6 +109,71 @@ export default function SimulationViewPage() {
     return index !== -1 ? personaColors[index % personaColors.length] : personaColors[0];
   };
 
+  // RAG Search Helper Functions
+  const searchRAGDocuments = async (query: string) => {
+    // Get projectId from simulation data
+    const projectId = simulationData?.simulation?.project_id;
+    
+    if (!projectId) {
+      console.warn('No project_id found in simulation data - RAG search skipped');
+      return { results: [] };
+    }
+    
+    try {
+      console.log(`🔍 [RAG] Searching documents for query: "${query}"`);
+      
+      // 1. Generate query embedding
+      const embeddingResponse = await fetch(`/api/projects/${projectId}/rag/query-embedding`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+      
+      if (!embeddingResponse.ok) {
+        throw new Error(`Embedding generation failed: ${embeddingResponse.status}`);
+      }
+      
+      const { embedding } = await embeddingResponse.json();
+      console.log(`🧠 [RAG] Generated ${embedding.length}-dimensional embedding`);
+      
+      // 2. Search for similar chunks
+      const searchResponse = await fetch(`/api/projects/${projectId}/rag/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query,
+          queryEmbedding: embedding,
+          limit: 3,
+          threshold: 0.7
+        })
+      });
+      
+      if (!searchResponse.ok) {
+        throw new Error(`Vector search failed: ${searchResponse.status}`);
+      }
+      
+      const searchResults = await searchResponse.json();
+      console.log(`📊 [RAG] Found ${searchResults.results?.length || 0} relevant chunks`);
+      console.log('searchResults111', searchResults);
+      return searchResults;
+    } catch (error) {
+      console.error('❌ [RAG] Search failed:', error);
+      return { results: [] };
+    }
+  };
+
+  const buildRAGContext = (ragResults: any[]) => {
+    if (!ragResults || ragResults.length === 0) {
+      return '';
+    }
+    
+    const context = ragResults.map((result, index) => 
+      `[Document ${index + 1}: ${result.source.filename}]\n${result.text}\n(Relevance: ${(result.similarity * 100).toFixed(1)}%)`
+    ).join('\n\n');
+    
+    return `\n\n--- RELEVANT DOCUMENT CONTEXT ---\n${context}\n--- END CONTEXT ---\n\n`;
+  };
+
   // Function to extract filename from URL for display
   const getFilenameFromUrl = (url: string) => {
     try {
@@ -472,7 +537,12 @@ export default function SimulationViewPage() {
     // then fetch the updated messages from the database
     // then update the messages state
     // then update the formatted messages state
-   
+
+    searchRAGDocuments(newMessage);
+
+    if(newMessage.length > 0) {
+      return;
+    }
     //1. save the moderator message to the database
     setShowFollowUpQuestions(false);
     const modMessage = {

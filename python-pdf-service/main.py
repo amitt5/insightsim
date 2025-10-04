@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import logging
 from llama_index.node_parser import SentenceSplitter
 from llama_index.schema import Document
+import openai
 
 # Load environment variables
 load_dotenv()
@@ -16,6 +17,9 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize OpenAI client
+openai_client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Create FastAPI app
 app = FastAPI(title="PDF Text Extraction Service", version="1.0.0")
@@ -51,6 +55,7 @@ class TextExtractionResponse(BaseModel):
 class ChunkResponse(BaseModel):
     text: str
     metadata: Dict[str, Any]
+    embedding: List[float]
 
 class ChunkingResponse(BaseModel):
     success: bool
@@ -179,6 +184,51 @@ def create_text_chunks(text: str, filename: str) -> List[Dict[str, Any]]:
         logger.error(f"Error creating text chunks: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create text chunks: {str(e)}")
 
+async def generate_embeddings_for_chunks(chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Generate OpenAI embeddings for text chunks"""
+    try:
+        print("🤖 [EMBEDDINGS] Starting embeddings generation...")
+        logger.info(f"Generating embeddings for {len(chunks)} chunks")
+        
+        chunks_with_embeddings = []
+        
+        for i, chunk in enumerate(chunks):
+            try:
+                print(f"🧠 [EMBEDDINGS] Generating embedding for chunk {i+1}/{len(chunks)}...")
+                
+                # Generate embedding using OpenAI API
+                response = openai_client.embeddings.create(
+                    model="text-embedding-ada-002",
+                    input=chunk["text"]
+                )
+                
+                embedding = response.data[0].embedding
+                
+                # Add embedding to chunk
+                chunk_with_embedding = {
+                    "text": chunk["text"],
+                    "metadata": chunk["metadata"],
+                    "embedding": embedding
+                }
+                
+                chunks_with_embeddings.append(chunk_with_embedding)
+                
+                print(f"✅ [EMBEDDINGS] Chunk {i+1}: {len(embedding)}-dimensional embedding generated")
+                
+            except Exception as e:
+                print(f"❌ [EMBEDDINGS] Error generating embedding for chunk {i+1}: {e}")
+                logger.warning(f"Error generating embedding for chunk {i+1}: {e}")
+                # Continue with other chunks even if one fails
+                continue
+        
+        print(f"🎉 [EMBEDDINGS] Successfully generated embeddings for {len(chunks_with_embeddings)} chunks")
+        return chunks_with_embeddings
+        
+    except Exception as e:
+        print(f"💥 [EMBEDDINGS] Error generating embeddings: {e}")
+        logger.error(f"Error generating embeddings: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate embeddings: {str(e)}")
+
 @app.post("/extract-text", response_model=TextExtractionResponse)
 async def extract_text_endpoint(file: UploadFile = File(...)):
     """Extract text from uploaded PDF file"""
@@ -240,18 +290,22 @@ async def chunk_text_endpoint(file: UploadFile = File(...)):
         print("🔪 [CHUNK API] Step 2: Creating text chunks...")
         chunks = create_text_chunks(extracted_text, file.filename)
         
+        # Step 3: Generate embeddings
+        print("🤖 [CHUNK API] Step 3: Generating embeddings...")
+        chunks_with_embeddings = await generate_embeddings_for_chunks(chunks)
+        
         # Calculate average chunk size
-        avg_chunk_size = sum(len(chunk["text"]) for chunk in chunks) / len(chunks) if chunks else 0
+        avg_chunk_size = sum(len(chunk["text"]) for chunk in chunks_with_embeddings) / len(chunks_with_embeddings) if chunks_with_embeddings else 0
         
         print(f"✅ [CHUNK API] Processing completed successfully")
-        print(f"📊 [CHUNK API] Results: {len(chunks)} chunks, avg size: {avg_chunk_size:.0f} chars")
+        print(f"📊 [CHUNK API] Results: {len(chunks_with_embeddings)} chunks with embeddings, avg size: {avg_chunk_size:.0f} chars")
         
         return ChunkingResponse(
             success=True,
-            message="Text extracted and chunked successfully",
-            chunks=[ChunkResponse(text=chunk["text"], metadata=chunk["metadata"]) for chunk in chunks],
+            message="Text extracted, chunked, and embeddings generated successfully",
+            chunks=[ChunkResponse(text=chunk["text"], metadata=chunk["metadata"], embedding=chunk["embedding"]) for chunk in chunks_with_embeddings],
             filename=file.filename,
-            total_chunks=len(chunks),
+            total_chunks=len(chunks_with_embeddings),
             avg_chunk_size=int(avg_chunk_size)
         )
         

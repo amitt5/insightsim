@@ -5,9 +5,10 @@ import { NextResponse } from "next/server"
 // POST route to perform vector similarity search
 export async function POST(
   request: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const supabase = createRouteHandlerClient({ cookies })
     
     // Get session data to verify user is logged in
@@ -20,7 +21,7 @@ export async function POST(
     const { data: project, error: projectError } = await supabase
       .from("projects")
       .select("id")
-      .eq("id", params.projectId)
+      .eq("id", resolvedParams.projectId)
       .eq("user_id", session.user.id)
       .single()
 
@@ -51,7 +52,7 @@ export async function POST(
         query_embedding: queryEmbedding,
         match_threshold: threshold,
         match_count: limit,
-        project_id: params.projectId
+        target_project_id: resolvedParams.projectId
       })
 
     if (searchError) {
@@ -69,7 +70,7 @@ export async function POST(
           chunk_embedding <=> '[${queryEmbedding.join(',')}]'::vector as distance,
           rag_documents!inner(original_filename, project_id)
         `)
-        .eq('rag_documents.project_id', params.projectId)
+        .eq('rag_documents.project_id', resolvedParams.projectId)
         .order('distance', { ascending: true })
         .limit(limit)
 
@@ -116,7 +117,7 @@ export async function POST(
         distance: result.distance,
         source: {
           filename: result.original_filename,
-          projectId: params.projectId
+          projectId: resolvedParams.projectId
         }
       })) || [],
       totalResults: searchResults?.length || 0,

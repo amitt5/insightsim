@@ -6,9 +6,10 @@ import OpenAI from "openai"
 // POST route to generate embedding for a user query
 export async function POST(
   request: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const supabase = createRouteHandlerClient({ cookies })
     
     // Get session data to verify user is logged in
@@ -21,7 +22,7 @@ export async function POST(
     const { data: project, error: projectError } = await supabase
       .from("projects")
       .select("id")
-      .eq("id", params.projectId)
+      .eq("id", resolvedParams.projectId)
       .eq("user_id", session.user.id)
       .single()
 

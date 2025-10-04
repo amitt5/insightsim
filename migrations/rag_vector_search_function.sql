@@ -1,11 +1,14 @@
 -- Create RPC function for vector similarity search
 -- This function performs efficient vector similarity search using pgvector
 
+-- Drop the existing function first to allow parameter name changes
+DROP FUNCTION IF EXISTS search_rag_chunks(vector,double precision,integer,uuid);
+
 CREATE OR REPLACE FUNCTION search_rag_chunks(
   query_embedding vector(1536),
   match_threshold float DEFAULT 0.7,
   match_count int DEFAULT 5,
-  project_id uuid DEFAULT NULL
+  target_project_id uuid DEFAULT NULL
 )
 RETURNS TABLE (
   id uuid,
@@ -33,7 +36,7 @@ BEGIN
   FROM rag_document_chunks c
   INNER JOIN rag_documents d ON c.document_id = d.id
   WHERE 
-    (project_id IS NULL OR d.project_id = project_id)
+    (target_project_id IS NULL OR d.project_id = target_project_id)
     AND (1 - (c.chunk_embedding <=> query_embedding)) >= match_threshold
   ORDER BY c.chunk_embedding <=> query_embedding
   LIMIT match_count;

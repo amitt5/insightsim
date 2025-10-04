@@ -89,6 +89,28 @@ export async function POST(
       console.log(`Text extraction and chunking successful: ${chunkingResult.total_chunks} chunks created`)
       console.log(`Average chunk size: ${chunkingResult.avg_chunk_size} characters`)
 
+      // Step 3: Store chunks and embeddings in database
+      console.log("Storing chunks and embeddings in database...")
+      const chunksToInsert = chunkingResult.chunks.map((chunk: any, index: number) => ({
+        document_id: params.documentId,
+        chunk_index: index,
+        chunk_text: chunk.text,
+        chunk_embedding: chunk.embedding, // This will be stored as VECTOR(1536)
+        metadata: chunk.metadata,
+        created_at: new Date().toISOString()
+      }))
+
+      const { error: chunksError } = await supabase
+        .from("rag_document_chunks")
+        .insert(chunksToInsert)
+
+      if (chunksError) {
+        console.error("Error storing chunks:", chunksError)
+        throw new Error("Failed to store document chunks")
+      }
+
+      console.log(`Successfully stored ${chunksToInsert.length} chunks with embeddings`)
+
       // Update document status to completed
       const { error: completeError } = await supabase
         .from("rag_documents")
@@ -103,14 +125,19 @@ export async function POST(
         throw new Error("Failed to update document status")
       }
 
-      console.log(`Successfully extracted text from RAG document: ${document.original_filename}`)
+      console.log(`Successfully processed RAG document: ${document.original_filename}`)
       
       return NextResponse.json({
         success: true,
-        message: "Text extracted and chunked successfully",
+        message: "Document processed successfully - text extracted, chunked, and embeddings stored",
         totalChunks: chunkingResult.total_chunks,
         avgChunkSize: chunkingResult.avg_chunk_size,
-        chunks: chunkingResult.chunks
+        chunksStored: chunksToInsert.length,
+        document: {
+          id: document.id,
+          filename: document.original_filename,
+          status: 'completed'
+        }
       })
 
     } catch (processingError: any) {

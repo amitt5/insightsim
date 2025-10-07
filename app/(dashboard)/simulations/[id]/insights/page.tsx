@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Download } from "lucide-react"
+import { ArrowLeft, Download, Loader2 } from "lucide-react"
 import Link from "next/link";
 import { Persona, Simulation, SimulationMessage } from "@/utils/types";
 import InsightValidator from "@/components/InsightValidator";
+import { generateStructuredPDF } from "@/utils/pdfGenerator";
+import { useToast } from "@/hooks/use-toast";
 
 // Interface for the Simulation data
 interface SimulationResponse {
@@ -30,6 +32,8 @@ export default function SimulationInsightsPage() {
   const [showTabs, setShowTabs] = useState(false)
   const [simulationMessages, setSimulationMessages] = useState<SimulationMessage[]>([])
   const [transcript, setTranscript] = useState<string>("")
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const { toast } = useToast()
 
   // Color palette for personas (10 colors)
   const personaColors = [
@@ -166,6 +170,48 @@ export default function SimulationInsightsPage() {
     setTranscript(transcriptText);
   };
 
+  // Function to handle PDF download
+  const handleDownloadPDF = async () => {
+    if (!simulationData?.simulation) {
+      toast({
+        title: "Error",
+        description: "No simulation data available for download",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+    
+    try {
+      const topic = simulationData.simulation.topic || 'simulation';
+      const filename = `simulation-insights-${topic.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Wait for all content to be fully loaded before generating PDF
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      await generateStructuredPDF({
+        filename,
+        quality: 0.95,
+        scale: 1.5
+      });
+      
+      toast({
+        title: "Success",
+        description: "PDF report downloaded successfully",
+      });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate PDF report",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-[70vh]">Loading simulation insights...</div>;
   }
@@ -231,9 +277,19 @@ export default function SimulationInsightsPage() {
                 View Discussion
               </Link>
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Download className="h-4 w-4" />
-              Download Report
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPDF}
+            >
+              {isGeneratingPDF ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {isGeneratingPDF ? "Generating PDF..." : "Download Report"}
             </Button>
           </div>
         </div>
@@ -252,7 +308,7 @@ export default function SimulationInsightsPage() {
 
         {/* Insights Content */}
         {!isLoadingSummaries && simulationSummaries && (
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto" data-testid="insights-content">
               {/* Removed other tabs, showing only validation */}
               <div className="w-full">
               {transcript ? (

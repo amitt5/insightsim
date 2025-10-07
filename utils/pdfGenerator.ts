@@ -74,6 +74,7 @@ export const generatePDFFromPage = async (
     scale = 1.5
   } = options;
 
+
   try {
     // Dynamic imports to ensure client-side only execution
     const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
@@ -89,6 +90,8 @@ export const generatePDFFromPage = async (
 
     // Wait longer to ensure all content is loaded and rendered
     await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Buttons are hidden via CSS class during PDF generation
 
     // Force a reflow to ensure all content is rendered
     mainContent.offsetHeight;
@@ -251,6 +254,8 @@ export const generateStructuredPDF = async (
 
     // Wait longer to ensure all content is loaded and rendered
     await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Buttons are hidden via CSS class during PDF generation
 
     // Force a reflow to ensure all content is rendered
     mainContent.offsetHeight;

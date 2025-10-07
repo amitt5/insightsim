@@ -190,11 +190,19 @@ export default function SimulationInsightsPage() {
       // Wait for all content to be fully loaded before generating PDF
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      await generateStructuredPDF({
-        filename,
-        quality: 0.95,
-        scale: 1.5
-      });
+      // Add CSS class to hide buttons during PDF generation
+      document.body.classList.add('pdf-generation');
+      
+      try {
+        await generateStructuredPDF({
+          filename,
+          quality: 0.95,
+          scale: 1.5
+        });
+      } finally {
+        // Remove CSS class after PDF generation
+        document.body.classList.remove('pdf-generation');
+      }
       
       toast({
         title: "Success",

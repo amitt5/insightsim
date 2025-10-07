@@ -42,11 +42,14 @@ export async function POST(
       }, { status: 400 })
     }
 
-    console.log(`Performing vector similarity search for query: "${query || 'unnamed'}"`)
-    console.log(`Search parameters: limit=${limit}, threshold=${threshold}`)
+    console.log(`🔍 [API] Performing vector similarity search for query: "${query || 'unnamed'}"`)
+    console.log(`🔍 [API] Search parameters: limit=${limit}, threshold=${threshold}`)
+    console.log(`🔍 [API] Project ID: ${resolvedParams.projectId}`)
+    console.log(`🔍 [API] Query embedding length: ${queryEmbedding.length}`)
 
-    // Perform vector similarity search using pgvector
-    // Using cosine similarity (<=> operator) and ordering by distance (ascending = most similar)
+    // Use RPC function with proper parameter handling
+    console.log("🔧 [API] Using RPC function...");
+    
     const { data: searchResults, error: searchError } = await supabase
       .rpc('search_rag_chunks', {
         query_embedding: queryEmbedding,
@@ -56,71 +59,35 @@ export async function POST(
       })
 
     if (searchError) {
-      console.error("Error performing vector search:", searchError)
-      
-      // Fallback to direct SQL query if RPC function doesn't exist
-      const { data: fallbackResults, error: fallbackError } = await supabase
-        .from('rag_document_chunks')
-        .select(`
-          id,
-          document_id,
-          chunk_index,
-          chunk_text,
-          metadata,
-          chunk_embedding <=> '[${queryEmbedding.join(',')}]'::vector as distance,
-          rag_documents!inner(original_filename, project_id)
-        `)
-        .eq('rag_documents.project_id', resolvedParams.projectId)
-        .order('distance', { ascending: true })
-        .limit(limit)
-
-      if (fallbackError) {
-        console.error("Fallback search also failed:", fallbackError)
-        throw new Error("Vector search failed")
-      }
-
-      console.log(`Found ${fallbackResults?.length || 0} similar chunks using fallback method`)
-      
-      return NextResponse.json({
-        success: true,
-        query: query || 'unnamed',
-        results: fallbackResults?.map(result => ({
-          id: result.id,
-          documentId: result.document_id,
-          chunkIndex: result.chunk_index,
-          text: result.chunk_text,
-          metadata: result.metadata,
-          similarity: 1 - result.distance, // Convert distance to similarity score
-          distance: result.distance,
-          source: {
-            filename: result.rag_documents.original_filename,
-            projectId: result.rag_documents.project_id
-          }
-        })) || [],
-        totalResults: fallbackResults?.length || 0,
-        searchMethod: 'fallback'
-      })
+      console.error("RPC function failed:", searchError)
+      throw new Error("Vector search failed")
     }
 
-    console.log(`Found ${searchResults?.length || 0} similar chunks using RPC function`)
+    console.log(`✅ [API] Found ${searchResults?.length || 0} similar chunks using RPC function`)
+    console.log(`✅ [API] Raw search results:`, searchResults);
+    
+    const mappedResults = searchResults?.map(result => ({
+      id: result.id,
+      documentId: result.document_id,
+      chunkIndex: result.chunk_index,
+      text: result.chunk_text,
+      metadata: result.metadata,
+      similarity: result.similarity,
+      distance: result.distance,
+      source: {
+        filename: result.original_filename,
+        projectId: resolvedParams.projectId
+      }
+    })) || [];
+    
+    console.log(`✅ [API] Mapped results:`, mappedResults);
+    console.log(`✅ [API] Mapped results length:`, mappedResults.length);
     
     return NextResponse.json({
       success: true,
       query: query || 'unnamed',
-      results: searchResults?.map(result => ({
-        id: result.id,
-        documentId: result.document_id,
-        chunkIndex: result.chunk_index,
-        text: result.chunk_text,
-        metadata: result.metadata,
-        similarity: result.similarity,
-        distance: result.distance,
-        source: {
-          filename: result.original_filename,
-          projectId: resolvedParams.projectId
-        }
-      })) || [],
-      totalResults: searchResults?.length || 0,
+      results: mappedResults,
+      totalResults: mappedResults.length,
       searchMethod: 'rpc'
     })
 

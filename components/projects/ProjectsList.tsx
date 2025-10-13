@@ -29,6 +29,8 @@ interface ProjectViewModel {
   target_group: string;
   created_at: string;
   studies_count: number;
+  simulation_count: number;
+  interview_count: number;
 }
 
 export default function ProjectsList() {
@@ -97,7 +99,9 @@ export default function ProjectsList() {
         product: "Social Media App",
         brief_text: "Deep dive into Gen Z social media behavior",
         created_at: "2024-03-20",
-        studies_count: 3
+        studies_count: 3,
+        simulation_count: 2,
+        interview_count: 5
       },
       {
         id: "2",
@@ -107,7 +111,9 @@ export default function ProjectsList() {
         product: "ChargeFast Stations",
         brief_text: "Research on EV charging pain points",
         created_at: "2024-03-18",
-        studies_count: 2
+        studies_count: 2,
+        simulation_count: 1,
+        interview_count: 3
       },
       {
         id: "3",
@@ -117,7 +123,9 @@ export default function ProjectsList() {
         product: "FoodNow App",
         brief_text: "Testing new app interface",
         created_at: "2024-03-15",
-        studies_count: 4
+        studies_count: 4,
+        simulation_count: 3,
+        interview_count: 0
       },
       {
         id: "4",
@@ -127,7 +135,9 @@ export default function ProjectsList() {
         product: "HomeConnect Hub",
         brief_text: "Smart home ecosystem research",
         created_at: "2024-03-10",
-        studies_count: 1
+        studies_count: 1,
+        simulation_count: 0,
+        interview_count: 2
       }
     ];
 
@@ -211,9 +221,8 @@ export default function ProjectsList() {
             <TableHeader>
               <TableRow>
                 <TableHead>Project Name</TableHead>
-                <TableHead>Objective</TableHead>
-                <TableHead>Target Group</TableHead>
-                <TableHead>Studies</TableHead>
+                <TableHead>Simulations</TableHead>
+                <TableHead>Human Interviews</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -237,24 +246,13 @@ export default function ProjectsList() {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <div className="max-w-xs">
-                        {project.objective ? (
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {project.objective}
-                          </p>
-                        ) : (
-                          <span className="text-sm text-gray-400 italic">No objective set</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
                       <span className="text-sm text-gray-600">
-                        {project.target_group || '-'}
+                        {project.simulation_count} {project.simulation_count === 1 ? 'simulation' : 'simulations'}
                       </span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-gray-600">
-                        {project.studies_count} {project.studies_count === 1 ? 'study' : 'studies'}
+                        {project.interview_count} {project.interview_count === 1 ? 'interview' : 'interviews'}
                       </span>
                     </TableCell>
                     <TableCell>

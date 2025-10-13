@@ -32,6 +32,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [editingPersona, setEditingPersona] = useState<any>(null);
   const [editPersonaOpen, setEditPersonaOpen] = useState(false);
   const [briefMode, setBriefMode] = useState<'manual' | 'ai' | null>(null);
+  const [briefText, setBriefText] = useState(project.brief_text || '');
+  const [isBriefModified, setIsBriefModified] = useState(false);
+  const [isSavingBrief, setIsSavingBrief] = useState(false);
 
   const handleEditPersona = (persona: any) => {
     setEditingPersona(persona);
@@ -68,6 +71,11 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     setEditPersonaOpen(false);
     setEditingPersona(null);
   };
+
+  // Update brief text when project changes
+  useEffect(() => {
+    setBriefText(project.brief_text || '');
+  }, [project.brief_text]);
 
   // Fetch project personas when the component mounts
   useEffect(() => {
@@ -191,6 +199,40 @@ if(!project.brief_text){
   };
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
+  const handleSaveBrief = async () => {
+    setIsSavingBrief(true);
+    try {
+      const response = await fetch(`/api/projects/${project.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ brief_text: briefText }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update brief');
+      }
+
+      const updatedProject = await response.json();
+      onUpdate?.(updatedProject);
+      setIsBriefModified(false);
+      
+      toast({
+        title: "Success",
+        description: "Brief updated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update brief",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingBrief(false);
+    }
+  };
+
   const handleSave = async () => {
     console.log('editedProject-111', editedProject)
     try {
@@ -296,10 +338,10 @@ if(!project.brief_text){
                   </div>
                 </div>
                 
-                {project.brief_text && (
+                {briefText && (
                   <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                     <h4 className="font-medium mb-2">Current Brief:</h4>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{project.brief_text}</p>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{briefText}</p>
                     <div className="mt-3 flex gap-2">
                       <Button 
                         variant="outline" 
@@ -324,27 +366,46 @@ if(!project.brief_text){
               <div className="mt-4 space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Manual Brief Input</h3>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setBriefMode(null)}
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Options
-                  </Button>
-                </div>
-                {isEditing ? (
-                  <textarea
-                    value={editedProject.brief_text || ''}
-                    onChange={(e) => setEditedProject({ ...editedProject, brief_text: e.target.value })}
-                    className="w-full min-h-[400px] p-2 border rounded-md"
-                    placeholder="Enter project brief..."
-                  />
-                ) : (
-                  <div className="min-h-[400px] p-4 border rounded-md bg-gray-50">
-                    <p className="whitespace-pre-wrap">{project.brief_text || 'No brief added'}</p>
+                  <div className="flex gap-2">
+                    {isBriefModified && (
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={handleSaveBrief}
+                        disabled={isSavingBrief}
+                      >
+                        {isSavingBrief ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-2" />
+                            Save Brief
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setBriefMode(null)}
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Options
+                    </Button>
                   </div>
-                )}
+                </div>
+                <textarea
+                  value={briefText}
+                  onChange={(e) => {
+                    setBriefText(e.target.value);
+                    setIsBriefModified(e.target.value !== (project.brief_text || ''));
+                  }}
+                  className="w-full min-h-[400px] p-2 border rounded-md"
+                  placeholder="Enter project brief..."
+                />
               </div>
             ) : (
               // Show AI Brief Assistant
@@ -363,7 +424,9 @@ if(!project.brief_text){
                 <AIBriefAssistant 
                   projectId={project.id}
                   onBriefGenerated={(brief) => {
+                    setBriefText(brief);
                     setEditedProject({ ...editedProject, brief_text: brief });
+                    setIsBriefModified(true);
                     toast({
                       title: "Brief Generated",
                       description: "The AI-generated brief has been added to your project. You can edit it by switching to manual mode.",

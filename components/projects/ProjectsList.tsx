@@ -2,12 +2,25 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Plus, Loader2 } from "lucide-react"
+import { Plus, Loader2, MoreVertical, Trash2, Edit2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Project } from "@/utils/types"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import ProjectCard from "./ProjectCard"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface ProjectViewModel {
   id: string;
@@ -191,35 +204,114 @@ export default function ProjectsList() {
         </div>
       )}
 
-      {/* Projects Grid */}
+      {/* Projects Table */}
       {!loading && !error && projects.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              studyCount={project.studies_count}
-              onDelete={async (projectId) => {
-                try {
-                  const response = await fetch(`/api/projects/${projectId}`, {
-                    method: 'DELETE',
-                  });
-                  if (!response.ok) throw new Error('Failed to delete project');
-                  setProjects(prev => prev.filter(p => p.id !== projectId));
-                  toast({
-                    title: "Success",
-                    description: "Project deleted successfully",
-                  });
-                } catch (error) {
-                  toast({
-                    title: "Error",
-                    description: "Failed to delete project",
-                    variant: "destructive",
-                  });
-                }
-              }}
-            />
-          ))}
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Project Name</TableHead>
+                <TableHead>Objective</TableHead>
+                <TableHead>Target Group</TableHead>
+                <TableHead>Studies</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {projects.map((project) => {
+                const formattedDate = new Date(project.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                });
+
+                return (
+                  <TableRow key={project.id} className="hover:bg-gray-50">
+                    <TableCell>
+                      <Link 
+                        href={`/projects/${project.id}`}
+                        className="font-semibold hover:text-blue-600 transition-colors"
+                      >
+                        {project.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-xs">
+                        {project.objective ? (
+                          <p className="text-sm text-gray-600 line-clamp-2">
+                            {project.objective}
+                          </p>
+                        ) : (
+                          <span className="text-sm text-gray-400 italic">No objective set</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">
+                        {project.target_group || '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">
+                        {project.studies_count} {project.studies_count === 1 ? 'study' : 'studies'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">
+                        {formattedDate}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link 
+                              href={`/projects/${project.id}`}
+                              className="flex items-center gap-2"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                              Edit Project
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(`/api/projects/${project.id}`, {
+                                  method: 'DELETE',
+                                });
+                                if (!response.ok) throw new Error('Failed to delete project');
+                                setProjects(prev => prev.filter(p => p.id !== project.id));
+                                toast({
+                                  title: "Success",
+                                  description: "Project deleted successfully",
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to delete project",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                            className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

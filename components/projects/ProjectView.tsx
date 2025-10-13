@@ -31,6 +31,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
   const [editingPersona, setEditingPersona] = useState<any>(null);
   const [editPersonaOpen, setEditPersonaOpen] = useState(false);
+  const [briefMode, setBriefMode] = useState<'manual' | 'ai' | null>(null);
 
   const handleEditPersona = (persona: any) => {
     setEditingPersona(persona);
@@ -258,7 +259,6 @@ if(!project.brief_text){
       <Tabs defaultValue="brief" className="space-y-4">
         <TabsList>
           <TabsTrigger value="brief">Brief</TabsTrigger>
-          <TabsTrigger value="ai-brief">AI Brief Assistant</TabsTrigger>
           <TabsTrigger value="discussion">Discussion Guide</TabsTrigger>
           <TabsTrigger value="personas">Personas</TabsTrigger>
           <TabsTrigger value="studies">Simulations</TabsTrigger>
@@ -268,31 +268,113 @@ if(!project.brief_text){
         <TabsContent value="brief" className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-500">Brief</label>
-            {isEditing ? (
-              <textarea
-                value={editedProject.brief_text || ''}
-                onChange={(e) => setEditedProject({ ...editedProject, brief_text: e.target.value })}
-                className="w-full mt-1 min-h-[400px] p-2 border rounded-md"
-                placeholder="Enter project brief..."
-              />
+            
+            {!briefMode ? (
+              // Show option selection if no mode is selected
+              <div className="mt-4 space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div 
+                    className="p-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                    onClick={() => setBriefMode('manual')}
+                  >
+                    <div className="text-center">
+                      <FileIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <h3 className="text-lg font-semibold mb-2">I have a brief</h3>
+                      <p className="text-gray-600">Add your own project brief manually</p>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    className="p-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                    onClick={() => setBriefMode('ai')}
+                  >
+                    <div className="text-center">
+                      <Sparkles className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <h3 className="text-lg font-semibold mb-2">Generate with AI</h3>
+                      <p className="text-gray-600">Use AI to help create your project brief</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {project.brief_text && (
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium mb-2">Current Brief:</h4>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{project.brief_text}</p>
+                    <div className="mt-3 flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setBriefMode('manual')}
+                      >
+                        Edit Brief
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setBriefMode('ai')}
+                      >
+                        Regenerate with AI
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : briefMode === 'manual' ? (
+              // Show manual brief input
+              <div className="mt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Manual Brief Input</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setBriefMode(null)}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Options
+                  </Button>
+                </div>
+                {isEditing ? (
+                  <textarea
+                    value={editedProject.brief_text || ''}
+                    onChange={(e) => setEditedProject({ ...editedProject, brief_text: e.target.value })}
+                    className="w-full min-h-[400px] p-2 border rounded-md"
+                    placeholder="Enter project brief..."
+                  />
+                ) : (
+                  <div className="min-h-[400px] p-4 border rounded-md bg-gray-50">
+                    <p className="whitespace-pre-wrap">{project.brief_text || 'No brief added'}</p>
+                  </div>
+                )}
+              </div>
             ) : (
-              <p className="mt-1 whitespace-pre-wrap">{project.brief_text || 'No brief added'}</p>
+              // Show AI Brief Assistant
+              <div className="mt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">AI Brief Assistant</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setBriefMode(null)}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Options
+                  </Button>
+                </div>
+                <AIBriefAssistant 
+                  projectId={project.id}
+                  onBriefGenerated={(brief) => {
+                    setEditedProject({ ...editedProject, brief_text: brief });
+                    toast({
+                      title: "Brief Generated",
+                      description: "The AI-generated brief has been added to your project. You can edit it by switching to manual mode.",
+                    });
+                  }}
+                />
+              </div>
             )}
           </div>
         </TabsContent>
 
-        <TabsContent value="ai-brief" className="space-y-4">
-          <AIBriefAssistant 
-            projectId={project.id}
-            onBriefGenerated={(brief) => {
-              setEditedProject({ ...editedProject, brief_text: brief });
-              toast({
-                title: "Brief Generated",
-                description: "The AI-generated brief has been added to your project. You can edit it in the Brief tab.",
-              });
-            }}
-          />
-        </TabsContent>
 
         <TabsContent value="discussion" className="space-y-4">
           <div>

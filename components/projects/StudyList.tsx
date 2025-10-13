@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus, Loader2, Link } from "lucide-react"
+import { Plus, Loader2, Link as LinkIcon } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Project, Simulation } from "@/utils/types"
@@ -121,7 +122,7 @@ export default function StudyList({ project, simulations }: StudyListProps) {
                   <TableCell>
                     <Link 
                       href={`/simulations/${simulation.id}`}
-                      className="text-blue-600 hover:underline"
+                      className="text-blue-600 hover:underline font-medium"
                     >
                       {simulation.study_title}
                     </Link>
@@ -132,7 +133,7 @@ export default function StudyList({ project, simulations }: StudyListProps) {
                   <TableCell>
                     {simulation.mode === 'ai-both' ? 'AI Mod + AI Participants' : 'Human Mod'}
                   </TableCell>
-                  <TableCell>{simulation.participants}</TableCell>
+                  <TableCell>-</TableCell>
                   <TableCell>
                     <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
                       {simulation.status}

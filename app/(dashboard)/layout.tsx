@@ -6,6 +6,7 @@ import { Menu, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
+import { Badge } from "@/components/ui/badge"
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const { user, signOut } = useAuth()
+  const isAdmin = (user?.role || "").toLowerCase() === "admin"
 
   const handleUpgrade = async () => {
     const res = await fetch('/api/create-checkout-session', {
@@ -45,9 +47,10 @@ export default function DashboardLayout({
           <nav className="flex-1 space-y-2 px-4 mt-4">
           <Link 
               href="/projects"
-              className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >
-              Projects
+              <span>Projects</span>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">Beta</Badge>
             </Link>
             <Link 
               href="/simulations"
@@ -61,24 +64,26 @@ export default function DashboardLayout({
             >
               Human Interviews
             </Link>
-            <Link 
-              href="/analysis"
-              className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
-            >
-              Analysis (demo)
-            </Link>
+            {isAdmin && (
+              <Link 
+                href="/analysis"
+                className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
+              >
+                Analysis (demo)
+              </Link>
+            )}
             <Link 
               href="/personas"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >
               Personas
             </Link>
-            <Link 
+            {/* <Link 
               href="/calibration"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >
               Calibration
-            </Link>
+            </Link> */}
             <Link 
               href="/settings"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"

@@ -64,7 +64,24 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
             const loadedState: BriefAssistantState = {
               conversationHistory: conversation.conversation_history || [],
               isReadyToGenerate: conversation.is_ready_to_generate || false,
-              briefGenerated: conversation.brief_generated || false
+              briefGenerated: conversation.brief_generated || false,
+              requirementsMet: conversation.requirements_met || {
+                primaryResearchQuestion: false,
+                specificObjectives: false,
+                targetAudienceBasics: false,
+                howResultsWillBeUsed: false,
+                geographicScope: false
+              },
+              goodToHaveInfo: conversation.good_to_have_info || {
+                companyBrandOverview: false,
+                productServiceDescription: false,
+                researchPrompt: false,
+                successCriteria: false,
+                competitiveContext: false,
+                specificSegments: false,
+                previousResearch: false,
+                stakeholderInfo: false
+              }
             };
             
             setAssistantState(loadedState);
@@ -112,6 +129,8 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
           conversationHistory: state.conversationHistory,
           isReadyToGenerate: state.isReadyToGenerate,
           briefGenerated: state.briefGenerated,
+          requirementsMet: state.requirementsMet,
+          goodToHaveInfo: state.goodToHaveInfo,
           generatedBrief: brief || generatedBrief
         }),
       });
@@ -127,6 +146,8 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
             conversationHistory: state.conversationHistory,
             isReadyToGenerate: state.isReadyToGenerate,
             briefGenerated: state.briefGenerated,
+            requirementsMet: state.requirementsMet,
+            goodToHaveInfo: state.goodToHaveInfo,
             generatedBrief: brief || generatedBrief
           }),
         });
@@ -255,21 +276,13 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
 
   const handleStartNewConversation = async () => {
     try {
-      // Create a new conversation by making a POST request
+      // Reset the existing conversation by making a PATCH request
       const response = await fetch(`/api/projects/${projectId}/brief-assistant`, {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          conversationHistory: [{
-            role: 'assistant',
-            content: "Hello! I'm your AI Brief Assistant, an experienced qualitative research consultant. I'm here to help you create a comprehensive research brief through natural conversation. What are you working on, or what would you like to learn through your research?"
-          }],
-          isReadyToGenerate: false,
-          briefGenerated: false,
-          generatedBrief: null
-        }),
+        body: JSON.stringify(createInitialBriefAssistantState()),
       });
 
       if (response.ok) {
@@ -285,17 +298,17 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
         setGeneratedBrief('');
         
         toast({
-          title: "New Conversation Started",
-          description: "You can now start a fresh conversation with the AI Brief Assistant.",
+          title: "Conversation Reset",
+          description: "Your conversation has been reset. You can now start fresh with the AI Brief Assistant.",
         });
       } else {
-        throw new Error('Failed to start new conversation');
+        throw new Error('Failed to reset conversation');
       }
     } catch (error) {
-      console.error('Error starting new conversation:', error);
+      console.error('Error resetting conversation:', error);
       toast({
         title: "Error",
-        description: "Failed to start new conversation. Please try again.",
+        description: "Failed to reset conversation. Please try again.",
         variant: "destructive",
       });
     }

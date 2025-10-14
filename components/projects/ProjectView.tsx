@@ -6,6 +6,7 @@ import { Project, Simulation } from "@/utils/types"
 import { useToast } from "@/hooks/use-toast"
 import StudyList from "./StudyList"
 import HumanInterviewsTable from "./HumanInterviewsTable"
+import ProjectMediaUpload from "./ProjectMediaUpload"
 import { PersonaCard } from "@/components/persona-card"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
@@ -36,6 +37,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [briefText, setBriefText] = useState(project.brief_text || '');
   const [isBriefModified, setIsBriefModified] = useState(false);
   const [isSavingBrief, setIsSavingBrief] = useState(false);
+  const [projectMediaUrls, setProjectMediaUrls] = useState<string[]>(project.media_urls || []);
 
   const handleEditPersona = (persona: any) => {
     setEditingPersona(persona);
@@ -77,6 +79,11 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   useEffect(() => {
     setBriefText(project.brief_text || '');
   }, [project.brief_text]);
+
+  // Update media URLs when project changes
+  useEffect(() => {
+    setProjectMediaUrls(project.media_urls || []);
+  }, [project.media_urls]);
 
   // Fetch project personas when the component mounts
   useEffect(() => {
@@ -300,6 +307,7 @@ if(!project.brief_text){
           <TabsTrigger value="brief">Brief</TabsTrigger>
           <TabsTrigger value="discussion">Discussion Guide</TabsTrigger>
           <TabsTrigger value="personas">Personas</TabsTrigger>
+          <TabsTrigger value="media">Media</TabsTrigger>
           <TabsTrigger value="studies">Simulations</TabsTrigger>
           <TabsTrigger value="interviews">Human Interviews</TabsTrigger>
         </TabsList>
@@ -632,6 +640,14 @@ if(!project.brief_text){
               hideTrigger={true}
             />
           </div>
+        </TabsContent>
+
+        <TabsContent value="media">
+          <ProjectMediaUpload
+            projectId={project.id}
+            mediaUrls={projectMediaUrls}
+            onMediaUpdate={setProjectMediaUrls}
+          />
         </TabsContent>
 
         <TabsContent value="studies">

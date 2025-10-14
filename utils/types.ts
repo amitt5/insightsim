@@ -40,6 +40,7 @@ export interface Simulation {
     product?: string;
     brief_text?: string;
     discussion_questions?: string[];
+    media_urls?: string[];
     created_at: string;
     updated_at: string;
     is_deleted: boolean;

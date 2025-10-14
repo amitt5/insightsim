@@ -42,6 +42,9 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingConversation, setIsLoadingConversation] = useState(true);
   const [generatedBrief, setGeneratedBrief] = useState<string>('');
+  const [isEditingBrief, setIsEditingBrief] = useState(false);
+  const [editedBrief, setEditedBrief] = useState<string>('');
+  const [isSavingBrief, setIsSavingBrief] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -254,6 +257,9 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
       // Save state with generated brief
       await saveConversationState(updatedState, aiGeneratedBrief);
       
+      // Save brief to project
+      await saveBriefToProject(aiGeneratedBrief);
+      
       toast({
         title: "Brief Generated",
         description: "Your research brief has been generated. Please review and make any necessary adjustments.",
@@ -268,11 +274,65 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
       onBriefGenerated?.(brief);
       await saveConversationState(updatedState, brief);
       
+      // Save brief to project
+      await saveBriefToProject(brief);
+      
       toast({
         title: "Brief Generated",
         description: "Your research brief has been generated. Please review and make any necessary adjustments.",
       });
     }
+  };
+
+  const saveBriefToProject = async (briefText: string) => {
+    try {
+      await fetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          brief_text: briefText
+        }),
+      });
+    } catch (error) {
+      console.error('Error saving brief to project:', error);
+      // Don't show error toast for this as it's not critical to user flow
+    }
+  };
+
+  const handleSaveBrief = async () => {
+    if (!editedBrief.trim()) return;
+    
+    setIsSavingBrief(true);
+    try {
+      await saveBriefToProject(editedBrief.trim());
+      setGeneratedBrief(editedBrief.trim());
+      setIsEditingBrief(false);
+      toast({
+        title: "Brief Saved",
+        description: "Your research brief has been saved to the project.",
+      });
+    } catch (error) {
+      console.error('Error saving brief:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save brief. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingBrief(false);
+    }
+  };
+
+  const handleEditBrief = () => {
+    setEditedBrief(generatedBrief);
+    setIsEditingBrief(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingBrief(false);
+    setEditedBrief('');
   };
 
   const handleStartNewConversation = async () => {
@@ -437,27 +497,65 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
         <div className="p-4 border-b bg-gray-50">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Generated Brief</h3>
-            {!generatedBrief && (
-              <Button
-                onClick={handleGenerateBrief}
-                variant="outline"
-                size="sm"
-                disabled={!assistantState.isReadyToGenerate}
-              >
-                Generate Brief
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {!generatedBrief && (
+                <Button
+                  onClick={handleGenerateBrief}
+                  variant="outline"
+                  size="sm"
+                  disabled={!assistantState.isReadyToGenerate}
+                >
+                  Generate Brief
+                </Button>
+              )}
+              {generatedBrief && !isEditingBrief && (
+                <Button
+                  onClick={handleEditBrief}
+                  variant="outline"
+                  size="sm"
+                >
+                  Edit
+                </Button>
+              )}
+              {isEditingBrief && (
+                <>
+                  <Button
+                    onClick={handleCancelEdit}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveBrief}
+                    size="sm"
+                    disabled={isSavingBrief}
+                  >
+                    {isSavingBrief ? "Saving..." : "Save"}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Brief Content */}
         <div className="flex-1 p-4 overflow-y-auto">
           {generatedBrief ? (
-            <div className="prose prose-sm max-w-none">
-              <pre className="whitespace-pre-wrap text-sm text-gray-900 font-mono">
-                {generatedBrief}
-              </pre>
-            </div>
+            isEditingBrief ? (
+              <Textarea
+                value={editedBrief}
+                onChange={(e) => setEditedBrief(e.target.value)}
+                className="min-h-[400px] resize-none font-mono text-sm"
+                placeholder="Edit your research brief here..."
+              />
+            ) : (
+              <div className="prose prose-sm max-w-none">
+                <pre className="whitespace-pre-wrap text-sm text-gray-900 font-mono">
+                  {generatedBrief}
+                </pre>
+              </div>
+            )
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">
               <div className="text-center">

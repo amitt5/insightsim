@@ -19,7 +19,7 @@ const processTraits = (traits: string | string[]) => {
   return processedTraits;
 };
 
-export function usePersonas(projectId?: string | null) {
+export function usePersonas(projectId?: string | null, fetchAll: boolean = false) {
   const [personas, setPersonas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,11 +37,16 @@ export function usePersonas(projectId?: string | null) {
         if (!res.ok) throw new Error("Failed to fetch project personas");
         const responseData = await res.json();
         data = responseData.personas; // Project personas API returns { personas: [...] }
-      } else {
-        // Fetch all personas (existing behavior)
+      } else if (fetchAll) {
+        // Fetch all personas when explicitly requested
         res = await fetch("/api/personas");
         if (!res.ok) throw new Error("Failed to fetch personas");
         data = await res.json();
+      } else {
+        // Don't fetch anything if no projectId is provided and fetchAll is false
+        setPersonas([]);
+        setLoading(false);
+        return [];
       }
       
       // Process traits for each persona
@@ -66,7 +71,7 @@ export function usePersonas(projectId?: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, fetchAll]);
 
   
 
@@ -76,8 +81,14 @@ export function usePersonas(projectId?: string | null) {
   }, [fetchPersonas]);
 
   useEffect(() => {
-    fetchPersonas();
-  }, [fetchPersonas]);
+    if (projectId || fetchAll) {
+      fetchPersonas();
+    } else {
+      // If no projectId and fetchAll is false, set loading to false and clear personas
+      setLoading(false);
+      setPersonas([]);
+    }
+  }, [fetchPersonas, projectId, fetchAll]);
 
   return { personas, loading, error, mutate };
 } 

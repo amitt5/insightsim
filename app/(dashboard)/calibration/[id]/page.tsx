@@ -49,7 +49,7 @@ export default function CalibrationDetailPage() {
       rejected: false,
     },
   ])
-  const { personas } = usePersonas()
+  const { personas } = usePersonas(null, true)
 
   const [realTranscript, setRealTranscript] = useState<TranscriptEntry[]>([])
   // const [aiTranscript, setAiTranscript] = useState<any[]>([])

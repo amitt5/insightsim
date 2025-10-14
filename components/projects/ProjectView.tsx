@@ -29,6 +29,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [isGeneratingPersonas, setIsGeneratingPersonas] = useState(false);
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
   const [editingPersona, setEditingPersona] = useState<any>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [hasNameChanged, setHasNameChanged] = useState(false);
   const [editPersonaOpen, setEditPersonaOpen] = useState(false);
   const [briefMode, setBriefMode] = useState<'manual' | 'ai' | null>(null);
   const [briefText, setBriefText] = useState(project.brief_text || '');
@@ -240,46 +242,57 @@ if(!project.brief_text){
           <input
             type="text"
             value={editedProject.name}
-            onChange={(e) => setEditedProject({ ...editedProject, name: e.target.value })}
+            onChange={(e) => {
+              setEditedProject({ ...editedProject, name: e.target.value });
+              setHasNameChanged(e.target.value !== project.name);
+            }}
+            onFocus={() => setIsEditingName(true)}
+            onBlur={() => {
+              // Delay hiding the button to allow clicking on it
+              setTimeout(() => setIsEditingName(false), 200);
+            }}
             className="text-2xl font-bold bg-transparent border-b border-gray-300 focus:border-blue-500 outline-none w-full"
           />
         </div>
-        <Button
-          onClick={async () => {
-            try {
-              const response = await fetch(`/api/projects/${project.id}`, {
-                method: 'PATCH',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  name: editedProject.name
-                }),
-              });
-
-              if (response.ok) {
-                toast({
-                  title: "Project Name Saved",
-                  description: "Your project name has been saved.",
+        {isEditingName && hasNameChanged && (
+          <Button
+            onClick={async () => {
+              try {
+                const response = await fetch(`/api/projects/${project.id}`, {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    name: editedProject.name
+                  }),
                 });
-              } else {
-                throw new Error('Failed to save project name');
+
+                if (response.ok) {
+                  setHasNameChanged(false);
+                  toast({
+                    title: "Project Name Saved",
+                    description: "Your project name has been saved.",
+                  });
+                } else {
+                  throw new Error('Failed to save project name');
+                }
+              } catch (error) {
+                console.error('Error saving project name:', error);
+                toast({
+                  title: "Error",
+                  description: "Failed to save project name. Please try again.",
+                  variant: "destructive",
+                });
               }
-            } catch (error) {
-              console.error('Error saving project name:', error);
-              toast({
-                title: "Error",
-                description: "Failed to save project name. Please try again.",
-                variant: "destructive",
-              });
-            }
-          }}
-          size="sm"
-          className="ml-4"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          Save Name
-        </Button>
+            }}
+            size="sm"
+            className="ml-4"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save Name
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="brief" className="space-y-4">

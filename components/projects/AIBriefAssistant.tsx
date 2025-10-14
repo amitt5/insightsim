@@ -187,40 +187,8 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
 
       setMessages(prev => [...prev, assistantMessage]);
       
-      // If ready to generate brief, use AI to create a proper brief
-      if (newState.isReadyToGenerate && !newState.briefGenerated) {
-        try {
-          const briefPrompt = createBriefGenerationPrompt(newState.conversationHistory);
-          const briefResult = await runSimulationAPI(briefPrompt, 'gpt-4o-mini', 'brief-generation');
-          
-          // Parse JSON response for brief
-          let aiGeneratedBrief = generateBriefFromState(newState);
-          try {
-            const parsedBrief = JSON.parse(briefResult.reply || '{}');
-            aiGeneratedBrief = parsedBrief.brief || aiGeneratedBrief;
-          } catch (error) {
-            console.error('Error parsing brief response:', error);
-            aiGeneratedBrief = briefResult.reply || aiGeneratedBrief;
-          }
-          
-          newState.briefGenerated = true;
-          setGeneratedBrief(aiGeneratedBrief);
-          onBriefGenerated?.(aiGeneratedBrief);
-          
-          // Save state with generated brief
-          await saveConversationState(newState, aiGeneratedBrief);
-        } catch (error) {
-          console.error('Error generating brief:', error);
-          // Fallback to simple brief generation
-          const brief = generateBriefFromState(newState);
-          setGeneratedBrief(brief);
-          onBriefGenerated?.(brief);
-          await saveConversationState(newState, brief);
-        }
-      } else {
-        // Save state after each interaction
-        await saveConversationState(newState);
-      }
+      // Save state after each interaction
+      await saveConversationState(newState);
       
     } catch (error) {
       console.error('Error sending message:', error);
@@ -257,6 +225,7 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
       }
       
       const updatedState = { ...assistantState, briefGenerated: true };
+      setAssistantState(updatedState);
       setGeneratedBrief(aiGeneratedBrief);
       onBriefGenerated?.(aiGeneratedBrief);
       
@@ -271,9 +240,11 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
       console.error('Error generating brief:', error);
       // Fallback to simple brief generation
       const brief = generateBriefFromState(assistantState);
+      const updatedState = { ...assistantState, briefGenerated: true };
+      setAssistantState(updatedState);
       setGeneratedBrief(brief);
       onBriefGenerated?.(brief);
-      await saveConversationState(assistantState, brief);
+      await saveConversationState(updatedState, brief);
       
       toast({
         title: "Brief Generated",
@@ -369,7 +340,7 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
           </p>
           {assistantState.isReadyToGenerate && !assistantState.briefGenerated && (
             <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
-              ✓ Ready to generate your research brief
+              ✓ Ready to generate your research brief - click the "Generate Brief" button
             </div>
           )}
         </div>
@@ -457,7 +428,7 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
                 onClick={handleGenerateBrief}
                 variant="outline"
                 size="sm"
-                disabled={messages.length < 3}
+                disabled={!assistantState.isReadyToGenerate}
               >
                 Generate Brief
               </Button>

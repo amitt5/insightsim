@@ -63,6 +63,7 @@ CONVERSATION APPROACH:
 - Focus on minimum requirements first
 - Only indicate readiness when ALL 5 minimum requirements are met
 - Ask one focused question at a time
+- ALWAYS provide 2-3 example answers after each question to guide the user, followed by "or something else?" or "etc." to indicate these are just examples
 - Probe for specifics when answers are vague
 - Be encouraging and professional
 
@@ -358,7 +359,7 @@ export function createInitialBriefAssistantState(): BriefAssistantState {
     conversationHistory: [
       {
         role: 'assistant',
-        content: "Hello! I'm your AI Brief Assistant, specializing in synthetic respondent studies. I'll help you create a comprehensive research brief for your online study. Let's start with the most important question: What is the primary research question or business decision you need to make?"
+        content: "Hello! I'm your AI Brief Assistant, specializing in synthetic respondent studies. I'll help you create a comprehensive research brief for your online study. What would you like to research or what topic are you working on?"
       }
     ],
     isReadyToGenerate: false,

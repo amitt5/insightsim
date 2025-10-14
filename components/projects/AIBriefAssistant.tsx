@@ -197,6 +197,7 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
       
       // Update assistant state
       const newState = updateBriefAssistantState(assistantState, userInput, assistantResponse);
+      console.log('newState11133', newState);
       setAssistantState(newState);
       
       const assistantMessage: Message = {

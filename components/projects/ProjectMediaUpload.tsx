@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Upload, X, FileIcon, ImageIcon, Loader2, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { validateFile, createFilePreview, revokeFilePreview } from '@/utils/fileUpload'
+import { uploadMultipleProjectMedia, deleteProjectMedia, getSignedUrlsForProjectMedia } from '@/utils/projectMedia'
 
 interface ProjectMediaUploadProps {
   projectId: string
@@ -30,25 +31,27 @@ export default function ProjectMediaUpload({ projectId, mediaUrls, onMediaUpdate
   const [selectedFiles, setSelectedFiles] = useState<MediaFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({})
+  const [signedUrls, setSignedUrls] = useState<{[key: string]: string}>({})
 
-  // Mock function to simulate file upload
-  const mockUploadFile = async (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      // Simulate upload progress
-      let progress = 0
-      const interval = setInterval(() => {
-        progress += Math.random() * 30
-        if (progress >= 100) {
-          progress = 100
-          clearInterval(interval)
-          // Generate mock URL
-          const mockUrl = `https://mock-storage.com/project-media/${projectId}/${file.name}`
-          resolve(mockUrl)
+  // Load signed URLs for existing media files
+  useEffect(() => {
+    const loadSignedUrls = async () => {
+      if (mediaUrls.length > 0) {
+        try {
+          const urls = await getSignedUrlsForProjectMedia(mediaUrls)
+          const urlMap: {[key: string]: string} = {}
+          mediaUrls.forEach((originalUrl, index) => {
+            urlMap[originalUrl] = urls[index] || originalUrl
+          })
+          setSignedUrls(urlMap)
+        } catch (error) {
+          console.error('Error loading signed URLs:', error)
         }
-        setUploadProgress(prev => ({ ...prev, [file.name]: progress }))
-      }, 200)
-    })
-  }
+      }
+    }
+
+    loadSignedUrls()
+  }, [mediaUrls])
 
   // Handle file selection
   const handleFileSelect = (files: FileList | null) => {
@@ -115,34 +118,47 @@ export default function ProjectMediaUpload({ projectId, mediaUrls, onMediaUpdate
     const uploadedUrls: string[] = []
 
     try {
-      for (const file of selectedFiles) {
-        // Update file status to uploading
-        setSelectedFiles(prev => prev.map(f => 
-          f.id === file.id ? { ...f, isUploading: true } : f
-        ))
+      // Convert selected files to File objects
+      const filesToUpload = selectedFiles.map(file => new File([], file.name, { type: file.type }))
 
-        // Mock upload
-        const url = await mockUploadFile(new File([], file.name, { type: file.type }))
-        uploadedUrls.push(url)
+      // Upload files with progress tracking
+      const results = await uploadMultipleProjectMedia(
+        filesToUpload,
+        projectId,
+        (fileIndex, result) => {
+          const file = selectedFiles[fileIndex]
+          if (result.success) {
+            setSelectedFiles(prev => prev.map(f => 
+              f.id === file.id ? { ...f, isUploading: false, url: result.url } : f
+            ))
+            uploadedUrls.push(result.url!)
+          } else {
+            setSelectedFiles(prev => prev.map(f => 
+              f.id === file.id ? { ...f, isUploading: false } : f
+            ))
+            toast({
+              title: "Upload failed",
+              description: `Failed to upload ${file.name}: ${result.error}`,
+              variant: "destructive",
+            })
+          }
+        }
+      )
 
-        // Update file status to uploaded
-        setSelectedFiles(prev => prev.map(f => 
-          f.id === file.id ? { ...f, isUploading: false, url } : f
-        ))
+      // Update project media URLs with successful uploads
+      if (uploadedUrls.length > 0) {
+        const updatedMediaUrls = [...mediaUrls, ...uploadedUrls]
+        onMediaUpdate(updatedMediaUrls)
+
+        toast({
+          title: "Upload successful",
+          description: `${uploadedUrls.length} file(s) uploaded successfully`,
+        })
       }
-
-      // Update project media URLs
-      const updatedMediaUrls = [...mediaUrls, ...uploadedUrls]
-      onMediaUpdate(updatedMediaUrls)
 
       // Clear selected files
       setSelectedFiles([])
       setUploadProgress({})
-
-      toast({
-        title: "Upload successful",
-        description: `${uploadedUrls.length} file(s) uploaded successfully`,
-      })
 
     } catch (error) {
       console.error('Upload error:', error)
@@ -168,14 +184,33 @@ export default function ProjectMediaUpload({ projectId, mediaUrls, onMediaUpdate
   }
 
   // Remove uploaded media
-  const handleRemoveMedia = (urlToRemove: string) => {
-    const updatedMediaUrls = mediaUrls.filter(url => url !== urlToRemove)
-    onMediaUpdate(updatedMediaUrls)
-    
-    toast({
-      title: "File removed",
-      description: "Media file has been removed from the project",
-    })
+  const handleRemoveMedia = async (urlToRemove: string) => {
+    try {
+      const result = await deleteProjectMedia(projectId, urlToRemove)
+      
+      if (result.success) {
+        const updatedMediaUrls = mediaUrls.filter(url => url !== urlToRemove)
+        onMediaUpdate(updatedMediaUrls)
+        
+        toast({
+          title: "File removed",
+          description: "Media file has been removed from the project",
+        })
+      } else {
+        toast({
+          title: "Remove failed",
+          description: result.error || "Failed to remove media file",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error removing media:', error)
+      toast({
+        title: "Remove failed",
+        description: "Failed to remove media file. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   // Check if URL is an image
@@ -309,21 +344,29 @@ export default function ProjectMediaUpload({ projectId, mediaUrls, onMediaUpdate
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {mediaUrls.map((url, index) => (
-                <div key={index} className="relative group">
-                  <div className="aspect-square border rounded-lg overflow-hidden bg-gray-100">
-                    {isImageUrl(url) ? (
-                      <img
-                        src={url}
-                        alt={`Media ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <FileIcon className="w-12 h-12 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
+              {mediaUrls.map((url, index) => {
+                const displayUrl = signedUrls[url] || url
+                return (
+                  <div key={index} className="relative group">
+                    <div className="aspect-square border rounded-lg overflow-hidden bg-gray-100">
+                      {isImageUrl(url) ? (
+                        <img
+                          src={displayUrl}
+                          alt={`Media ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to original URL if signed URL fails
+                            if (displayUrl !== url) {
+                              (e.target as HTMLImageElement).src = url
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <FileIcon className="w-12 h-12 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
                   
                   {/* Remove button */}
                   <Button
@@ -335,14 +378,15 @@ export default function ProjectMediaUpload({ projectId, mediaUrls, onMediaUpdate
                     <Trash2 className="w-4 h-4" />
                   </Button>
                   
-                  {/* File info overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="text-xs truncate">
-                      {url.split('/').pop() || `Media ${index + 1}`}
-                    </p>
+                    {/* File info overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <p className="text-xs truncate">
+                        {url.split('/').pop() || `Media ${index + 1}`}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>

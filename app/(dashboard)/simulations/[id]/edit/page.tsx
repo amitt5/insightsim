@@ -304,9 +304,9 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   }
 
   const nextStep = async () => {
-    // If moving from step 3 to step 4, upload media files first
+    // If moving from step 3 to step 4, upload media files first (only for non-project simulations)
     console.log('amit-nextStep-selectedFiles', selectedFiles);
-    if (step === 3 && selectedFiles.length > 0) {
+    if (step === 3 && selectedFiles.length > 0 && simulationData.project_id === null) {
       try {
         setIsUploading(true);
         const mediaUrls = await uploadMedia();
@@ -2236,21 +2236,36 @@ Key Questions:
                 <CardDescription>Set up the topic and questions for your simulation</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="topic">Topic/Stimulus</Label>
-                  <Input 
-                    id="topic" 
-                    placeholder="e.g., New snack flavor launch" 
-                    value={simulationData.topic}
-                    onChange={handleInputChange('topic')}
-                  />
-                </div>
+                {simulationData.project_id === null && (
+                  <div className="space-y-2">
+                    <Label htmlFor="topic">Topic/Stimulus</Label>
+                    <Input 
+                      id="topic" 
+                      placeholder="e.g., New snack flavor launch" 
+                      value={simulationData.topic}
+                      onChange={handleInputChange('topic')}
+                    />
+                  </div>
+                )}
+                
+                {simulationData.project_id !== null && (
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                      <span className="text-sm font-medium text-blue-700">Project-based Simulation</span>
+                    </div>
+                    <p className="text-sm text-blue-600 mt-1">
+                      Topic and media are managed at the project level. You can access them in the project's Media tab.
+                    </p>
+                  </div>
+                )}
 
-                <div className="space-y-2">
-                  <Label>
-                    Upload Media 
-                    {fileError && <span className="text-red-500 text-xs ml-2">{fileError}</span>}
-                  </Label>
+                {simulationData.project_id === null && (
+                  <div className="space-y-2">
+                    <Label>
+                      Upload Media 
+                      {fileError && <span className="text-red-500 text-xs ml-2">{fileError}</span>}
+                    </Label>
                   <div 
                     className={`flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed ${
                       selectedFiles.length > 0 || getUploadedFiles().length > 0 ? 'border-primary' : 'border-gray-300'
@@ -2384,6 +2399,7 @@ Key Questions:
                     )}
                   </div>
                 </div>
+                )}
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">

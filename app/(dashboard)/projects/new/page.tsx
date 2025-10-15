@@ -1,6 +1,5 @@
 "use client"
 
-import { Metadata } from "next"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
@@ -9,11 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
-
-export const metadata: Metadata = {
-  title: "New Project | InsightSim",
-  description: "Create a new research project",
-}
 
 export default function NewProjectPage() {
   const router = useRouter()

@@ -92,6 +92,9 @@ export default function SimulationViewPage() {
   const [signedProjectMediaUrls, setSignedProjectMediaUrls] = useState<string[]>([])
   const [selectedProjectMediaImages, setSelectedProjectMediaImages] = useState<boolean[]>([])
   const [isLoadingProjectMedia, setIsLoadingProjectMedia] = useState(false)
+  const [ragDocuments, setRagDocuments] = useState<any[]>([])
+  const [selectedRagDocuments, setSelectedRagDocuments] = useState<boolean[]>([])
+  const [isLoadingRagDocuments, setIsLoadingRagDocuments] = useState(false)
   // const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
@@ -531,6 +534,32 @@ const debugSearchAPI = async () => {
     };
 
     loadProjectMedia();
+  }, [simulationData?.simulation?.project_id]);
+
+  // Load RAG documents when simulation data is available
+  useEffect(() => {
+    const fetchRagDocuments = async () => {
+      if (simulationData?.simulation?.project_id) {
+        setIsLoadingRagDocuments(true);
+        try {
+          // Fetch RAG documents
+          const response = await fetch(`/api/projects/${simulationData.simulation.project_id}/rag/documents`);
+          const data = await response.json();
+          
+          if (data.documents) {
+            console.log('data.documents', data.documents);
+            setRagDocuments(data.documents || []);
+            setSelectedRagDocuments(new Array(data.documents.length).fill(false));
+          }
+        } catch (error) {
+          console.error('Error loading RAG documents:', error);
+        } finally {
+          setIsLoadingRagDocuments(false);
+        }
+      }
+    };
+
+    fetchRagDocuments();
   }, [simulationData?.simulation?.project_id]);
 
   // Ref for the textarea to enable scrolling and focusing

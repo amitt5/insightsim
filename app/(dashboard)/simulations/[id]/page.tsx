@@ -1710,6 +1710,47 @@ const debugSearchAPI = async () => {
                       </div>
                     </div>
                   )}
+
+                  {/* RAG Documents Section */}
+                  {ragDocuments.length > 0 && (
+                    <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <h4 className="text-sm font-medium mb-3 text-green-700">RAG Documents:</h4>
+                      <div className="space-y-2">
+                        {ragDocuments.map((document, index) => (
+                          <div key={`rag-doc-${index}`} className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              id={`rag-document-${index}`}
+                              checked={selectedRagDocuments[index] || false}
+                              onChange={(e) => {
+                                // TODO: Add handler in Step 5
+                                console.log('RAG document checkbox changed:', index, e.target.checked);
+                              }}
+                              className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                            />
+                            <label 
+                              htmlFor={`rag-document-${index}`} 
+                              className="text-sm text-primary hover:text-primary/80 underline cursor-pointer"
+                            >
+                              {document.original_filename || document.filename || `Document ${index + 1}`}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Loading state for RAG documents */}
+                  {isLoadingRagDocuments && (
+                    <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center space-x-2">
+                        <div className="h-2 w-2 bg-green-500 rounded-full animate-bounce" />
+                        <div className="h-2 w-2 bg-green-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                        <div className="h-2 w-2 bg-green-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+                        <span className="text-sm text-green-600 ml-2">Loading RAG documents...</span>
+                      </div>
+                    </div>
+                  )}
                   
                   {/* End discussion button */}
                   {formattedMessages.length > 0 && simulation.status !== 'Completed' && (

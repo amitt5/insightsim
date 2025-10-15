@@ -471,6 +471,14 @@ const debugSearchAPI = async () => {
     handleMediaCheckboxChange(index, checked, 'simulation');
   };
 
+  // Handle RAG document checkbox changes
+  const handleRagDocumentCheckboxChange = (index: number, checked: boolean) => {
+    const newSelectedRagDocuments = [...selectedRagDocuments];
+    newSelectedRagDocuments[index] = checked;
+    setSelectedRagDocuments(newSelectedRagDocuments);
+    console.log('RAG document selection changed:', index, checked, newSelectedRagDocuments);
+  };
+
   // Load signed URLs for stimulus images
   useEffect(() => {
     const loadSignedUrls = async () => {
@@ -1722,10 +1730,7 @@ const debugSearchAPI = async () => {
                               type="checkbox"
                               id={`rag-document-${index}`}
                               checked={selectedRagDocuments[index] || false}
-                              onChange={(e) => {
-                                // TODO: Add handler in Step 5
-                                console.log('RAG document checkbox changed:', index, e.target.checked);
-                              }}
+                              onChange={(e) => handleRagDocumentCheckboxChange(index, e.target.checked)}
                               className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
                             />
                             <label 

@@ -12,7 +12,7 @@ export function buildMessagesForOpenAI({
   simulation: Simulation,
   messages: SimulationMessage[],
   personas: Persona[],
-}, study_type: string, userInstruction?: string, attachedImages?: {url: string, name: string}[]) {
+}, study_type: string, userInstruction?: string, attachedImages?: {url: string, name: string}[], documentTexts?: {id: string, filename: string, text: string, text_length: number}[]) {
   const { study_title, topic, discussion_questions } = simulation;
   const personaMap = Object.fromEntries(personas.map(p => [p.id, p.name]));
 
@@ -80,6 +80,27 @@ When the moderator shares images (photos, documents, screenshots, etc.), partici
 `;
 
 
+  // Add document context if provided (CAG - Context-Augmented Generation)
+  if (documentTexts && documentTexts.length > 0) {
+    systemPrompt += `DOCUMENT CONTEXT (CAG):
+The moderator has access to the following documents that provide relevant context for this discussion. Participants should reference and discuss content from these documents when relevant:
+
+`;
+    
+    documentTexts.forEach((doc, index) => {
+      systemPrompt += `--- DOCUMENT ${index + 1}: ${doc.filename} ---\n`;
+      systemPrompt += `${doc.text}\n\n`;
+    });
+    
+    systemPrompt += `When participants respond, they should:
+- Reference specific information from these documents when relevant
+- Draw insights and connections from the document content
+- Use the documents to support their opinions and experiences
+- Discuss how the document content relates to the discussion topic
+
+`;
+  }
+
   // Add user instruction if provided (NEW SECTION)
   if (userInstruction?.trim()) {
     systemPrompt += `USER INSTRUCTION (MUST FOLLOW):\n${userInstruction.trim()}\n\n`;
@@ -139,26 +160,36 @@ EXAMPLE:
         ? "Moderator"
         : personaMap[m.sender_id ?? ""] ?? "Unknown";
 
-    // Check if this is the last moderator message and we have attached images
+    // Check if this is the last moderator message and we have attached images or documents
     const isLastMessage = i === messages.length - 1;
     const isModeratorMessage = m.sender_type === "moderator";
     const hasAttachedImages = attachedImages && Array.isArray(attachedImages) && attachedImages.length > 0;
+    const hasDocumentTexts = documentTexts && Array.isArray(documentTexts) && documentTexts.length > 0;
 
-    if (isLastMessage && isModeratorMessage && hasAttachedImages) {
-      // Format the last moderator message with images using OpenAI vision format
+    if (isLastMessage && isModeratorMessage && (hasAttachedImages || hasDocumentTexts)) {
+      // Format the last moderator message with images and/or document context
+      let messageText = `${name}: ${m.message}`;
+      
+      // Add document context to the message if documents are selected
+      if (hasDocumentTexts) {
+        messageText += `\n\n[The moderator has shared the following documents for reference: ${documentTexts.map(doc => doc.filename).join(', ')}]`;
+      }
+      
       const content: any[] = [
-        { type: "text", text: `${name}: ${m.message}` }
+        { type: "text", text: messageText }
       ];
 
       // Add each attached image
-      for (const image of attachedImages) {
-        if (image && image.url) {
-          content.push({
-            type: "image_url",
-            image_url: {
-              url: image.url
-            }
-          });
+      if (hasAttachedImages) {
+        for (const image of attachedImages) {
+          if (image && image.url) {
+            content.push({
+              type: "image_url",
+              image_url: {
+                url: image.url
+              }
+            });
+          }
         }
       }
 

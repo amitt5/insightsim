@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     
     const { messages, model: reqModel } = await req.json();
     model = reqModel;
-    console.log('prompt123', messages, model);
+    // console.log('prompt123', messages, model);
     // Call OpenAI or groq
     if (model === 'groq') {
       completion = await openRouterai.chat.completions.create({

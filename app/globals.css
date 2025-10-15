@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide buttons during PDF generation */
+.pdf-generation button {
+  display: none !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

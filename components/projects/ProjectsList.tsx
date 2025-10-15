@@ -2,12 +2,25 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Plus, Loader2 } from "lucide-react"
+import { Plus, Loader2, MoreVertical, Trash2, Edit2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Project } from "@/utils/types"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import ProjectCard from "./ProjectCard"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface ProjectViewModel {
   id: string;
@@ -16,6 +29,8 @@ interface ProjectViewModel {
   target_group: string;
   created_at: string;
   studies_count: number;
+  simulation_count: number;
+  interview_count: number;
 }
 
 export default function ProjectsList() {
@@ -84,7 +99,9 @@ export default function ProjectsList() {
         product: "Social Media App",
         brief_text: "Deep dive into Gen Z social media behavior",
         created_at: "2024-03-20",
-        studies_count: 3
+        studies_count: 3,
+        simulation_count: 2,
+        interview_count: 5
       },
       {
         id: "2",
@@ -94,7 +111,9 @@ export default function ProjectsList() {
         product: "ChargeFast Stations",
         brief_text: "Research on EV charging pain points",
         created_at: "2024-03-18",
-        studies_count: 2
+        studies_count: 2,
+        simulation_count: 1,
+        interview_count: 3
       },
       {
         id: "3",
@@ -104,7 +123,9 @@ export default function ProjectsList() {
         product: "FoodNow App",
         brief_text: "Testing new app interface",
         created_at: "2024-03-15",
-        studies_count: 4
+        studies_count: 4,
+        simulation_count: 3,
+        interview_count: 0
       },
       {
         id: "4",
@@ -114,7 +135,9 @@ export default function ProjectsList() {
         product: "HomeConnect Hub",
         brief_text: "Smart home ecosystem research",
         created_at: "2024-03-10",
-        studies_count: 1
+        studies_count: 1,
+        simulation_count: 0,
+        interview_count: 2
       }
     ];
 
@@ -191,35 +214,102 @@ export default function ProjectsList() {
         </div>
       )}
 
-      {/* Projects Grid */}
+      {/* Projects Table */}
       {!loading && !error && projects.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              studyCount={project.studies_count}
-              onDelete={async (projectId) => {
-                try {
-                  const response = await fetch(`/api/projects/${projectId}`, {
-                    method: 'DELETE',
-                  });
-                  if (!response.ok) throw new Error('Failed to delete project');
-                  setProjects(prev => prev.filter(p => p.id !== projectId));
-                  toast({
-                    title: "Success",
-                    description: "Project deleted successfully",
-                  });
-                } catch (error) {
-                  toast({
-                    title: "Error",
-                    description: "Failed to delete project",
-                    variant: "destructive",
-                  });
-                }
-              }}
-            />
-          ))}
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Project Name</TableHead>
+                <TableHead>Simulations</TableHead>
+                <TableHead>Human Interviews</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {projects.map((project) => {
+                const formattedDate = new Date(project.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                });
+
+                return (
+                  <TableRow key={project.id} className="hover:bg-gray-50">
+                    <TableCell>
+                      <Link 
+                        href={`/projects/${project.id}`}
+                        className="font-semibold hover:text-blue-600 transition-colors"
+                      >
+                        {project.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">
+                        {project.simulation_count} {project.simulation_count === 1 ? 'simulation' : 'simulations'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">
+                        {project.interview_count} {project.interview_count === 1 ? 'interview' : 'interviews'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">
+                        {formattedDate}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link 
+                              href={`/projects/${project.id}`}
+                              className="flex items-center gap-2"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                              Edit Project
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(`/api/projects/${project.id}`, {
+                                  method: 'DELETE',
+                                });
+                                if (!response.ok) throw new Error('Failed to delete project');
+                                setProjects(prev => prev.filter(p => p.id !== project.id));
+                                toast({
+                                  title: "Success",
+                                  description: "Project deleted successfully",
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to delete project",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                            className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

@@ -25,10 +25,14 @@ export async function GET() {
         return NextResponse.json({ error: "Failed to fetch user role" }, { status: 500 })
       }
   
-      // Build the query
+      // Build the query with counts
       let query = supabase
         .from("projects")
-        .select("*")
+        .select(`
+          *,
+          simulations:simulations(count),
+          human_respondents:human_respondents(count)
+        `)
         .order("created_at", { ascending: false })
         // .or("is_deleted.is.null,is_deleted.eq.false") // Filter out soft-deleted simulations (include NULL and false values)
   
@@ -45,13 +49,20 @@ export async function GET() {
         return NextResponse.json({ error: projectsError.message }, { status: 500 })
       }
   
-      // Early return if no simulations found
+      // Early return if no projects found
       if (!projects || projects.length === 0) {
         return NextResponse.json({ projects: [] })
       }
       
+      // Process projects to include counts
+      const projectsWithCounts = projects.map(project => ({
+        ...project,
+        simulation_count: project.simulations?.[0]?.count || 0,
+        interview_count: project.human_respondents?.[0]?.count || 0
+      }))
+      
       return NextResponse.json({ 
-        projects
+        projects: projectsWithCounts
       })
     } catch (error) {
       console.error("Unexpected error:", error)

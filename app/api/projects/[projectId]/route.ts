@@ -68,6 +68,11 @@ export async function PATCH(
     delete updates.is_deleted
     delete updates.deleted_at
 
+    // Validate media_urls if provided
+    if (updates.media_urls && !Array.isArray(updates.media_urls)) {
+      return NextResponse.json({ error: "media_urls must be an array" }, { status: 400 })
+    }
+
     // Add updated_at timestamp
     updates.updated_at = new Date().toISOString()
 

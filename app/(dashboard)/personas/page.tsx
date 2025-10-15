@@ -11,7 +11,7 @@ import { Persona } from "@/utils/types"
 
 export default function PersonasPage() {
   const [open, setOpen] = useState(false)
-  const { personas, loading, error, mutate } = usePersonas()
+  const { personas, loading, error, mutate } = usePersonas(null, true)
   const [hideSystemPersonas, setHideSystemPersonas] = useState(false)
   const [filteredPersonas, setFilteredPersonas] = useState<Persona[]>([])
 

@@ -6,6 +6,7 @@ import { Project, Simulation, RagDocument } from "@/utils/types"
 import { useToast } from "@/hooks/use-toast"
 import StudyList from "./StudyList"
 import HumanInterviewsTable from "./HumanInterviewsTable"
+import ProjectMediaUpload from "./ProjectMediaUpload"
 import { PersonaCard } from "@/components/persona-card"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
@@ -24,14 +25,20 @@ interface ProjectViewProps {
 
 export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const { toast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
   const [editedProject, setEditedProject] = useState(project);
   const [projectPersonas, setProjectPersonas] = useState<any[]>([]);
   const [simulations, setSimulations] = useState<Simulation[]>([]);
   const [isGeneratingPersonas, setIsGeneratingPersonas] = useState(false);
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
   const [editingPersona, setEditingPersona] = useState<any>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [hasNameChanged, setHasNameChanged] = useState(false);
   const [editPersonaOpen, setEditPersonaOpen] = useState(false);
+  const [briefMode, setBriefMode] = useState<'manual' | 'ai' | null>(null);
+  const [briefText, setBriefText] = useState(project.brief_text || '');
+  const [isBriefModified, setIsBriefModified] = useState(false);
+  const [isSavingBrief, setIsSavingBrief] = useState(false);
+  const [projectMediaUrls, setProjectMediaUrls] = useState<string[]>(project.media_urls || []);
   const [ragDocuments, setRagDocuments] = useState<RagDocument[]>([]);
   const [processingDocuments, setProcessingDocuments] = useState<Set<string>>(new Set());
 
@@ -146,6 +153,16 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       });
     }
   };
+
+  // Update brief text when project changes
+  useEffect(() => {
+    setBriefText(project.brief_text || '');
+  }, [project.brief_text]);
+
+  // Update media URLs when project changes
+  useEffect(() => {
+    setProjectMediaUrls(project.media_urls || []);
+  }, [project.media_urls]);
 
   // Fetch project personas when the component mounts
   useEffect(() => {
@@ -288,78 +305,108 @@ if(!project.brief_text){
   };
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
-  const handleSave = async () => {
-    console.log('editedProject-111', editedProject)
+  const handleSaveBrief = async () => {
+    setIsSavingBrief(true);
     try {
       const response = await fetch(`/api/projects/${project.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(editedProject),
+        body: JSON.stringify({ brief_text: briefText }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update project');
+        throw new Error('Failed to update brief');
       }
 
       const updatedProject = await response.json();
       onUpdate?.(updatedProject);
-      setIsEditing(false);
+      setIsBriefModified(false);
       
       toast({
         title: "Success",
-        description: "Project updated successfully",
+        description: "Brief updated successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update project",
+        description: "Failed to update brief",
         variant: "destructive",
       });
+    } finally {
+      setIsSavingBrief(false);
     }
   };
+
 
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-start mb-8">
-        <div>
-          {isEditing ? (
-            <input
-              type="text"
-              value={editedProject.name}
-              onChange={(e) => setEditedProject({ ...editedProject, name: e.target.value })}
-              className="text-2xl font-bold bg-transparent border-b border-gray-300 focus:border-blue-500 outline-none"
-            />
-          ) : (
-            <h1 className="text-2xl font-bold">{project.name}</h1>
-          )}
+        <div className="flex-1">
+          <input
+            type="text"
+            value={editedProject.name}
+            onChange={(e) => {
+              setEditedProject({ ...editedProject, name: e.target.value });
+              setHasNameChanged(e.target.value !== project.name);
+            }}
+            onFocus={() => setIsEditingName(true)}
+            onBlur={() => {
+              // Delay hiding the button to allow clicking on it
+              setTimeout(() => setIsEditingName(false), 200);
+            }}
+            className="text-2xl font-bold bg-transparent border-b border-gray-300 focus:border-blue-500 outline-none w-full"
+          />
         </div>
-        <Button
-          variant="outline"
-          onClick={isEditing ? handleSave : () => setIsEditing(true)}
-        >
-          {isEditing ? (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
-            </>
-          ) : (
-            <>
-              <Edit2 className="h-4 w-4 mr-2" />
-              Edit Project
-            </>
-          )}
-        </Button>
+        {isEditingName && hasNameChanged && (
+          <Button
+            onClick={async () => {
+              try {
+                const response = await fetch(`/api/projects/${project.id}`, {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    name: editedProject.name
+                  }),
+                });
+
+                if (response.ok) {
+                  setHasNameChanged(false);
+                  toast({
+                    title: "Project Name Saved",
+                    description: "Your project name has been saved.",
+                  });
+                } else {
+                  throw new Error('Failed to save project name');
+                }
+              } catch (error) {
+                console.error('Error saving project name:', error);
+                toast({
+                  title: "Error",
+                  description: "Failed to save project name. Please try again.",
+                  variant: "destructive",
+                });
+              }
+            }}
+            size="sm"
+            className="ml-4"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save Name
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="brief" className="space-y-4">
         <TabsList>
           <TabsTrigger value="brief">Brief</TabsTrigger>
-          <TabsTrigger value="ai-brief">AI Brief Assistant</TabsTrigger>
           <TabsTrigger value="discussion">Discussion Guide</TabsTrigger>
           <TabsTrigger value="rag">RAG</TabsTrigger>
           <TabsTrigger value="personas">Personas</TabsTrigger>
+          <TabsTrigger value="media">Media</TabsTrigger>
           <TabsTrigger value="studies">Simulations</TabsTrigger>
           <TabsTrigger value="interviews">Human Interviews</TabsTrigger>
         </TabsList>
@@ -367,134 +414,267 @@ if(!project.brief_text){
         <TabsContent value="brief" className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-500">Brief</label>
-            {isEditing ? (
-              <textarea
-                value={editedProject.brief_text || ''}
-                onChange={(e) => setEditedProject({ ...editedProject, brief_text: e.target.value })}
-                className="w-full mt-1 min-h-[400px] p-2 border rounded-md"
-                placeholder="Enter project brief..."
-              />
+            
+            {!briefMode ? (
+              // Show option selection if no mode is selected
+              <div className="mt-4 space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div 
+                    className="p-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                    onClick={() => setBriefMode('manual')}
+                  >
+                    <div className="text-center">
+                      <FileIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <h3 className="text-lg font-semibold mb-2">I have a brief</h3>
+                      <p className="text-gray-600">Add your own project brief manually</p>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    className="p-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                    onClick={() => setBriefMode('ai')}
+                  >
+                    <div className="text-center">
+                      <Sparkles className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <h3 className="text-lg font-semibold mb-2">Generate with AI</h3>
+                      <p className="text-gray-600">Use AI to help create your project brief</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {briefText && (
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium mb-2">Current Brief:</h4>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{briefText}</p>
+                    <div className="mt-3 flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setBriefMode('manual')}
+                      >
+                        Edit Brief
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setBriefMode('ai')}
+                      >
+                        Regenerate with AI
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : briefMode === 'manual' ? (
+              // Show manual brief input
+              <div className="mt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Manual Brief Input</h3>
+                  <div className="flex gap-2">
+                    {isBriefModified && (
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={handleSaveBrief}
+                        disabled={isSavingBrief}
+                      >
+                        {isSavingBrief ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-2" />
+                            Save Brief
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setBriefMode(null)}
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Options
+                    </Button>
+                  </div>
+                </div>
+                <textarea
+                  value={briefText}
+                  onChange={(e) => {
+                    setBriefText(e.target.value);
+                    setIsBriefModified(e.target.value !== (project.brief_text || ''));
+                  }}
+                  className="w-full min-h-[400px] p-2 border rounded-md"
+                  placeholder="Enter project brief..."
+                />
+              </div>
             ) : (
-              <p className="mt-1 whitespace-pre-wrap">{project.brief_text || 'No brief added'}</p>
+              // Show AI Brief Assistant
+              <div className="mt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">AI Brief Assistant</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setBriefMode(null)}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Options
+                  </Button>
+                </div>
+                <AIBriefAssistant 
+                  projectId={project.id}
+                  onBriefGenerated={(brief) => {
+                    setBriefText(brief);
+                    setEditedProject({ ...editedProject, brief_text: brief });
+                    setIsBriefModified(true);
+                    toast({
+                      title: "Brief Generated",
+                      description: "The AI-generated brief has been added to your project. You can edit it by switching to manual mode.",
+                    });
+                  }}
+                />
+              </div>
             )}
           </div>
         </TabsContent>
 
-        <TabsContent value="ai-brief" className="space-y-4">
-          <AIBriefAssistant 
-            projectId={project.id}
-            onBriefGenerated={(brief) => {
-              setEditedProject({ ...editedProject, brief_text: brief });
-              toast({
-                title: "Brief Generated",
-                description: "The AI-generated brief has been added to your project. You can edit it in the Brief tab.",
-              });
-            }}
-          />
-        </TabsContent>
 
         <TabsContent value="discussion" className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-500">Discussion Guide</label>
 
-            <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="p-0 h-6 w-6 bg-transparent border-none cursor-pointer"
-                            tabIndex={-1}
-                            disabled={isGeneratingQuestions}
-                            onClick={async () => {
-                              if (isGeneratingQuestions) return;
-                              setIsGeneratingQuestions(true);
-                              try {
-                                const prompt = buildDiscussionQuestionsFromBrief(
-                                  project.brief_text || '',
-                                );
-                                console.log('prompt111', prompt);
-                                const messages: ChatCompletionMessageParam[] = [
-                                  { role: "system", content: prompt }
-                                ];
-                                const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'discussion-questions');
+            <Button
+              onClick={async () => {
+                if (isGeneratingQuestions) return;
+                setIsGeneratingQuestions(true);
+                try {
+                  const prompt = buildDiscussionQuestionsFromBrief(
+                    project.brief_text || '',
+                  );
+                  console.log('prompt111', prompt);
+                  const messages: ChatCompletionMessageParam[] = [
+                    { role: "system", content: prompt }
+                  ];
+                  const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'discussion-questions');
 
-                                try {
-                                  // Parse the JSON response
-                                  let responseText = result.reply || "";
-                                  console.log('responseText111', responseText);
-                                  // Clean the response string (remove any markdown formatting)
-                                  responseText = responseText
-                                  .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
-                                  .replace(/```$/, '')            // Remove trailing ```
-                                  .trim();
-                                  
-                                  // Parse the JSON
-                                  const parsedResponse = JSON.parse(responseText);
-                                  console.log('parsedResponse111', parsedResponse);
-                                  // Extract questions array
-                                  const questions = parsedResponse.questions || [];
-                                  
-                                  // Join questions as textarea value (one per line)
-                                  setEditedProject(prev => ({
-                                    ...prev,
-                                    discussion_questions: questions
-                                  }));
-                                  
-                                } catch (error) {
-                                  console.error("Error parsing discussion questions JSON:", error);
-                                  
-                                  // Fallback: try to parse as the old numbered list format
-                                  let questions = result.reply || "";
-                                  questions = questions.replace(/```[a-z]*[\s\S]*?```/gi, '');
-                                  let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
-                                  lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
-                                  console.log('lines111', lines);
-                                  setEditedProject(prev => ({
-                                    ...prev,
-                                    discussion_questions: lines
-                                  }));
-                                }
+                  try {
+                    // Parse the JSON response
+                    let responseText = result.reply || "";
+                    console.log('responseText111', responseText);
+                    // Clean the response string (remove any markdown formatting)
+                    responseText = responseText
+                    .replace(/^```[\s\S]*?\n/, '')  // Remove starting ``` and optional language
+                    .replace(/```$/, '')            // Remove trailing ```
+                    .trim();
+                    
+                    // Parse the JSON
+                    const parsedResponse = JSON.parse(responseText);
+                    console.log('parsedResponse111', parsedResponse);
+                    // Extract questions array
+                    const questions = parsedResponse.questions || [];
+                    
+                    // Join questions as textarea value (one per line)
+                    setEditedProject(prev => ({
+                      ...prev,
+                      discussion_questions: questions
+                    }));
+                    
+                  } catch (error) {
+                    console.error("Error parsing discussion questions JSON:", error);
+                    
+                    // Fallback: try to parse as the old numbered list format
+                    let questions = result.reply || "";
+                    questions = questions.replace(/```[a-z]*[\s\S]*?```/gi, '');
+                    let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+                    lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
+                    console.log('lines111', lines);
+                    setEditedProject(prev => ({
+                      ...prev,
+                      discussion_questions: lines
+                    }));
+                  }
 
-                
-                              } catch (err) {
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to generate questions. Please try again.",
-                                  variant: "destructive",
-                                  duration: 5000,
-                                });
-                              } finally {
-                                setIsGeneratingQuestions(false);
-                              }
-                            }}
-                          >
-                            {isGeneratingQuestions ? (
-                              <Loader2 className="h-4 w-4 text-primary animate-spin" />
-                            ) : (
-                              <Sparkles className="h-4 w-4 text-primary" />
-                            )}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          Generate discussion questions with AI
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+      
+                } catch (err) {
+                  toast({
+                    title: "Error",
+                    description: "Failed to generate questions. Please try again.",
+                    variant: "destructive",
+                    duration: 5000,
+                  });
+                } finally {
+                  setIsGeneratingQuestions(false);
+                }
+              }}
+              disabled={isGeneratingQuestions}
+              variant="outline"
+              size="sm"
+              className="ml-2"
+            >
+              {isGeneratingQuestions ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate
+                </>
+              )}
+            </Button>
 
 
 
-            {isEditing ? (
+            <div className="mt-4 space-y-2">
               <textarea
                 value={editedProject.discussion_questions?.join('\n') || ''}
                 onChange={(e) => setEditedProject({ ...editedProject, discussion_questions: e.target.value.split('\n').filter(Boolean) })}
-                className="w-full mt-1 min-h-[400px] p-2 border rounded-md"
+                className="w-full min-h-[400px] p-2 border rounded-md"
                 placeholder="Enter discussion questions..."
               />
-            ) : (
-              <div className="mt-1 whitespace-pre-wrap">
-                {project.discussion_questions?.join('\n') || 'No discussion guide added'}
+              <div className="flex justify-end">
+                <Button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(`/api/projects/${project.id}`, {
+                        method: 'PATCH',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          discussion_questions: editedProject.discussion_questions
+                        }),
+                      });
+
+                      if (response.ok) {
+                        toast({
+                          title: "Discussion Guide Saved",
+                          description: "Your discussion guide has been saved.",
+                        });
+                      } else {
+                        throw new Error('Failed to save discussion guide');
+                      }
+                    } catch (error) {
+                      console.error('Error saving discussion guide:', error);
+                      toast({
+                        title: "Error",
+                        description: "Failed to save discussion guide. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  size="sm"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Discussion Guide
+                </Button>
               </div>
-            )}
+            </div>
           </div>
         </TabsContent>
 
@@ -580,6 +760,14 @@ if(!project.brief_text){
               hideTrigger={true}
             />
           </div>
+        </TabsContent>
+
+        <TabsContent value="media">
+          <ProjectMediaUpload
+            projectId={project.id}
+            mediaUrls={projectMediaUrls}
+            onMediaUpdate={setProjectMediaUrls}
+          />
         </TabsContent>
 
         <TabsContent value="studies">

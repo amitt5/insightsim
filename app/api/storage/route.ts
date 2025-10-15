@@ -72,6 +72,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const simulationId = formData.get('simulationId') as string;
+    const projectId = formData.get('projectId') as string;
     const bucket = formData.get('bucket') as string || 'simulation-media';
 
     if (!file) {
@@ -81,12 +82,18 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!simulationId) {
+    // Either simulationId or projectId must be provided
+    if (!simulationId && !projectId) {
       return NextResponse.json(
-        { error: 'Simulation ID is required' },
+        { error: 'Either Simulation ID or Project ID is required' },
         { status: 400 }
       );
     }
+
+    // Determine the entity ID and bucket
+    const entityId = simulationId || projectId;
+    const defaultBucket = simulationId ? 'simulation-media' : 'project-media';
+    const finalBucket = bucket || defaultBucket;
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
@@ -124,17 +131,14 @@ export async function POST(request: Request) {
       .replace(/\-\-+/g, '-'); // Replace multiple - with single -
 
     const uniqueId = uuidv4();
-    // New path format: simulationId/sanitized-file-name-uniqueId.extension
-    const filePath = `${simulationId}/${sanitizedFileName}-${uniqueId}.${fileExtension}`;
+    // New path format: entityId/sanitized-file-name-uniqueId.extension
+    const filePath = `${entityId}/${sanitizedFileName}-${uniqueId}.${fileExtension}`;
 
-
-
-
-    console.log(`Uploading file to bucket: ${bucket}, path: ${filePath}`);
+    console.log(`Uploading file to bucket: ${finalBucket}, path: ${filePath}`);
 
     // Upload to Supabase storage
     const { data, error } = await supabase.storage
-      .from(bucket)
+      .from(finalBucket)
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: false
@@ -150,7 +154,7 @@ export async function POST(request: Request) {
 
     // Get the public URL
     const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
+      .from(finalBucket)
       .getPublicUrl(filePath);
 
     console.log(`Successfully uploaded file: ${filePath}`);

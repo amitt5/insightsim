@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CREDIT_RATES } from '@/utils/openai'
 import { getSignedUrlForDisplay, getSignedUrlsForDisplay } from '@/utils/fileUpload'
+import { getSignedUrlsForProjectMedia } from '@/utils/projectMedia'
 import {
   Select,
   SelectContent,
@@ -87,6 +88,10 @@ export default function SimulationViewPage() {
   const [isLoadingSignedUrls, setIsLoadingSignedUrls] = useState(false)
   const [selectedStimulusImages, setSelectedStimulusImages] = useState<boolean[]>([])
   const [askedQuestionIndices, setAskedQuestionIndices] = useState<number[]>([])
+  const [projectMediaUrls, setProjectMediaUrls] = useState<string[]>([])
+  const [signedProjectMediaUrls, setSignedProjectMediaUrls] = useState<string[]>([])
+  const [selectedProjectMediaImages, setSelectedProjectMediaImages] = useState<boolean[]>([])
+  const [isLoadingProjectMedia, setIsLoadingProjectMedia] = useState(false)
   // const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
@@ -395,40 +400,72 @@ const debugSearchAPI = async () => {
     }
   };
 
-  // Handle stimulus checkbox changes
-  const handleStimulusCheckboxChange = async (index: number, checked: boolean) => {
-    // Update checkbox states
-    const newSelectedStimulus = [...selectedStimulusImages];
-    newSelectedStimulus[index] = checked;
-    setSelectedStimulusImages(newSelectedStimulus);
+  // Handle media checkbox changes (both simulation and project media)
+  const handleMediaCheckboxChange = async (index: number, checked: boolean, mediaType: 'simulation' | 'project') => {
+    if (mediaType === 'simulation') {
+      // Update simulation stimulus checkbox states
+      const newSelectedStimulus = [...selectedStimulusImages];
+      newSelectedStimulus[index] = checked;
+      setSelectedStimulusImages(newSelectedStimulus);
 
-    // Update attached images
-    if (checked) {
-      // Add image to attached images
-      const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
-        ? simulationData.simulation.stimulus_media_url[index] 
-        : simulationData?.simulation?.stimulus_media_url as string;
-      
-      const imageName = getFilenameFromUrl(originalUrl);
-      const signedUrl = await getSignedUrlForDisplay(originalUrl);
-      const imageObj = { url: signedUrl, name: imageName };
-      
-      setAttachedImages(prev => {
-        const exists = prev.some(img => img.name === imageName);
-        if (!exists) {
-          return [...prev, imageObj];
-        }
-        return prev;
-      });
+      // Update attached images
+      if (checked) {
+        // Add image to attached images
+        const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
+          ? simulationData.simulation.stimulus_media_url[index] 
+          : simulationData?.simulation?.stimulus_media_url as string;
+        
+        const imageName = getFilenameFromUrl(originalUrl);
+        const signedUrl = await getSignedUrlForDisplay(originalUrl);
+        const imageObj = { url: signedUrl, name: imageName };
+        
+        setAttachedImages(prev => {
+          const exists = prev.some(img => img.name === imageName);
+          if (!exists) {
+            return [...prev, imageObj];
+          }
+          return prev;
+        });
+      } else {
+        // Remove image from attached images
+        const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
+          ? simulationData.simulation.stimulus_media_url[index] 
+          : simulationData?.simulation?.stimulus_media_url as string;
+        
+        const imageName = getFilenameFromUrl(originalUrl);
+        setAttachedImages(prev => prev.filter(img => img.name !== imageName));
+      }
     } else {
-      // Remove image from attached images
-      const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
-        ? simulationData.simulation.stimulus_media_url[index] 
-        : simulationData?.simulation?.stimulus_media_url as string;
-      
-      const imageName = getFilenameFromUrl(originalUrl);
-      setAttachedImages(prev => prev.filter(img => img.name !== imageName));
+      // Handle project media
+      const newSelectedProjectMedia = [...selectedProjectMediaImages];
+      newSelectedProjectMedia[index] = checked;
+      setSelectedProjectMediaImages(newSelectedProjectMedia);
+
+      if (checked) {
+        const originalUrl = projectMediaUrls[index];
+        const imageName = getFilenameFromUrl(originalUrl);
+        const signedUrls = await getSignedUrlsForProjectMedia([originalUrl]);
+        const signedUrl = signedUrls[0] || originalUrl;
+        const imageObj = { url: signedUrl, name: imageName };
+        
+        setAttachedImages(prev => {
+          const exists = prev.some(img => img.name === imageName);
+          if (!exists) {
+            return [...prev, imageObj];
+          }
+          return prev;
+        });
+      } else {
+        const originalUrl = projectMediaUrls[index];
+        const imageName = getFilenameFromUrl(originalUrl);
+        setAttachedImages(prev => prev.filter(img => img.name !== imageName));
+      }
     }
+  };
+
+  // Keep the old function for backward compatibility
+  const handleStimulusCheckboxChange = async (index: number, checked: boolean) => {
+    handleMediaCheckboxChange(index, checked, 'simulation');
   };
 
   // Load signed URLs for stimulus images
@@ -464,6 +501,37 @@ const debugSearchAPI = async () => {
 
     loadSignedUrls();
   }, [simulationData?.simulation?.stimulus_media_url]);
+
+  // Load project media when simulation data is available
+  useEffect(() => {
+    const loadProjectMedia = async () => {
+      if (simulationData?.simulation?.project_id) {
+        setIsLoadingProjectMedia(true);
+        try {
+          // Fetch project media URLs
+          const response = await fetch(`/api/projects/${simulationData.simulation.project_id}/media`);
+          const data = await response.json();
+          
+          if (data.success) {
+            setProjectMediaUrls(data.mediaUrls || []);
+            
+            // Get signed URLs for project media
+            if (data.mediaUrls.length > 0) {
+              const signedUrls = await getSignedUrlsForProjectMedia(data.mediaUrls);
+              setSignedProjectMediaUrls(signedUrls);
+              setSelectedProjectMediaImages(new Array(signedUrls.length).fill(false));
+            }
+          }
+        } catch (error) {
+          console.error('Error loading project media:', error);
+        } finally {
+          setIsLoadingProjectMedia(false);
+        }
+      }
+    };
+
+    loadProjectMedia();
+  }, [simulationData?.simulation?.project_id]);
 
   // Ref for the textarea to enable scrolling and focusing
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -772,7 +840,8 @@ const debugSearchAPI = async () => {
       const currentAttachedImages = [...attachedImages]; // Store current images before clearing
       setNewMessage('');
       setAttachedImages([]); // Clear attached images after sending
-      setSelectedStimulusImages(new Array(signedStimulusUrls.length).fill(false)); // Reset checkboxes
+      setSelectedStimulusImages(new Array(signedStimulusUrls.length).fill(false)); // Reset simulation checkboxes
+      setSelectedProjectMediaImages(new Array(signedProjectMediaUrls.length).fill(false)); // Reset project media checkboxes
      
       if(messageFetched) {
          //3. build the messages for openai with attached images
@@ -1533,10 +1602,10 @@ const debugSearchAPI = async () => {
                     </div>
                   {/* )} */}
                   
-                  {/* Stimulus Images Section */}
+                  {/* Simulation Stimulus Images Section */}
                   {signedStimulusUrls.length > 0 && (
                     <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
-                      <h4 className="text-sm font-medium mb-3 text-gray-700">Attach Images:</h4>
+                      <h4 className="text-sm font-medium mb-3 text-gray-700">Simulation Images:</h4>
                       <div className="space-y-2">
                         {signedStimulusUrls.map((url, index) => {
                           const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
@@ -1550,7 +1619,7 @@ const debugSearchAPI = async () => {
                                 type="checkbox"
                                 id={`stimulus-${index}`}
                                 checked={selectedStimulusImages[index] || false}
-                                onChange={(e) => handleStimulusCheckboxChange(index, e.target.checked)}
+                                onChange={(e) => handleMediaCheckboxChange(index, e.target.checked, 'simulation')}
                                 className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
                               />
                               <label 
@@ -1566,6 +1635,49 @@ const debugSearchAPI = async () => {
                             </div>
                           );
                         })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Project Media Images Section */}
+                  {signedProjectMediaUrls.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <h4 className="text-sm font-medium mb-3 text-blue-700">Project Media:</h4>
+                      <div className="space-y-2">
+                        {signedProjectMediaUrls.map((url, index) => {
+                          const originalUrl = projectMediaUrls[index];
+                          const imageName = getFilenameFromUrl(originalUrl);
+                          
+                          return (
+                            <div key={`project-${index}`} className="flex items-center space-x-3">
+                              <input
+                                type="checkbox"
+                                id={`project-media-${index}`}
+                                checked={selectedProjectMediaImages[index] || false}
+                                onChange={(e) => handleMediaCheckboxChange(index, e.target.checked, 'project')}
+                                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                              />
+                              <label 
+                                htmlFor={`project-media-${index}`} 
+                                className="text-sm text-primary hover:text-primary/80 underline cursor-pointer"
+                              >
+                                {imageName}
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Loading state for project media */}
+                  {isLoadingProjectMedia && (
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center space-x-2">
+                        <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce" />
+                        <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                        <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+                        <span className="text-sm text-blue-600 ml-2">Loading project media...</span>
                       </div>
                     </div>
                   )}

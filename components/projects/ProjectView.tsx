@@ -364,7 +364,8 @@ if(!project.brief_text){
         throw new Error('Failed to update brief');
       }
 
-      const updatedProject = await response.json();
+      const responseData = await response.json();
+      const updatedProject = responseData.project;
       setEditedProject(updatedProject);
       setBriefText(updatedProject.brief_text || '');
       onUpdate?.(updatedProject);
@@ -420,6 +421,10 @@ if(!project.brief_text){
                 });
 
                 if (response.ok) {
+                  const responseData = await response.json();
+                  const updatedProject = responseData.project;
+                  setEditedProject(updatedProject);
+                  onUpdate?.(updatedProject);
                   setHasNameChanged(false);
                   toast({
                     title: "Project Name Saved",
@@ -699,6 +704,10 @@ if(!project.brief_text){
                       });
 
                       if (response.ok) {
+                        const responseData = await response.json();
+                        const updatedProject = responseData.project;
+                        setEditedProject(updatedProject);
+                        onUpdate?.(updatedProject);
                         toast({
                           title: "Discussion Guide Saved",
                           description: "Your discussion guide has been saved.",

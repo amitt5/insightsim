@@ -10,13 +10,14 @@ import ProjectMediaUpload from "./ProjectMediaUpload"
 import { PersonaCard } from "@/components/persona-card"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
-import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt,buildDiscussionQuestionsFromBrief, createBriefPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt,buildDiscussionQuestionsFromBrief, createBriefPersonaGenerationPrompt, createTargetSegmentGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
 
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { runSimulationAPI } from "@/utils/api"
 import { ArrowLeft, ArrowRight, Upload, X,Edit2, Save, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
 import AIBriefAssistant from "./AIBriefAssistant"
 import { RagDocumentUpload, RagDocumentList } from "./rag"
+import { TargetSegmentSelectionModal } from "./TargetSegmentSelectionModal"
 
 interface ProjectViewProps {
   project: Project;
@@ -43,6 +44,11 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [projectMediaUrls, setProjectMediaUrls] = useState<string[]>(project.media_urls || []);
   const [ragDocuments, setRagDocuments] = useState<RagDocument[]>([]);
   const [processingDocuments, setProcessingDocuments] = useState<Set<string>>(new Set());
+  
+  // Target segment selection modal state
+  const [showTargetSegmentModal, setShowTargetSegmentModal] = useState(false);
+  const [targetSegments, setTargetSegments] = useState<string[]>([]);
+  const [isGeneratingSegments, setIsGeneratingSegments] = useState(false);
 
   const handleEditPersona = (persona: any) => {
     setEditingPersona(persona);
@@ -272,6 +278,73 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     }
   }, [project.id, toast]);
 
+  const handleShowTargetSegmentModal = async () => {
+    if (!project.brief_text) {
+      toast({
+        title: "Error",
+        description: "Please add a brief first to generate personas",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingSegments(true);
+    setShowTargetSegmentModal(true);
+    
+    try {
+      const prompt = createTargetSegmentGenerationPrompt(project.brief_text);
+      const messages: ChatCompletionMessageParam[] = [
+        { role: "system", content: prompt }
+      ];
+      const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'segment-generation');
+
+      try {
+        let responseText = result.reply || "";
+        responseText = responseText
+          .replace(/^```[\s\S]*?\n/, '')
+          .replace(/```$/, '')
+          .trim();
+
+        const parsedResponse = JSON.parse(responseText);
+        const generatedSegments = parsedResponse.segments || [];
+        if (generatedSegments.length === 0) {
+          toast({
+            title: "Warning",
+            description: "No target segments were generated. Generating personas directly...",
+            variant: "destructive",
+          });
+          // Fallback to direct persona generation
+          await handleGeneratePersonasFromBrief();
+          setShowTargetSegmentModal(false);
+        } else {
+          setTargetSegments(generatedSegments);
+        }
+      } catch (parseError) {
+        console.error('Failed to parse segment response:', parseError);
+        toast({
+          title: "Error",
+          description: "Failed to parse target segments. Generating personas directly...",
+          variant: "destructive",
+        });
+        // Fallback to direct persona generation
+        await handleGeneratePersonasFromBrief();
+        setShowTargetSegmentModal(false);
+      }
+    } catch (error) {
+      console.error('Failed to generate target segments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate target segments. Generating personas directly...",
+        variant: "destructive",
+      });
+      // Fallback to direct persona generation
+      await handleGeneratePersonasFromBrief();
+      setShowTargetSegmentModal(false);
+    } finally {
+      setIsGeneratingSegments(false);
+    }
+  };
+
   const handleGeneratePersonasFromBrief = async () => {
     if (!project.brief_text) {
       toast({
@@ -281,14 +354,6 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       });
       return;
     }
-if(!project.brief_text){
-  toast({
-    title: "Error",
-    description: "Please add a brief first to generate personas",
-    variant: "destructive",
-  });
-  return;
-}
     setIsGeneratingPersonas(true);
     try {
       const prompt = createBriefPersonaGenerationPrompt(project);
@@ -346,6 +411,87 @@ if(!project.brief_text){
       setIsGeneratingPersonas(false);
     }
   };
+
+  const handleGeneratePersonasWithSegments = async (selectedSegments: string[]) => {
+    if (!project.brief_text) {
+      toast({
+        title: "Error",
+        description: "Please add a brief first to generate personas",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedSegments || selectedSegments.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one target segment",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingPersonas(true);
+    setShowTargetSegmentModal(false);
+    
+    try {
+      const prompt = createBriefPersonaGenerationPrompt(project, selectedSegments);
+      const messages: ChatCompletionMessageParam[] = [
+        { role: "system", content: prompt }
+      ];
+      const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'persona-generation');
+
+      try {
+        let responseText = result.reply || "";
+        responseText = responseText
+          .replace(/^```[\s\S]*?\n/, '')
+          .replace(/```$/, '')
+          .trim();
+
+        const parsedResponse = JSON.parse(responseText);
+        const generatedPersonas = parsedResponse.personas || [];
+        console.log('generatedPersonas with segments', generatedPersonas);
+        
+        // Save the generated personas
+        const response = await fetch(`/api/projects/${project.id}/personas`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ personas: generatedPersonas }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save personas');
+        }
+
+        const data = await response.json();
+        setProjectPersonas(data.personas);
+        
+        toast({
+          title: "Success",
+          description: `Generated ${generatedPersonas.length} personas for selected segments: ${selectedSegments.join(', ')}`,
+        });
+      } catch (parseError) {
+        console.error("Error parsing personas:", parseError);
+        toast({
+          title: "Error",
+          description: "Failed to parse generated personas. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating personas:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate personas. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPersonas(false);
+    }
+  };
+
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
   const handleSaveBrief = async () => {
@@ -760,14 +906,14 @@ if(!project.brief_text){
             <div className="flex justify-end gap-2">
               <Button
                 variant="default"
-                onClick={handleGeneratePersonasFromBrief}
-                disabled={isGeneratingPersonas || !project.brief_text}
+                onClick={handleShowTargetSegmentModal}
+                disabled={isGeneratingPersonas || isGeneratingSegments || !project.brief_text}
                 className="flex items-center gap-2"
               >
-                {isGeneratingPersonas ? (
+                {isGeneratingPersonas || isGeneratingSegments ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Generating...
+                    {isGeneratingSegments ? "Analyzing brief..." : "Generating..."}
                   </>
                 ) : (
                   <>
@@ -834,6 +980,15 @@ if(!project.brief_text){
           <HumanInterviewsTable projectId={project.id} />
         </TabsContent>
       </Tabs>
+
+      {/* Target Segment Selection Modal */}
+      <TargetSegmentSelectionModal
+        isOpen={showTargetSegmentModal}
+        onClose={() => setShowTargetSegmentModal(false)}
+        segments={targetSegments}
+        onGenerate={handleGeneratePersonasWithSegments}
+        isLoading={isGeneratingPersonas}
+      />
     </div>
   );
 }

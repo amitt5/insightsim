@@ -572,7 +572,7 @@ Do not include any other text, explanations, or markdown formatting before or af
  * @param questions - Array of discussion questions
  * @returns A detailed prompt string ready for an LLM.
  */
-export function createBriefPersonaGenerationPrompt(simulation: Simulation | Project): string {
+export function createBriefPersonaGenerationPrompt(simulation: Simulation | Project, selectedSegments?: string[]): string {
   const briefText: string = simulation.brief_text || '';
   const title: string = simulation.study_title || '';
   const topic: string = simulation.topic || '';
@@ -582,7 +582,12 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation | Proj
   const systemPrompt = `You are an expert persona generator for qualitative market research with 15 years of experience at top agencies like Kantar and Ipsos. You specialize in analyzing research briefs and creating realistic, diverse personas that represent the target audience described in the brief. Your output must be a valid JSON array.`;
 
   // 2. Define the task with brief-specific context
-  const taskDefinition = `Your task is to analyze the provided research brief and generate 3 distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
+  let taskDefinition = `Your task is to analyze the provided research brief and generate ${selectedSegments && selectedSegments.length > 0 ? selectedSegments.length : 3} distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
+
+  // Add segment-specific guidance if segments are provided
+  if (selectedSegments && selectedSegments.length > 0) {
+    taskDefinition += `\n\nIMPORTANT: Focus specifically on creating personas that represent the following selected target segments: ${selectedSegments.join(', ')}. Each persona should clearly embody the characteristics and behaviors of one of these segments.`;
+  }
 
   // 3. Provide the research context
   const researchContext = `
@@ -592,19 +597,28 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation | Proj
   - Research Topic: "${topic}"
   - Research Brief: "${briefText}"
   - Key Discussion Areas: ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n  ')}
+  ${selectedSegments && selectedSegments.length > 0 ? `- Selected Target Segments: ${selectedSegments.join(', ')}` : ''}
   ---
   `;
 
     // 4. Provide persona creation guidelines specific to brief analysis
-    const personaGuidelines = `
+    let personaGuidelines = `
   PERSONA CREATION GUIDELINES:
   - Extract target audience characteristics from the brief's background and objectives sections
   - Create personas that span different attitudes, behaviors, and demographics within the target group
   - Ensure each persona can meaningfully contribute to discussions about the research topic
   - Include relevant demographic details, motivations, and behavioral patterns mentioned in the brief
   - Make personas realistic and relatable for moderators to work with during sessions
-  - Align persona goals and frustrations with the research objectives outlined in the brief
-  `;
+  - Align persona goals and frustrations with the research objectives outlined in the brief`;
+
+  // Add segment-specific guidelines if segments are provided
+  if (selectedSegments && selectedSegments.length > 0) {
+    personaGuidelines += `
+  - Each persona should represent one of the selected target segments: ${selectedSegments.join(', ')}
+  - Ensure personas capture the unique characteristics, motivations, and behaviors of their respective segments
+  - Make sure the personas are distinct and represent different aspects of the selected segments
+  - Align persona traits, goals, and attitudes with the segment they represent`;
+  }
 
     // 5. Specify the exact output format
     const outputFormatInstruction = `
@@ -637,4 +651,62 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation | Proj
 
   // Assembling the final prompt
   return `${systemPrompt}\n\n${taskDefinition}\n${researchContext}\n${personaGuidelines}\n${outputFormatInstruction}`;
+}
+
+/**
+ * Creates a structured prompt for an AI model to generate target segments from a research brief.
+ * @param briefText - The research brief text to analyze
+ * @returns A detailed prompt string ready for an LLM.
+ */
+export function createTargetSegmentGenerationPrompt(briefText: string): string {
+  // 1. Set the role and expertise for the AI
+  const systemPrompt = `You are an expert market researcher with 15 years of experience at top agencies like Kantar, Ipsos, and Nielsen. You specialize in analyzing research briefs and identifying distinct target audience segments for qualitative research studies.`;
+
+  // 2. Define the task
+  const taskDefinition = `Your task is to analyze the provided research brief and generate 4-6 distinct target audience segments that would be relevant for persona creation. Each segment should represent a different facet of the target audience with unique characteristics, motivations, or behaviors.`;
+
+  // 3. Provide guidelines for segment creation
+  const segmentGuidelines = `
+SEGMENT CREATION GUIDELINES:
+- Each segment should be distinct and non-overlapping
+- Focus on behavioral, attitudinal, or demographic differences
+- Use clear, concise segment names (2-4 words)
+- Ensure segments are relevant to the research objectives
+- Consider different user needs, pain points, or motivations
+- Make segments actionable for persona creation
+
+EXAMPLES OF GOOD SEGMENT NAMES:
+- "Health-conscious millennials"
+- "Budget-conscious parents"
+- "Busy professionals"
+- "Sustainability-focused consumers"
+- "Tech-savvy early adopters"
+- "Price-sensitive traditionalists"
+`;
+
+  // 4. Specify the output format
+  const outputFormatInstruction = `
+Return your response as a valid JSON object with the following structure:
+
+{
+  "segments": [
+    "Segment Name 1",
+    "Segment Name 2",
+    "Segment Name 3",
+    "Segment Name 4",
+    "Segment Name 5",
+    "Segment Name 6"
+  ]
+}
+
+Provide exactly 4-6 segments. Return only valid JSON with no additional text, explanations, or markdown formatting.`;
+
+  // 5. Provide the brief context
+  const briefContext = `
+RESEARCH BRIEF TO ANALYZE:
+"${briefText}"
+`;
+
+  // Assembling the final prompt
+  return `${systemPrompt}\n\n${taskDefinition}\n${segmentGuidelines}\n${outputFormatInstruction}\n\n${briefContext}\n\nJSON OUTPUT:`;
 }

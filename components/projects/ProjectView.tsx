@@ -170,16 +170,27 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       setIsLoadingPersonas(true);
       try {
         const response = await fetch(`/api/projects/${project.id}/personas`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch personas');
+        if (response.status === 404) {
+          // No personas yet - normal for new projects
+          setProjectPersonas([]);
+        } else if (!response.ok) {
+          // Actual server error
+          console.error('Server error fetching personas:', response.status, response.statusText);
+          toast({
+            title: "Error",
+            description: "Server error loading personas",
+            variant: "destructive",
+          });
+        } else {
+          const data = await response.json();
+          setProjectPersonas(data.personas || []);
         }
-        const data = await response.json();
-        setProjectPersonas(data.personas || []);
       } catch (error) {
-        console.error('Error fetching project personas:', error);
+        // Network or other errors
+        console.error('Network error fetching project personas:', error);
         toast({
           title: "Error",
-          description: "Failed to load personas",
+          description: "Network error loading personas",
           variant: "destructive",
         });
       } finally {
@@ -190,17 +201,28 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     const fetchProjectSimulations = async () => {
       try {
         const response = await fetch(`/api/projects/${project.id}/simulations`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch simulations');
+        if (response.status === 404) {
+          // No simulations yet - normal for new projects
+          setSimulations([]);
+        } else if (!response.ok) {
+          // Actual server error
+          console.error('Server error fetching simulations:', response.status, response.statusText);
+          toast({
+            title: "Error",
+            description: "Server error loading simulations",
+            variant: "destructive",
+          });
+        } else {
+          const data = await response.json();
+          console.log('data111', data);
+          setSimulations(data.projectSimulations || []);
         }
-        const data = await response.json();
-        console.log('data111', data);
-        setSimulations(data.projectSimulations || []);
       } catch (error) {
-        console.error('Error fetching project simulations:', error);
+        // Network or other errors
+        console.error('Network error fetching project simulations:', error);
         toast({
           title: "Error",
-          description: "Failed to load simulations",
+          description: "Network error loading simulations",
           variant: "destructive",
         });
       } 
@@ -209,24 +231,43 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     const fetchRagDocuments = async () => {
       try {
         const response = await fetch(`/api/projects/${project.id}/rag/documents`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch RAG documents');
+        if (response.status === 404) {
+          // No RAG documents yet - normal for new projects
+          setRagDocuments([]);
+        } else if (!response.ok) {
+          // Actual server error - log more details
+          const errorText = await response.text();
+          console.error('Server error fetching RAG documents:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText
+          });
+          toast({
+            title: "Error",
+            description: `Server error loading RAG documents (${response.status})`,
+            variant: "destructive",
+          });
+        } else {
+          const data = await response.json();
+          setRagDocuments(data.documents || []);
         }
-        const data = await response.json();
-        setRagDocuments(data.documents || []);
       } catch (error) {
-        console.error('Error fetching RAG documents:', error);
+        // Network or other errors
+        console.error('Network error fetching RAG documents:', error);
         toast({
           title: "Error",
-          description: "Failed to load RAG documents",
+          description: "Network error loading RAG documents",
           variant: "destructive",
         });
       }
     };
 
-    fetchProjectPersonas();
-    fetchProjectSimulations();
-    fetchRagDocuments();
+    // Only fetch data if project.id exists
+    if (project.id) {
+      fetchProjectPersonas();
+      fetchProjectSimulations();
+      fetchRagDocuments();
+    }
   }, [project.id, toast]);
 
   const handleGeneratePersonasFromBrief = async () => {

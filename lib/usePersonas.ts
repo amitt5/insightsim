@@ -50,10 +50,15 @@ export function usePersonas(projectId?: string | null, fetchAll: boolean = false
       }
       
       // Process traits for each persona
-      const processedData = data.map((persona: any) => ({
-        ...persona,
-        traits: processTraits(persona.traits)
-      }));
+      const processedData = data.map((persona: any) => {
+        console.log('Raw persona from API:', persona);
+        const processed = {
+          ...persona,
+          traits: processTraits(persona.traits)
+        };
+        console.log('Processed persona:', processed);
+        return processed;
+      });
       // sort personas by user_id
       // handle case if user_id is null
       processedData.sort((a: any, b: any) => {

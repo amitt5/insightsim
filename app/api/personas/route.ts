@@ -38,7 +38,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Failed to fetch user role" }, { status: 500 })
     }
 
-    let query = supabase.from('personas').select('*').eq('editable', true)
+    let query = supabase.from('personas').select('*')
+    
+    // Always filter by editable = true (exclude null and false)
+    query = query.eq('editable', true)
     
     // Only filter by user_id if the user is not an admin
     if (userData?.role !== 'admin') {

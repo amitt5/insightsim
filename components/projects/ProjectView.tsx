@@ -934,7 +934,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                   {projectPersonas.map((persona) => (
                     <PersonaCard
                       key={persona.id}
-                      persona={{ ...persona, editable: true }}
+                      persona={{ ...persona }}
                       selected={false}
                       onToggle={() => {}}
                       selectable={false}

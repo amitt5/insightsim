@@ -25,8 +25,10 @@ interface ProjectViewProps {
 
 export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const { toast } = useToast();
-  const [editedProject, setEditedProject] = useState(project);
-  const [projectPersonas, setProjectPersonas] = useState<any[]>([]);
+  const [editedProject, setEditedProject] = useState({
+    ...project,
+    discussion_questions: project.discussion_questions || []
+  });  const [projectPersonas, setProjectPersonas] = useState<any[]>([]);
   const [simulations, setSimulations] = useState<Simulation[]>([]);
   const [isGeneratingPersonas, setIsGeneratingPersonas] = useState(false);
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
@@ -349,6 +351,7 @@ if(!project.brief_text){
   const handleSaveBrief = async () => {
     setIsSavingBrief(true);
     try {
+      console.log('briefText111', briefText, project, project.id);
       const response = await fetch(`/api/projects/${project.id}`, {
         method: 'PATCH',
         headers: {
@@ -362,6 +365,8 @@ if(!project.brief_text){
       }
 
       const updatedProject = await response.json();
+      setEditedProject(updatedProject);
+      setBriefText(updatedProject.brief_text || '');
       onUpdate?.(updatedProject);
       setIsBriefModified(false);
       
@@ -387,7 +392,7 @@ if(!project.brief_text){
         <div className="flex-1">
           <input
             type="text"
-            value={editedProject.name}
+            value={editedProject.name || ''}
             onChange={(e) => {
               setEditedProject({ ...editedProject, name: e.target.value });
               setHasNameChanged(e.target.value !== project.name);
@@ -486,7 +491,7 @@ if(!project.brief_text){
                 {briefText && (
                   <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                     <h4 className="font-medium mb-2">Current Brief:</h4>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{briefText}</p>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{briefText || ''}</p>
                     <div className="mt-3 flex gap-2">
                       <Button 
                         variant="outline" 
@@ -673,7 +678,8 @@ if(!project.brief_text){
 
             <div className="mt-4 space-y-2">
               <textarea
-                value={editedProject.discussion_questions?.join('\n') || ''}
+                value={(editedProject.discussion_questions || []).join('\n')}
+
                 onChange={(e) => setEditedProject({ ...editedProject, discussion_questions: e.target.value.split('\n').filter(Boolean) })}
                 className="w-full min-h-[400px] p-2 border rounded-md"
                 placeholder="Enter discussion questions..."

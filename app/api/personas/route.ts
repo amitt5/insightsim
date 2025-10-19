@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Failed to fetch user role" }, { status: 500 })
     }
 
-    let query = supabase.from('personas').select('*')
+    let query = supabase.from('personas').select('*').eq('editable', true)
     
     // Only filter by user_id if the user is not an admin
     if (userData?.role !== 'admin') {
@@ -183,17 +183,17 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Persona not found or not editable' }, { status: 404 });
     }
     console.log('persona222', persona)
-    // Delete the persona
-    const { error: deleteError } = await supabase
+    // Soft delete the persona by setting editable = false
+    const { error: updateError } = await supabase
       .from('personas')
-      .delete()
+      .update({ editable: false })
       .eq('id', id)
       .eq('user_id', userId);
-    console.log('deleteError111', deleteError)
-    if (deleteError) {
-      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    console.log('updateError111', updateError)
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
-    console.log('deleteError222', deleteError)
+    console.log('updateError222', updateError)
     return NextResponse.json({ success: true, message: 'Persona deleted successfully' });
   } catch (error: any) {
     console.error('Error deleting persona:', error);

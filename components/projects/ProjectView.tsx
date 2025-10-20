@@ -372,13 +372,20 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         const parsedResponse = JSON.parse(responseText);
         const generatedPersonas = parsedResponse.personas || [];
         console.log('generatedPersonas111', generatedPersonas)
+        
+        // Add editable field to each persona
+        const personasWithEditable = generatedPersonas.map((persona: any) => ({
+          ...persona,
+          editable: true
+        }));
+        
         // Save the generated personas
         const response = await fetch(`/api/projects/${project.id}/personas`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ personas: generatedPersonas }),
+          body: JSON.stringify({ personas: personasWithEditable }),
         });
 
         if (!response.ok) {
@@ -452,13 +459,19 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         const generatedPersonas = parsedResponse.personas || [];
         console.log('generatedPersonas with segments', generatedPersonas);
         
+        // Add editable field to each persona
+        const personasWithEditable = generatedPersonas.map((persona: any) => ({
+          ...persona,
+          editable: true
+        }));
+        
         // Save the generated personas
         const response = await fetch(`/api/projects/${project.id}/personas`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ personas: generatedPersonas }),
+          body: JSON.stringify({ personas: personasWithEditable }),
         });
 
         if (!response.ok) {

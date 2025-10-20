@@ -503,7 +503,7 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
                   onClick={handleGenerateBrief}
                   variant="outline"
                   size="sm"
-                  disabled={!assistantState.isReadyToGenerate}
+                  // disabled={!assistantState.isReadyToGenerate}
                 >
                   Generate Brief
                 </Button>

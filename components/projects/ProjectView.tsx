@@ -183,8 +183,14 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
 
   // Update active tab when project changes
   useEffect(() => {
-    setActiveTab(project.active_tab || 'brief');
-  }, [project.active_tab]);
+    const newActiveTab = project.active_tab || 'brief';
+    // If there's no brief_text and the active tab is not 'brief', force it to 'brief'
+    if (!project.brief_text && newActiveTab !== 'brief') {
+      setActiveTab('brief');
+    } else {
+      setActiveTab(newActiveTab);
+    }
+  }, [project.active_tab, project.brief_text]);
 
   // Fetch project personas when the component mounts
   useEffect(() => {
@@ -601,6 +607,11 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   };
 
   const handleTabChange = async (newTab: string) => {
+    // Don't allow switching to disabled tabs when brief_text is null
+    if (!briefText && newTab !== 'brief') {
+      return;
+    }
+    
     setActiveTab(newTab);
     
     // Save the active tab to the database
@@ -696,12 +707,78 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList>
           <TabsTrigger value="brief">Brief</TabsTrigger>
-          <TabsTrigger value="discussion">Discussion Guide</TabsTrigger>
-          <TabsTrigger value="rag">RAG</TabsTrigger>
-          <TabsTrigger value="personas">Personas</TabsTrigger>
-          <TabsTrigger value="media">Media</TabsTrigger>
-          <TabsTrigger value="studies">Simulations</TabsTrigger>
-          <TabsTrigger value="interviews">Human Interviews</TabsTrigger>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="discussion" disabled={!briefText}>Discussion Guide</TabsTrigger>
+              </TooltipTrigger>
+              {!briefText && (
+                <TooltipContent>
+                  <p>Add a brief first to access this feature</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="rag" disabled={!briefText}>RAG</TabsTrigger>
+              </TooltipTrigger>
+              {!briefText && (
+                <TooltipContent>
+                  <p>Add a brief first to access this feature</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="personas" disabled={!briefText}>Personas</TabsTrigger>
+              </TooltipTrigger>
+              {!briefText && (
+                <TooltipContent>
+                  <p>Add a brief first to access this feature</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="media" disabled={!briefText}>Media</TabsTrigger>
+              </TooltipTrigger>
+              {!briefText && (
+                <TooltipContent>
+                  <p>Add a brief first to access this feature</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="studies" disabled={!briefText}>Simulations</TabsTrigger>
+              </TooltipTrigger>
+              {!briefText && (
+                <TooltipContent>
+                  <p>Add a brief first to access this feature</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="interviews" disabled={!briefText}>Human Interviews</TabsTrigger>
+              </TooltipTrigger>
+              {!briefText && (
+                <TooltipContent>
+                  <p>Add a brief first to access this feature</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </TabsList>
 
         <TabsContent value="brief" className="space-y-4">
@@ -824,6 +901,11 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                     setBriefText(brief);
                     setEditedProject({ ...editedProject, brief_text: brief });
                     setIsBriefModified(true);
+                    
+                    // Update parent component with the new brief
+                    const updatedProject = { ...project, brief_text: brief };
+                    onUpdate?.(updatedProject);
+                    
                     toast({
                       title: "Brief Generated",
                       description: "The AI-generated brief has been added to your project. You can edit it by switching to manual mode.",

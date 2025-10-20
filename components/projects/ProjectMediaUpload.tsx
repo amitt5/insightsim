@@ -19,6 +19,7 @@ interface MediaFile {
   name: string
   size: number
   type: string
+  file: File
   url?: string
   preview?: string
   isUploading?: boolean
@@ -76,6 +77,7 @@ export default function ProjectMediaUpload({ projectId, mediaUrls, onMediaUpdate
         name: file.name,
         size: file.size,
         type: file.type,
+        file: file,
         isUploading: false,
         uploadProgress: 0
       }
@@ -117,9 +119,12 @@ export default function ProjectMediaUpload({ projectId, mediaUrls, onMediaUpdate
     setIsUploading(true)
     const uploadedUrls: string[] = []
 
+    // Set all files as uploading
+    setSelectedFiles(prev => prev.map(f => ({ ...f, isUploading: true, uploadProgress: 0 })))
+
     try {
-      // Convert selected files to File objects
-      const filesToUpload = selectedFiles.map(file => new File([], file.name, { type: file.type }))
+      // Use the actual File objects from selectedFiles
+      const filesToUpload = selectedFiles.map(mediaFile => mediaFile.file)
 
       // Upload files with progress tracking
       const results = await uploadMultipleProjectMedia(
@@ -129,12 +134,12 @@ export default function ProjectMediaUpload({ projectId, mediaUrls, onMediaUpdate
           const file = selectedFiles[fileIndex]
           if (result.success) {
             setSelectedFiles(prev => prev.map(f => 
-              f.id === file.id ? { ...f, isUploading: false, url: result.url } : f
+              f.id === file.id ? { ...f, isUploading: false, uploadProgress: 100, url: result.url } : f
             ))
             uploadedUrls.push(result.url!)
           } else {
             setSelectedFiles(prev => prev.map(f => 
-              f.id === file.id ? { ...f, isUploading: false } : f
+              f.id === file.id ? { ...f, isUploading: false, uploadProgress: 0 } : f
             ))
             toast({
               title: "Upload failed",

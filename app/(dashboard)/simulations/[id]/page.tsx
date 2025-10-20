@@ -691,9 +691,26 @@ const debugAPIRawResponse = async () => {
       const messageFetched = await fetchSimulationMessages(simulationData.simulation.id);
       const currentAttachedImages = [...attachedImages]; // Store current images before clearing
       
+      // Validate all attached images before sending
+      const validImages = [];
+      for (const image of currentAttachedImages) {
+        const isValid = await validateImage(image.url);
+        if (isValid) {
+          validImages.push(image);
+        } else {
+          console.warn(`Invalid image detected and skipped: ${image.name}`, image.url);
+          toast({
+            title: "Invalid Image",
+            description: `Image "${image.name}" is corrupted or empty and has been skipped.`,
+            variant: "destructive",
+          });
+        }
+      }
+      
       // Fetch selected document texts for CAG
       const selectedDocumentTexts = await fetchSelectedDocumentTexts();
       console.log('Selected document texts for CAG:', selectedDocumentTexts);
+      console.log('Valid images to send:', validImages);
       
       setNewMessage('');
       setAttachedImages([]); // Clear attached images after sending
@@ -708,7 +725,7 @@ const debugAPIRawResponse = async () => {
           messages: messageFetched,
           personas: simulationData?.personas || []
         }
-        const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction, currentAttachedImages, selectedDocumentTexts);
+        const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction, validImages, selectedDocumentTexts);
         console.log('prompt1111',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
           //4. send the messages to openai
@@ -733,6 +750,25 @@ const debugAPIRawResponse = async () => {
     }
     setNewMessage(initialMessage.message);
   }
+
+  // Function to validate if an image URL is accessible and has content
+  const validateImage = async (imageUrl: string): Promise<boolean> => {
+    try {
+      const response = await fetch(imageUrl, { method: 'HEAD' });
+      const contentLength = response.headers.get('content-length');
+      const contentType = response.headers.get('content-type');
+      
+      // Check if response is successful, has content, and is an image
+      return response.ok && 
+             contentLength !== null && 
+             parseInt(contentLength) > 0 && 
+             contentType !== null && 
+             contentType.startsWith('image/');
+    } catch (error) {
+      console.error('Error validating image:', error);
+      return false;
+    }
+  };
 
   // Function to parse the simulation response
   const parseSimulationResponse = (responseString: string) => {

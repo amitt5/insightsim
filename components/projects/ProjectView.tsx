@@ -18,6 +18,7 @@ import { ArrowLeft, ArrowRight, Upload, X,Edit2, Save, FileIcon, Sparkles, Loade
 import AIBriefAssistant from "./AIBriefAssistant"
 import { RagDocumentUpload, RagDocumentList } from "./rag"
 import { TargetSegmentSelectionModal } from "./TargetSegmentSelectionModal"
+import { runPersonaAnalysis, AnalysisProgress } from "@/utils/personaAnalysis"
 
 interface ProjectViewProps {
   project: Project;
@@ -49,6 +50,10 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [showTargetSegmentModal, setShowTargetSegmentModal] = useState(false);
   const [targetSegments, setTargetSegments] = useState<string[]>([]);
   const [isGeneratingSegments, setIsGeneratingSegments] = useState(false);
+  
+  // Analysis progress state
+  const [analysisStep, setAnalysisStep] = useState<'idle' | 'analyzing_requirements' | 'source_selection' | 'generating_personas' | 'completed'>('idle');
+  const [analysisMessage, setAnalysisMessage] = useState<string>('');
 
   const handleEditPersona = (persona: any) => {
     setEditingPersona(persona);
@@ -439,9 +444,22 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     }
 
     setIsGeneratingPersonas(true);
-    setShowTargetSegmentModal(false);
     
     try {
+      // Step 1 & 2: Run analysis with progress updates
+      const { analysis, sources } = await runPersonaAnalysis(
+        project.brief_text,
+        selectedSegments,
+        (progress: AnalysisProgress) => {
+          setAnalysisStep(progress.step);
+          setAnalysisMessage(progress.message);
+        }
+      );
+
+      // Step 3: Generate personas with enhanced data
+      setAnalysisStep('generating_personas');
+      setAnalysisMessage('Generating Personas...');
+      
       const prompt = createBriefPersonaGenerationPrompt(project, selectedSegments);
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: prompt }
@@ -458,6 +476,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         const parsedResponse = JSON.parse(responseText);
         const generatedPersonas = parsedResponse.personas || [];
         console.log('generatedPersonas with segments', generatedPersonas);
+        console.log('Analysis results:', analysis);
+        console.log('Source selections:', sources);
         
         // Add editable field to each persona
         const personasWithEditable = generatedPersonas.map((persona: any) => ({
@@ -481,6 +501,10 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         const data = await response.json();
         setProjectPersonas(data.personas);
         
+        // Close modal and reset states
+        setShowTargetSegmentModal(false);
+        setAnalysisStep('completed');
+        
         toast({
           title: "Success",
           description: `Generated ${generatedPersonas.length} personas for selected segments: ${selectedSegments.join(', ')}`,
@@ -502,6 +526,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       });
     } finally {
       setIsGeneratingPersonas(false);
+      setAnalysisStep('idle');
+      setAnalysisMessage('');
     }
   };
 
@@ -997,10 +1023,16 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       {/* Target Segment Selection Modal */}
       <TargetSegmentSelectionModal
         isOpen={showTargetSegmentModal}
-        onClose={() => setShowTargetSegmentModal(false)}
+        onClose={() => {
+          setShowTargetSegmentModal(false);
+          setAnalysisStep('idle');
+          setAnalysisMessage('');
+        }}
         segments={targetSegments}
         onGenerate={handleGeneratePersonasWithSegments}
         isLoading={isGeneratingPersonas}
+        analysisStep={analysisStep}
+        analysisMessage={analysisMessage}
       />
     </div>
   );

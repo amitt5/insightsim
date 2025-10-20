@@ -98,7 +98,7 @@ export function PersonaCard({
                 <UserCircle className="h-6 w-6" />
               </div>
               <div className="flex-1">
-                <h3 className="font-medium">{persona.name} {persona.editable ? <span className="text-xs text-gray-500">(Editable)</span> : <span className="text-xs text-gray-500">(Not Editable)</span>} </h3>
+                <h3 className="font-medium">{persona.name} </h3>
                 <div className="text-sm">
                   {(persona.gender || persona.age) && (
                     <p className="flex items-center gap-1">

@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 import { AnalysisProgress, AnalysisResult, SourceSelection } from "@/utils/personaAnalysis";
 
-type AnalysisStep = 'idle' | 'analyzing_requirements' | 'source_selection' | 'generating_personas' | 'completed';
+type AnalysisStep = 'idle' | 'analyzing_requirements' | 'source_selection' | 'scraping_web' | 'generating_personas' | 'completed';
 
 // Scrolling Analysis Display Component
 function AnalysisScrollingDisplay({ 

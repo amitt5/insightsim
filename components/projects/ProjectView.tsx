@@ -52,7 +52,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [isGeneratingSegments, setIsGeneratingSegments] = useState(false);
   
   // Analysis progress state
-  const [analysisStep, setAnalysisStep] = useState<'idle' | 'analyzing_requirements' | 'source_selection' | 'generating_personas' | 'completed'>('idle');
+  const [analysisStep, setAnalysisStep] = useState<'idle' | 'analyzing_requirements' | 'source_selection' | 'scraping_web' | 'generating_personas' | 'completed'>('idle');
   const [analysisMessage, setAnalysisMessage] = useState<string>('');
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [sourceData, setSourceData] = useState<any>(null);
@@ -469,15 +469,24 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       );
       console.log('analysis111', analysis, sources);
 
-      // Step 3: Generate personas with enhanced data
+      // Step 4: Generate personas with enhanced data (minimum 2 seconds)
       setAnalysisStep('generating_personas');
       setAnalysisMessage('Generating Personas...');
+      
+      const personaStartTime = Date.now();
       
       const prompt = createBriefPersonaGenerationPrompt(project, selectedSegments);
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: prompt }
       ];
       const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'persona-generation');
+      
+      // Ensure persona generation shows for at least 2 seconds
+      const personaElapsed = Date.now() - personaStartTime;
+      const personaRemainingTime = Math.max(0, 2000 - personaElapsed);
+      if (personaRemainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, personaRemainingTime));
+      }
 
       try {
         let responseText = result.reply || "";

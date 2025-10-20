@@ -25,16 +25,16 @@ export async function POST(
       .eq("project_id", params.projectId)
       .eq("user_id", session.user.id)
       .single()
-
+    console.log('document111', document)
     if (fetchError) {
       console.error("Error fetching document:", fetchError)
       return NextResponse.json({ error: "Document not found" }, { status: 404 })
     }
-
+    console.log('document222', document)
     if (!document) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 })
     }
-
+    console.log('document333', document)
     // Check if document is already processed
     if (document.status === 'completed') {
       return NextResponse.json({ 
@@ -42,7 +42,7 @@ export async function POST(
         document 
       })
     }
-
+    console.log('document444', document)
     // Update document status to processing
     const { error: updateError } = await supabase
       .from("rag_documents")
@@ -51,12 +51,12 @@ export async function POST(
         updated_at: new Date().toISOString()
       })
       .eq("id", params.documentId)
-
+    console.log('updateError111', updateError)
     if (updateError) {
       console.error("Error updating document status:", updateError)
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
-
+    console.log('updateError222', updateError)
     try {
       // Step 1: Download file from Supabase storage
       console.log(`Downloading aaaamit file: ${document.file_path}`)
@@ -75,41 +75,43 @@ export async function POST(
       formData.append('file', fileData, document.original_filename)
 
       const pythonServiceUrl = process.env.PYTHON_PDF_SERVICE_URL || 'http://localhost:8000'
-      const response = await fetch(`${pythonServiceUrl}/chunk-text`, {
+      console.log('pythonServiceUrl111', pythonServiceUrl)
+      const response = await fetch(`${pythonServiceUrl}/extract-for-cag`, {
         method: 'POST',
         body: formData,
       })
-
+      console.log('response111222', response)
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.detail || 'Failed to extract text from PDF')
       }
 
       const chunkingResult = await response.json()
-      console.log(`Text extraction and chunking successful: ${chunkingResult.total_chunks} chunks created`)
-      console.log(`Average chunk size: ${chunkingResult.avg_chunk_size} characters`)
+      console.log(`Text extraction successful for CAG approach: ${chunkingResult.total_chunks} full-text document created`)
+      console.log(`Full text length: ${chunkingResult.avg_chunk_size} characters`)
 
-      // Step 3: Store chunks and embeddings in database
-      console.log("Storing chunks and embeddings in database...")
-      const chunksToInsert = chunkingResult.chunks.map((chunk: any, index: number) => ({
-        document_id: params.documentId,
-        chunk_index: index,
-        chunk_text: chunk.text,
-        chunk_embedding: chunk.embedding, // This will be stored as VECTOR(1536)
-        metadata: chunk.metadata,
-        created_at: new Date().toISOString()
-      }))
+      // Step 3: Store full text in database (CAG approach - no chunking)
+      console.log("Storing full text in database for CAG approach...")
+      
+      // For CAG approach, we store the full text directly in the rag_documents table
+      // instead of creating multiple chunks
+      const { error: updateTextError } = await supabase
+        .from("rag_documents")
+        .update({ 
+          full_text: chunkingResult.chunks[0].text, // Store full text from the single "chunk"
+          text_length: chunkingResult.chunks[0].metadata.text_length,
+          pages_count: chunkingResult.chunks[0].metadata.pages_count,
+          processing_method: 'cag_extract_only',
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", params.documentId)
 
-      const { error: chunksError } = await supabase
-        .from("rag_document_chunks")
-        .insert(chunksToInsert)
-
-      if (chunksError) {
-        console.error("Error storing chunks:", chunksError)
-        throw new Error("Failed to store document chunks")
+      if (updateTextError) {
+        console.error("Error storing full text:", updateTextError)
+        throw new Error("Failed to store document full text")
       }
 
-      console.log(`Successfully stored ${chunksToInsert.length} chunks with embeddings`)
+      console.log(`Successfully stored full text (${chunkingResult.chunks[0].text.length} characters) for CAG approach`)
 
       // Update document status to completed
       const { error: completeError } = await supabase
@@ -129,10 +131,12 @@ export async function POST(
       
       return NextResponse.json({
         success: true,
-        message: "Document processed successfully - text extracted, chunked, and embeddings stored",
-        totalChunks: chunkingResult.total_chunks,
-        avgChunkSize: chunkingResult.avg_chunk_size,
-        chunksStored: chunksToInsert.length,
+        message: "Document processed successfully for CAG approach - text extracted and stored as full text",
+        totalChunks: chunkingResult.total_chunks, // Will be 1 for CAG approach
+        avgChunkSize: chunkingResult.avg_chunk_size, // Will be full text length
+        textLength: chunkingResult.chunks[0].text.length,
+        pagesCount: chunkingResult.chunks[0].metadata.pages_count,
+        processingMethod: 'cag_extract_only',
         document: {
           id: document.id,
           filename: document.original_filename,

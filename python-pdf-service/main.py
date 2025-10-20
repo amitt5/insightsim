@@ -7,8 +7,8 @@ import io
 import os
 from dotenv import load_dotenv
 import logging
-from llama_index.node_parser import SentenceSplitter
-from llama_index.schema import Document
+# from llama_index.node_parser import SentenceSplitter
+# from llama_index.schema import Document
 import openai
 
 # Load environment variables
@@ -132,45 +132,69 @@ def extract_text_from_pdf(file_content: bytes) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail=f"Failed to extract text from PDF: {str(e)}")
 
 def create_text_chunks(text: str, filename: str) -> List[Dict[str, Any]]:
-    """Create text chunks using LlamaIndex SentenceSplitter"""
+    """Create text chunks using basic text splitting"""
     try:
         print("🔪 [CHUNKING] Starting text chunking...")
         logger.info(f"Starting text chunking for: {filename}")
         print(f"📝 [CHUNKING] Original text length: {len(text)} characters")
         
-        # Initialize LlamaIndex SentenceSplitter
-        splitter = SentenceSplitter(
-            chunk_size=512,  # tokens
-            chunk_overlap=50,  # tokens
-            separator=" ",
-            paragraph_separator="\n\n",
-            secondary_chunking_regex="[.!?]",
-        )
+        # Basic text chunking parameters
+        chunk_size = 512  # characters (similar to 512 tokens)
+        chunk_overlap = 50  # characters (similar to 50 tokens)
         
-        # Create LlamaIndex Document
-        document = Document(text=text, metadata={"filename": filename})
-        
-        # Split into chunks
-        nodes = splitter.get_nodes_from_documents([document])
-        
-        # Convert to our format
+        # Split text into chunks
         chunks = []
-        for i, node in enumerate(nodes):
-            chunk_metadata = {
-                "filename": filename,
-                "chunk_index": i,
-                "chunk_start": 0,  # LlamaIndex doesn't provide exact positions
-                "chunk_end": len(node.text),
-                "chunk_size": len(node.text),
-                "estimated_tokens": len(node.text.split()),  # Rough token estimation
-                "chunk_type": "text",
-                "processing_method": "llamaindex"
-            }
+        start = 0
+        chunk_index = 0
+        
+        while start < len(text):
+            # Calculate end position
+            end = start + chunk_size
             
-            chunks.append({
-                "text": node.text,
-                "metadata": chunk_metadata
-            })
+            # If we're not at the end of the text, try to find a good break point
+            if end < len(text):
+                # Look for sentence endings within the last 100 characters
+                search_start = max(start + chunk_size - 100, start)
+                sentence_endings = [".", "!", "?", "\n\n"]
+                
+                best_break = end
+                for ending in sentence_endings:
+                    # Find the last occurrence of this ending
+                    last_ending = text.rfind(ending, search_start, end)
+                    if last_ending > search_start:
+                        best_break = last_ending + len(ending)
+                        break
+                
+                end = best_break
+            else:
+                end = len(text)
+            
+            # Extract chunk text
+            chunk_text = text[start:end].strip()
+            
+            if chunk_text:  # Only add non-empty chunks
+                chunk_metadata = {
+                    "filename": filename,
+                    "chunk_index": chunk_index,
+                    "chunk_start": start,
+                    "chunk_end": end,
+                    "chunk_size": len(chunk_text),
+                    "estimated_tokens": len(chunk_text.split()),  # Rough token estimation
+                    "chunk_type": "text",
+                    "processing_method": "basic_splitter"
+                }
+                
+                chunks.append({
+                    "text": chunk_text,
+                    "metadata": chunk_metadata
+                })
+                
+                chunk_index += 1
+            
+            # Move start position with overlap
+            start = end - chunk_overlap
+            if start >= len(text):
+                break
         
         print(f"✅ [CHUNKING] Created {len(chunks)} text chunks")
         if chunks:
@@ -266,6 +290,120 @@ async def extract_text_endpoint(file: UploadFile = File(...)):
         logger.error(f"Unexpected error in extract_text_endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
+# COMMENTED OUT - Original chunking implementation for CAG approach
+# @app.post("/chunk-text", response_model=ChunkingResponse)
+# async def chunk_text_endpoint(file: UploadFile = File(...)):
+#     """Extract text from PDF and create chunks using LlamaIndex"""
+#     try:
+#         print(f"📁 [CHUNK API] Received file: {file.filename}")
+#         print(f"📁 [CHUNK API] File size: {file.size} bytes")
+#         print(f"📁 [CHUNK API] Content type: {file.content_type}")
+#         
+#         # Validate file type
+#         if not file.filename.lower().endswith('.pdf'):
+#             raise HTTPException(status_code=400, detail="Only PDF files are supported")
+#         
+#         # Read file content
+#         file_content = await file.read()
+#         
+#         # Step 1: Extract text
+#         print("🔍 [CHUNK API] Step 1: Extracting text from PDF...")
+#         text_result = extract_text_from_pdf(file_content)
+#         extracted_text = text_result["extracted_text"]
+#         
+#         # Step 2: Create chunks
+#         print("🔪 [CHUNK API] Step 2: Creating text chunks...", extracted_text[:100])
+#         chunks = create_text_chunks(extracted_text, file.filename)
+#         
+#         # Step 3: Generate embeddings
+#         print("🤖 [CHUNK API] Step 3: Generating embeddings...")
+#         chunks_with_embeddings = await generate_embeddings_for_chunks(chunks)
+#         
+#         # Calculate average chunk size
+#         avg_chunk_size = sum(len(chunk["text"]) for chunk in chunks_with_embeddings) / len(chunks_with_embeddings) if chunks_with_embeddings else 0
+#         
+#         print(f"✅ [CHUNK API] Processing completed successfully")
+#         print(f"📊 [CHUNK API] Results: {len(chunks_with_embeddings)} chunks with embeddings, avg size: {avg_chunk_size:.0f} chars")
+#         
+#         return ChunkingResponse(
+#             success=True,
+#             message="Text extracted, chunked, and embeddings generated successfully",
+#             chunks=[ChunkResponse(text=chunk["text"], metadata=chunk["metadata"], embedding=chunk["embedding"]) for chunk in chunks_with_embeddings],
+#             filename=file.filename,
+#             total_chunks=len(chunks_with_embeddings),
+#             avg_chunk_size=int(avg_chunk_size)
+#         )
+#         
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         print(f"💥 [CHUNK API] Unexpected error: {e}")
+#         logger.error(f"Unexpected error in chunk_text_endpoint: {e}")
+#         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+# NEW CAG APPROACH - Extract text only, no chunking
+@app.post("/extract-for-cag", response_model=ChunkingResponse)
+async def extract_for_cag_endpoint(file: UploadFile = File(...)):
+    """Extract text from PDF for CAG approach - no chunking, just full text extraction"""
+    try:
+        print(f"📁 [CAG API] Received file: {file.filename}")
+        print(f"📁 [CAG API] File size: {file.size} bytes")
+        print(f"📁 [CAG API] Content type: {file.content_type}")
+        
+        # Validate file type
+        if not file.filename.lower().endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="Only PDF files are supported")
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Step 1: Extract text only (no chunking for CAG)
+        print("🔍 [CAG API] Step 1: Extracting text from PDF...")
+        text_result = extract_text_from_pdf(file_content)
+        extracted_text = text_result["extracted_text"]
+        
+        # For CAG approach, we create a single "chunk" with the full text
+        # This maintains compatibility with existing API structure
+        print("📄 [CAG API] Step 2: Creating single full-text chunk for CAG...")
+        
+        # Create a single chunk with the full text
+        full_text_chunk = {
+            "text": extracted_text,
+            "metadata": {
+                "filename": file.filename,
+                "chunk_index": 0,
+                "chunk_start": 0,
+                "chunk_end": len(extracted_text),
+                "chunk_size": len(extracted_text),
+                "estimated_tokens": len(extracted_text.split()),
+                "chunk_type": "full_text",
+                "processing_method": "cag_extract_only",
+                "pages_count": text_result["pages_count"],
+                "text_length": text_result["text_length"]
+            },
+            "embedding": []  # No embedding for CAG approach
+        }
+        
+        print(f"✅ [CAG API] Processing completed successfully")
+        print(f"📊 [CAG API] Results: 1 full-text chunk, {len(extracted_text)} characters")
+        
+        return ChunkingResponse(
+            success=True,
+            message="Text extracted successfully for CAG approach - no chunking performed",
+            chunks=[ChunkResponse(text=full_text_chunk["text"], metadata=full_text_chunk["metadata"], embedding=full_text_chunk["embedding"])],
+            filename=file.filename,
+            total_chunks=1,
+            avg_chunk_size=len(extracted_text)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"💥 [CAG API] Unexpected error: {e}")
+        logger.error(f"Unexpected error in chunk_text_endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+# RESTORED ORIGINAL CHUNKING ENDPOINT (for backward compatibility)
 @app.post("/chunk-text", response_model=ChunkingResponse)
 async def chunk_text_endpoint(file: UploadFile = File(...)):
     """Extract text from PDF and create chunks using LlamaIndex"""
@@ -287,7 +425,7 @@ async def chunk_text_endpoint(file: UploadFile = File(...)):
         extracted_text = text_result["extracted_text"]
         
         # Step 2: Create chunks
-        print("🔪 [CHUNK API] Step 2: Creating text chunks...")
+        print("🔪 [CHUNK API] Step 2: Creating text chunks...", extracted_text[:100])
         chunks = create_text_chunks(extracted_text, file.filename)
         
         # Step 3: Generate embeddings

@@ -15,16 +15,18 @@ export async function POST(request: Request) {
     // Parse request body (optional - can be empty)
     const requestData = await request.json().catch(() => ({}))
     
-    // Create minimal simulation record with defaults
+    // Create simulation record with optional project-sourced fields
     const { data: simulation, error } = await supabase.from("simulations").insert([
       {
         user_id: session.user.id,
+        project_id: requestData.project_id || null,
         study_title: requestData.study_title || "",
         study_type: requestData.study_type || "focus-group",
         mode: requestData.mode || "human-mod",
         topic: requestData.topic || "",
         stimulus_media_url: [],
-        discussion_questions: [],
+        brief_text: requestData.brief_text || null,
+        discussion_questions: Array.isArray(requestData.discussion_questions) ? requestData.discussion_questions : [],
         turn_based: false,
         num_turns: 10,
         status: "Draft",

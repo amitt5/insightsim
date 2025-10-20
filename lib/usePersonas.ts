@@ -19,7 +19,7 @@ const processTraits = (traits: string | string[]) => {
   return processedTraits;
 };
 
-export function usePersonas() {
+export function usePersonas(projectId?: string | null, fetchAll: boolean = false) {
   const [personas, setPersonas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,14 +28,37 @@ export function usePersonas() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/personas");
-      if (!res.ok) throw new Error("Failed to fetch personas");
-      const data = await res.json();
+      let res;
+      let data;
+      
+      if (projectId) {
+        // Fetch personas specific to the project
+        res = await fetch(`/api/projects/${projectId}/personas`);
+        if (!res.ok) throw new Error("Failed to fetch project personas");
+        const responseData = await res.json();
+        data = responseData.personas; // Project personas API returns { personas: [...] }
+      } else if (fetchAll) {
+        // Fetch all personas when explicitly requested
+        res = await fetch("/api/personas");
+        if (!res.ok) throw new Error("Failed to fetch personas");
+        data = await res.json();
+      } else {
+        // Don't fetch anything if no projectId is provided and fetchAll is false
+        setPersonas([]);
+        setLoading(false);
+        return [];
+      }
+      
       // Process traits for each persona
-      const processedData = data.map((persona: any) => ({
-        ...persona,
-        traits: processTraits(persona.traits)
-      }));
+      const processedData = data.map((persona: any) => {
+        console.log('Raw persona from API:', persona);
+        const processed = {
+          ...persona,
+          traits: processTraits(persona.traits)
+        };
+        console.log('Processed persona:', processed);
+        return processed;
+      });
       // sort personas by user_id
       // handle case if user_id is null
       processedData.sort((a: any, b: any) => {
@@ -53,7 +76,7 @@ export function usePersonas() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectId, fetchAll]);
 
   
 
@@ -63,8 +86,14 @@ export function usePersonas() {
   }, [fetchPersonas]);
 
   useEffect(() => {
-    fetchPersonas();
-  }, [fetchPersonas]);
+    if (projectId || fetchAll) {
+      fetchPersonas();
+    } else {
+      // If no projectId and fetchAll is false, set loading to false and clear personas
+      setLoading(false);
+      setPersonas([]);
+    }
+  }, [fetchPersonas, projectId, fetchAll]);
 
   return { personas, loading, error, mutate };
 } 

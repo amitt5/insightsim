@@ -24,7 +24,7 @@ export default function NewCalibrationPage() {
   const [hideSystemPersonas, setHideSystemPersonas] = useState(false)
   const router = useRouter()
   const [openPersonaModal, setOpenPersonaModal] = useState(false)
-  const { personas, loading, error, mutate } = usePersonas()
+  const { personas, loading, error, mutate } = usePersonas(null, true)
   const [realParticipants, setRealParticipants] = useState<string[]>([])
 
   // Filter personas based on hideSystemPersonas state

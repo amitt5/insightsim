@@ -40,6 +40,9 @@ export async function GET(request: Request) {
 
     let query = supabase.from('personas').select('*')
     
+    // Always filter by editable = true (exclude null and false)
+    query = query.eq('editable', true)
+    
     // Only filter by user_id if the user is not an admin
     if (userData?.role !== 'admin') {
       query = query.or(`user_id.eq.${userId},user_id.is.null`)
@@ -161,11 +164,11 @@ export async function DELETE(request: Request) {
     const { supabase, userId } = await getSupabaseAndUser();
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
-    
+    console.log('id111', id)
     if (!id) {
       return NextResponse.json({ error: 'Persona id is required' }, { status: 400 });
     }
-
+    console.log('id222', id)
     // First check if this persona belongs to the user and is editable
     const { data: persona, error: fetchError } = await supabase
       .from('personas')
@@ -174,26 +177,26 @@ export async function DELETE(request: Request) {
       .eq('user_id', userId)
       .eq('editable', true)
       .single();
-
+    console.log('fetchError111', fetchError)
     if (fetchError) {
       return NextResponse.json({ error: fetchError.message }, { status: 500 });
     }
-
+    console.log('persona111', persona)
     if (!persona) {
       return NextResponse.json({ error: 'Persona not found or not editable' }, { status: 404 });
     }
-
-    // Delete the persona
-    const { error: deleteError } = await supabase
+    console.log('persona222', persona)
+    // Soft delete the persona by setting editable = false
+    const { error: updateError } = await supabase
       .from('personas')
-      .delete()
+      .update({ editable: false })
       .eq('id', id)
       .eq('user_id', userId);
-
-    if (deleteError) {
-      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    console.log('updateError111', updateError)
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
-
+    console.log('updateError222', updateError)
     return NextResponse.json({ success: true, message: 'Persona deleted successfully' });
   } catch (error: any) {
     console.error('Error deleting persona:', error);

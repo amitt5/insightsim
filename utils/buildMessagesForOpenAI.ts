@@ -1,5 +1,5 @@
 // import { SimulationMessage, Persona } from "@/types";
-import { Persona, SimulationMessage, Simulation, AIPersonaGeneration} from "@/utils/types";
+import { Persona, SimulationMessage, Simulation, Project,AIPersonaGeneration} from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
 
@@ -12,7 +12,7 @@ export function buildMessagesForOpenAI({
   simulation: Simulation,
   messages: SimulationMessage[],
   personas: Persona[],
-}, study_type: string, userInstruction?: string, attachedImages?: {url: string, name: string}[]) {
+}, study_type: string, userInstruction?: string, attachedImages?: {url: string, name: string}[], documentTexts?: {id: string, filename: string, text: string, text_length: number}[]) {
   const { study_title, topic, discussion_questions } = simulation;
   const personaMap = Object.fromEntries(personas.map(p => [p.id, p.name]));
 
@@ -80,6 +80,21 @@ When the moderator shares images (photos, documents, screenshots, etc.), partici
 `;
 
 
+  // Add document context if provided (CAG - Context-Augmented Generation)
+  if (documentTexts && documentTexts.length > 0) {
+    systemPrompt += `ADDITIONAL KNOWLEDGE BASE:
+The following information is available to inform your responses naturally:
+
+`;
+    
+    documentTexts.forEach((doc, index) => {
+      systemPrompt += `${doc.text}\n\n`;
+    });
+    
+    systemPrompt += `Use this information naturally in your responses without explicitly mentioning sources or documents.`;
+
+  }
+
   // Add user instruction if provided (NEW SECTION)
   if (userInstruction?.trim()) {
     systemPrompt += `USER INSTRUCTION (MUST FOLLOW):\n${userInstruction.trim()}\n\n`;
@@ -139,26 +154,34 @@ EXAMPLE:
         ? "Moderator"
         : personaMap[m.sender_id ?? ""] ?? "Unknown";
 
-    // Check if this is the last moderator message and we have attached images
+    // Check if this is the last moderator message and we have attached images or documents
     const isLastMessage = i === messages.length - 1;
     const isModeratorMessage = m.sender_type === "moderator";
     const hasAttachedImages = attachedImages && Array.isArray(attachedImages) && attachedImages.length > 0;
+    const hasDocumentTexts = documentTexts && Array.isArray(documentTexts) && documentTexts.length > 0;
 
-    if (isLastMessage && isModeratorMessage && hasAttachedImages) {
-      // Format the last moderator message with images using OpenAI vision format
+    if (isLastMessage && isModeratorMessage && (hasAttachedImages || hasDocumentTexts)) {
+      // Format the last moderator message with images and/or document context
+      let messageText = `${name}: ${m.message}`;
+      
+      // Document context is already included in the system prompt as additional knowledge base
+      // No need to explicitly mention documents in the message
+      
       const content: any[] = [
-        { type: "text", text: `${name}: ${m.message}` }
+        { type: "text", text: messageText }
       ];
 
       // Add each attached image
-      for (const image of attachedImages) {
-        if (image && image.url) {
-          content.push({
-            type: "image_url",
-            image_url: {
-              url: image.url
-            }
-          });
+      if (hasAttachedImages) {
+        for (const image of attachedImages) {
+          if (image && image.url) {
+            content.push({
+              type: "image_url",
+              image_url: {
+                url: image.url
+              }
+            });
+          }
         }
       }
 
@@ -342,6 +365,37 @@ JSON OUTPUT:
   Format each question as a moderator would naturally ask it in the session. Return only valid JSON with no additional text or explanations.`.trim();
 }
 
+// Function to build OpenAI prompt for discussion questions from project brief
+export function buildDiscussionQuestionsFromBrief(projectBrief: string) {
+  return `You are an expert qualitative market researcher.
+
+Generate 6-8 strategic discussion questions for this research study based on the project brief:
+
+Project Brief:
+"${projectBrief}"
+
+Create questions that are suitable for qualitative research (focus group discussions or in-depth interviews):
+- Use open-ended, exploratory language ("How", "What", "Why", "Describe", "Tell me about")
+- Progress from general to specific topics
+- Include both rational and emotional dimensions
+- Encourage storytelling and personal experiences
+- Avoid leading or biased phrasing
+- Include at least one projective or hypothetical scenario question
+- Extract and respond to the key research objectives, target audience, and product/service context from the brief
+
+Return your response as a JSON object with the following structure:
+
+{
+  "questions": [
+    "Question 1 text here",
+    "Question 2 text here",
+    "Question 3 text here"
+  ]
+}
+
+Format each question as a moderator would naturally ask it in a qualitative research session. Return only valid JSON with no additional text or explanations.`.trim();
+}
+
 
 /**
  * Creates a structured prompt for an AI model to extract a single professional study title 
@@ -510,7 +564,7 @@ Do not include any other text, explanations, or markdown formatting before or af
  * @param questions - Array of discussion questions
  * @returns A detailed prompt string ready for an LLM.
  */
-export function createBriefPersonaGenerationPrompt(simulation: Simulation): string {
+export function createBriefPersonaGenerationPrompt(simulation: Simulation | Project, selectedSegments?: string[]): string {
   const briefText: string = simulation.brief_text || '';
   const title: string = simulation.study_title || '';
   const topic: string = simulation.topic || '';
@@ -520,7 +574,12 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation): stri
   const systemPrompt = `You are an expert persona generator for qualitative market research with 15 years of experience at top agencies like Kantar and Ipsos. You specialize in analyzing research briefs and creating realistic, diverse personas that represent the target audience described in the brief. Your output must be a valid JSON array.`;
 
   // 2. Define the task with brief-specific context
-  const taskDefinition = `Your task is to analyze the provided research brief and generate 3 distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
+  let taskDefinition = `Your task is to analyze the provided research brief and generate ${selectedSegments && selectedSegments.length > 0 ? selectedSegments.length : 3} distinct personas that represent different segments within the target audience. Each persona should be relevant to the research objectives and capable of providing meaningful insights during the qualitative sessions. The personas should reflect the diversity needed to address all research questions effectively.`;
+
+  // Add segment-specific guidance if segments are provided
+  if (selectedSegments && selectedSegments.length > 0) {
+    taskDefinition += `\n\nIMPORTANT: Focus specifically on creating personas that represent the following selected target segments: ${selectedSegments.join(', ')}. Each persona should clearly embody the characteristics and behaviors of one of these segments.`;
+  }
 
   // 3. Provide the research context
   const researchContext = `
@@ -530,19 +589,28 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation): stri
   - Research Topic: "${topic}"
   - Research Brief: "${briefText}"
   - Key Discussion Areas: ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n  ')}
+  ${selectedSegments && selectedSegments.length > 0 ? `- Selected Target Segments: ${selectedSegments.join(', ')}` : ''}
   ---
   `;
 
     // 4. Provide persona creation guidelines specific to brief analysis
-    const personaGuidelines = `
+    let personaGuidelines = `
   PERSONA CREATION GUIDELINES:
   - Extract target audience characteristics from the brief's background and objectives sections
   - Create personas that span different attitudes, behaviors, and demographics within the target group
   - Ensure each persona can meaningfully contribute to discussions about the research topic
   - Include relevant demographic details, motivations, and behavioral patterns mentioned in the brief
   - Make personas realistic and relatable for moderators to work with during sessions
-  - Align persona goals and frustrations with the research objectives outlined in the brief
-  `;
+  - Align persona goals and frustrations with the research objectives outlined in the brief`;
+
+  // Add segment-specific guidelines if segments are provided
+  if (selectedSegments && selectedSegments.length > 0) {
+    personaGuidelines += `
+  - Each persona should represent one of the selected target segments: ${selectedSegments.join(', ')}
+  - Ensure personas capture the unique characteristics, motivations, and behaviors of their respective segments
+  - Make sure the personas are distinct and represent different aspects of the selected segments
+  - Align persona traits, goals, and attitudes with the segment they represent`;
+  }
 
     // 5. Specify the exact output format
     const outputFormatInstruction = `
@@ -575,4 +643,232 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation): stri
 
   // Assembling the final prompt
   return `${systemPrompt}\n\n${taskDefinition}\n${researchContext}\n${personaGuidelines}\n${outputFormatInstruction}`;
+}
+
+/**
+ * Creates a structured prompt for an AI model to generate target segments from a research brief.
+ * @param briefText - The research brief text to analyze
+ * @returns A detailed prompt string ready for an LLM.
+ */
+export function createTargetSegmentGenerationPrompt(briefText: string): string {
+  // 1. Set the role and expertise for the AI
+  const systemPrompt = `You are an expert market researcher with 15 years of experience at top agencies like Kantar, Ipsos, and Nielsen. You specialize in analyzing research briefs and identifying distinct target audience segments for qualitative research studies.`;
+
+  // 2. Define the task
+  const taskDefinition = `Your task is to analyze the provided research brief and generate 4-6 distinct target audience segments that would be relevant for persona creation. Each segment should represent a different facet of the target audience with unique characteristics, motivations, or behaviors.`;
+
+  // 3. Provide guidelines for segment creation
+  const segmentGuidelines = `
+SEGMENT CREATION GUIDELINES:
+- Each segment should be distinct and non-overlapping
+- Focus on behavioral, attitudinal, or demographic differences
+- Use clear, concise segment names (2-4 words)
+- Ensure segments are relevant to the research objectives
+- Consider different user needs, pain points, or motivations
+- Make segments actionable for persona creation
+
+EXAMPLES OF GOOD SEGMENT NAMES:
+- "Health-conscious millennials"
+- "Budget-conscious parents"
+- "Busy professionals"
+- "Sustainability-focused consumers"
+- "Tech-savvy early adopters"
+- "Price-sensitive traditionalists"
+`;
+
+  // 4. Specify the output format
+  const outputFormatInstruction = `
+Return your response as a valid JSON object with the following structure:
+
+{
+  "segments": [
+    "Segment Name 1",
+    "Segment Name 2",
+    "Segment Name 3",
+    "Segment Name 4",
+    "Segment Name 5",
+    "Segment Name 6"
+  ]
+}
+
+Provide exactly 4-6 segments. Return only valid JSON with no additional text, explanations, or markdown formatting.`;
+
+  // 5. Provide the brief context
+  const briefContext = `
+RESEARCH BRIEF TO ANALYZE:
+"${briefText}"
+`;
+
+  // Assembling the final prompt
+  return `${systemPrompt}\n\n${taskDefinition}\n${segmentGuidelines}\n${outputFormatInstruction}\n\n${briefContext}\n\nJSON OUTPUT:`;
+}
+
+/**
+ * Creates a structured prompt for AI to analyze requirements for persona generation.
+ * @param briefText - The research brief text to analyze
+ * @param selectedSegments - Array of selected target segments
+ * @returns A detailed prompt string ready for an LLM.
+ */
+export function createRequirementsAnalysisPrompt(briefText: string, selectedSegments: string[]): string {
+  const systemPrompt = `You are an expert market researcher and consumer psychologist with 15 years of experience at top agencies like Kantar, Ipsos, and Nielsen. You specialize in analyzing target audiences and identifying the psychological, behavioral, and contextual factors that drive their decision-making and discussions.`;
+
+  const taskDefinition = `Your task is to analyze the provided research brief and selected target segments to identify the key psychographic factors, discussion platforms, and search behaviors that would be most relevant for understanding these audiences. This analysis will be used to guide data collection and persona creation.`;
+
+  const researchContext = `
+---
+RESEARCH CONTEXT:
+- Research Brief: "${briefText}"
+- Selected Target Segments: ${selectedSegments.join(', ')}
+---
+
+ANALYSIS REQUIREMENTS:
+For each selected segment, identify:
+
+1. PSYCHOGRAPHIC FACTORS:
+   - Core values and beliefs
+   - Lifestyle priorities and motivations
+   - Attitudes toward the research topic/category
+   - Decision-making drivers and pain points
+   - Emotional triggers and aspirations
+
+2. DISCUSSION PLATFORMS:
+   - Where these people actively discuss relevant topics
+   - Online communities, forums, and social platforms
+   - Offline gathering places and events
+   - Professional networks and associations
+
+3. SEARCH BEHAVIORS:
+   - Common search terms and queries they use
+   - Information-seeking patterns
+   - Content consumption preferences
+   - Research and comparison behaviors
+`;
+
+  const outputFormat = `
+Your response MUST be a valid JSON object with this structure:
+\`\`\`json
+{
+  "psychographics": [
+    "Factor 1: Description of psychological driver",
+    "Factor 2: Description of behavioral pattern",
+    "Factor 3: Description of attitudinal element"
+  ],
+  "discussionPlatforms": [
+    "Platform 1: Description of where discussions happen",
+    "Platform 2: Description of community engagement",
+    "Platform 3: Description of information sharing"
+  ],
+  "searchTerms": [
+    "Search term 1: Context of when/how used",
+    "Search term 2: Context of when/how used",
+    "Search term 3: Context of when/how used"
+  ]
+}
+\`\`\`
+
+Focus on insights that are:
+- Specific to the research topic and brief
+- Relevant to the selected target segments
+- Actionable for data collection and persona creation
+- Based on real consumer behavior patterns
+
+Do not include any other text, explanations, or markdown formatting before or after the JSON object.
+`;
+
+  return `${systemPrompt}\n\n${taskDefinition}\n${researchContext}\n${outputFormat}`;
+}
+
+/**
+ * Creates a structured prompt for AI to identify specific sources for data collection.
+ * @param briefText - The research brief text
+ * @param selectedSegments - Array of selected target segments
+ * @param analysis - The requirements analysis results
+ * @returns A detailed prompt string ready for an LLM.
+ */
+export function createSourceIdentificationPrompt(briefText: string, selectedSegments: string[], analysis: any): string {
+  const systemPrompt = `You are an expert digital ethnographer and social listening specialist with 15 years of experience at agencies like Brandwatch, Sprout Social, and Hootsuite. You specialize in identifying the most valuable online sources for understanding consumer behavior, opinions, and authentic voice.`;
+
+  const taskDefinition = `Your task is to identify specific, actionable sources where we can collect authentic data about the target segments. Based on the requirements analysis, recommend concrete Reddit communities, app review platforms, forums, and search strategies that will yield the most relevant insights for persona creation.`;
+
+  const researchContext = `
+---
+RESEARCH CONTEXT:
+- Research Brief: "${briefText}"
+- Selected Target Segments: ${selectedSegments.join(', ')}
+- Requirements Analysis: ${JSON.stringify(analysis, null, 2)}
+---
+
+SOURCE IDENTIFICATION REQUIREMENTS:
+For each selected segment, identify specific sources:
+
+1. REDDIT COMMUNITIES:
+   - Exact subreddit names (e.g., r/fitness, r/EatCheapAndHealthy)
+   - Why this community is relevant
+   - What type of discussions to look for
+
+2. APP REVIEW PLATFORMS:
+   - Specific apps they likely use
+   - Review platforms (App Store, Google Play, etc.)
+   - What to look for in reviews
+
+3. FORUMS & COMMUNITIES:
+   - Specific forum names and URLs if possible
+   - Professional networks or associations
+   - Niche communities relevant to the topic
+
+4. SEARCH STRATEGIES:
+   - Specific search queries to use
+   - Platforms to search (Google, YouTube, TikTok, etc.)
+   - Content types to focus on
+`;
+
+  const outputFormat = `
+Your response MUST be a valid JSON array with this structure:
+\`\`\`json
+[
+  {
+    "segment": "Segment Name",
+    "redditCommunities": [
+      {
+        "name": "r/communityname",
+        "relevance": "Why this community is valuable",
+        "discussionTypes": "What discussions to look for"
+      }
+    ],
+    "appReviews": [
+      {
+        "appName": "App Name",
+        "platform": "App Store/Google Play/etc",
+        "relevance": "Why these reviews matter"
+      }
+    ],
+    "forums": [
+      {
+        "name": "Forum/Community Name",
+        "relevance": "Why this source is valuable",
+        "contentTypes": "What content to focus on"
+      }
+    ],
+    "searchQueries": [
+      {
+        "query": "exact search term",
+        "platform": "Google/YouTube/TikTok/etc",
+        "context": "When/how this query is used"
+      }
+    ]
+  }
+]
+\`\`\`
+
+Requirements:
+- Be specific and actionable (exact subreddit names, app names, etc.)
+- Focus on sources where authentic, unfiltered opinions are shared
+- Prioritize sources with active, engaged communities
+- Consider both positive and negative sentiment sources
+- Include sources that reflect real user experiences and pain points
+
+Do not include any other text, explanations, or markdown formatting before or after the JSON array.
+`;
+
+  return `${systemPrompt}\n\n${taskDefinition}\n${researchContext}\n${outputFormat}`;
 }

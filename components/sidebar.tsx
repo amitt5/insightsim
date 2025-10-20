@@ -3,8 +3,10 @@
 import Link from "next/link"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Users, FileText, Settings, BarChart, MessageSquare, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react"
+import { LayoutDashboard, Users, FileText, Settings, BarChart, MessageSquare, ChevronLeft, ChevronRight, TrendingUp, Folder } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/contexts/auth-context"
 
 interface SidebarProps {
   className?: string
@@ -13,12 +15,15 @@ interface SidebarProps {
 
 export function Sidebar({ className, activePath = "" }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const { user } = useAuth()
+  const isAdmin = (user?.role || "").toLowerCase() === "admin"
 
-  const links = [
+  const links: Array<{ href: string; label: string; icon: any; beta?: boolean; adminOnly?: boolean }> = [
     // { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/projects", label: "Projects", icon: Folder, beta: true },
     { href: "/simulations", label: "Simulations", icon: MessageSquare },
     { href: "/personas", label: "Personas", icon: Users },
-    { href: "/analysis", label: "Analysis", icon: TrendingUp },
+    { href: "/analysis", label: "Analysis", icon: TrendingUp, adminOnly: true },
     // { href: "/reports", label: "Reports", icon: FileText },
     // { href: "/analytics", label: "Analytics", icon: BarChart },
     { href: "/settings", label: "Settings", icon: Settings },
@@ -40,7 +45,9 @@ export function Sidebar({ className, activePath = "" }: SidebarProps) {
           </Link>
         </div>
         <nav className="flex-1 space-y-1 p-4">
-          {links.map((link) => {
+          {links
+            .filter((link) => (link.adminOnly ? isAdmin : true))
+            .map((link) => {
             const isActive = activePath === link.href
             const Icon = link.icon
 
@@ -56,7 +63,14 @@ export function Sidebar({ className, activePath = "" }: SidebarProps) {
                 title={isCollapsed ? link.label : undefined}
               >
                 <Icon className="h-5 w-5" />
-                {!isCollapsed && link.label}
+                {!isCollapsed && (
+                  <span className="flex items-center gap-2">
+                    {link.label}
+                    {link.beta && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">Beta</Badge>
+                    )}
+                  </span>
+                )}
               </Link>
             )
           })}

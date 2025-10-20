@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Analysis display styles - removed scrolling animation */
+
+/* Hide buttons during PDF generation */
+.pdf-generation button {
+  display: none !important;
+}
+
 @layer base {
   :root {
     --background: 33 41% 96%; /* Very light beige for backgrounds */

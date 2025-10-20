@@ -24,6 +24,7 @@ export function PersonaCard({
   onUpdate 
 }: PersonaCardProps) {
   const { toast } = useToast();
+  
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   
@@ -78,6 +79,11 @@ export function PersonaCard({
     }
   };
 
+  // Don't render the card if the persona is not editable
+  if (!persona.editable) {
+    return null;
+  }
+
   return (
     <>
       <Card 
@@ -92,7 +98,7 @@ export function PersonaCard({
                 <UserCircle className="h-6 w-6" />
               </div>
               <div className="flex-1">
-                <h3 className="font-medium">{persona.name}</h3>
+                <h3 className="font-medium">{persona.name} </h3>
                 <div className="text-sm">
                   {(persona.gender || persona.age) && (
                     <p className="flex items-center gap-1">

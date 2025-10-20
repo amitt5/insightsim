@@ -25,8 +25,30 @@ export interface Simulation {
     created_at: string;
     user_instructions?: string;
     brief_text?: string;
+    project_id?: string; 
     brief_source?: 'upload' | 'playing-around' | null;
   }
+
+  export interface Project {
+    id: string;
+    user_id: string;
+    name: string;
+    study_title: string;
+    topic?: string;
+    objective?: string;
+    target_group?: string;
+    product?: string;
+    brief_text?: string;
+    discussion_questions?: string[];
+    media_urls?: string[];
+    active_tab?: string;
+    created_at: string;
+    updated_at: string;
+    is_deleted: boolean;
+    deleted_at?: string;
+  }
+  
+  
   
   export interface CalibrationSession {
     id?: string; // UUID
@@ -120,4 +142,46 @@ export interface KeyInsight {
   supporting_evidence: string[];
   recommended_action: string;
   priority: 'high' | 'medium' | 'low';
+}
+
+// RAG Document interfaces
+export interface RagDocument {
+  id: string;
+  project_id: string;
+  user_id: string;
+  filename: string;
+  original_filename: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  status: 'uploaded' | 'processing' | 'completed' | 'failed';
+  processing_error?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RagDocumentChunk {
+  id: string;
+  document_id: string;
+  chunk_index: number;
+  chunk_text: string;
+  chunk_embedding?: number[]; // 1536-dimensional vector
+  metadata?: Record<string, any>;
+  created_at: string;
+}
+
+export interface RagDocumentUploadRequest {
+  file: File;
+  projectId: string;
+}
+
+export interface RagDocumentUploadResponse {
+  success: boolean;
+  document?: RagDocument;
+  error?: string;
+}
+
+export interface RagDocumentListResponse {
+  documents: RagDocument[];
+  total: number;
 }

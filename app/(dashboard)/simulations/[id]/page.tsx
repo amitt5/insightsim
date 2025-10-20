@@ -11,8 +11,9 @@ import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePromp
 import { buildMessagesForOpenAI, buildFollowUpQuestionsPrompt } from "@/utils/buildMessagesForOpenAI";
 import { SimulationMessage } from "@/utils/types";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 import { Persona,Simulation } from "@/utils/types";
 import { logErrorNonBlocking } from "@/utils/errorLogger";
 import { MediaViewer } from "@/components/media-viewer";
@@ -22,6 +23,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { CREDIT_RATES } from '@/utils/openai'
 import { getSignedUrlForDisplay, getSignedUrlsForDisplay } from '@/utils/fileUpload'
+import { getSignedUrlsForProjectMedia } from '@/utils/projectMedia'
 import {
   Select,
   SelectContent,
@@ -56,6 +58,7 @@ export default function SimulationViewPage() {
   const params = useParams(); // Use useParams() to get the business_id
   const simulationId = params.id as string;
   const router = useRouter();
+  const { toast } = useToast();
 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -85,6 +88,13 @@ export default function SimulationViewPage() {
   const [isLoadingSignedUrls, setIsLoadingSignedUrls] = useState(false)
   const [selectedStimulusImages, setSelectedStimulusImages] = useState<boolean[]>([])
   const [askedQuestionIndices, setAskedQuestionIndices] = useState<number[]>([])
+  const [projectMediaUrls, setProjectMediaUrls] = useState<string[]>([])
+  const [signedProjectMediaUrls, setSignedProjectMediaUrls] = useState<string[]>([])
+  const [selectedProjectMediaImages, setSelectedProjectMediaImages] = useState<boolean[]>([])
+  const [isLoadingProjectMedia, setIsLoadingProjectMedia] = useState(false)
+  const [ragDocuments, setRagDocuments] = useState<any[]>([])
+  const [selectedRagDocuments, setSelectedRagDocuments] = useState<boolean[]>([])
+  const [isLoadingRagDocuments, setIsLoadingRagDocuments] = useState(false)
   // const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
@@ -107,6 +117,56 @@ export default function SimulationViewPage() {
     return index !== -1 ? personaColors[index % personaColors.length] : personaColors[0];
   };
 
+  
+
+
+
+
+
+// Let's see the raw API response to understand what's happening
+const debugAPIRawResponse = async () => {
+  const projectId = simulationData?.simulation?.project_id;
+  
+  const embeddingResponse = await fetch(`/api/projects/${projectId}/rag/query-embedding`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: "Alex Hormozi" })
+  });
+  
+  const { embedding } = await embeddingResponse.json();
+  
+  const searchResponse = await fetch(`/api/projects/${projectId}/rag/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query: "Alex Hormozi",
+      queryEmbedding: embedding,
+      limit: 5,
+      threshold: 0.1
+    })
+  });
+  
+  console.log("Search response status:", searchResponse.status);
+  console.log("Search response headers:", Object.fromEntries(searchResponse.headers.entries()));
+  
+  const responseText = await searchResponse.text();
+  console.log("Raw response text:", responseText);
+  
+  try {
+    const parsedResponse = JSON.parse(responseText);
+    console.log("Parsed response:", parsedResponse);
+    console.log("Results array:", parsedResponse.results);
+    console.log("Results length:", parsedResponse.results?.length);
+  } catch (e) {
+    console.log("Failed to parse JSON:", e);
+  }
+};
+
+
+
+
+
+
   // Function to extract filename from URL for display
   const getFilenameFromUrl = (url: string) => {
     try {
@@ -119,40 +179,119 @@ export default function SimulationViewPage() {
     }
   };
 
-  // Handle stimulus checkbox changes
-  const handleStimulusCheckboxChange = async (index: number, checked: boolean) => {
-    // Update checkbox states
-    const newSelectedStimulus = [...selectedStimulusImages];
-    newSelectedStimulus[index] = checked;
-    setSelectedStimulusImages(newSelectedStimulus);
+  // Handle media checkbox changes (both simulation and project media)
+  const handleMediaCheckboxChange = async (index: number, checked: boolean, mediaType: 'simulation' | 'project') => {
+    if (mediaType === 'simulation') {
+      // Update simulation stimulus checkbox states
+      const newSelectedStimulus = [...selectedStimulusImages];
+      newSelectedStimulus[index] = checked;
+      setSelectedStimulusImages(newSelectedStimulus);
 
-    // Update attached images
-    if (checked) {
-      // Add image to attached images
-      const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
-        ? simulationData.simulation.stimulus_media_url[index] 
-        : simulationData?.simulation?.stimulus_media_url as string;
-      
-      const imageName = getFilenameFromUrl(originalUrl);
-      const signedUrl = await getSignedUrlForDisplay(originalUrl);
-      const imageObj = { url: signedUrl, name: imageName };
-      
-      setAttachedImages(prev => {
-        const exists = prev.some(img => img.name === imageName);
-        if (!exists) {
-          return [...prev, imageObj];
-        }
-        return prev;
-      });
+      // Update attached images
+      if (checked) {
+        // Add image to attached images
+        const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
+          ? simulationData.simulation.stimulus_media_url[index] 
+          : simulationData?.simulation?.stimulus_media_url as string;
+        
+        const imageName = getFilenameFromUrl(originalUrl);
+        const signedUrl = await getSignedUrlForDisplay(originalUrl);
+        const imageObj = { url: signedUrl, name: imageName };
+        
+        setAttachedImages(prev => {
+          const exists = prev.some(img => img.name === imageName);
+          if (!exists) {
+            return [...prev, imageObj];
+          }
+          return prev;
+        });
+      } else {
+        // Remove image from attached images
+        const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
+          ? simulationData.simulation.stimulus_media_url[index] 
+          : simulationData?.simulation?.stimulus_media_url as string;
+        
+        const imageName = getFilenameFromUrl(originalUrl);
+        setAttachedImages(prev => prev.filter(img => img.name !== imageName));
+      }
     } else {
-      // Remove image from attached images
-      const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
-        ? simulationData.simulation.stimulus_media_url[index] 
-        : simulationData?.simulation?.stimulus_media_url as string;
-      
-      const imageName = getFilenameFromUrl(originalUrl);
-      setAttachedImages(prev => prev.filter(img => img.name !== imageName));
+      // Handle project media
+      const newSelectedProjectMedia = [...selectedProjectMediaImages];
+      newSelectedProjectMedia[index] = checked;
+      setSelectedProjectMediaImages(newSelectedProjectMedia);
+
+      if (checked) {
+        const originalUrl = projectMediaUrls[index];
+        const imageName = getFilenameFromUrl(originalUrl);
+        const signedUrls = await getSignedUrlsForProjectMedia([originalUrl]);
+        const signedUrl = signedUrls[0] || originalUrl;
+        const imageObj = { url: signedUrl, name: imageName };
+        
+        setAttachedImages(prev => {
+          const exists = prev.some(img => img.name === imageName);
+          if (!exists) {
+            return [...prev, imageObj];
+          }
+          return prev;
+        });
+      } else {
+        const originalUrl = projectMediaUrls[index];
+        const imageName = getFilenameFromUrl(originalUrl);
+        setAttachedImages(prev => prev.filter(img => img.name !== imageName));
+      }
     }
+  };
+
+  // Keep the old function for backward compatibility
+  const handleStimulusCheckboxChange = async (index: number, checked: boolean) => {
+    handleMediaCheckboxChange(index, checked, 'simulation');
+  };
+
+  // Handle RAG document checkbox changes
+  const handleRagDocumentCheckboxChange = (index: number, checked: boolean) => {
+    const newSelectedRagDocuments = [...selectedRagDocuments];
+    newSelectedRagDocuments[index] = checked;
+    setSelectedRagDocuments(newSelectedRagDocuments);
+    console.log('RAG document selection changed:', index, checked, newSelectedRagDocuments);
+  };
+
+  // Fetch full text for selected RAG documents
+  const fetchSelectedDocumentTexts = async () => {
+    const projectId = simulationData?.simulation?.project_id;
+    if (!projectId) {
+      console.warn('No project_id found - cannot fetch document texts');
+      return [];
+    }
+
+    const selectedDocuments = ragDocuments.filter((_, index) => selectedRagDocuments[index]);
+    console.log('Fetching texts for selected documents:', selectedDocuments.length);
+
+    const documentTexts = [];
+    for (const document of selectedDocuments) {
+      try {
+        console.log(`Fetching text for document: ${document.original_filename}`);
+        const response = await fetch(`/api/projects/${projectId}/rag/documents/${document.id}/full-text`);
+        
+        if (!response.ok) {
+          console.error(`Failed to fetch text for document ${document.id}:`, response.status);
+          continue;
+        }
+
+        const data = await response.json();
+        documentTexts.push({
+          id: document.id,
+          filename: document.original_filename,
+          text: data.extracted_text,
+          text_length: data.text_length
+        });
+        
+        console.log(`Successfully fetched text for ${document.original_filename}: ${data.text_length} characters`);
+      } catch (error) {
+        console.error(`Error fetching text for document ${document.id}:`, error);
+      }
+    }
+
+    return documentTexts;
   };
 
   // Load signed URLs for stimulus images
@@ -188,6 +327,63 @@ export default function SimulationViewPage() {
 
     loadSignedUrls();
   }, [simulationData?.simulation?.stimulus_media_url]);
+
+  // Load project media when simulation data is available
+  useEffect(() => {
+    const loadProjectMedia = async () => {
+      if (simulationData?.simulation?.project_id) {
+        setIsLoadingProjectMedia(true);
+        try {
+          // Fetch project media URLs
+          const response = await fetch(`/api/projects/${simulationData.simulation.project_id}/media`);
+          const data = await response.json();
+          
+          if (data.success) {
+            setProjectMediaUrls(data.mediaUrls || []);
+            
+            // Get signed URLs for project media
+            if (data.mediaUrls.length > 0) {
+              const signedUrls = await getSignedUrlsForProjectMedia(data.mediaUrls);
+              setSignedProjectMediaUrls(signedUrls);
+              setSelectedProjectMediaImages(new Array(signedUrls.length).fill(false));
+            }
+          }
+        } catch (error) {
+          console.error('Error loading project media:', error);
+        } finally {
+          setIsLoadingProjectMedia(false);
+        }
+      }
+    };
+
+    loadProjectMedia();
+  }, [simulationData?.simulation?.project_id]);
+
+  // Load RAG documents when simulation data is available
+  useEffect(() => {
+    const fetchRagDocuments = async () => {
+      if (simulationData?.simulation?.project_id) {
+        setIsLoadingRagDocuments(true);
+        try {
+          // Fetch RAG documents
+          const response = await fetch(`/api/projects/${simulationData.simulation.project_id}/rag/documents`);
+          const data = await response.json();
+          
+          if (data.documents) {
+            console.log('data.documents', data.documents);
+            setRagDocuments(data.documents || []);
+            setSelectedRagDocuments(new Array(data.documents.length).fill(false));
+          }
+        } catch (error) {
+          console.error('Error loading RAG documents:', error);
+        } finally {
+          setIsLoadingRagDocuments(false);
+        }
+      }
+    };
+
+    fetchRagDocuments();
+  }, [simulationData?.simulation?.project_id]);
 
   // Ref for the textarea to enable scrolling and focusing
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -470,7 +666,19 @@ export default function SimulationViewPage() {
     // then fetch the updated messages from the database
     // then update the messages state
     // then update the formatted messages state
-   
+    // debugSearchAPI();
+    // debugFallbackSearch();
+    // searchRAGDocuments(newMessage);
+    // testEmbeddingGeneration();
+    // testFrontendRAG();
+    // debugAPIRawResponse();
+    //  testCurrentFunction();
+    // testExactAPICall();
+
+
+    // if(newMessage.length > 0) {
+    //   return;
+    // }
     //1. save the moderator message to the database
     setShowFollowUpQuestions(false);
     const modMessage = {
@@ -482,18 +690,42 @@ export default function SimulationViewPage() {
       //2. fetch the messages from the database
       const messageFetched = await fetchSimulationMessages(simulationData.simulation.id);
       const currentAttachedImages = [...attachedImages]; // Store current images before clearing
+      
+      // Validate all attached images before sending
+      const validImages = [];
+      for (const image of currentAttachedImages) {
+        const isValid = await validateImage(image.url);
+        if (isValid) {
+          validImages.push(image);
+        } else {
+          console.warn(`Invalid image detected and skipped: ${image.name}`, image.url);
+          toast({
+            title: "Invalid Image",
+            description: `Image "${image.name}" is corrupted or empty and has been skipped.`,
+            variant: "destructive",
+          });
+        }
+      }
+      
+      // Fetch selected document texts for CAG
+      const selectedDocumentTexts = await fetchSelectedDocumentTexts();
+      console.log('Selected document texts for CAG:', selectedDocumentTexts);
+      console.log('Valid images to send:', validImages);
+      
       setNewMessage('');
       setAttachedImages([]); // Clear attached images after sending
-      setSelectedStimulusImages(new Array(signedStimulusUrls.length).fill(false)); // Reset checkboxes
+      setSelectedStimulusImages(new Array(signedStimulusUrls.length).fill(false)); // Reset simulation checkboxes
+      setSelectedProjectMediaImages(new Array(signedProjectMediaUrls.length).fill(false)); // Reset project media checkboxes
+      setSelectedRagDocuments(new Array(ragDocuments.length).fill(false)); // Reset RAG document checkboxes
      
       if(messageFetched) {
-         //3. build the messages for openai with attached images
+         //3. build the messages for openai with attached images and document texts
         const sample = {
           simulation: simulationData?.simulation,
           messages: messageFetched,
           personas: simulationData?.personas || []
         }
-        const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction, currentAttachedImages);
+        const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction, validImages, selectedDocumentTexts);
         console.log('prompt1111',prompt,simulationMessages,formattedMessages, messageFetched, prompt);
         
           //4. send the messages to openai
@@ -518,6 +750,25 @@ export default function SimulationViewPage() {
     }
     setNewMessage(initialMessage.message);
   }
+
+  // Function to validate if an image URL is accessible and has content
+  const validateImage = async (imageUrl: string): Promise<boolean> => {
+    try {
+      const response = await fetch(imageUrl, { method: 'HEAD' });
+      const contentLength = response.headers.get('content-length');
+      const contentType = response.headers.get('content-type');
+      
+      // Check if response is successful, has content, and is an image
+      return response.ok && 
+             contentLength !== null && 
+             parseInt(contentLength) > 0 && 
+             contentType !== null && 
+             contentType.startsWith('image/');
+    } catch (error) {
+      console.error('Error validating image:', error);
+      return false;
+    }
+  };
 
   // Function to parse the simulation response
   const parseSimulationResponse = (responseString: string) => {
@@ -1225,10 +1476,10 @@ export default function SimulationViewPage() {
                   </div>
                   {/* )} */}
                   
-                  {/* Stimulus Images Section */}
+                  {/* Simulation Stimulus Images Section */}
                   {signedStimulusUrls.length > 0 && (
                     <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
-                      <h4 className="text-sm font-medium mb-3 text-gray-700">Attach Images:</h4>
+                      <h4 className="text-sm font-medium mb-3 text-gray-700">Simulation Images:</h4>
                       <div className="space-y-2">
                         {signedStimulusUrls.map((url, index) => {
                           const originalUrl = Array.isArray(simulationData?.simulation?.stimulus_media_url) 
@@ -1242,7 +1493,7 @@ export default function SimulationViewPage() {
                                 type="checkbox"
                                 id={`stimulus-${index}`}
                                 checked={selectedStimulusImages[index] || false}
-                                onChange={(e) => handleStimulusCheckboxChange(index, e.target.checked)}
+                                onChange={(e) => handleMediaCheckboxChange(index, e.target.checked, 'simulation')}
                                 className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
                               />
                               <label 
@@ -1258,6 +1509,87 @@ export default function SimulationViewPage() {
                             </div>
                           );
                         })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Project Media Images Section */}
+                  {signedProjectMediaUrls.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <h4 className="text-sm font-medium mb-3 text-blue-700">Project Media:</h4>
+                      <div className="space-y-2">
+                        {signedProjectMediaUrls.map((url, index) => {
+                          const originalUrl = projectMediaUrls[index];
+                          const imageName = getFilenameFromUrl(originalUrl);
+                          
+                          return (
+                            <div key={`project-${index}`} className="flex items-center space-x-3">
+                              <input
+                                type="checkbox"
+                                id={`project-media-${index}`}
+                                checked={selectedProjectMediaImages[index] || false}
+                                onChange={(e) => handleMediaCheckboxChange(index, e.target.checked, 'project')}
+                                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                              />
+                              <label 
+                                htmlFor={`project-media-${index}`} 
+                                className="text-sm text-primary hover:text-primary/80 underline cursor-pointer"
+                              >
+                                {imageName}
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Loading state for project media */}
+                  {isLoadingProjectMedia && (
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center space-x-2">
+                        <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce" />
+                        <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                        <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+                        <span className="text-sm text-blue-600 ml-2">Loading project media...</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* RAG Documents Section */}
+                  {ragDocuments.length > 0 && (
+                    <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <h4 className="text-sm font-medium mb-3 text-green-700">RAG Documents:</h4>
+                      <div className="space-y-2">
+                        {ragDocuments.map((document, index) => (
+                          <div key={`rag-doc-${index}`} className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              id={`rag-document-${index}`}
+                              checked={selectedRagDocuments[index] || false}
+                              onChange={(e) => handleRagDocumentCheckboxChange(index, e.target.checked)}
+                              className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                            />
+                            <label 
+                              htmlFor={`rag-document-${index}`} 
+                              className="text-sm text-primary hover:text-primary/80 underline cursor-pointer"
+                            >
+                              {document.original_filename || document.filename || `Document ${index + 1}`}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Loading state for RAG documents */}
+                  {isLoadingRagDocuments && (
+                    <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center space-x-2">
+                        <div className="h-2 w-2 bg-green-500 rounded-full animate-bounce" />
+                        <div className="h-2 w-2 bg-green-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                        <div className="h-2 w-2 bg-green-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+                        <span className="text-sm text-green-600 ml-2">Loading RAG documents...</span>
                       </div>
                     </div>
                   )}
@@ -1283,6 +1615,34 @@ export default function SimulationViewPage() {
                       <Link href={`/simulations/${simulationId}/insights`}>
                         View Insights & Analysis
                       </Link>
+                    </Button>
+
+                    
+                    
+                  )}
+                   {simulation.status === 'Completed' && (
+                    <Button
+                      className="w-full"
+                      onClick={async () => {
+                        try {
+                          const shareUrl = `${window.location.origin}/idi/${simulationId}`;
+                          await navigator.clipboard.writeText(shareUrl);
+                          toast({
+                            title: "Link copied!",
+                            description: "Share link has been copied to clipboard",
+                            duration: 2000,
+                          });
+                        } catch (err) {
+                          toast({
+                            title: "Failed to copy",
+                            description: "Could not copy link to clipboard",
+                            variant: "destructive",
+                            duration: 2000,
+                          });
+                        }
+                      }}
+                    >
+                      Share with Human Respondents
                     </Button>
                   )}
                 </div>}
@@ -1363,3 +1723,5 @@ export default function SimulationViewPage() {
     </div>
   )
 }
+
+

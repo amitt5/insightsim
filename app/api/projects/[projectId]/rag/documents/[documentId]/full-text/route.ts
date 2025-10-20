@@ -36,6 +36,29 @@ export async function GET(
       }, { status: 400 })
     }
 
+    // CAG APPROACH: Use stored full_text if available (preferred method)
+    if (document.full_text && document.processing_method === 'cag_extract_only') {
+      console.log(`Using stored full_text for CAG document: ${document.original_filename}`)
+      console.log(`Stored text length: ${document.full_text.length} characters`)
+      
+      return NextResponse.json({
+        success: true,
+        document: {
+          id: document.id,
+          filename: document.original_filename,
+          status: document.status,
+          processing_method: document.processing_method
+        },
+        extracted_text: document.full_text,
+        text_length: document.text_length || document.full_text.length,
+        pages_count: document.pages_count,
+        source: 'stored_full_text'
+      })
+    }
+
+    // FALLBACK: For documents processed with old chunking method, extract text from PDF
+    console.log(`Document ${document.original_filename} doesn't have stored full_text, extracting from PDF...`)
+    
     // Download file from Supabase storage
     console.log(`Downloading file for full text extraction: ${document.file_path}`)
     const { data: fileData, error: downloadError } = await supabase.storage
@@ -76,11 +99,13 @@ export async function GET(
       document: {
         id: document.id,
         filename: document.original_filename,
-        status: document.status
+        status: document.status,
+        processing_method: document.processing_method || 'chunked'
       },
       extracted_text: extractionResult.extracted_text,
       text_length: extractionResult.text_length,
-      pages_count: extractionResult.pages_count
+      pages_count: extractionResult.pages_count,
+      source: 'pdf_extraction'
     })
 
   } catch (error: any) {

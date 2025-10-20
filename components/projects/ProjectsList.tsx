@@ -31,6 +31,7 @@ interface ProjectViewModel {
   studies_count: number;
   simulation_count: number;
   interview_count: number;
+  personas_count: number;
 }
 
 export default function ProjectsList() {
@@ -144,7 +145,6 @@ export default function ProjectsList() {
     setLoading(true);
     // Simulate API delay
     setTimeout(() => {
-      // setProjects(fakeProjects);
       setLoading(false);
     }, 1000);
   }, []);
@@ -223,6 +223,7 @@ export default function ProjectsList() {
                 <TableHead>Project Name</TableHead>
                 <TableHead>Simulations</TableHead>
                 <TableHead>Human Interviews</TableHead>
+                <TableHead>Personas</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -253,6 +254,11 @@ export default function ProjectsList() {
                     <TableCell>
                       <span className="text-sm text-gray-600">
                         {project.interview_count} {project.interview_count === 1 ? 'interview' : 'interviews'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">
+                        {project.personas_count} {project.personas_count === 1 ? 'persona' : 'personas'}
                       </span>
                     </TableCell>
                     <TableCell>

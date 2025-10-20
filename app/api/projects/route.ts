@@ -31,7 +31,8 @@ export async function GET() {
         .select(`
           *,
           simulations:simulations(count),
-          human_respondents:human_respondents(count)
+          human_respondents:human_respondents(count),
+          project_personas:project_personas(count)
         `)
         .order("created_at", { ascending: false })
         // .or("is_deleted.is.null,is_deleted.eq.false") // Filter out soft-deleted simulations (include NULL and false values)
@@ -58,7 +59,8 @@ export async function GET() {
       const projectsWithCounts = projects.map(project => ({
         ...project,
         simulation_count: project.simulations?.[0]?.count || 0,
-        interview_count: project.human_respondents?.[0]?.count || 0
+        interview_count: project.human_respondents?.[0]?.count || 0,
+        personas_count: project.project_personas?.[0]?.count || 0
       }))
       
       return NextResponse.json({ 

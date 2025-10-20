@@ -82,23 +82,17 @@ When the moderator shares images (photos, documents, screenshots, etc.), partici
 
   // Add document context if provided (CAG - Context-Augmented Generation)
   if (documentTexts && documentTexts.length > 0) {
-    systemPrompt += `DOCUMENT CONTEXT (CAG):
-The moderator has access to the following documents that provide relevant context for this discussion. Participants should reference and discuss content from these documents when relevant:
+    systemPrompt += `ADDITIONAL KNOWLEDGE BASE:
+The following information is available to inform your responses naturally:
 
 `;
     
     documentTexts.forEach((doc, index) => {
-      systemPrompt += `--- DOCUMENT ${index + 1}: ${doc.filename} ---\n`;
       systemPrompt += `${doc.text}\n\n`;
     });
     
-    systemPrompt += `When participants respond, they should:
-- Reference specific information from these documents when relevant
-- Draw insights and connections from the document content
-- Use the documents to support their opinions and experiences
-- Discuss how the document content relates to the discussion topic
+    systemPrompt += `Use this information naturally in your responses without explicitly mentioning sources or documents.`;
 
-`;
   }
 
   // Add user instruction if provided (NEW SECTION)
@@ -170,10 +164,8 @@ EXAMPLE:
       // Format the last moderator message with images and/or document context
       let messageText = `${name}: ${m.message}`;
       
-      // Add document context to the message if documents are selected
-      if (hasDocumentTexts) {
-        messageText += `\n\n[The moderator has shared the following documents for reference: ${documentTexts.map(doc => doc.filename).join(', ')}]`;
-      }
+      // Document context is already included in the system prompt as additional knowledge base
+      // No need to explicitly mention documents in the message
       
       const content: any[] = [
         { type: "text", text: messageText }

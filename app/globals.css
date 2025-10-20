@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Analysis display styles - removed scrolling animation */
+
 /* Hide buttons during PDF generation */
 .pdf-generation button {
   display: none !important;

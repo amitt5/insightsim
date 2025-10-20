@@ -38,6 +38,8 @@ export interface AnalysisProgress {
   step: 'analyzing_requirements' | 'source_selection' | 'generating_personas' | 'completed';
   message: string;
   data?: any;
+  analysisResult?: AnalysisResult;
+  sourceResults?: SourceSelection[];
 }
 
 // AI-powered function to analyze requirements
@@ -155,6 +157,13 @@ export async function runPersonaAnalysis(
     
     const analysis = await analyzeRequirements(brief, selectedSegments);
     
+    // Send analysis results to UI
+    onProgress({
+      step: 'analyzing_requirements',
+      message: 'System Analyzing Requirements...',
+      analysisResult: analysis
+    });
+    
     // Step 2: Identify sources
     onProgress({
       step: 'source_selection',
@@ -162,6 +171,13 @@ export async function runPersonaAnalysis(
     });
     
     const sources = await identifySources(brief, selectedSegments, analysis);
+    
+    // Send source results to UI
+    onProgress({
+      step: 'source_selection',
+      message: 'Intelligent Source Selection...',
+      sourceResults: sources
+    });
     
     return { analysis, sources };
   } catch (error) {

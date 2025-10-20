@@ -54,6 +54,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   // Analysis progress state
   const [analysisStep, setAnalysisStep] = useState<'idle' | 'analyzing_requirements' | 'source_selection' | 'generating_personas' | 'completed'>('idle');
   const [analysisMessage, setAnalysisMessage] = useState<string>('');
+  const [analysisData, setAnalysisData] = useState<any>(null);
+  const [sourceData, setSourceData] = useState<any>(null);
 
   const handleEditPersona = (persona: any) => {
     setEditingPersona(persona);
@@ -451,8 +453,18 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         project.brief_text,
         selectedSegments,
         (progress: AnalysisProgress) => {
+          console.log('ProjectView - Progress update:', progress);
+          console.log('ProjectView - Setting analysisStep to:', progress.step);
           setAnalysisStep(progress.step);
           setAnalysisMessage(progress.message);
+          if (progress.analysisResult) {
+            console.log('ProjectView - Setting analysis data:', progress.analysisResult);
+            setAnalysisData(progress.analysisResult);
+          }
+          if (progress.sourceResults) {
+            console.log('ProjectView - Setting source data:', progress.sourceResults);
+            setSourceData(progress.sourceResults);
+          }
         }
       );
       console.log('analysis111', analysis, sources);
@@ -1022,18 +1034,23 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       </Tabs>
 
       {/* Target Segment Selection Modal */}
+      {console.log('ProjectView - About to render modal with:', { analysisStep, analysisMessage, analysisData, sourceData })}
       <TargetSegmentSelectionModal
         isOpen={showTargetSegmentModal}
         onClose={() => {
           setShowTargetSegmentModal(false);
           setAnalysisStep('idle');
           setAnalysisMessage('');
+          setAnalysisData(null);
+          setSourceData(null);
         }}
         segments={targetSegments}
         onGenerate={handleGeneratePersonasWithSegments}
         isLoading={isGeneratingPersonas}
         analysisStep={analysisStep}
         analysisMessage={analysisMessage}
+        analysisData={analysisData}
+        sourceData={sourceData}
       />
     </div>
   );

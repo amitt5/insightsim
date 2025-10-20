@@ -455,6 +455,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           setAnalysisMessage(progress.message);
         }
       );
+      console.log('analysis111', analysis, sources);
 
       // Step 3: Generate personas with enhanced data
       setAnalysisStep('generating_personas');

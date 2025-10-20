@@ -710,3 +710,173 @@ RESEARCH BRIEF TO ANALYZE:
   // Assembling the final prompt
   return `${systemPrompt}\n\n${taskDefinition}\n${segmentGuidelines}\n${outputFormatInstruction}\n\n${briefContext}\n\nJSON OUTPUT:`;
 }
+
+/**
+ * Creates a structured prompt for AI to analyze requirements for persona generation.
+ * @param briefText - The research brief text to analyze
+ * @param selectedSegments - Array of selected target segments
+ * @returns A detailed prompt string ready for an LLM.
+ */
+export function createRequirementsAnalysisPrompt(briefText: string, selectedSegments: string[]): string {
+  const systemPrompt = `You are an expert market researcher and consumer psychologist with 15 years of experience at top agencies like Kantar, Ipsos, and Nielsen. You specialize in analyzing target audiences and identifying the psychological, behavioral, and contextual factors that drive their decision-making and discussions.`;
+
+  const taskDefinition = `Your task is to analyze the provided research brief and selected target segments to identify the key psychographic factors, discussion platforms, and search behaviors that would be most relevant for understanding these audiences. This analysis will be used to guide data collection and persona creation.`;
+
+  const researchContext = `
+---
+RESEARCH CONTEXT:
+- Research Brief: "${briefText}"
+- Selected Target Segments: ${selectedSegments.join(', ')}
+---
+
+ANALYSIS REQUIREMENTS:
+For each selected segment, identify:
+
+1. PSYCHOGRAPHIC FACTORS:
+   - Core values and beliefs
+   - Lifestyle priorities and motivations
+   - Attitudes toward the research topic/category
+   - Decision-making drivers and pain points
+   - Emotional triggers and aspirations
+
+2. DISCUSSION PLATFORMS:
+   - Where these people actively discuss relevant topics
+   - Online communities, forums, and social platforms
+   - Offline gathering places and events
+   - Professional networks and associations
+
+3. SEARCH BEHAVIORS:
+   - Common search terms and queries they use
+   - Information-seeking patterns
+   - Content consumption preferences
+   - Research and comparison behaviors
+`;
+
+  const outputFormat = `
+Your response MUST be a valid JSON object with this structure:
+\`\`\`json
+{
+  "psychographics": [
+    "Factor 1: Description of psychological driver",
+    "Factor 2: Description of behavioral pattern",
+    "Factor 3: Description of attitudinal element"
+  ],
+  "discussionPlatforms": [
+    "Platform 1: Description of where discussions happen",
+    "Platform 2: Description of community engagement",
+    "Platform 3: Description of information sharing"
+  ],
+  "searchTerms": [
+    "Search term 1: Context of when/how used",
+    "Search term 2: Context of when/how used",
+    "Search term 3: Context of when/how used"
+  ]
+}
+\`\`\`
+
+Focus on insights that are:
+- Specific to the research topic and brief
+- Relevant to the selected target segments
+- Actionable for data collection and persona creation
+- Based on real consumer behavior patterns
+
+Do not include any other text, explanations, or markdown formatting before or after the JSON object.
+`;
+
+  return `${systemPrompt}\n\n${taskDefinition}\n${researchContext}\n${outputFormat}`;
+}
+
+/**
+ * Creates a structured prompt for AI to identify specific sources for data collection.
+ * @param briefText - The research brief text
+ * @param selectedSegments - Array of selected target segments
+ * @param analysis - The requirements analysis results
+ * @returns A detailed prompt string ready for an LLM.
+ */
+export function createSourceIdentificationPrompt(briefText: string, selectedSegments: string[], analysis: any): string {
+  const systemPrompt = `You are an expert digital ethnographer and social listening specialist with 15 years of experience at agencies like Brandwatch, Sprout Social, and Hootsuite. You specialize in identifying the most valuable online sources for understanding consumer behavior, opinions, and authentic voice.`;
+
+  const taskDefinition = `Your task is to identify specific, actionable sources where we can collect authentic data about the target segments. Based on the requirements analysis, recommend concrete Reddit communities, app review platforms, forums, and search strategies that will yield the most relevant insights for persona creation.`;
+
+  const researchContext = `
+---
+RESEARCH CONTEXT:
+- Research Brief: "${briefText}"
+- Selected Target Segments: ${selectedSegments.join(', ')}
+- Requirements Analysis: ${JSON.stringify(analysis, null, 2)}
+---
+
+SOURCE IDENTIFICATION REQUIREMENTS:
+For each selected segment, identify specific sources:
+
+1. REDDIT COMMUNITIES:
+   - Exact subreddit names (e.g., r/fitness, r/EatCheapAndHealthy)
+   - Why this community is relevant
+   - What type of discussions to look for
+
+2. APP REVIEW PLATFORMS:
+   - Specific apps they likely use
+   - Review platforms (App Store, Google Play, etc.)
+   - What to look for in reviews
+
+3. FORUMS & COMMUNITIES:
+   - Specific forum names and URLs if possible
+   - Professional networks or associations
+   - Niche communities relevant to the topic
+
+4. SEARCH STRATEGIES:
+   - Specific search queries to use
+   - Platforms to search (Google, YouTube, TikTok, etc.)
+   - Content types to focus on
+`;
+
+  const outputFormat = `
+Your response MUST be a valid JSON array with this structure:
+\`\`\`json
+[
+  {
+    "segment": "Segment Name",
+    "redditCommunities": [
+      {
+        "name": "r/communityname",
+        "relevance": "Why this community is valuable",
+        "discussionTypes": "What discussions to look for"
+      }
+    ],
+    "appReviews": [
+      {
+        "appName": "App Name",
+        "platform": "App Store/Google Play/etc",
+        "relevance": "Why these reviews matter"
+      }
+    ],
+    "forums": [
+      {
+        "name": "Forum/Community Name",
+        "relevance": "Why this source is valuable",
+        "contentTypes": "What content to focus on"
+      }
+    ],
+    "searchQueries": [
+      {
+        "query": "exact search term",
+        "platform": "Google/YouTube/TikTok/etc",
+        "context": "When/how this query is used"
+      }
+    ]
+  }
+]
+\`\`\`
+
+Requirements:
+- Be specific and actionable (exact subreddit names, app names, etc.)
+- Focus on sources where authentic, unfiltered opinions are shared
+- Prioritize sources with active, engaged communities
+- Consider both positive and negative sentiment sources
+- Include sources that reflect real user experiences and pain points
+
+Do not include any other text, explanations, or markdown formatting before or after the JSON array.
+`;
+
+  return `${systemPrompt}\n\n${taskDefinition}\n${researchContext}\n${outputFormat}`;
+}

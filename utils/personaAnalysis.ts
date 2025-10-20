@@ -1,5 +1,8 @@
-// Mock analysis functions for persona generation
-// These will be replaced with actual AI analysis later
+// AI-powered analysis functions for persona generation
+
+import { runSimulationAPI } from "@/utils/api";
+import { createRequirementsAnalysisPrompt, createSourceIdentificationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
 export interface AnalysisResult {
   psychographics: string[];
@@ -9,10 +12,26 @@ export interface AnalysisResult {
 
 export interface SourceSelection {
   segment: string;
-  redditCommunities: string[];
-  appReviews: string[];
-  forums: string[];
-  searchQueries: string[];
+  redditCommunities: Array<{
+    name: string;
+    relevance: string;
+    discussionTypes: string;
+  }>;
+  appReviews: Array<{
+    appName: string;
+    platform: string;
+    relevance: string;
+  }>;
+  forums: Array<{
+    name: string;
+    relevance: string;
+    contentTypes: string;
+  }>;
+  searchQueries: Array<{
+    query: string;
+    platform: string;
+    context: string;
+  }>;
 }
 
 export interface AnalysisProgress {
@@ -21,102 +40,103 @@ export interface AnalysisProgress {
   data?: any;
 }
 
-// Mock function to analyze requirements
+// AI-powered function to analyze requirements
 export async function analyzeRequirements(
   brief: string, 
   selectedSegments: string[]
 ): Promise<AnalysisResult> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Mock analysis based on segments
-  const analysis: AnalysisResult = {
-    psychographics: [],
-    discussionPlatforms: [],
-    searchTerms: []
-  };
+  try {
+    const prompt = createRequirementsAnalysisPrompt(brief, selectedSegments);
+    const messages: ChatCompletionMessageParam[] = [
+      { role: "system", content: prompt }
+    ];
+    
+    const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'requirements-analysis');
+    
+    let responseText = result.reply || "";
+    responseText = responseText
+      .replace(/^```[\s\S]*?\n/, '')
+      .replace(/```$/, '')
+      .trim();
 
-  selectedSegments.forEach(segment => {
-    if (segment.toLowerCase().includes('health')) {
-      analysis.psychographics.push('Health consciousness', 'Wellness prioritization');
-      analysis.discussionPlatforms.push('Reddit fitness communities', 'Health apps');
-      analysis.searchTerms.push('healthy meal planning', 'nutrition tracking');
-    }
+    const parsedResponse = JSON.parse(responseText);
     
-    if (segment.toLowerCase().includes('budget')) {
-      analysis.psychographics.push('Budget sensitivity', 'Value consciousness');
-      analysis.discussionPlatforms.push('Frugal living forums', 'Budget apps');
-      analysis.searchTerms.push('cheap meal ideas', 'budget meal prep');
-    }
-    
-    if (segment.toLowerCase().includes('busy')) {
-      analysis.psychographics.push('Time scarcity', 'Convenience preference');
-      analysis.discussionPlatforms.push('Productivity communities', 'Time-saving apps');
-      analysis.searchTerms.push('quick meals', 'meal prep for busy people');
-    }
-    
-    if (segment.toLowerCase().includes('sustainability')) {
-      analysis.psychographics.push('Environmental values', 'Conscious consumption');
-      analysis.discussionPlatforms.push('Sustainability forums', 'Eco-friendly apps');
-      analysis.searchTerms.push('sustainable eating', 'eco-friendly meal kits');
-    }
-  });
-
-  return analysis;
+    return {
+      psychographics: parsedResponse.psychographics || [],
+      discussionPlatforms: parsedResponse.discussionPlatforms || [],
+      searchTerms: parsedResponse.searchTerms || []
+    };
+  } catch (error) {
+    console.error('Error in requirements analysis:', error);
+    // Fallback to basic analysis if AI fails
+    return {
+      psychographics: ['General consumer behavior patterns', 'Category-specific motivations'],
+      discussionPlatforms: ['Online communities', 'Social media platforms'],
+      searchTerms: ['Category-related searches', 'Product comparison queries']
+    };
+  }
 }
 
-// Mock function to identify sources
+// AI-powered function to identify sources
 export async function identifySources(
   brief: string,
   selectedSegments: string[],
   analysis: AnalysisResult
 ): Promise<SourceSelection[]> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  const sourceSelections: SourceSelection[] = [];
-  
-  selectedSegments.forEach(segment => {
-    const sources: SourceSelection = {
+  try {
+    const prompt = createSourceIdentificationPrompt(brief, selectedSegments, analysis);
+    const messages: ChatCompletionMessageParam[] = [
+      { role: "system", content: prompt }
+    ];
+    
+    const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'source-identification');
+    
+    let responseText = result.reply || "";
+    responseText = responseText
+      .replace(/^```[\s\S]*?\n/, '')
+      .replace(/```$/, '')
+      .trim();
+
+    const parsedResponse = JSON.parse(responseText);
+    
+    // Ensure the response is an array and has the correct structure
+    if (Array.isArray(parsedResponse)) {
+      return parsedResponse.map((item: any) => ({
+        segment: item.segment || 'Unknown Segment',
+        redditCommunities: item.redditCommunities || [],
+        appReviews: item.appReviews || [],
+        forums: item.forums || [],
+        searchQueries: item.searchQueries || []
+      }));
+    }
+    
+    // If response is not an array, create a single entry
+    return [{
+      segment: selectedSegments[0] || 'Target Segment',
+      redditCommunities: parsedResponse.redditCommunities || [],
+      appReviews: parsedResponse.appReviews || [],
+      forums: parsedResponse.forums || [],
+      searchQueries: parsedResponse.searchQueries || []
+    }];
+  } catch (error) {
+    console.error('Error in source identification:', error);
+    // Fallback to basic sources if AI fails
+    return selectedSegments.map(segment => ({
       segment,
-      redditCommunities: [],
-      appReviews: [],
-      forums: [],
-      searchQueries: []
-    };
-
-    if (segment.toLowerCase().includes('health')) {
-      sources.redditCommunities.push('r/fitness', 'r/EatCheapAndHealthy', 'r/MealPrep');
-      sources.appReviews.push('MyFitnessPal', 'Noom', 'Cronometer');
-      sources.forums.push('Fitness forums', 'Nutrition communities');
-      sources.searchQueries.push('healthy meal planning', 'meal prep recipes');
-    }
-    
-    if (segment.toLowerCase().includes('budget')) {
-      sources.redditCommunities.push('r/Frugal', 'r/EatCheapAndHealthy', 'r/Parenting');
-      sources.appReviews.push('Budget meal planning apps', 'Grocery budget trackers');
-      sources.forums.push('Frugal living forums', 'Parenting budget discussions');
-      sources.searchQueries.push('cheap meal ideas', 'budget meal prep');
-    }
-    
-    if (segment.toLowerCase().includes('busy')) {
-      sources.redditCommunities.push('r/MealPrep', 'r/productivity', 'r/GetMotivated');
-      sources.appReviews.push('Meal planning apps', 'Time-saving cooking apps');
-      sources.forums.push('Productivity communities', 'Working parent forums');
-      sources.searchQueries.push('quick meals', 'meal prep for busy people');
-    }
-    
-    if (segment.toLowerCase().includes('sustainability')) {
-      sources.redditCommunities.push('r/ZeroWaste', 'r/sustainability', 'r/PlantBasedDiet');
-      sources.appReviews.push('Eco-friendly meal apps', 'Sustainable living apps');
-      sources.forums.push('Sustainability forums', 'Environmental communities');
-      sources.searchQueries.push('sustainable eating', 'eco-friendly meal kits');
-    }
-
-    sourceSelections.push(sources);
-  });
-
-  return sourceSelections;
+      redditCommunities: [
+        { name: 'r/general', relevance: 'General discussions', discussionTypes: 'Category-related topics' }
+      ],
+      appReviews: [
+        { appName: 'Category Apps', platform: 'App Store', relevance: 'User experiences' }
+      ],
+      forums: [
+        { name: 'General Forums', relevance: 'Community discussions', contentTypes: 'User opinions' }
+      ],
+      searchQueries: [
+        { query: 'category search', platform: 'Google', context: 'General research' }
+      ]
+    }));
+  }
 }
 
 // Main analysis function that orchestrates the process
@@ -126,21 +146,40 @@ export async function runPersonaAnalysis(
   onProgress: (progress: AnalysisProgress) => void
 ): Promise<{ analysis: AnalysisResult; sources: SourceSelection[] }> {
   
-  // Step 1: Analyze requirements
-  onProgress({
-    step: 'analyzing_requirements',
-    message: 'System Analyzing Requirements...'
-  });
-  
-  const analysis = await analyzeRequirements(brief, selectedSegments);
-  
-  // Step 2: Identify sources
-  onProgress({
-    step: 'source_selection',
-    message: 'Intelligent Source Selection...'
-  });
-  
-  const sources = await identifySources(brief, selectedSegments, analysis);
-  
-  return { analysis, sources };
+  try {
+    // Step 1: Analyze requirements
+    onProgress({
+      step: 'analyzing_requirements',
+      message: 'System Analyzing Requirements...'
+    });
+    
+    const analysis = await analyzeRequirements(brief, selectedSegments);
+    
+    // Step 2: Identify sources
+    onProgress({
+      step: 'source_selection',
+      message: 'Intelligent Source Selection...'
+    });
+    
+    const sources = await identifySources(brief, selectedSegments, analysis);
+    
+    return { analysis, sources };
+  } catch (error) {
+    console.error('Error in runPersonaAnalysis:', error);
+    // Return fallback data if the entire process fails
+    return {
+      analysis: {
+        psychographics: ['General consumer insights'],
+        discussionPlatforms: ['Online communities'],
+        searchTerms: ['Category-related searches']
+      },
+      sources: selectedSegments.map(segment => ({
+        segment,
+        redditCommunities: [{ name: 'r/general', relevance: 'General discussions', discussionTypes: 'Category topics' }],
+        appReviews: [{ appName: 'Category Apps', platform: 'App Store', relevance: 'User experiences' }],
+        forums: [{ name: 'General Forums', relevance: 'Community discussions', contentTypes: 'User opinions' }],
+        searchQueries: [{ query: 'category search', platform: 'Google', context: 'General research' }]
+      }))
+    };
+  }
 }

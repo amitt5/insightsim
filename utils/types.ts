@@ -41,6 +41,7 @@ export interface Simulation {
     brief_text?: string;
     discussion_questions?: string[];
     media_urls?: string[];
+    active_tab?: string;
     created_at: string;
     updated_at: string;
     is_deleted: boolean;

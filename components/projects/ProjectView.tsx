@@ -30,7 +30,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [editedProject, setEditedProject] = useState({
     ...project,
     discussion_questions: project.discussion_questions || []
-  });  const [projectPersonas, setProjectPersonas] = useState<any[]>([]);
+  });
+  const [activeTab, setActiveTab] = useState(project.active_tab || 'brief');
+  const [projectPersonas, setProjectPersonas] = useState<any[]>([]);
   const [simulations, setSimulations] = useState<Simulation[]>([]);
   const [isGeneratingPersonas, setIsGeneratingPersonas] = useState(false);
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
@@ -178,6 +180,11 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   useEffect(() => {
     setProjectMediaUrls(project.media_urls || []);
   }, [project.media_urls]);
+
+  // Update active tab when project changes
+  useEffect(() => {
+    setActiveTab(project.active_tab || 'brief');
+  }, [project.active_tab]);
 
   // Fetch project personas when the component mounts
   useEffect(() => {
@@ -593,6 +600,34 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     }
   };
 
+  const handleTabChange = async (newTab: string) => {
+    setActiveTab(newTab);
+    
+    // Save the active tab to the database
+    try {
+      const response = await fetch(`/api/projects/${project.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ active_tab: newTab }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to save active tab');
+        // Don't show error toast for this as it's not critical
+      } else {
+        const responseData = await response.json();
+        const updatedProject = responseData.project;
+        setEditedProject(updatedProject);
+        onUpdate?.(updatedProject);
+      }
+    } catch (error) {
+      console.error('Error saving active tab:', error);
+      // Don't show error toast for this as it's not critical
+    }
+  };
+
 
   return (
     <div className="container mx-auto p-4">
@@ -658,7 +693,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         )}
       </div>
 
-      <Tabs defaultValue="brief" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList>
           <TabsTrigger value="brief">Brief</TabsTrigger>
           <TabsTrigger value="discussion">Discussion Guide</TabsTrigger>
@@ -1043,7 +1078,6 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       </Tabs>
 
       {/* Target Segment Selection Modal */}
-      {console.log('ProjectView - About to render modal with:', { analysisStep, analysisMessage, analysisData, sourceData })}
       <TargetSegmentSelectionModal
         isOpen={showTargetSegmentModal}
         onClose={() => {

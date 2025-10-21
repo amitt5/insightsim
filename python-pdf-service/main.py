@@ -25,10 +25,16 @@ openai_client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 app = FastAPI(title="PDF Text Extraction Service", version="1.0.0")
 
 # CORS configuration
-origins = [
-    os.getenv("NEXT_PUBLIC_APP_URL", "http://localhost:3000"),
-    "http://localhost:8000",
-]
+app_urls = os.getenv("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
+if app_urls == "*":
+    # Allow all origins (less secure)
+    origins = ["*"]
+elif "," in app_urls:
+    # Handle multiple URLs separated by commas
+    origins = app_urls.split(",") + ["http://localhost:8000", "http://localhost:3000"]
+else:
+    # Single URL
+    origins = [app_urls, "http://localhost:8000", "http://localhost:3000"]
 
 app.add_middleware(
     CORSMiddleware,

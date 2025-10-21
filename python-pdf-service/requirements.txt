@@ -4,5 +4,4 @@ pydantic>=2.11.5
 python-multipart==0.0.6
 PyPDF2==3.0.1
 python-dotenv==1.0.0
-llama-index==0.12.51
 openai==1.81.0

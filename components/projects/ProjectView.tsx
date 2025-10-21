@@ -381,7 +381,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: prompt }
       ];
-      const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'persona-generation');
+      const result = await runSimulationAPI(messages, 'groq', 'persona-generation');
 
       try {
         let responseText = result.reply || "";
@@ -493,7 +493,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: prompt }
       ];
-      const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'persona-generation');
+      const result = await runSimulationAPI(messages, 'groq', 'persona-generation');
       console.log('[generate personas with segments] result111', result);
       // Ensure persona generation shows for at least 2 seconds
       const personaElapsed = Date.now() - personaStartTime;

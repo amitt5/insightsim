@@ -413,7 +413,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         }
 
         const data = await response.json();
-        setProjectPersonas(data.personas);
+        setProjectPersonas(prev => [...prev, ...data.personas]);
         
         toast({
           title: "Success",
@@ -534,7 +534,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         }
 
         const data = await response.json();
-        setProjectPersonas(data.personas);
+        setProjectPersonas(prev => [...prev, ...data.personas]);
         
         // Close modal and reset states
         setShowTargetSegmentModal(false);

@@ -80,20 +80,8 @@ When the moderator shares images (photos, documents, screenshots, etc.), partici
 `;
 
 
-  // Add document context if provided (CAG - Context-Augmented Generation)
-  if (documentTexts && documentTexts.length > 0) {
-    systemPrompt += `ADDITIONAL KNOWLEDGE BASE:
-The following information is available to inform your responses naturally:
-
-`;
-    
-    documentTexts.forEach((doc, index) => {
-      systemPrompt += `${doc.text}\n\n`;
-    });
-    
-    systemPrompt += `Use this information naturally in your responses without explicitly mentioning sources or documents.`;
-
-  }
+  // Document context will be added as a separate system message before the user query
+  // This ensures the context remains fresh in long conversations
 
   // Add user instruction if provided (NEW SECTION)
   if (userInstruction?.trim()) {
@@ -161,11 +149,28 @@ EXAMPLE:
     const hasDocumentTexts = documentTexts && Array.isArray(documentTexts) && documentTexts.length > 0;
 
     if (isLastMessage && isModeratorMessage && (hasAttachedImages || hasDocumentTexts)) {
-      // Format the last moderator message with images and/or document context
+      // Add document context as a system message right before the user query
+      // This ensures the context remains fresh in long conversations
+      if (hasDocumentTexts) {
+        let documentContextPrompt = `IMPORTANT REFERENCE INFORMATION FOR THIS QUERY:
+The following information should inform your responses naturally:
+
+`;
+        
+        documentTexts.forEach((doc, index) => {
+          documentContextPrompt += `${doc.text}\n\n`;
+        });
+        
+        documentContextPrompt += `Use this information naturally in your responses without explicitly mentioning sources or documents.`;
+
+        openAIMessages.push({
+          role: "system",
+          content: documentContextPrompt.trim(),
+        });
+      }
+
+      // Format the last moderator message with images
       let messageText = `${name}: ${m.message}`;
-      
-      // Document context is already included in the system prompt as additional knowledge base
-      // No need to explicitly mention documents in the message
       
       const content: any[] = [
         { type: "text", text: messageText }

@@ -19,6 +19,7 @@ import AIBriefAssistant from "./AIBriefAssistant"
 import { RagDocumentUpload, RagDocumentList } from "./rag"
 import { TargetSegmentSelectionModal } from "./TargetSegmentSelectionModal"
 import { runPersonaAnalysis, AnalysisProgress } from "@/utils/personaAnalysis"
+import warmUpService from "@/utils/warmupService"
 
 interface ProjectViewProps {
   project: Project;
@@ -413,7 +414,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         }
 
         const data = await response.json();
-        setProjectPersonas(data.personas);
+        setProjectPersonas(prev => [...prev, ...data.personas]);
         
         toast({
           title: "Success",
@@ -493,7 +494,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         { role: "system", content: prompt }
       ];
       const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'persona-generation');
-      
+      console.log('[generate personas with segments] result111', result);
       // Ensure persona generation shows for at least 2 seconds
       const personaElapsed = Date.now() - personaStartTime;
       const personaRemainingTime = Math.max(0, 2000 - personaElapsed);
@@ -534,7 +535,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         }
 
         const data = await response.json();
-        setProjectPersonas(data.personas);
+        setProjectPersonas(prev => [...prev, ...data.personas]);
         
         // Close modal and reset states
         setShowTargetSegmentModal(false);
@@ -610,6 +611,11 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     // Don't allow switching to disabled tabs when brief_text is null
     if (!briefText && newTab !== 'brief') {
       return;
+    }
+    
+    // Warm up PDF service when user clicks on RAG tab
+    if (newTab === 'rag') {
+      warmUpService();
     }
     
     setActiveTab(newTab);
@@ -936,6 +942,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                   ];
                   const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'discussion-questions');
 
+                  let generatedQuestions: string[] = [];
+
                   try {
                     // Parse the JSON response
                     let responseText = result.reply || "";
@@ -950,13 +958,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                     const parsedResponse = JSON.parse(responseText);
                     console.log('parsedResponse111', parsedResponse);
                     // Extract questions array
-                    const questions = parsedResponse.questions || [];
-                    
-                    // Join questions as textarea value (one per line)
-                    setEditedProject(prev => ({
-                      ...prev,
-                      discussion_questions: questions
-                    }));
+                    generatedQuestions = parsedResponse.questions || [];
                     
                   } catch (error) {
                     console.error("Error parsing discussion questions JSON:", error);
@@ -967,12 +969,47 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                     let lines = questions.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
                     lines = lines.map(l => l.replace(/^\d+\.?\s*/, ""));
                     console.log('lines111', lines);
-                    setEditedProject(prev => ({
-                      ...prev,
-                      discussion_questions: lines
-                    }));
+                    generatedQuestions = lines;
                   }
 
+                  // Update local state
+                  setEditedProject(prev => ({
+                    ...prev,
+                    discussion_questions: generatedQuestions
+                  }));
+
+                  // Auto-save the generated questions
+                  try {
+                    const response = await fetch(`/api/projects/${project.id}`, {
+                      method: 'PATCH',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        discussion_questions: generatedQuestions
+                      }),
+                    });
+
+                    if (response.ok) {
+                      const responseData = await response.json();
+                      const updatedProject = responseData.project;
+                      setEditedProject(updatedProject);
+                      onUpdate?.(updatedProject);
+                      toast({
+                        title: "Discussion Guide Generated & Saved",
+                        description: "Your discussion guide has been generated and saved automatically.",
+                      });
+                    } else {
+                      throw new Error('Failed to save discussion guide');
+                    }
+                  } catch (saveError) {
+                    console.error('Error auto-saving discussion guide:', saveError);
+                    toast({
+                      title: "Questions Generated",
+                      description: "Questions were generated but failed to save automatically. You can save them manually.",
+                      variant: "destructive",
+                    });
+                  }
       
                 } catch (err) {
                   toast({
@@ -1008,7 +1045,6 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
             <div className="mt-4 space-y-2">
               <textarea
                 value={(editedProject.discussion_questions || []).join('\n')}
-
                 onChange={(e) => setEditedProject({ ...editedProject, discussion_questions: e.target.value.split('\n').filter(Boolean) })}
                 className="w-full min-h-[400px] p-2 border rounded-md"
                 placeholder="Enter discussion questions..."

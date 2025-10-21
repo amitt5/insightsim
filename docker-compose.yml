@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  pdf-service:
+    build: ./python-pdf-service
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    volumes:
+      - ./python-pdf-service:/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add your Next.js app here if you want to run everything together
+  # app:
+  #   build: .
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - PYTHON_PDF_SERVICE_URL=http://pdf-service:8000
+  #   depends_on:
+  #     - pdf-service

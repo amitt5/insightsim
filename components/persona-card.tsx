@@ -32,7 +32,16 @@ export function PersonaCard({
   const traits = Array.isArray(persona.traits) 
     ? persona.traits 
     : typeof persona.traits === 'string' 
-      ? (persona.traits as string).split(',').map(t => t.trim())
+      ? (() => {
+          try {
+            // Try to parse as JSON first (for LLM-generated personas)
+            const parsed = JSON.parse(persona.traits);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            // Fallback to comma-split for manually entered traits
+            return (persona.traits as string).split(',').map(t => t.trim());
+          }
+        })()
       : [];
 
   const cardClasses = `${selectable 

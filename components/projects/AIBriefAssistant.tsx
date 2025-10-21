@@ -45,6 +45,7 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
   const [isEditingBrief, setIsEditingBrief] = useState(false);
   const [editedBrief, setEditedBrief] = useState<string>('');
   const [isSavingBrief, setIsSavingBrief] = useState(false);
+  const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -235,6 +236,7 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
   };
 
   const handleGenerateBrief = async () => {
+    setIsGeneratingBrief(true);
     try {
       const briefPrompt = createBriefGenerationPrompt(assistantState.conversationHistory);
       const briefResult = await runSimulationAPI(briefPrompt, 'gpt-4o-mini', 'brief-generation');
@@ -281,6 +283,8 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
         title: "Brief Generated",
         description: "Your research brief has been generated. Please review and make any necessary adjustments.",
       });
+    } finally {
+      setIsGeneratingBrief(false);
     }
   };
 
@@ -503,9 +507,16 @@ export default function AIBriefAssistant({ projectId, onBriefGenerated }: AIBrie
                   onClick={handleGenerateBrief}
                   variant="outline"
                   size="sm"
-                  // disabled={!assistantState.isReadyToGenerate}
+                  disabled={isGeneratingBrief}
                 >
-                  Generate Brief
+                  {isGeneratingBrief ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate Brief"
+                  )}
                 </Button>
               )}
               {generatedBrief && !isEditingBrief && (

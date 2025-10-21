@@ -119,8 +119,8 @@ export function TargetSegmentSelectionModal({
 
   const handleGenerate = () => {
     if (selectedSegments.length > 0) {
-      setInternalAnalysisStep('analyzing_requirements');
-      setInternalAnalysisMessage('System Analyzing Requirements...');
+      setInternalAnalysisStep('generating_personas');
+      setInternalAnalysisMessage('Generating Personas...');
       onGenerate(selectedSegments);
     }
   };

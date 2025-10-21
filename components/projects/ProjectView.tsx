@@ -19,6 +19,7 @@ import AIBriefAssistant from "./AIBriefAssistant"
 import { RagDocumentUpload, RagDocumentList } from "./rag"
 import { TargetSegmentSelectionModal } from "./TargetSegmentSelectionModal"
 import { runPersonaAnalysis, AnalysisProgress } from "@/utils/personaAnalysis"
+import warmUpService from "@/utils/warmupService"
 
 interface ProjectViewProps {
   project: Project;
@@ -610,6 +611,11 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     // Don't allow switching to disabled tabs when brief_text is null
     if (!briefText && newTab !== 'brief') {
       return;
+    }
+    
+    // Warm up PDF service when user clicks on RAG tab
+    if (newTab === 'rag') {
+      warmUpService();
     }
     
     setActiveTab(newTab);

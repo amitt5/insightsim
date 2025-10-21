@@ -493,7 +493,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         { role: "system", content: prompt }
       ];
       const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'persona-generation');
-      
+      console.log('[generate personas with segments] result111', result);
       // Ensure persona generation shows for at least 2 seconds
       const personaElapsed = Date.now() - personaStartTime;
       const personaRemainingTime = Math.max(0, 2000 - personaElapsed);

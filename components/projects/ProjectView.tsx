@@ -391,7 +391,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           .trim();
 
         const parsedResponse = JSON.parse(responseText);
-        const generatedPersonas = parsedResponse.personas || [];
+        // Handle both direct array response and wrapped response
+        const generatedPersonas = Array.isArray(parsedResponse) ? parsedResponse : (parsedResponse.personas || []);
         console.log('generatedPersonas111', generatedPersonas)
         
         // Add editable field to each persona
@@ -510,7 +511,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           .trim();
 
         const parsedResponse = JSON.parse(responseText);
-        const generatedPersonas = parsedResponse.personas || [];
+        // Handle both direct array response and wrapped response
+        const generatedPersonas = Array.isArray(parsedResponse) ? parsedResponse : (parsedResponse.personas || []);
         console.log('generatedPersonas with segments', generatedPersonas);
         console.log('Analysis results:', analysis);
         console.log('Source selections:', sources);

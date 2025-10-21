@@ -38,7 +38,7 @@ export async function POST(req: Request) {
         model: 'anthropic/claude-3-haiku',
         messages,
         temperature: 0.9,
-        max_tokens: 3000,
+        max_tokens: 10000,
         response_format: { "type": "json_object" }
       });
     } else {
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       model: model,
       messages,
       temperature: 0.9,
-      max_tokens: 3000,
+      max_tokens: 10000,
       response_format: { "type": "json_object" }
     });
     }

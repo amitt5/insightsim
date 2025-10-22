@@ -796,7 +796,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: prompt }
       ];
-      const result = await runSimulationAPI(messages,'gpt-4o-mini', 'generate-personas');
+      const result = await runSimulationAPI(messages,'groq', 'generate-personas');
       let title = '';
       let topic = '';
       let discussionQuestions = [];

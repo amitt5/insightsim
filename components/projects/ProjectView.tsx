@@ -391,7 +391,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           .trim();
 
         const parsedResponse = JSON.parse(responseText);
-        const generatedPersonas = parsedResponse.personas || [];
+        const generatedPersonas = Array.isArray(parsedResponse) ? parsedResponse : (parsedResponse.personas || []);
+
         console.log('generatedPersonas111', generatedPersonas)
         
         // Add editable field to each persona
@@ -493,7 +494,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: prompt }
       ];
-      const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'persona-generation');
+      const result = await runSimulationAPI(messages, 'groq', 'persona-generation');
       console.log('[generate personas with segments] result111', result);
       // Ensure persona generation shows for at least 2 seconds
       const personaElapsed = Date.now() - personaStartTime;
@@ -510,7 +511,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           .trim();
 
         const parsedResponse = JSON.parse(responseText);
-        const generatedPersonas = parsedResponse.personas || [];
+        const generatedPersonas = Array.isArray(parsedResponse) ? parsedResponse : (parsedResponse.personas || []);
+
         console.log('generatedPersonas with segments', generatedPersonas);
         console.log('Analysis results:', analysis);
         console.log('Source selections:', sources);

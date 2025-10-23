@@ -15,14 +15,31 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Fetch project data
-    const { data: project, error } = await supabase
+    // Fetch user's role from the users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (userError) {
+      console.error("Error fetching user role:", userError)
+      return NextResponse.json({ error: "Failed to fetch user role" }, { status: 500 })
+    }
+
+    // Build query conditionally
+    let query = supabase
       .from("projects")
       .select("*")
       .eq("id", params.projectId)
-      .eq("user_id", session.user.id)
       .eq("is_deleted", false)
-      .single()
+
+    // Only filter by user_id if the user is not an admin
+    if (userData?.role !== 'admin') {
+      query = query.eq("user_id", session.user.id)
+    }
+
+    const { data: project, error } = await query.single()
     console.log('amit-project', project)
 
     if (error) {
@@ -58,6 +75,18 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Fetch user's role from the users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (userError) {
+      console.error("Error fetching user role:", userError)
+      return NextResponse.json({ error: "Failed to fetch user role" }, { status: 500 })
+    }
+
     // Get update data from request body
     const updates = await request.json()
 
@@ -76,13 +105,19 @@ export async function PATCH(
     // Add updated_at timestamp
     updates.updated_at = new Date().toISOString()
 
-    // Update project using the awaited projectId
-    const { data: project, error } = await supabase
+    // Build update query conditionally
+    let updateQuery = supabase
       .from("projects")
       .update(updates)
       .eq("id", projectId)
-      .eq("user_id", session.user.id)
       .eq("is_deleted", false)
+
+    // Only filter by user_id if the user is not an admin
+    if (userData?.role !== 'admin') {
+      updateQuery = updateQuery.eq("user_id", session.user.id)
+    }
+
+    const { data: project, error } = await updateQuery
       .select()
       .single()
 
@@ -115,8 +150,20 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Soft delete the project
-    const { data: project, error } = await supabase
+    // Fetch user's role from the users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (userError) {
+      console.error("Error fetching user role:", userError)
+      return NextResponse.json({ error: "Failed to fetch user role" }, { status: 500 })
+    }
+
+    // Build delete query conditionally
+    let deleteQuery = supabase
       .from("projects")
       .update({
         is_deleted: true,
@@ -124,7 +171,13 @@ export async function DELETE(
         updated_at: new Date().toISOString()
       })
       .eq("id", params.projectId)
-      .eq("user_id", session.user.id)
+
+    // Only filter by user_id if the user is not an admin
+    if (userData?.role !== 'admin') {
+      deleteQuery = deleteQuery.eq("user_id", session.user.id)
+    }
+
+    const { data: project, error } = await deleteQuery
       .select()
       .single()
 

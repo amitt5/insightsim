@@ -1840,6 +1840,32 @@ Key Questions:
                 <CardTitle>Select {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'}</CardTitle>
                 <CardDescription>Choose AI personas to participate in your simulation</CardDescription>
               </CardHeader>
+              <div className="px-6 py-4 border-b">
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={prevStep}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button onClick={nextStep}
+                            disabled={selectedPersonas.length === 0}>
+                            Continue
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {(selectedPersonas.length === 0) && (
+                        <TooltipContent side="top">
+                          Select at least one participant to proceed
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
               <CardContent>
                
 

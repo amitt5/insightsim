@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Mic, MicOff, Volume2, VolumeX, Settings, Play, Pause, Square } from "lucide-react"
 import { useTTS } from "@/hooks/useTTS"
+import { useSTT } from "@/hooks/useSTT"
 
 interface HumanRespondent {
   id: string;
@@ -48,6 +49,18 @@ export default function InterviewPage() {
 
   // TTS hook
   const { isPlaying, playText, stopPlayback, error: ttsError } = useTTS();
+
+  // STT hook
+  const { 
+    isListening, 
+    transcript, 
+    interimTranscript, 
+    startListening, 
+    stopListening, 
+    resetTranscript, 
+    error: sttError, 
+    isSupported: sttSupported 
+  } = useSTT();
 
   const fetchMessages = async () => {
     try {
@@ -144,15 +157,24 @@ export default function InterviewPage() {
 
   // Voice control functions
   const handleStartRecording = () => {
+    if (!sttSupported) {
+      setError('Voice input not supported in this browser');
+      return;
+    }
+    
+    resetTranscript();
+    startListening();
     setIsRecording(true);
-    // TODO: Implement speech-to-text
-    console.log('Starting voice recording...');
   };
 
   const handleStopRecording = () => {
+    stopListening();
     setIsRecording(false);
-    // TODO: Implement speech-to-text stop
-    console.log('Stopping voice recording...');
+    
+    // Add the final transcript to the message input
+    if (transcript.trim()) {
+      setNewMessage(prev => prev + (prev ? ' ' : '') + transcript.trim());
+    }
   };
 
   const handlePlayMessage = async (messageId: string, messageText: string) => {
@@ -303,12 +325,14 @@ export default function InterviewPage() {
           </div>
         </div>
 
-        {/* TTS Error Display */}
-        {ttsError && (
+        {/* Voice Error Display */}
+        {(ttsError || sttError) && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
             <div className="flex items-center gap-2">
               <VolumeX className="h-4 w-4 text-red-500" />
-              <span className="text-sm text-red-600">Voice Error: {ttsError}</span>
+              <span className="text-sm text-red-600">
+                {ttsError ? `Voice Output Error: ${ttsError}` : `Voice Input Error: ${sttError}`}
+              </span>
             </div>
           </div>
         )}
@@ -447,18 +471,29 @@ export default function InterviewPage() {
             <div className="mt-4 border-t pt-4 space-y-4">
               {/* Voice Recording Indicator */}
               {isRecording && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg space-y-2">
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse"></div>
                     <span className="text-sm text-red-600 font-medium">Recording...</span>
+                    <div className="flex items-center gap-1 ml-auto">
+                      <div className="h-2 w-1 bg-red-400 rounded animate-pulse"></div>
+                      <div className="h-3 w-1 bg-red-500 rounded animate-pulse [animation-delay:0.1s]"></div>
+                      <div className="h-2 w-1 bg-red-400 rounded animate-pulse [animation-delay:0.2s]"></div>
+                      <div className="h-4 w-1 bg-red-600 rounded animate-pulse [animation-delay:0.3s]"></div>
+                      <div className="h-2 w-1 bg-red-400 rounded animate-pulse [animation-delay:0.4s]"></div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 ml-auto">
-                    <div className="h-2 w-1 bg-red-400 rounded animate-pulse"></div>
-                    <div className="h-3 w-1 bg-red-500 rounded animate-pulse [animation-delay:0.1s]"></div>
-                    <div className="h-2 w-1 bg-red-400 rounded animate-pulse [animation-delay:0.2s]"></div>
-                    <div className="h-4 w-1 bg-red-600 rounded animate-pulse [animation-delay:0.3s]"></div>
-                    <div className="h-2 w-1 bg-red-400 rounded animate-pulse [animation-delay:0.4s]"></div>
-                  </div>
+                  
+                  {/* Real-time transcription */}
+                  {(transcript || interimTranscript) && (
+                    <div className="text-sm text-gray-700 bg-white p-2 rounded border">
+                      <span className="text-gray-600">You said: </span>
+                      <span className="font-medium">{transcript}</span>
+                      {interimTranscript && (
+                        <span className="text-gray-400 italic">{interimTranscript}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               
@@ -479,7 +514,7 @@ export default function InterviewPage() {
                   {isSending ? "Sending..." : "Send Message"}
                 </Button>
                 
-                {isVoiceEnabled && (
+                {isVoiceEnabled && sttSupported && (
                   <Button
                     variant={isRecording ? "destructive" : "outline"}
                     onClick={isRecording ? handleStopRecording : handleStartRecording}
@@ -496,6 +531,18 @@ export default function InterviewPage() {
                         Voice Input
                       </>
                     )}
+                  </Button>
+                )}
+                
+                {isVoiceEnabled && !sttSupported && (
+                  <Button
+                    variant="outline"
+                    disabled
+                    className="px-4"
+                    title="Voice input not supported in this browser"
+                  >
+                    <MicOff className="h-4 w-4 mr-2" />
+                    Voice Input (Not Supported)
                   </Button>
                 )}
               </div>

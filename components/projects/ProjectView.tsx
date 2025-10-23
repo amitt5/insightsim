@@ -10,16 +10,20 @@ import ProjectMediaUpload from "./ProjectMediaUpload"
 import { PersonaCard } from "@/components/persona-card"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
-import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt,buildDiscussionQuestionsFromBrief, createBriefPersonaGenerationPrompt, createTargetSegmentGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createTitleGenerationPrompt, createBriefExtractionPrompt } from "@/utils/buildMessagesForOpenAI";
 
-import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
-import { runSimulationAPI } from "@/utils/api"
 import { ArrowLeft, ArrowRight, Upload, X,Edit2, Save, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
 import AIBriefAssistant from "./AIBriefAssistant"
 import { RagDocumentUpload, RagDocumentList } from "./rag"
 import { TargetSegmentSelectionModal } from "./TargetSegmentSelectionModal"
 import { runPersonaAnalysis, AnalysisProgress } from "@/utils/personaAnalysis"
 import warmUpService from "@/utils/warmupService"
+
+// Define the tab interface
+interface TabItem {
+  value: string;
+  label: string;
+}
 
 interface ProjectViewProps {
   project: Project;

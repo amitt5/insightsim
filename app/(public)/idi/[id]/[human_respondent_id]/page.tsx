@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Mic, MicOff, Volume2, VolumeX, Settings, Play, Pause, Square } from "lucide-react"
+import { useTTS } from "@/hooks/useTTS"
 
 interface HumanRespondent {
   id: string;
@@ -33,6 +35,19 @@ export default function InterviewPage() {
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isAiResponding, setIsAiResponding] = useState(false);
+
+  // Voice state management
+  const [isRecording, setIsRecording] = useState(false);
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  const [currentPlayingMessage, setCurrentPlayingMessage] = useState<string | null>(null);
+  const [voiceSettings, setVoiceSettings] = useState({
+    volume: 0.8,
+    speed: 1.0,
+    voice: 'ys3XeJJA4ArWMhRpcX1D'
+  });
+
+  // TTS hook
+  const { isPlaying, playText, stopPlayback, error: ttsError } = useTTS();
 
   const fetchMessages = async () => {
     try {
@@ -70,6 +85,17 @@ export default function InterviewPage() {
 
       const data = await response.json();
       await fetchMessages(); // Refresh messages to include AI response
+      
+      // Auto-play the AI response if voice is enabled
+      if (isVoiceEnabled && data.message) {
+        setTimeout(async () => {
+          await playText(data.message, {
+            volume: voiceSettings.volume,
+            speed: voiceSettings.speed,
+            voice: voiceSettings.voice
+          });
+        }, 500); // Small delay to ensure message is rendered
+      }
     } catch (err) {
       console.error('Error getting AI response:', err);
       setError('Failed to get interviewer response. Please try again.');
@@ -114,6 +140,40 @@ export default function InterviewPage() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  // Voice control functions
+  const handleStartRecording = () => {
+    setIsRecording(true);
+    // TODO: Implement speech-to-text
+    console.log('Starting voice recording...');
+  };
+
+  const handleStopRecording = () => {
+    setIsRecording(false);
+    // TODO: Implement speech-to-text stop
+    console.log('Stopping voice recording...');
+  };
+
+  const handlePlayMessage = async (messageId: string, messageText: string) => {
+    if (isPlaying && currentPlayingMessage === messageId) {
+      // Stop current playback
+      stopPlayback();
+      setCurrentPlayingMessage(null);
+    } else {
+      // Start new playback
+      setCurrentPlayingMessage(messageId);
+      await playText(messageText, {
+        volume: voiceSettings.volume,
+        speed: voiceSettings.speed,
+        voice: voiceSettings.voice
+      });
+    }
+  };
+
+  const handleStopPlayback = () => {
+    stopPlayback();
+    setCurrentPlayingMessage(null);
   };
 
   useEffect(() => {
@@ -196,7 +256,62 @@ export default function InterviewPage() {
               </Badge>
             </div>
           </div>
+          
+          {/* Voice Controls */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={isVoiceEnabled ? () => setIsVoiceEnabled(false) : () => setIsVoiceEnabled(true)}
+                className="h-8 w-8 p-0"
+              >
+                {isVoiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </Button>
+              
+              {isVoiceEnabled && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={isPlaying ? handleStopPlayback : undefined}
+                    className="h-8 w-8 p-0"
+                    disabled={!isPlaying}
+                  >
+                    {isPlaying ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={isRecording ? handleStopRecording : handleStartRecording}
+                    className={`h-8 w-8 p-0 ${isRecording ? 'bg-red-100 text-red-600' : ''}`}
+                  >
+                    {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </Button>
+                </>
+              )}
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
+
+        {/* TTS Error Display */}
+        {ttsError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-2">
+              <VolumeX className="h-4 w-4 text-red-500" />
+              <span className="text-sm text-red-600">Voice Error: {ttsError}</span>
+            </div>
+          </div>
+        )}
 
         {/* Chat Window */}
         <Card className="h-[600px]">
@@ -299,9 +414,25 @@ export default function InterviewPage() {
                             <span className="text-xs text-gray-500">
                               {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
-                            <span className="font-semibold text-sm text-gray-500 ml-2">
-                              Moderator
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm text-gray-500">
+                                Moderator
+                              </span>
+                              {isVoiceEnabled && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handlePlayMessage(message.id, message.message)}
+                                  className="h-6 w-6 p-0 hover:bg-gray-200"
+                                >
+                                  {isPlaying && currentPlayingMessage === message.id ? (
+                                    <Pause className="h-3 w-3" />
+                                  ) : (
+                                    <Play className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         )}
                         <p className="text-sm">{message.message}</p>
@@ -314,19 +445,60 @@ export default function InterviewPage() {
 
             {/* Message Input */}
             <div className="mt-4 border-t pt-4 space-y-4">
+              {/* Voice Recording Indicator */}
+              {isRecording && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-red-600 font-medium">Recording...</span>
+                  </div>
+                  <div className="flex items-center gap-1 ml-auto">
+                    <div className="h-2 w-1 bg-red-400 rounded animate-pulse"></div>
+                    <div className="h-3 w-1 bg-red-500 rounded animate-pulse [animation-delay:0.1s]"></div>
+                    <div className="h-2 w-1 bg-red-400 rounded animate-pulse [animation-delay:0.2s]"></div>
+                    <div className="h-4 w-1 bg-red-600 rounded animate-pulse [animation-delay:0.3s]"></div>
+                    <div className="h-2 w-1 bg-red-400 rounded animate-pulse [animation-delay:0.4s]"></div>
+                  </div>
+                </div>
+              )}
+              
               <Textarea
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your message..."
+                placeholder={isRecording ? "Voice recording in progress..." : "Type your message..."}
                 className="min-h-[100px]"
+                disabled={isRecording}
               />
-              <Button 
-                onClick={handleSendMessage}
-                disabled={!newMessage.trim() || isSending}
-                className="w-full"
-              >
-                {isSending ? "Sending..." : "Send Message"}
-              </Button>
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim() || isSending || isRecording}
+                  className="flex-1"
+                >
+                  {isSending ? "Sending..." : "Send Message"}
+                </Button>
+                
+                {isVoiceEnabled && (
+                  <Button
+                    variant={isRecording ? "destructive" : "outline"}
+                    onClick={isRecording ? handleStopRecording : handleStartRecording}
+                    className="px-4"
+                  >
+                    {isRecording ? (
+                      <>
+                        <MicOff className="h-4 w-4 mr-2" />
+                        Stop Recording
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="h-4 w-4 mr-2" />
+                        Voice Input
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

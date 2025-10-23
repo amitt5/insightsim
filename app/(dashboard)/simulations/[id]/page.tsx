@@ -716,7 +716,7 @@ const debugAPIRawResponse = async () => {
       setAttachedImages([]); // Clear attached images after sending
       setSelectedStimulusImages(new Array(signedStimulusUrls.length).fill(false)); // Reset simulation checkboxes
       setSelectedProjectMediaImages(new Array(signedProjectMediaUrls.length).fill(false)); // Reset project media checkboxes
-      setSelectedRagDocuments(new Array(ragDocuments.length).fill(false)); // Reset RAG document checkboxes
+      // setSelectedRagDocuments(new Array(ragDocuments.length).fill(false)); // Reset RAG document checkboxes
      
       if(messageFetched) {
          //3. build the messages for openai with attached images and document texts

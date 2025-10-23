@@ -283,14 +283,15 @@ export default function ProjectsList() {
                 });
 
                 return (
-                  <TableRow key={project.id} className="hover:bg-gray-50">
+                  <TableRow 
+                    key={project.id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => router.push(`/projects/${project.id}`)}
+                  >
                     <TableCell>
-                      <Link 
-                        href={`/projects/${project.id}`}
-                        className="font-semibold hover:text-blue-600 transition-colors"
-                      >
+                      <span className="font-semibold">
                         {project.name}
-                      </Link>
+                      </span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-gray-600">
@@ -313,49 +314,33 @@ export default function ProjectsList() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link 
-                              href={`/projects/${project.id}`}
-                              className="flex items-center gap-2"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                              Edit Project
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`/api/projects/${project.id}`, {
-                                  method: 'DELETE',
-                                });
-                                if (!response.ok) throw new Error('Failed to delete project');
-                                setProjects(prev => prev.filter(p => p.id !== project.id));
-                                toast({
-                                  title: "Success",
-                                  description: "Project deleted successfully",
-                                });
-                              } catch (error) {
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to delete project",
-                                  variant: "destructive",
-                                });
-                              }
-                            }}
-                            className="flex items-center gap-2 text-red-600 focus:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const response = await fetch(`/api/projects/${project.id}`, {
+                              method: 'DELETE',
+                            });
+                            if (!response.ok) throw new Error('Failed to delete project');
+                            setProjects(prev => prev.filter(p => p.id !== project.id));
+                            toast({
+                              title: "Success",
+                              description: "Project deleted successfully",
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to delete project",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );

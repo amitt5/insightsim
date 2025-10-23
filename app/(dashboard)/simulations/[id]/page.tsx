@@ -1374,13 +1374,13 @@ const debugAPIRawResponse = async () => {
                  {formattedMessages.length > 0 && (
                 //  { (simulationData?.simulation?.mode === "human-mod") && (
                   <div className="mt-2 space-y-2">
-                    <button
+                    {/* <button
                       type="button"
                       className="text-xs text-primary underline hover:text-primary/80 focus:outline-none"
                       onClick={() => setShowInstructionBox(v => !v)}
                     >
                       {showInstructionBox ? "Hide AI instruction box" : "Not happy with the response? Instruct AI to improve its replies."}
-                    </button>
+                    </button> */}
                     
                     {/* Ask Next Question Button */}
                     {simulation.discussion_questions && simulation.discussion_questions.length > 0 && (

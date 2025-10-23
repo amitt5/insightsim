@@ -1640,7 +1640,7 @@ const debugAPIRawResponse = async () => {
                     
                     
                   )}
-                   {simulation.status === 'Completed' && (
+                   {/* {simulation.status === 'Completed' && (
                     <Button
                       className="w-full"
                       onClick={async () => {
@@ -1664,7 +1664,7 @@ const debugAPIRawResponse = async () => {
                     >
                       Share with Human Respondents
                     </Button>
-                  )}
+                  )} */}
                 </div>}
 
 

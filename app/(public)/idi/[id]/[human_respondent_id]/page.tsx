@@ -46,7 +46,8 @@ export default function InterviewPage() {
     startInterview,
     stopInterview,
     sendMessage: sendVapiMessage,
-    clearError: clearVapiError
+    clearError: clearVapiError,
+    exportMessageAnalysis
   } = useVapi();
 
   // Combine text messages and VAPI transcript
@@ -288,6 +289,18 @@ export default function InterviewPage() {
                 {vapiLoading ? "Stopping..." : "End Voice Interview"}
               </Button>
             )}
+            
+            {/* PHASE 1: Debug button for message analysis */}
+            {process.env.NODE_ENV === 'development' && (
+              <Button
+                onClick={exportMessageAnalysis}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                Export Analysis
+              </Button>
+            )}
           </div>
         </div>
 
@@ -362,7 +375,15 @@ export default function InterviewPage() {
                         {message.metadata?.isVoice && (
                           <div className="flex items-center gap-1 mt-1">
                             <Mic className="w-3 h-3 text-primary-foreground/70" />
-                            <span className="text-xs text-primary-foreground/70">Voice</span>
+                            <span className="text-xs text-primary-foreground/70">
+                              Voice
+                              {message.metadata.isInterim && (
+                                <span className="ml-1 text-yellow-500">(updating...)</span>
+                              )}
+                              {message.metadata.isFinal && (
+                                <span className="ml-1 text-green-500">(final)</span>
+                              )}
+                            </span>
                           </div>
                         )}
                         {/* Debug info - remove in production */}
@@ -442,7 +463,15 @@ export default function InterviewPage() {
                         {message.metadata?.isVoice && (
                           <div className="flex items-center gap-1 mt-1">
                             <Mic className="w-3 h-3 text-primary-foreground/70" />
-                            <span className="text-xs text-primary-foreground/70">Voice</span>
+                            <span className="text-xs text-primary-foreground/70">
+                              Voice
+                              {message.metadata.isInterim && (
+                                <span className="ml-1 text-yellow-500">(updating...)</span>
+                              )}
+                              {message.metadata.isFinal && (
+                                <span className="ml-1 text-green-500">(final)</span>
+                              )}
+                            </span>
                           </div>
                         )}
                       </div>

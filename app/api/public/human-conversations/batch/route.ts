@@ -25,8 +25,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createRouteHandlerClient({ cookies });
 
     // Get the current message count for ordering
     const { data: lastMessage, error: countError } = await supabase

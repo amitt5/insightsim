@@ -11,7 +11,12 @@ import { PersonaCard } from "@/components/persona-card"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import { createTitleGenerationPrompt, createBriefExtractionPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createTargetSegmentGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { runSimulationAPI } from '@/utils/api';
+import { createBriefPersonaGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { buildDiscussionQuestionsFromBrief } from "@/utils/buildMessagesForOpenAI";
 
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import { ArrowLeft, ArrowRight, Upload, X,Edit2, Save, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
 import AIBriefAssistant from "./AIBriefAssistant"
 import { RagDocumentUpload, RagDocumentList } from "./rag"

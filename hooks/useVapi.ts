@@ -67,6 +67,7 @@ export interface UseVapiReturn {
   // Utility functions
   clearError: () => void;
   clearTranscript: () => void;
+  clearVoiceSession: () => void;
   
   // PHASE 1: Debug functions
   exportMessageAnalysis: () => any;
@@ -324,10 +325,10 @@ export function useVapi(): UseVapiReturn {
     }
 
     try {
-      const sessionId = generateVoiceSessionId();
-      voiceSessionIdRef.current = sessionId;
+      // Clear any existing session ID first
+      voiceSessionIdRef.current = '';
 
-      await createVoiceSession({
+      const sessionData = await createVoiceSession({
         project_id: projectIdRef.current,
         human_respondent_id: humanRespondentIdRef.current,
         vapi_call_id: `vapi_call_${Date.now()}`,
@@ -338,14 +339,24 @@ export function useVapi(): UseVapiReturn {
         }
       });
 
-      console.log('✅ Voice session created:', sessionId);
+      // Use the actual session ID returned from the API
+      if (sessionData && sessionData.id) {
+        voiceSessionIdRef.current = sessionData.id;
+        console.log('✅ Voice session created:', sessionData.id);
+      } else {
+        throw new Error('No session ID returned from API');
+      }
     } catch (error) {
       console.error('❌ Failed to create voice session:', error);
+      // Clear the session ID if creation failed
+      voiceSessionIdRef.current = '';
+      throw error;
     }
   }, []);
 
   const updateVoiceSessionStatus = useCallback(async (status: 'started' | 'in_progress' | 'ended' | 'failed') => {
     if (!voiceSessionIdRef.current) {
+      console.warn('Cannot update voice session status: no session ID available');
       return;
     }
 
@@ -357,6 +368,11 @@ export function useVapi(): UseVapiReturn {
       console.log('✅ Voice session status updated:', status);
     } catch (error) {
       console.error('❌ Failed to update voice session status:', error);
+      // If the session doesn't exist, clear the session ID to prevent further attempts
+      if (error instanceof Error && error.message.includes('not found')) {
+        console.warn('Clearing invalid session ID');
+        voiceSessionIdRef.current = '';
+      }
     }
   }, []);
 
@@ -855,6 +871,13 @@ export function useVapi(): UseVapiReturn {
     setTranscript([]);
   }, []);
 
+  const clearVoiceSession = useCallback(() => {
+    voiceSessionIdRef.current = '';
+    projectIdRef.current = '';
+    humanRespondentIdRef.current = '';
+    console.log('✅ Voice session state cleared');
+  }, []);
+
   // PHASE 1: Debug function to export message analysis data
   const exportMessageAnalysis = useCallback(() => {
     const analysisData = {
@@ -913,6 +936,7 @@ export function useVapi(): UseVapiReturn {
     // Utility functions
     clearError,
     clearTranscript,
+    clearVoiceSession,
     
     // PHASE 1: Debug functions
     exportMessageAnalysis

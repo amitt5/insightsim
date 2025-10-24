@@ -21,8 +21,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createRouteHandlerClient({ cookies });
 
     // Validate that project and human respondent exist
     const { data: project, error: projectError } = await supabase
@@ -77,26 +76,7 @@ export async function POST(request: Request) {
         data: { project_id, human_respondent_id, vapi_call_id, assistant_id }
       });
       
-      // If voice_sessions table doesn't exist, we'll create it dynamically
-      if (insertError.code === '42P01') {
-        console.log('voice_sessions table does not exist, creating it...');
-        // For now, return a mock session ID
-        const mockSessionId = crypto.randomUUID();
-        return NextResponse.json({
-          id: mockSessionId,
-          project_id,
-          human_respondent_id,
-          status: 'started',
-          vapi_call_id,
-          assistant_id,
-          metadata,
-          started_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-      }
-      
-      // Return more specific error information
+      // Return specific error information
       return NextResponse.json(
         { 
           error: 'Failed to create voice session',
@@ -135,8 +115,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createRouteHandlerClient({ cookies });
 
     // Build query
     let query = supabase
@@ -153,11 +132,15 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false });
 
     if (sessionsError) {
-      // If table doesn't exist, return empty array
-      if (sessionsError.code === '42P01') {
-        return NextResponse.json({ sessions: [] });
-      }
-      throw sessionsError;
+      console.error('Error fetching voice sessions:', sessionsError);
+      return NextResponse.json(
+        { 
+          error: 'Failed to fetch voice sessions',
+          details: sessionsError.message,
+          code: sessionsError.code
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ sessions: sessions || [] });
@@ -187,8 +170,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createRouteHandlerClient({ cookies });
 
     // Update session
     const updateData: any = {
@@ -209,18 +191,29 @@ export async function PUT(request: Request) {
       .single();
 
     if (updateError) {
-      // If table doesn't exist, return success (graceful degradation)
-      if (updateError.code === '42P01') {
-        return NextResponse.json({ success: true, message: 'Session updated (table not found)' });
-      }
-      throw updateError;
+      console.error('Voice session update error:', {
+        code: updateError.code,
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint,
+        session_id
+      });
+      
+      return NextResponse.json(
+        { 
+          error: 'Failed to update voice session',
+          details: updateError.message,
+          code: updateError.code
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(updatedSession);
   } catch (error) {
-    console.error('Error updating voice session:', error);
+    console.error('Error updating voice session111:', error);
     return NextResponse.json(
-      { error: 'Failed to update voice session' },
+      { error: 'Failed to update voice session111' },
       { status: 500 }
     );
   }

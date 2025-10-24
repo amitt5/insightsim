@@ -187,7 +187,7 @@ export default function InterviewPage() {
         throw new Error('Project data not available');
       }
       
-      await startInterview(respondentName, discussionGuide);
+      await startInterview(respondentName, discussionGuide, projectId, humanRespondentId);
     } catch (err) {
       console.error('Failed to start voice interview:', err);
       setError('Failed to start voice interview. Please try again.');

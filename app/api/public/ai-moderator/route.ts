@@ -104,6 +104,7 @@ ${is_first_message ? "Start by introducing yourself and asking the first questio
           message: moderatorMessage,
           sender_type: 'moderator',
           message_order: nextOrder,
+          message_type: 'text', // AI moderator messages are always text
           metadata: {
             timestamp: new Date().toISOString(),
             is_first_message

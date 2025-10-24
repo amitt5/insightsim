@@ -2,6 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Vapi from '@vapi-ai/web';
+import { 
+  saveVoiceMessage, 
+  saveVoiceMessageBatch, 
+  createVoiceSession, 
+  updateVoiceSession,
+  createVoiceMessageData,
+  generateVoiceSessionId 
+} from '@/utils/voiceApi';
 
 // Message interface compatible with existing InterviewPage component
 export interface VapiMessage {
@@ -52,7 +60,7 @@ export interface UseVapiReturn {
   isLoading: boolean;
   
   // Functions
-  startInterview: (respondentName?: string, discussionGuide?: string[]) => Promise<void>;
+  startInterview: (respondentName?: string, discussionGuide?: string[], projectId?: string, humanRespondentId?: string) => Promise<void>;
   stopInterview: () => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
   
@@ -87,6 +95,75 @@ export function useVapi(): UseVapiReturn {
   // PHASE 3: Speaker-based message accumulation
   const currentSpeakerRef = useRef<string>('');
   const currentSpeakerMessageRef = useRef<VapiMessage | null>(null);
+  
+  // PHASE 3: Database persistence
+  const voiceSessionIdRef = useRef<string>('');
+  const projectIdRef = useRef<string>('');
+  const humanRespondentIdRef = useRef<string>('');
+  const messageQueueRef = useRef<any[]>([]);
+  const batchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryQueueRef = useRef<any[]>([]);
+  const isSavingRef = useRef<boolean>(false);
+  const saveBatchMessagesRef = useRef<(() => Promise<void>) | null>(null);
+
+  // PHASE 3: Database persistence functions (moved before processSpeakerMessage)
+  const queueMessageForSaving = useCallback((message: VapiMessage) => {
+    // Only save final messages to avoid spam
+    if (message.metadata?.isFinal || message.metadata?.transcriptType === 'final') {
+      messageQueueRef.current.push(message);
+      
+      // Clear existing timeout and set new one for batch saving
+      if (batchTimeoutRef.current) {
+        clearTimeout(batchTimeoutRef.current);
+      }
+      
+      batchTimeoutRef.current = setTimeout(() => {
+        // Use ref to avoid circular dependency
+        if (messageQueueRef.current.length > 0 && saveBatchMessagesRef.current) {
+          saveBatchMessagesRef.current();
+        }
+      }, 2000); // Save batch every 2 seconds
+    }
+  }, []);
+
+  const saveBatchMessages = useCallback(async () => {
+    if (messageQueueRef.current.length === 0 || isSavingRef.current) {
+      return;
+    }
+
+    isSavingRef.current = true;
+    const messagesToSave = [...messageQueueRef.current];
+    messageQueueRef.current = [];
+
+    try {
+      const messageDataArray = messagesToSave.map(message => 
+        createVoiceMessageData(
+          message.metadata?.rawMessage || {},
+          projectIdRef.current,
+          humanRespondentIdRef.current,
+          voiceSessionIdRef.current
+        )
+      );
+
+      // Override with actual message data
+      messageDataArray.forEach((data, index) => {
+        data.message = messagesToSave[index].message;
+        data.sender_type = messagesToSave[index].sender_type;
+      });
+
+      await saveVoiceMessageBatch(messageDataArray);
+      console.log('✅ Batch saved', messagesToSave.length, 'messages to database');
+    } catch (error) {
+      console.error('❌ Failed to save batch messages:', error);
+      // Add failed messages back to queue
+      messageQueueRef.current.unshift(...messagesToSave);
+    } finally {
+      isSavingRef.current = false;
+    }
+  }, []);
+
+  // Assign function to ref to avoid circular dependency
+  saveBatchMessagesRef.current = saveBatchMessages;
 
   // PHASE 2: Message processing helper functions
   const processBufferedMessage = useCallback((message: VapiMessage, speakerKey: string) => {
@@ -207,6 +284,80 @@ export function useVapi(): UseVapiReturn {
       
       return [...prev, message];
     });
+    
+    // Queue message for database saving
+    queueMessageForSaving(message);
+  }, [queueMessageForSaving]);
+
+  // PHASE 3: Database persistence functions
+  const saveMessageToDatabase = useCallback(async (message: VapiMessage) => {
+    if (!projectIdRef.current || !humanRespondentIdRef.current) {
+      console.warn('Cannot save message: missing project or respondent ID');
+      return;
+    }
+
+    try {
+      const messageData = createVoiceMessageData(
+        message.metadata?.rawMessage || {},
+        projectIdRef.current,
+        humanRespondentIdRef.current,
+        voiceSessionIdRef.current
+      );
+
+      // Override with actual message data
+      messageData.message = message.message;
+      messageData.sender_type = message.sender_type;
+
+      await saveVoiceMessage(messageData);
+      console.log('✅ Message saved to database:', message.message.substring(0, 50) + '...');
+    } catch (error) {
+      console.error('❌ Failed to save message to database:', error);
+      // Add to retry queue
+      retryQueueRef.current.push(message);
+    }
+  }, []);
+
+  const createVoiceSessionInDatabase = useCallback(async () => {
+    if (!projectIdRef.current || !humanRespondentIdRef.current) {
+      console.warn('Cannot create voice session: missing project or respondent ID');
+      return;
+    }
+
+    try {
+      const sessionId = generateVoiceSessionId();
+      voiceSessionIdRef.current = sessionId;
+
+      await createVoiceSession({
+        project_id: projectIdRef.current,
+        human_respondent_id: humanRespondentIdRef.current,
+        vapi_call_id: `vapi_call_${Date.now()}`,
+        assistant_id: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID,
+        metadata: {
+          created_by: 'useVapi_hook',
+          timestamp: new Date().toISOString()
+        }
+      });
+
+      console.log('✅ Voice session created:', sessionId);
+    } catch (error) {
+      console.error('❌ Failed to create voice session:', error);
+    }
+  }, []);
+
+  const updateVoiceSessionStatus = useCallback(async (status: 'started' | 'in_progress' | 'ended' | 'failed') => {
+    if (!voiceSessionIdRef.current) {
+      return;
+    }
+
+    try {
+      await updateVoiceSession(voiceSessionIdRef.current, {
+        status,
+        ended_at: status === 'ended' ? new Date().toISOString() : undefined
+      });
+      console.log('✅ Voice session status updated:', status);
+    } catch (error) {
+      console.error('❌ Failed to update voice session status:', error);
+    }
   }, []);
 
   // Initialize VAPI client
@@ -250,6 +401,9 @@ export function useVapi(): UseVapiReturn {
         // PHASE 3: Reset speaker tracking
         currentSpeakerRef.current = '';
         currentSpeakerMessageRef.current = null;
+        
+        // PHASE 3: Update voice session status
+        updateVoiceSessionStatus('in_progress');
       });
 
       vapi.on('call-end', () => {
@@ -272,6 +426,12 @@ export function useVapi(): UseVapiReturn {
         // PHASE 3: Reset speaker tracking
         currentSpeakerRef.current = '';
         currentSpeakerMessageRef.current = null;
+        
+        // PHASE 3: Save remaining messages and update session status
+        if (messageQueueRef.current.length > 0) {
+          saveBatchMessages();
+        }
+        updateVoiceSessionStatus('ended');
       });
 
       vapi.on('message', (message: any) => {
@@ -551,10 +711,10 @@ export function useVapi(): UseVapiReturn {
       console.error('Failed to initialize VAPI:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize voice service');
     }
-  }, []);
+  }, [updateVoiceSessionStatus, saveBatchMessages]);
 
   // Start interview function
-  const startInterview = useCallback(async (respondentName?: string, discussionGuide?: string[]) => {
+  const startInterview = useCallback(async (respondentName?: string, discussionGuide?: string[], projectId?: string, humanRespondentId?: string) => {
     if (!vapiRef.current) {
       initializeVapi();
     }
@@ -567,6 +727,10 @@ export function useVapi(): UseVapiReturn {
     try {
       setIsLoading(true);
       setError(null);
+
+      // Store project and respondent IDs for database persistence
+      if (projectId) projectIdRef.current = projectId;
+      if (humanRespondentId) humanRespondentIdRef.current = humanRespondentId;
 
       const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
       if (!assistantId) {
@@ -588,8 +752,13 @@ export function useVapi(): UseVapiReturn {
 
       console.log('Starting VAPI interview with variables:', {
         respondent_name: respondentName || 'the respondent',
-        discussion_guide_preview: formattedDiscussionGuide.substring(0, 100) + '...'
+        discussion_guide_preview: formattedDiscussionGuide.substring(0, 100) + '...',
+        project_id: projectId,
+        human_respondent_id: humanRespondentId
       });
+
+      // Create voice session in database
+      await createVoiceSessionInDatabase();
 
       // Start the call with assistant overrides
       await vapiRef.current.start(assistantId, assistantOverrides);
@@ -601,7 +770,7 @@ export function useVapi(): UseVapiReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [initializeVapi]);
+  }, [initializeVapi, createVoiceSessionInDatabase]);
 
   // Stop interview function
   const stopInterview = useCallback(async () => {
@@ -611,15 +780,30 @@ export function useVapi(): UseVapiReturn {
 
     try {
       setIsLoading(true);
+      
+      // Save any remaining messages in the queue
+      if (messageQueueRef.current.length > 0) {
+        await saveBatchMessages();
+      }
+      
+      // Update voice session status to ended
+      await updateVoiceSessionStatus('ended');
+      
       await vapiRef.current.stop();
       setIsCallActive(false);
+      
+      // Clear session data
+      voiceSessionIdRef.current = '';
+      projectIdRef.current = '';
+      humanRespondentIdRef.current = '';
+      
     } catch (err) {
       console.error('Failed to stop interview:', err);
       setError(err instanceof Error ? err.message : 'Failed to stop voice interview');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [saveBatchMessages, updateVoiceSessionStatus]);
 
   // Send message function
   const sendMessage = useCallback(async (text: string) => {

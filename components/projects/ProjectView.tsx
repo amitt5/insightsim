@@ -1022,7 +1022,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                 } catch (err) {
                   toast({
                     title: "Error",
-                    description: "Failed to generate questions11. Please try again.",
+                    description: "Failed to generate questions. Please try again.",
                     variant: "destructive",
                     duration: 5000,
                   });

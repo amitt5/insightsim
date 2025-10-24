@@ -1,10 +1,13 @@
 "use client"
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useVapi, VapiMessage } from "@/hooks/useVapi"
+import { Mic, MicOff, Phone, PhoneOff, AlertCircle } from "lucide-react"
 
 interface HumanRespondent {
   id: string;
@@ -33,6 +36,25 @@ export default function InterviewPage() {
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isAiResponding, setIsAiResponding] = useState(false);
+
+  // VAPI hook integration
+  const {
+    isCallActive,
+    transcript: vapiTranscript,
+    error: vapiError,
+    isLoading: vapiLoading,
+    startInterview,
+    stopInterview,
+    sendMessage: sendVapiMessage,
+    clearError: clearVapiError
+  } = useVapi();
+
+  // Combine text messages and VAPI transcript
+  const allMessages = useMemo(() => {
+    const combined = [...messages, ...vapiTranscript];
+    // Sort by created_at timestamp to maintain chronological order
+    return combined.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }, [messages, vapiTranscript]);
 
   const fetchMessages = async () => {
     try {
@@ -81,6 +103,20 @@ export default function InterviewPage() {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSending || isAiResponding) return;
 
+    // If voice call is active, send via VAPI
+    if (isCallActive) {
+      try {
+        await sendVapiMessage(newMessage.trim());
+        setNewMessage('');
+        return;
+      } catch (err) {
+        console.error('Error sending VAPI message:', err);
+        setError('Failed to send voice message. Please try again.');
+        return;
+      }
+    }
+
+    // Otherwise, send via text (existing functionality)
     setIsSending(true);
     try {
       const response = await fetch('/api/public/human-conversations', {
@@ -113,6 +149,26 @@ export default function InterviewPage() {
       setError('Failed to send message. Please try again.');
     } finally {
       setIsSending(false);
+    }
+  };
+
+  // Voice interview control functions
+  const handleStartVoiceInterview = async () => {
+    try {
+      clearVapiError();
+      await startInterview();
+    } catch (err) {
+      console.error('Failed to start voice interview:', err);
+      setError('Failed to start voice interview. Please try again.');
+    }
+  };
+
+  const handleStopVoiceInterview = async () => {
+    try {
+      await stopInterview();
+    } catch (err) {
+      console.error('Failed to stop voice interview:', err);
+      setError('Failed to stop voice interview. Please try again.');
     }
   };
 
@@ -194,17 +250,66 @@ export default function InterviewPage() {
               <Badge variant={respondentData.status === "completed" ? "default" : "secondary"}>
                 {respondentData.status}
               </Badge>
+              {isCallActive && (
+                <Badge variant="default" className="bg-green-500">
+                  <Mic className="w-3 h-3 mr-1" />
+                  Voice Active
+                </Badge>
+              )}
             </div>
           </div>
+          
+          {/* Voice Interview Controls */}
+          <div className="flex items-center gap-2">
+            {!isCallActive ? (
+              <Button
+                onClick={handleStartVoiceInterview}
+                disabled={vapiLoading}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                {vapiLoading ? "Starting..." : "Start Voice Interview"}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleStopVoiceInterview}
+                disabled={vapiLoading}
+                variant="destructive"
+              >
+                <PhoneOff className="w-4 h-4 mr-2" />
+                {vapiLoading ? "Stopping..." : "End Voice Interview"}
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Error Display */}
+        {(error || vapiError) && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {vapiError || error}
+              {vapiError && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearVapiError}
+                  className="ml-2"
+                >
+                  Dismiss
+                </Button>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Chat Window */}
         <Card className="h-[600px]">
           <CardContent className="p-4 h-full flex flex-col">
             <div className="flex-1 overflow-y-auto space-y-6">
-              {messages.map((message, i) => {
+              {allMessages.map((message, i) => {
                 // Show AI typing indicator after the last message if AI is responding
-                if (i === messages.length - 1 && isAiResponding) {
+                if (i === allMessages.length - 1 && isAiResponding) {
                   return (
                     <div key={`message-group-${message.id || i}`}>
                       {/* Render the last message */}
@@ -242,6 +347,12 @@ export default function InterviewPage() {
                               </div>
                             )}
                             <p className="text-sm">{message.message}</p>
+                            {message.metadata?.isVoice && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Mic className="w-3 h-3 text-primary-foreground/70" />
+                                <span className="text-xs text-primary-foreground/70">Voice</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -305,6 +416,12 @@ export default function InterviewPage() {
                           </div>
                         )}
                         <p className="text-sm">{message.message}</p>
+                        {message.metadata?.isVoice && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Mic className="w-3 h-3 text-primary-foreground/70" />
+                            <span className="text-xs text-primary-foreground/70">Voice</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -314,19 +431,49 @@ export default function InterviewPage() {
 
             {/* Message Input */}
             <div className="mt-4 border-t pt-4 space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                {isCallActive ? (
+                  <div className="flex items-center gap-2 text-sm text-green-600">
+                    <Mic className="w-4 h-4" />
+                    <span>Voice interview active - speak or type your message</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <MicOff className="w-4 h-4" />
+                    <span>Text mode - type your message or start voice interview</span>
+                  </div>
+                )}
+              </div>
+              
               <Textarea
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your message..."
+                placeholder={isCallActive ? "Type your message or speak..." : "Type your message..."}
                 className="min-h-[100px]"
+                disabled={isSending || isAiResponding}
               />
-              <Button 
-                onClick={handleSendMessage}
-                disabled={!newMessage.trim() || isSending}
-                className="w-full"
-              >
-                {isSending ? "Sending..." : "Send Message"}
-              </Button>
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim() || isSending || isAiResponding}
+                  className="flex-1"
+                >
+                  {isSending ? "Sending..." : isCallActive ? "Send Text Message" : "Send Message"}
+                </Button>
+                
+                {!isCallActive && (
+                  <Button
+                    onClick={handleStartVoiceInterview}
+                    disabled={vapiLoading}
+                    variant="outline"
+                    className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                  >
+                    <Phone className="w-4 h-4 mr-2" />
+                    Voice
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

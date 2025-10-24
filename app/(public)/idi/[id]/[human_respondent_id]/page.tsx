@@ -51,9 +51,17 @@ export default function InterviewPage() {
 
   // Combine text messages and VAPI transcript
   const allMessages = useMemo(() => {
+    // Only log when there are significant changes
+    if (messages.length > 0 || vapiTranscript.length > 0) {
+      console.log(`Combining ${messages.length} text messages with ${vapiTranscript.length} VAPI messages`);
+    }
+    
     const combined = [...messages, ...vapiTranscript];
+    
     // Sort by created_at timestamp to maintain chronological order
-    return combined.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    const sorted = combined.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    
+    return sorted;
   }, [messages, vapiTranscript]);
 
   const fetchMessages = async () => {
@@ -308,6 +316,10 @@ export default function InterviewPage() {
           <CardContent className="p-4 h-full flex flex-col">
             <div className="flex-1 overflow-y-auto space-y-6">
               {allMessages.map((message, i) => {
+                // Only log rendering for debugging when needed
+                if (process.env.NODE_ENV === 'development' && i < 3) {
+                  console.log(`Rendering message ${i}:`, message.message?.substring(0, 30));
+                }
                 // Show AI typing indicator after the last message if AI is responding
                 if (i === allMessages.length - 1 && isAiResponding) {
                   return (
@@ -346,13 +358,24 @@ export default function InterviewPage() {
                                 </span>
                               </div>
                             )}
-                            <p className="text-sm">{message.message}</p>
-                            {message.metadata?.isVoice && (
-                              <div className="flex items-center gap-1 mt-1">
-                                <Mic className="w-3 h-3 text-primary-foreground/70" />
-                                <span className="text-xs text-primary-foreground/70">Voice</span>
-                              </div>
+                        <p className="text-sm">{message.message || 'No message content'}</p>
+                        {message.metadata?.isVoice && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Mic className="w-3 h-3 text-primary-foreground/70" />
+                            <span className="text-xs text-primary-foreground/70">Voice</span>
+                          </div>
+                        )}
+                        {/* Debug info - remove in production */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="text-xs text-gray-400 mt-1 p-2 bg-gray-100 rounded">
+                            <div>ID: {message.id}</div>
+                            <div>Type: {message.sender_type}</div>
+                            <div>Content: "{message.message}"</div>
+                            {message.metadata?.rawMessage && (
+                              <div>Raw: {JSON.stringify(message.metadata.rawMessage, null, 2)}</div>
                             )}
+                          </div>
+                        )}
                           </div>
                         </div>
                       </div>

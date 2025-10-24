@@ -14,20 +14,28 @@ export interface VapiMessage {
     timestamp: string;
     isVoice?: boolean;
     vapiMessageId?: string;
+    rawMessage?: any;
   };
 }
 
 // VAPI event types based on the actual SDK
+// Note: VAPI SDK uses 'any' type for message events, so we'll be flexible
 interface VapiMessageEvent {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
+  id?: string;
+  role?: 'user' | 'assistant' | 'system';
+  content?: string;
+  message?: string;
+  text?: string;
+  timestamp?: string;
+  type?: string;
+  [key: string]: any; // Allow for additional properties
 }
 
 interface VapiErrorEvent {
-  message: string;
+  message?: string;
+  error?: string;
   code?: string;
+  [key: string]: any;
 }
 
 // Hook return interface
@@ -58,6 +66,8 @@ export function useVapi(): UseVapiReturn {
   // Refs for VAPI client and cleanup
   const vapiRef = useRef<Vapi | null>(null);
   const isInitializedRef = useRef(false);
+  const lastMessageRef = useRef<string>('');
+  const messageCountRef = useRef<number>(0);
 
   // Initialize VAPI client
   const initializeVapi = useCallback(() => {
@@ -83,31 +93,86 @@ export function useVapi(): UseVapiReturn {
         console.log('VAPI call started');
         setIsCallActive(true);
         setError(null);
+        // Reset message tracking for new call
+        lastMessageRef.current = '';
+        messageCountRef.current = 0;
       });
 
       vapi.on('call-end', () => {
         console.log('VAPI call ended');
         setIsCallActive(false);
+        // Reset message tracking
+        lastMessageRef.current = '';
+        messageCountRef.current = 0;
       });
 
-      vapi.on('message', (message: VapiMessageEvent) => {
-        console.log('VAPI message received:', message);
+      vapi.on('message', (message: any) => {
+        messageCountRef.current += 1;
+        
+        // Only log every 100th message to reduce spam
+        if (messageCountRef.current % 100 === 0) {
+          console.log(`VAPI message #${messageCountRef.current} received:`, message);
+        }
+        
+        // Extract content from various possible fields
+        const content = message.content || message.message || message.text || message.transcript;
+        const role = message.role || message.speaker || 'assistant';
+        const messageId = message.id || message.messageId;
+        const timestamp = message.timestamp || message.createdAt || new Date().toISOString();
+        
+        // Skip messages with no content or very short content (likely partial transcripts)
+        if (!content || content.trim().length < 3) {
+          return;
+        }
+        
+        // Skip duplicate messages (same content as last message)
+        if (content === lastMessageRef.current) {
+          return;
+        }
+        
+        // Skip messages that are just punctuation or very short
+        if (content.trim().length < 3 || /^[.,!?;:\s]+$/.test(content.trim())) {
+          return;
+        }
+        
+        // Update last message reference
+        lastMessageRef.current = content;
+        
+        // Only log meaningful messages
+        console.log('Adding meaningful VAPI message:', {
+          content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+          role,
+          messageId
+        });
         
         // Convert VAPI message to our message format
         const vapiMessage: VapiMessage = {
-          id: message.id || `vapi-${Date.now()}-${Math.random()}`,
-          message: message.content,
-          sender_type: message.role === 'user' ? 'respondent' : 'moderator',
-          created_at: message.timestamp || new Date().toISOString(),
+          id: messageId || `vapi-${Date.now()}-${Math.random()}`,
+          message: content,
+          sender_type: role === 'user' ? 'respondent' : 'moderator',
+          created_at: timestamp,
           metadata: {
-            timestamp: message.timestamp || new Date().toISOString(),
+            timestamp: timestamp,
             isVoice: true,
-            vapiMessageId: message.id
+            vapiMessageId: messageId
           }
         };
 
         // Add message to transcript
-        setTranscript(prev => [...prev, vapiMessage]);
+        setTranscript(prev => {
+          // Check if we already have this message (by content and role)
+          const isDuplicate = prev.some(existing => 
+            existing.message === content && 
+            existing.sender_type === vapiMessage.sender_type &&
+            Math.abs(new Date(existing.created_at).getTime() - new Date(timestamp).getTime()) < 5000 // Within 5 seconds
+          );
+          
+          if (isDuplicate) {
+            return prev;
+          }
+          
+          return [...prev, vapiMessage];
+        });
       });
 
       vapi.on('error', (error: VapiErrorEvent) => {

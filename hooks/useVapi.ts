@@ -18,6 +18,8 @@ export interface VapiMessage {
     transcriptType?: string;
     isInterim?: boolean;
     isFinal?: boolean;
+    isAccumulated?: boolean;
+    lastUpdate?: string;
   };
 }
 
@@ -81,6 +83,10 @@ export function useVapi(): UseVapiReturn {
   const messageBufferRef = useRef<Map<string, VapiMessage>>(new Map());
   const bufferTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedMessageRef = useRef<string>('');
+  
+  // PHASE 3: Speaker-based message accumulation
+  const currentSpeakerRef = useRef<string>('');
+  const currentSpeakerMessageRef = useRef<VapiMessage | null>(null);
 
   // PHASE 2: Message processing helper functions
   const processBufferedMessage = useCallback((message: VapiMessage, speakerKey: string) => {
@@ -147,6 +153,62 @@ export function useVapi(): UseVapiReturn {
     });
   }, []);
 
+  // PHASE 3: Speaker-based message accumulation
+  const processSpeakerMessage = useCallback((message: VapiMessage) => {
+    const speakerType = message.sender_type;
+    const currentSpeaker = currentSpeakerRef.current;
+    
+    console.log('PHASE 3: Processing speaker message:', {
+      speakerType,
+      currentSpeaker,
+      message: message.message.substring(0, 50) + '...'
+    });
+    
+    setTranscript(prev => {
+      // If same speaker, accumulate the message
+      if (currentSpeaker === speakerType && currentSpeakerMessageRef.current) {
+        console.log('ACCUMULATING: Same speaker, appending to existing message');
+        
+        // Find the last message from this speaker
+        const lastMessageIndex = prev.findLastIndex(m => m.sender_type === speakerType);
+        
+        if (lastMessageIndex >= 0) {
+          const updated = [...prev];
+          const existingMessage = updated[lastMessageIndex];
+          
+          // Combine messages with proper spacing
+          const combinedText = `${existingMessage.message} ${message.message}`.replace(/\s+/g, ' ').trim();
+          
+          updated[lastMessageIndex] = {
+            ...existingMessage,
+            message: combinedText,
+            metadata: {
+              ...existingMessage.metadata,
+              timestamp: existingMessage.metadata?.timestamp || new Date().toISOString(),
+              isAccumulated: true,
+              lastUpdate: new Date().toISOString()
+            }
+          };
+          
+          // Update current speaker message reference
+          currentSpeakerMessageRef.current = updated[lastMessageIndex];
+          
+          console.log('UPDATED: Combined message length:', combinedText.length);
+          return updated;
+        }
+      }
+      
+      // Different speaker or first message, add as new message
+      console.log('ADDING: New message for speaker:', speakerType);
+      
+      // Update speaker tracking
+      currentSpeakerRef.current = speakerType;
+      currentSpeakerMessageRef.current = message;
+      
+      return [...prev, message];
+    });
+  }, []);
+
   // Initialize VAPI client
   const initializeVapi = useCallback(() => {
     if (isInitializedRef.current || vapiRef.current) {
@@ -184,6 +246,10 @@ export function useVapi(): UseVapiReturn {
           bufferTimeoutRef.current = null;
         }
         lastProcessedMessageRef.current = '';
+        
+        // PHASE 3: Reset speaker tracking
+        currentSpeakerRef.current = '';
+        currentSpeakerMessageRef.current = null;
       });
 
       vapi.on('call-end', () => {
@@ -202,6 +268,10 @@ export function useVapi(): UseVapiReturn {
           bufferTimeoutRef.current = null;
         }
         lastProcessedMessageRef.current = '';
+        
+        // PHASE 3: Reset speaker tracking
+        currentSpeakerRef.current = '';
+        currentSpeakerMessageRef.current = null;
       });
 
       vapi.on('message', (message: any) => {
@@ -415,7 +485,7 @@ export function useVapi(): UseVapiReturn {
           content: content.substring(0, 50) + '...'
         });
         
-        // Handle interim vs final messages differently
+        // PHASE 3: Use speaker-based accumulation for all transcript messages
         if (messageAnalysis.isInterim) {
           // For interim messages, buffer and replace previous interim from same speaker
           console.log('BUFFERING: Interim message for speaker:', speakerKey);
@@ -433,14 +503,14 @@ export function useVapi(): UseVapiReturn {
             const bufferedMessage = messageBufferRef.current.get(speakerKey);
             if (bufferedMessage) {
               console.log('PROCESSING: Buffered interim message after timeout');
-              processBufferedMessage(bufferedMessage, speakerKey);
+              processSpeakerMessage(bufferedMessage);
               messageBufferRef.current.delete(speakerKey);
             }
           }, 500); // 500ms delay for interim messages
           
         } else if (messageAnalysis.isFinal) {
-          // For final messages, process immediately and clear any buffered interim
-          console.log('PROCESSING: Final message immediately');
+          // For final messages, process immediately with speaker accumulation
+          console.log('PROCESSING: Final message with speaker accumulation');
           
           // Clear any buffered interim message for this speaker
           if (messageBufferRef.current.has(speakerKey)) {
@@ -454,13 +524,13 @@ export function useVapi(): UseVapiReturn {
             bufferTimeoutRef.current = null;
           }
           
-          // Process final message immediately
-          processFinalMessage(vapiMessage);
+          // Process final message with speaker accumulation
+          processSpeakerMessage(vapiMessage);
           
         } else {
-          // Unknown message type, process as before
-          console.log('PROCESSING: Unknown message type, using legacy logic');
-          processLegacyMessage(vapiMessage);
+          // Unknown message type, use speaker accumulation
+          console.log('PROCESSING: Unknown message type, using speaker accumulation');
+          processSpeakerMessage(vapiMessage);
         }
       });
 

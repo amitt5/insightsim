@@ -383,6 +383,9 @@ export default function InterviewPage() {
                               {message.metadata.isFinal && (
                                 <span className="ml-1 text-green-500">(final)</span>
                               )}
+                              {message.metadata.isAccumulated && (
+                                <span className="ml-1 text-blue-500">(combined)</span>
+                              )}
                             </span>
                           </div>
                         )}
@@ -470,6 +473,9 @@ export default function InterviewPage() {
                               )}
                               {message.metadata.isFinal && (
                                 <span className="ml-1 text-green-500">(final)</span>
+                              )}
+                              {message.metadata.isAccumulated && (
+                                <span className="ml-1 text-blue-500">(combined)</span>
                               )}
                             </span>
                           </div>

@@ -10,7 +10,8 @@ import ProjectMediaUpload from "./ProjectMediaUpload"
 import { PersonaCard } from "@/components/persona-card"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
-import { createTitleGenerationPrompt, createBriefExtractionPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createTitleGenerationPrompt, createBriefExtractionPrompt, buildDiscussionQuestionsFromBrief } from "@/utils/buildMessagesForOpenAI";
+import { runSimulationAPI } from '@/utils/api';
 
 import { ArrowLeft, ArrowRight, Upload, X,Edit2, Save, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
 import AIBriefAssistant from "./AIBriefAssistant"
@@ -18,6 +19,7 @@ import { RagDocumentUpload, RagDocumentList } from "./rag"
 import { TargetSegmentSelectionModal } from "./TargetSegmentSelectionModal"
 import { runPersonaAnalysis, AnalysisProgress } from "@/utils/personaAnalysis"
 import warmUpService from "@/utils/warmupService"
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
 // Define the tab interface
 interface TabItem {
@@ -1020,7 +1022,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                 } catch (err) {
                   toast({
                     title: "Error",
-                    description: "Failed to generate questions. Please try again.",
+                    description: "Failed to generate questions11. Please try again.",
                     variant: "destructive",
                     duration: 5000,
                   });

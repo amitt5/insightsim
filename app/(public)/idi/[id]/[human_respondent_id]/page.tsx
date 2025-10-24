@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useVapi, VapiMessage } from "@/hooks/useVapi"
-import { Mic, MicOff, Phone, PhoneOff, AlertCircle } from "lucide-react"
+import { Mic, MicOff, Phone, PhoneOff, AlertCircle, Play, Square } from "lucide-react"
 
 interface HumanRespondent {
   id: string;
@@ -227,13 +227,8 @@ export default function InterviewPage() {
         setRespondentData(data);
         setError(null);
         
-        // After loading respondent data, fetch messages and start interview
+        // After loading respondent data, fetch messages (but don't auto-start interview)
         await fetchMessages();
-        
-        // If no messages exist, start the interview
-        if (!messages.length) {
-          await getAiResponse(true);
-        }
       } catch (err: any) {
         console.error("Failed to fetch respondent data:", err);
         setError(err.message || "Failed to load interview data");
@@ -290,16 +285,16 @@ export default function InterviewPage() {
             </div>
           </div>
           
-          {/* Voice Interview Controls */}
+          {/* Interview Controls */}
           <div className="flex items-center gap-2">
             {!isCallActive ? (
               <Button
                 onClick={handleStartVoiceInterview}
                 disabled={vapiLoading}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-blue-600 hover:bg-blue-700"
               >
-                <Phone className="w-4 h-4 mr-2" />
-                {vapiLoading ? "Starting..." : "Start Voice Interview"}
+                <Play className="w-4 h-4 mr-2" />
+                {vapiLoading ? "Starting..." : "Start Interview"}
               </Button>
             ) : (
               <Button
@@ -307,8 +302,8 @@ export default function InterviewPage() {
                 disabled={vapiLoading}
                 variant="destructive"
               >
-                <PhoneOff className="w-4 h-4 mr-2" />
-                {vapiLoading ? "Stopping..." : "End Voice Interview"}
+                <Square className="w-4 h-4 mr-2" />
+                {vapiLoading ? "Stopping..." : "End Interview"}
               </Button>
             )}
             
@@ -350,6 +345,22 @@ export default function InterviewPage() {
         <Card className="h-[600px]">
           <CardContent className="p-4 h-full flex flex-col">
             <div className="flex-1 overflow-y-auto space-y-6">
+              {/* Welcome message when no messages exist */}
+              {allMessages.length === 0 && !isCallActive && (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center space-y-4">
+                    <div className="text-6xl">🎤</div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold text-gray-700">Ready to Start Interview</h3>
+                      <p className="text-sm text-gray-500 max-w-md">
+                        Click "Start Interview" to begin your voice interview with {respondentData?.name || 'the respondent'}. 
+                        The AI moderator will guide you through the discussion questions.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {allMessages.map((message, i) => {
                 // Only log rendering for debugging when needed
                 if (process.env.NODE_ENV === 'development' && i < 3) {
@@ -515,12 +526,12 @@ export default function InterviewPage() {
                 {isCallActive ? (
                   <div className="flex items-center gap-2 text-sm text-green-600">
                     <Mic className="w-4 h-4" />
-                    <span>Voice interview active - speak or type your message</span>
+                    <span>Interview in progress - speak or type your message</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <MicOff className="w-4 h-4" />
-                    <span>Text mode - type your message or start voice interview</span>
+                    <Play className="w-4 h-4" />
+                    <span>Ready to start interview - click "Start Interview" to begin</span>
                   </div>
                 )}
               </div>
@@ -528,7 +539,7 @@ export default function InterviewPage() {
               <Textarea
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder={isCallActive ? "Type your message or speak..." : "Type your message..."}
+                placeholder={isCallActive ? "Type your message or speak..." : "Interview will start when you click 'Start Interview'"}
                 className="min-h-[100px]"
                 disabled={isSending || isAiResponding}
               />
@@ -546,11 +557,10 @@ export default function InterviewPage() {
                   <Button
                     onClick={handleStartVoiceInterview}
                     disabled={vapiLoading}
-                    variant="outline"
-                    className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                    className="bg-blue-600 hover:bg-blue-700"
                   >
-                    <Phone className="w-4 h-4 mr-2" />
-                    Voice
+                    <Play className="w-4 h-4 mr-2" />
+                    Start Interview
                   </Button>
                 )}
               </div>

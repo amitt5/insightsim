@@ -52,7 +52,7 @@ export interface UseVapiReturn {
   isLoading: boolean;
   
   // Functions
-  startInterview: () => Promise<void>;
+  startInterview: (respondentName?: string, discussionGuide?: string[]) => Promise<void>;
   stopInterview: () => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
   
@@ -554,7 +554,7 @@ export function useVapi(): UseVapiReturn {
   }, []);
 
   // Start interview function
-  const startInterview = useCallback(async () => {
+  const startInterview = useCallback(async (respondentName?: string, discussionGuide?: string[]) => {
     if (!vapiRef.current) {
       initializeVapi();
     }
@@ -573,8 +573,26 @@ export function useVapi(): UseVapiReturn {
         throw new Error('Assistant ID not found');
       }
 
-      // Start the call
-      await vapiRef.current.start(assistantId);
+      // Format discussion guide as numbered list
+      const formattedDiscussionGuide = discussionGuide && discussionGuide.length > 0 
+        ? discussionGuide.map((item, index) => `${index + 1}. ${item}`).join('\n')
+        : 'No specific discussion guide provided.';
+
+      // Prepare assistant overrides with variables
+      const assistantOverrides = {
+        variableValues: {
+          respondent_name: respondentName || 'the respondent',
+          discussion_guide: formattedDiscussionGuide
+        }
+      };
+
+      console.log('Starting VAPI interview with variables:', {
+        respondent_name: respondentName || 'the respondent',
+        discussion_guide_preview: formattedDiscussionGuide.substring(0, 100) + '...'
+      });
+
+      // Start the call with assistant overrides
+      await vapiRef.current.start(assistantId, assistantOverrides);
       
     } catch (err) {
       console.error('Failed to start interview:', err);

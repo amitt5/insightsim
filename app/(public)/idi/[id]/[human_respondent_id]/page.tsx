@@ -165,7 +165,29 @@ export default function InterviewPage() {
   const handleStartVoiceInterview = async () => {
     try {
       clearVapiError();
-      await startInterview();
+      
+      // Get respondent name and discussion guide
+      const respondentName = respondentData?.name || 'the respondent';
+      const discussionGuide = respondentData?.project?.discussion_questions || [];
+      
+      console.log('Starting voice interview with:', {
+        respondentName,
+        discussionGuideCount: discussionGuide.length,
+        discussionGuide: discussionGuide,
+        projectId,
+        humanRespondentId
+      });
+      
+      // Validate that we have the necessary data
+      if (!respondentData) {
+        throw new Error('Respondent data not available');
+      }
+      
+      if (!respondentData.project) {
+        throw new Error('Project data not available');
+      }
+      
+      await startInterview(respondentName, discussionGuide);
     } catch (err) {
       console.error('Failed to start voice interview:', err);
       setError('Failed to start voice interview. Please try again.');

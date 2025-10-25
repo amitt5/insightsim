@@ -509,7 +509,7 @@ JSON OUTPUT:
  */
 export function createPersonaGenerationPrompt(details: AIPersonaGeneration): string {
   // 1. Set the role and expertise for the AI.
-  const systemPrompt = `You are an expert persona generator for a market research platform called Maira. You specialize in creating realistic, diverse, and insightful user personas based on initial project details. Your output must be a valid JSON array.`;
+  const systemPrompt = `You are an expert persona generator for a market research platform called Insightsim. You specialize in creating realistic, diverse, and insightful user personas based on initial project details. Your output must be a valid JSON array.`;
 
   // 2. Clearly define the task and constraints.
   const taskDefinition = `Your task is to analyze the user's input and generate an array of 5 distinct personas that fit the target audience. Each persona should represent a different facet or archetype within the target group. The persona's 'goal' field MUST directly reflect the user's stated 'primaryGoals'.`;
@@ -606,7 +606,11 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation | Proj
   - Ensure each persona can meaningfully contribute to discussions about the research topic
   - Include relevant demographic details, motivations, and behavioral patterns mentioned in the brief
   - Make personas realistic and relatable for moderators to work with during sessions
-  - Align persona goals and frustrations with the research objectives outlined in the brief`;
+  - Align persona goals and frustrations with the research objectives outlined in the brief
+  - Each persona must represent a single individual only, not couples or groups.
+  - No persona should include multiple names (e.g., “John & Mary”).
+  - Use singular pronouns and a single consistent viewpoint.
+  `;
 
   // Add segment-specific guidelines if segments are provided
   if (selectedSegments && selectedSegments.length > 0) {
@@ -619,7 +623,12 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation | Proj
 
     // 5. Specify the exact output format
     const outputFormatInstruction = `
-  Your response MUST be a single, valid JSON array containing 3-5 persona objects. The structure of each object must conform to the following TypeScript interface:
+  Your response MUST be a single, valid JSON array containing 3-5 persona objects. 
+  - Each persona object must describe one individual only, never more than one person.
+- The "bio" and "family_status" fields should describe the individual’s own life context (e.g., “Married with two kids”) but not introduce additional named individuals.
+- Reject any output where "name" contains “and” or multiple people.
+
+The structure of each object must conform to the following TypeScript interface:
   \`\`\`typescript
   interface Persona {
     name: string; // e.g., "Sarah Mitchell"

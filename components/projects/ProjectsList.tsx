@@ -55,6 +55,75 @@ export default function ProjectsList() {
   const [projectName, setProjectName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleTestUsage = async () => {
+    try {
+      toast({
+        title: "Fetching usage data...",
+        description: "Getting your OpenAI usage for the past week",
+      });
+
+      const response = await fetch('/api/openai-usage');
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch usage data');
+      }
+
+      if (result.success && result.data) {
+        const usageData = result.data;
+        
+        // Calculate totals from the usage data
+        let totalTokens = 0;
+        let totalCost = 0;
+        let totalRequests = 0;
+        const modelBreakdown: { [key: string]: { tokens: number; cost: number; requests: number } } = {};
+
+        // Process the usage data (structure may vary based on OpenAI response)
+        if (usageData.data && Array.isArray(usageData.data)) {
+          usageData.data.forEach((bucket: any) => {
+            if (bucket.usage) {
+              totalTokens += bucket.usage.total_tokens || 0;
+              totalCost += bucket.usage.total_cost || 0;
+              totalRequests += bucket.usage.requests || 0;
+
+              // Group by model if available
+              if (bucket.usage.models) {
+                Object.entries(bucket.usage.models).forEach(([model, modelUsage]: [string, any]) => {
+                  if (!modelBreakdown[model]) {
+                    modelBreakdown[model] = { tokens: 0, cost: 0, requests: 0 };
+                  }
+                  modelBreakdown[model].tokens += modelUsage.total_tokens || 0;
+                  modelBreakdown[model].cost += modelUsage.total_cost || 0;
+                  modelBreakdown[model].requests += modelUsage.requests || 0;
+                });
+              }
+            }
+          });
+        }
+
+        // Format the results for display
+        const modelBreakdownText = Object.entries(modelBreakdown)
+          .map(([model, data]) => `${model}: ${data.tokens.toLocaleString()} tokens, $${data.cost.toFixed(4)}`)
+          .join('\n');
+
+        toast({
+          title: "OpenAI Usage - Past Week",
+          description: `Total: ${totalTokens.toLocaleString()} tokens, $${totalCost.toFixed(4)} cost, ${totalRequests} requests${modelBreakdownText ? `\n\nModels:\n${modelBreakdownText}` : ''}`,
+          duration: 10000, // Show for 10 seconds to allow reading
+        });
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (error) {
+      console.error('Error fetching usage data:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to fetch usage data',
+        variant: "destructive",
+      });
+    }
+  };
+
   // Function to open modal for project name input
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -243,6 +312,10 @@ export default function ProjectsList() {
           )}
           {isCreating ? 'Creating...' : 'Create New Project'}
         </Button>
+        {/* <Button onClick={handleTestUsage}>
+          View OpenAI Usage
+        </Button>
+         */}
       </div>
 
       {/* Loading State */}

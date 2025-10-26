@@ -10,26 +10,10 @@ import {
   createVoiceMessageData,
   generateVoiceSessionId 
 } from '@/utils/voiceApi';
+import { processMessageInSequence, ProcessedMessage } from '@/utils/messageProcessor';
 
 // Message interface compatible with existing InterviewPage component
-export interface VapiMessage {
-  id: string;
-  message: string;
-  sender_type: 'respondent' | 'moderator';
-  created_at: string;
-  message_order?: number;
-  metadata?: {
-    timestamp: string;
-    isVoice?: boolean;
-    vapiMessageId?: string;
-    rawMessage?: any;
-    transcriptType?: string;
-    isInterim?: boolean;
-    isFinal?: boolean;
-    isAccumulated?: boolean;
-    lastUpdate?: string;
-  };
-}
+export interface VapiMessage extends ProcessedMessage {}
 
 // VAPI event types based on the actual SDK
 // Note: VAPI SDK uses 'any' type for message events, so we'll be flexible
@@ -231,59 +215,32 @@ export function useVapi(): UseVapiReturn {
     });
   }, []);
 
-  // PHASE 3: Speaker-based message accumulation
+  // PHASE 3: Speaker-based message accumulation using utility function
   const processSpeakerMessage = useCallback((message: VapiMessage) => {
-    const speakerType = message.sender_type;
     const currentSpeaker = currentSpeakerRef.current;
     
     console.log('PHASE 3: Processing speaker message:', {
-      speakerType,
+      speakerType: message.sender_type,
       currentSpeaker,
       message: message.message.substring(0, 50) + '...'
     });
     
     setTranscript(prev => {
-      // If same speaker, accumulate the message
-      if (currentSpeaker === speakerType && currentSpeakerMessageRef.current) {
-        console.log('ACCUMULATING: Same speaker, appending to existing message');
-        
-        // Find the last message from this speaker
-        const lastMessageIndex = prev.findLastIndex(m => m.sender_type === speakerType);
-        
-        if (lastMessageIndex >= 0) {
-          const updated = [...prev];
-          const existingMessage = updated[lastMessageIndex];
-          
-          // Combine messages with proper spacing
-          const combinedText = `${existingMessage.message} ${message.message}`.replace(/\s+/g, ' ').trim();
-          
-          updated[lastMessageIndex] = {
-            ...existingMessage,
-            message: combinedText,
-            metadata: {
-              ...existingMessage.metadata,
-              timestamp: existingMessage.metadata?.timestamp || new Date().toISOString(),
-              isAccumulated: true,
-              lastUpdate: new Date().toISOString()
-            }
-          };
-          
-          // Update current speaker message reference
-          currentSpeakerMessageRef.current = updated[lastMessageIndex];
-          
-          console.log('UPDATED: Combined message length:', combinedText.length);
-          return updated;
+      const result = processMessageInSequence(message, prev, currentSpeaker);
+      
+      // Update speaker tracking
+      currentSpeakerRef.current = result.newCurrentSpeaker;
+      
+      // Update current speaker message reference
+      if (result.updatedMessages.length > 0) {
+        const lastMessage = result.updatedMessages[result.updatedMessages.length - 1];
+        if (lastMessage.sender_type === result.newCurrentSpeaker) {
+          currentSpeakerMessageRef.current = lastMessage;
         }
       }
       
-      // Different speaker or first message, add as new message
-      console.log('ADDING: New message for speaker:', speakerType);
-      
-      // Update speaker tracking
-      currentSpeakerRef.current = speakerType;
-      currentSpeakerMessageRef.current = message;
-      
-      return [...prev, message];
+      console.log('PROCESSED: Updated messages count:', result.updatedMessages.length);
+      return result.updatedMessages;
     });
     
     // Queue message for database saving

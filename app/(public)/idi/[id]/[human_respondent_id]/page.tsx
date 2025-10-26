@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useVapi, VapiMessage } from "@/hooks/useVapi"
+import { processMessagesBatch } from "@/utils/messageProcessor"
 import { Mic, MicOff, Phone, PhoneOff, AlertCircle, Play, Square } from "lucide-react"
 
 interface HumanRespondent {
@@ -57,7 +58,13 @@ export default function InterviewPage() {
       console.log(`Combining ${messages.length} text messages with ${vapiTranscript.length} VAPI messages`);
     }
     
-    const combined = [...messages, ...vapiTranscript];
+    // Process database messages to combine consecutive messages from same speaker
+    const processedDatabaseMessages = processMessagesBatch(messages);
+    console.log(`Processed ${messages.length} database messages into ${processedDatabaseMessages.length} combined messages`);
+    
+    // Combine processed database messages with VAPI transcript
+    const combined = [...processedDatabaseMessages, ...vapiTranscript];
+    console.log('combined', combined);
     
     // Sort by created_at timestamp to maintain chronological order
     const sorted = combined.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());

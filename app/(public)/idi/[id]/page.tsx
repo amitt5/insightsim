@@ -62,8 +62,13 @@ export default function PublicIDIPage() {
     fetchProjectData();
   }, [projectId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleStartInterview = async (type: "text" | "voice") => {
+    // Validate form data
+    if (!formData.name.trim() || !formData.age.trim() || !formData.gender || !formData.email.trim()) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -75,7 +80,8 @@ export default function PublicIDIPage() {
         body: JSON.stringify({
           project_id: projectId,
           ...formData,
-          age: parseInt(formData.age)
+          age: parseInt(formData.age),
+          interview_type: type
         }),
       });
 
@@ -134,7 +140,7 @@ export default function PublicIDIPage() {
         {/* Form */}
         <Card className="max-w-xl mx-auto">
           <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input
@@ -188,14 +194,27 @@ export default function PublicIDIPage() {
                 />
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Starting Interview..." : "Start Interview"}
-              </Button>
-            </form>
+              {/* Interview Type Selection */}
+              <div className="space-y-3">
+                <Label>Choose Interview Type</Label>
+                <div className="grid grid-cols-1 gap-3">
+                  <Button
+                    onClick={() => handleStartInterview("voice")}
+                    className="h-12 text-base"
+                    disabled={isSubmitting}
+                  >
+                    🎤 Start Voice Interview
+                  </Button>
+                  <Button
+                    onClick={() => handleStartInterview("text")}
+                    className="h-12 text-base"
+                    disabled={isSubmitting}
+                  >
+                    💬 Start Text Interview
+                  </Button>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

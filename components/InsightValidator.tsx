@@ -223,7 +223,7 @@ const InsightValidator: React.FC<InsightValidatorProps> = ({ transcript }) => {
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-500">Date</p>
-                  <p className="text-xl font-semibold">{analysisData.analysis_overview.analysis_date}</p>
+                  <p className="text-xl font-semibold">{new Date().toLocaleDateString()}</p>
                 </div>
               </div>
             </div>

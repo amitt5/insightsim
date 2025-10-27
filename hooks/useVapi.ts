@@ -289,7 +289,7 @@ export function useVapi(): UseVapiReturn {
         project_id: projectIdRef.current,
         human_respondent_id: humanRespondentIdRef.current,
         vapi_call_id: `vapi_call_${Date.now()}`,
-        assistant_id: process.env.VAPI_ASSISTANT_ID,
+        assistant_id: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID,
         metadata: {
           created_by: 'useVapi_hook',
           timestamp: new Date().toISOString()
@@ -340,9 +340,10 @@ export function useVapi(): UseVapiReturn {
     }
 
     try {
-      const apiKey = process.env.VAPI_API_KEY;
-      const assistantId = process.env.VAPI_ASSISTANT_ID;
-
+      const apiKey = process.env.NEXT_PUBLIC_VAPI_API_KEY;
+      const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
+      console.log('apiKey', apiKey);
+      console.log('assistantId', assistantId);
       if (!apiKey || !assistantId) {
         throw new Error('VAPI API key or Assistant ID not found in environment variables');
       }
@@ -620,30 +621,27 @@ export function useVapi(): UseVapiReturn {
         
         // PHASE 3: Use speaker-based accumulation for all transcript messages
         if (messageAnalysis.isInterim) {
-          // For interim messages, buffer and replace previous interim from same speaker
-          console.log('BUFFERING: Interim message for speaker:', speakerKey);
+          // For interim messages, process immediately but mark as interim
+          console.log('PROCESSING: Interim message immediately for real-time display');
           
-          // Store in buffer
-          messageBufferRef.current.set(speakerKey, vapiMessage);
-          
-          // Clear existing timeout
-          if (bufferTimeoutRef.current) {
-            clearTimeout(bufferTimeoutRef.current);
+          // Clear any buffered interim message for this speaker
+          if (messageBufferRef.current.has(speakerKey)) {
+            console.log('CLEARING: Previous buffered interim message');
+            messageBufferRef.current.delete(speakerKey);
           }
           
-          // Set timeout to process buffered message
-          bufferTimeoutRef.current = setTimeout(() => {
-            const bufferedMessage = messageBufferRef.current.get(speakerKey);
-            if (bufferedMessage) {
-              console.log('PROCESSING: Buffered interim message after timeout');
-              processSpeakerMessage(bufferedMessage);
-              messageBufferRef.current.delete(speakerKey);
-            }
-          }, 500); // 500ms delay for interim messages
+          // Clear timeout
+          if (bufferTimeoutRef.current) {
+            clearTimeout(bufferTimeoutRef.current);
+            bufferTimeoutRef.current = null;
+          }
+          
+          // Process interim message immediately for real-time display
+          processSpeakerMessage(vapiMessage);
           
         } else if (messageAnalysis.isFinal) {
-          // For final messages, process immediately with speaker accumulation
-          console.log('PROCESSING: Final message with speaker accumulation');
+          // For final messages, process immediately and replace any interim messages
+          console.log('PROCESSING: Final message - replacing any interim messages');
           
           // Clear any buffered interim message for this speaker
           if (messageBufferRef.current.has(speakerKey)) {
@@ -705,7 +703,7 @@ export function useVapi(): UseVapiReturn {
       if (projectId) projectIdRef.current = projectId;
       if (humanRespondentId) humanRespondentIdRef.current = humanRespondentId;
 
-      const assistantId = process.env.VAPI_ASSISTANT_ID;
+      const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
       if (!assistantId) {
         throw new Error('Assistant ID not found');
       }

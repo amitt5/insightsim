@@ -90,7 +90,13 @@ export default function PublicIDIPage() {
       }
 
       const data = await response.json();
-      router.push(`/idi/${projectId}/${data.id}`);
+      
+      // Redirect based on interview type
+      if (type === "text") {
+        router.push(`/idi/${projectId}/${data.id}/text`);
+      } else {
+        router.push(`/idi/${projectId}/${data.id}`);
+      }
     } catch (err) {
       console.error('Error submitting form:', err);
       setError('Failed to submit form. Please try again.');

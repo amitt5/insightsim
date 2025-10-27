@@ -14,6 +14,7 @@ import { createTitleGenerationPrompt, createBriefExtractionPrompt, buildDiscussi
 import { runSimulationAPI } from '@/utils/api';
 import { createTargetSegmentGenerationPrompt } from '@/utils/buildMessagesForOpenAI';
 import { createBriefPersonaGenerationPrompt } from '@/utils/buildMessagesForOpenAI';
+
 import { ArrowLeft, ArrowRight, Upload, X,Edit2, Save, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
 import AIBriefAssistant from "./AIBriefAssistant"
 import { RagDocumentUpload, RagDocumentList } from "./rag"

@@ -289,7 +289,7 @@ export function useVapi(): UseVapiReturn {
         project_id: projectIdRef.current,
         human_respondent_id: humanRespondentIdRef.current,
         vapi_call_id: `vapi_call_${Date.now()}`,
-        assistant_id: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID,
+        assistant_id: process.env.VAPI_ASSISTANT_ID,
         metadata: {
           created_by: 'useVapi_hook',
           timestamp: new Date().toISOString()
@@ -340,8 +340,8 @@ export function useVapi(): UseVapiReturn {
     }
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_VAPI_API_KEY;
-      const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
+      const apiKey = process.env.VAPI_API_KEY;
+      const assistantId = process.env.VAPI_ASSISTANT_ID;
 
       if (!apiKey || !assistantId) {
         throw new Error('VAPI API key or Assistant ID not found in environment variables');
@@ -705,7 +705,7 @@ export function useVapi(): UseVapiReturn {
       if (projectId) projectIdRef.current = projectId;
       if (humanRespondentId) humanRespondentIdRef.current = humanRespondentId;
 
-      const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
+      const assistantId = process.env.VAPI_ASSISTANT_ID;
       if (!assistantId) {
         throw new Error('Assistant ID not found');
       }

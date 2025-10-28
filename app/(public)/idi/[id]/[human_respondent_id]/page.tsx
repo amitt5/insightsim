@@ -571,7 +571,10 @@ export default function InterviewPage() {
                   <>
                     <button
                       onClick={handleStopVoiceInterview}
-                      className="w-12 h-12 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg"
+                      className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
+                      style={{ backgroundColor: '#ef4444' }}
+                      onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#dc2626'}
+                      onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#ef4444'}
                     >
                       <Square className="w-6 h-6 text-white" />
                     </button>
@@ -589,14 +592,6 @@ export default function InterviewPage() {
                   </>
                 )}
               </div>
-
-              {/* Switch to text chat link */}
-              <button
-                onClick={() => {/* TODO: Implement text chat switch */}}
-                className="text-blue-600 underline hover:text-blue-700"
-              >
-                Switch to text chat
-              </button>
             </div>
           </div>
         )}

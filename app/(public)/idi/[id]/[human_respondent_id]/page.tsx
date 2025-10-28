@@ -537,15 +537,28 @@ export default function InterviewPage() {
           <div className="w-2/3 bg-white border border-gray-200 rounded-lg p-8 flex flex-col items-center justify-center space-y-8">
             {/* Voice Activity Bars */}
             <div className="flex items-end space-x-2 h-20">
-              {getVoiceBarHeights().map((height, index) => (
-                <div 
-                  key={index}
-                  className="w-3 bg-purple-600 rounded-full transition-all duration-300 ease-in-out"
-                  style={{ 
-                    height: `${height}%`
-                  }}
-                ></div>
-              ))}
+              {getVoiceBarHeights().map((height, index) => {
+                const { isUserSpeaking, isAiSpeaking } = voiceActivity;
+                let barColor = 'bg-purple-600'; // Default color
+                
+                if (isUserSpeaking && !isAiSpeaking) {
+                  barColor = 'bg-red-500'; // User speaking - red
+                } else if (isAiSpeaking && !isUserSpeaking) {
+                  barColor = 'bg-purple-600'; // AI speaking - purple
+                } else if (isUserSpeaking && isAiSpeaking) {
+                  barColor = 'bg-orange-500'; // Both speaking - orange
+                }
+                
+                return (
+                  <div 
+                    key={index}
+                    className={`w-3 ${barColor} rounded-full transition-all duration-300 ease-in-out`}
+                    style={{ 
+                      height: `${height}%`
+                    }}
+                  ></div>
+                );
+              })}
             </div>
 
             {/* Interrupt Button */}

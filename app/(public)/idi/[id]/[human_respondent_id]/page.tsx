@@ -567,7 +567,8 @@ export default function InterviewPage() {
               </div>
             )}
             {/* Left Section - Placeholder */}
-            <div className="w-1/3 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
+            {/* // uncomment me amit111 */}
+            {/* <div className="w-1/3 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
               <div className="text-center space-y-4">
                 <p className="text-gray-600 text-lg">
                   We'll populate images, videos, and more in this space throughout the interview.
@@ -576,7 +577,7 @@ export default function InterviewPage() {
                   Stay tuned.
                 </p>
               </div>
-            </div>
+            </div> */}
 
             {/* Right Section - Interview Controls */}
             <div className="w-2/3 bg-white border border-gray-200 rounded-lg p-8">
@@ -623,7 +624,8 @@ export default function InterviewPage() {
           /* Voice interview layout - always show when not in pre-interview state */
           <div className="container mx-auto p-4 h-screen flex gap-4">
             {/* Left Section - Media Content */}
-            <div className="w-1/3 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
+            {/* // uncomment me amit111 */}
+            {/* <div className="w-1/3 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
               <div className="text-center space-y-4">
                 <p className="text-gray-600 text-lg">
                   We'll populate images, videos, and more in this space throughout the interview.
@@ -632,7 +634,7 @@ export default function InterviewPage() {
                   Stay tuned.
                 </p>
               </div>
-            </div>
+            </div> */}
 
             {/* Right Section - Voice Activity Indicator */}
             <div className="w-2/3 bg-white border border-gray-200 rounded-lg p-8 flex flex-col items-center justify-center space-y-8">

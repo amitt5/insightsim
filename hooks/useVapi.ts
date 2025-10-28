@@ -96,6 +96,8 @@ export function useVapi(): UseVapiReturn {
   
   // Callback management
   const callEndCallbackRef = useRef<(() => void) | null>(null);
+  // Prevent duplicate end handling
+  const isEndingRef = useRef<boolean>(false);
 
   // PHASE 3: Database persistence functions (moved before processSpeakerMessage)
   const queueMessageForSaving = useCallback((message: VapiMessage) => {
@@ -363,6 +365,7 @@ export function useVapi(): UseVapiReturn {
         //console.log('VAPI call started');
         setIsCallActive(true);
         setError(null);
+        isEndingRef.current = false;
         // Reset message tracking for new call
         lastMessageRef.current = '';
         messageCountRef.current = 0;
@@ -386,6 +389,10 @@ export function useVapi(): UseVapiReturn {
       });
 
       vapi.on('call-end', () => {
+        if (isEndingRef.current) {
+          return; // already handled
+        }
+        isEndingRef.current = true;
         //console.log('VAPI call ended');
         setIsCallActive(false);
         // Reset message tracking
@@ -423,7 +430,7 @@ export function useVapi(): UseVapiReturn {
         
         // PHASE 1: Comprehensive message analysis and logging
         //console.log(`\n=== VAPI MESSAGE #${messageCountRef.current} ===`);
-        console.log('Raw message object:', message);
+        console.debug('Raw message object:', message);
         // console.log('Message type:', typeof message);
         // console.log('Message keys:', Object.keys(message));
         
@@ -679,8 +686,25 @@ export function useVapi(): UseVapiReturn {
       });
 
       vapi.on('error', (error: VapiErrorEvent) => {
+        // Normalize potential fields from Daily/Vapi
+        const message = (error as any)?.message || (error as any)?.error || '';
+        const errorMsg = (error as any)?.errorMsg;
+        const nestedMsg = (error as any)?.error?.msg || (error as any)?.error?.message;
+
+        // Explicit handling: treat Daily's meeting-end as normal
+        const isExplicitMeetingEnded = errorMsg === 'Meeting has ended' || nestedMsg === 'Meeting has ended';
+
+        // Generic benign end detection (covers variations like ejection)
+        const isBenignEnd = /ejection|meeting has ended|meeting ended/i.test(String(message));
+        const isEmptyAfterEnd = !message && isEndingRef.current;
+
+        if (isExplicitMeetingEnded || isBenignEnd || isEmptyAfterEnd) {
+          console.info('Call ended normally');
+          return; // ignore benign end-of-call errors
+        }
+
         console.error('VAPI error:', error);
-        setError(error.message || 'An error occurred with the voice service');
+        setError((message as string) || 'An error occurred with the voice service');
         setIsCallActive(false);
       });
 

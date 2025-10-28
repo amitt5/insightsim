@@ -137,7 +137,7 @@ export function useVapi(): UseVapiReturn {
       });
 
       await saveVoiceMessageBatch(messageDataArray);
-      console.log('✅ Batch saved', messagesToSave.length, 'messages to database');
+      // console.log('✅ Batch saved', messagesToSave.length, 'messages to database');
     } catch (error) {
       console.error('❌ Failed to save batch messages:', error);
       // Add failed messages back to queue
@@ -152,7 +152,7 @@ export function useVapi(): UseVapiReturn {
 
   // PHASE 2: Message processing helper functions
   const processBufferedMessage = useCallback((message: VapiMessage, speakerKey: string) => {
-    console.log('Processing buffered message:', message.message.substring(0, 50) + '...');
+    //console.log('Processing buffered message:', message.message.substring(0, 50) + '...');
     
     setTranscript(prev => {
       // Find and replace the last interim message from this speaker, or add new one
@@ -163,18 +163,18 @@ export function useVapi(): UseVapiReturn {
         // Replace the last interim message
         const updated = [...prev];
         updated[lastMessageIndex] = message;
-        console.log('REPLACED: Interim message at index', lastMessageIndex);
+        //console.log('REPLACED: Interim message at index', lastMessageIndex);
         return updated;
       } else {
         // Add as new message
-        console.log('ADDED: New buffered message');
+        //console.log('ADDED: New buffered message');
         return [...prev, message];
       }
     });
   }, []);
 
   const processFinalMessage = useCallback((message: VapiMessage) => {
-    console.log('Processing final message:', message.message.substring(0, 50) + '...');
+    //console.log('Processing final message:', message.message.substring(0, 50) + '...');
     
     setTranscript(prev => {
       const speakerType = message.sender_type;
@@ -184,18 +184,18 @@ export function useVapi(): UseVapiReturn {
         // Replace the last interim message with final
         const updated = [...prev];
         updated[lastMessageIndex] = message;
-        console.log('REPLACED: Interim with final message at index', lastMessageIndex);
+        //console.log('REPLACED: Interim with final message at index', lastMessageIndex);
         return updated;
       } else {
         // Add as new message
-        console.log('ADDED: New final message');
+        //console.log('ADDED: New final message');
         return [...prev, message];
       }
     });
   }, []);
 
   const processLegacyMessage = useCallback((message: VapiMessage) => {
-    console.log('Processing legacy message:', message.message.substring(0, 50) + '...');
+    //console.log('Processing legacy message:', message.message.substring(0, 50) + '...');
     
     setTranscript(prev => {
       // Check for duplicates
@@ -206,11 +206,11 @@ export function useVapi(): UseVapiReturn {
       );
       
       if (isDuplicate) {
-        console.log('SKIPPED: Duplicate legacy message');
+        //console.log('SKIPPED: Duplicate legacy message');
         return prev;
       }
       
-      console.log('ADDED: New legacy message');
+      //console.log('ADDED: New legacy message');
       return [...prev, message];
     });
   }, []);
@@ -219,11 +219,11 @@ export function useVapi(): UseVapiReturn {
   const processSpeakerMessage = useCallback((message: VapiMessage) => {
     const currentSpeaker = currentSpeakerRef.current;
     
-    console.log('PHASE 3: Processing speaker message:', {
-      speakerType: message.sender_type,
-      currentSpeaker,
-      message: message.message.substring(0, 50) + '...'
-    });
+    // console.log('PHASE 3: Processing speaker message:', {
+    //   speakerType: message.sender_type,
+    //   currentSpeaker,
+    //   message: message.message.substring(0, 50) + '...'
+    // });
     
     setTranscript(prev => {
       const result = processMessageInSequence(message, prev, currentSpeaker);
@@ -239,7 +239,7 @@ export function useVapi(): UseVapiReturn {
         }
       }
       
-      console.log('PROCESSED: Updated messages count:', result.updatedMessages.length);
+      //console.log('PROCESSED: Updated messages count:', result.updatedMessages.length);
       return result.updatedMessages;
     });
     
@@ -267,7 +267,7 @@ export function useVapi(): UseVapiReturn {
       messageData.sender_type = message.sender_type;
 
       await saveVoiceMessage(messageData);
-      console.log('✅ Message saved to database:', message.message.substring(0, 50) + '...');
+      //console.log('✅ Message saved to database:', message.message.substring(0, 50) + '...');
     } catch (error) {
       console.error('❌ Failed to save message to database:', error);
       // Add to retry queue
@@ -299,7 +299,7 @@ export function useVapi(): UseVapiReturn {
       // Use the actual session ID returned from the API
       if (sessionData && sessionData.id) {
         voiceSessionIdRef.current = sessionData.id;
-        console.log('✅ Voice session created:', sessionData.id);
+        //console.log('✅ Voice session created:', sessionData.id);
       } else {
         throw new Error('No session ID returned from API');
       }
@@ -322,7 +322,7 @@ export function useVapi(): UseVapiReturn {
         status,
         ended_at: status === 'ended' ? new Date().toISOString() : undefined
       });
-      console.log('✅ Voice session status updated:', status);
+      //console.log('✅ Voice session status updated:', status);
     } catch (error) {
       console.error('❌ Failed to update voice session status:', error);
       // If the session doesn't exist, clear the session ID to prevent further attempts
@@ -354,7 +354,7 @@ export function useVapi(): UseVapiReturn {
 
       // Set up event listeners
       vapi.on('call-start', () => {
-        console.log('VAPI call started');
+        //console.log('VAPI call started');
         setIsCallActive(true);
         setError(null);
         // Reset message tracking for new call
@@ -380,7 +380,7 @@ export function useVapi(): UseVapiReturn {
       });
 
       vapi.on('call-end', () => {
-        console.log('VAPI call ended');
+        //console.log('VAPI call ended');
         setIsCallActive(false);
         // Reset message tracking
         lastMessageRef.current = '';
@@ -411,33 +411,33 @@ export function useVapi(): UseVapiReturn {
         messageCountRef.current += 1;
         
         // PHASE 1: Comprehensive message analysis and logging
-        console.log(`\n=== VAPI MESSAGE #${messageCountRef.current} ===`);
+        //console.log(`\n=== VAPI MESSAGE #${messageCountRef.current} ===`);
         console.log('Raw message object:', message);
-        console.log('Message type:', typeof message);
-        console.log('Message keys:', Object.keys(message));
+        // console.log('Message type:', typeof message);
+        // console.log('Message keys:', Object.keys(message));
         
-        // Log all possible fields we might need
-        console.log('=== MESSAGE FIELD ANALYSIS ===');
-        console.log('id:', message.id);
-        console.log('messageId:', message.messageId);
-        console.log('type:', message.type);
-        console.log('role:', message.role);
-        console.log('speaker:', message.speaker);
-        console.log('content:', message.content);
-        console.log('message:', message.message);
-        console.log('text:', message.text);
-        console.log('transcript:', message.transcript);
-        console.log('timestamp:', message.timestamp);
-        console.log('createdAt:', message.createdAt);
-        console.log('confidence:', message.confidence);
-        console.log('isFinal:', message.isFinal);
-        console.log('final:', message.final);
-        console.log('interim:', message.interim);
-        console.log('status:', message.status);
-        console.log('sequence:', message.sequence);
-        console.log('duration:', message.duration);
-        console.log('startTime:', message.startTime);
-        console.log('endTime:', message.endTime);
+        // // Log all possible fields we might need
+        // console.log('=== MESSAGE FIELD ANALYSIS ===');
+        // console.log('id:', message.id);
+        // console.log('messageId:', message.messageId);
+        // console.log('type:', message.type);
+        // console.log('role:', message.role);
+        // console.log('speaker:', message.speaker);
+        // console.log('content:', message.content);
+        // console.log('message:', message.message);
+        // console.log('text:', message.text);
+        // console.log('transcript:', message.transcript);
+        // console.log('timestamp:', message.timestamp);
+        // console.log('createdAt:', message.createdAt);
+        // console.log('confidence:', message.confidence);
+        // console.log('isFinal:', message.isFinal);
+        // console.log('final:', message.final);
+        // console.log('interim:', message.interim);
+        // console.log('status:', message.status);
+        // console.log('sequence:', message.sequence);
+        // console.log('duration:', message.duration);
+        // console.log('startTime:', message.startTime);
+        // console.log('endTime:', message.endTime);
         
         // Log nested objects
         if (message.metadata) {
@@ -460,7 +460,7 @@ export function useVapi(): UseVapiReturn {
           });
         }
         
-        console.log('=== END MESSAGE ANALYSIS ===\n');
+        //console.log('=== END MESSAGE ANALYSIS ===\n');
         
         // PHASE 1: Message type detection and analysis
         const messageAnalysis = {
@@ -500,14 +500,14 @@ export function useVapi(): UseVapiReturn {
         }
         
         // Log message analysis
-        console.log('=== MESSAGE TYPE ANALYSIS ===');
-        console.log('Message Type:', messageAnalysis.messageType);
-        console.log('Is Interim:', messageAnalysis.isInterim);
-        console.log('Is Final:', messageAnalysis.isFinal);
-        console.log('Confidence:', messageAnalysis.confidence);
-        console.log('Has Content:', messageAnalysis.hasContent);
-        console.log('Content Length:', messageAnalysis.contentLength);
-        console.log('=== END TYPE ANALYSIS ===\n');
+        //console.log('=== MESSAGE TYPE ANALYSIS ===');
+        //console.log('Message Type:', messageAnalysis.messageType);
+        //console.log('Is Interim:', messageAnalysis.isInterim);
+        //console.log('Is Final:', messageAnalysis.isFinal);
+        //console.log('Confidence:', messageAnalysis.confidence);
+        //console.log('Has Content:', messageAnalysis.hasContent);
+        //console.log('Content Length:', messageAnalysis.contentLength);
+        //console.log('=== END TYPE ANALYSIS ===\n');
         
         // PHASE 1: Message sequence and timing analysis
         const currentTime = Date.now();
@@ -549,15 +549,15 @@ export function useVapi(): UseVapiReturn {
                                             lastMessageRef.current.includes(content);
         }
         
-        console.log('=== MESSAGE PATTERN ANALYSIS ===');
-        console.log('Time since last message (ms):', patternAnalysis.timeSinceLastMessage);
-        console.log('Is rapid sequence:', patternAnalysis.isRapidSequence);
-        console.log('Message sequence length:', patternAnalysis.messageSequence);
-        console.log('Same speaker sequence:', patternAnalysis.sameSpeakerSequence);
-        console.log('Content progression detected:', patternAnalysis.contentProgression);
-        console.log('Previous message content:', lastMessageRef.current);
-        console.log('Current message content:', content);
-        console.log('=== END PATTERN ANALYSIS ===\n');
+        //console.log('=== MESSAGE PATTERN ANALYSIS ===');
+        //console.log('Time since last message (ms):', patternAnalysis.timeSinceLastMessage);
+        //console.log('Is rapid sequence:', patternAnalysis.isRapidSequence);
+        //console.log('Message sequence length:', patternAnalysis.messageSequence);
+        //console.log('Same speaker sequence:', patternAnalysis.sameSpeakerSequence);
+        //console.log('Content progression detected:', patternAnalysis.contentProgression);
+        //console.log('Previous message content:', lastMessageRef.current);
+        //console.log('Current message content:', content);
+        //console.log('=== END PATTERN ANALYSIS ===\n');
         
         // Update timing reference
         lastMessageTimeRef.current = currentTime;
@@ -568,26 +568,26 @@ export function useVapi(): UseVapiReturn {
         const timestamp = message.timestamp || message.createdAt || new Date().toISOString();
         
         // PHASE 1: Summary and decision logging
-        console.log('=== MESSAGE PROCESSING DECISION ===');
-        console.log('Will process this message:', {
-          hasContent: !!content,
-          contentLength: content ? content.trim().length : 0,
-          isInterim: messageAnalysis.isInterim,
-          isFinal: messageAnalysis.isFinal,
-          isRapidSequence: patternAnalysis.isRapidSequence,
-          contentProgression: patternAnalysis.contentProgression
-        });
-        console.log('=== END DECISION LOGGING ===\n');
+        //console.log('=== MESSAGE PROCESSING DECISION ===');
+        //console.log('Will process this message:', {
+          // hasContent: !!content,
+        //   contentLength: content ? content.trim().length : 0,
+        //   isInterim: messageAnalysis.isInterim,
+        //   isFinal: messageAnalysis.isFinal,
+        //   isRapidSequence: patternAnalysis.isRapidSequence,
+        //   contentProgression: patternAnalysis.contentProgression
+        // });
+        //console.log('=== END DECISION LOGGING ===\n');
         
         // PHASE 2: Message buffering and coalescing logic
         if (!content || content.trim().length < 3) {
-          console.log('SKIPPING: No content or too short');
+          // console.log('SKIPPING: No content or too short');
           return;
         }
         
         // Skip non-transcript messages (like status-update)
         if (message.type !== 'transcript') {
-          console.log('SKIPPING: Non-transcript message type:', message.type);
+          // console.log('SKIPPING: Non-transcript message type:', message.type);
           return;
         }
         
@@ -610,18 +610,18 @@ export function useVapi(): UseVapiReturn {
           }
         };
         
-        console.log('PHASE 2: Processing message:', {
-          speakerKey,
-          transcriptType: message.transcriptType,
-          isInterim: messageAnalysis.isInterim,
-          isFinal: messageAnalysis.isFinal,
-          content: content.substring(0, 50) + '...'
-        });
+        //console.log('PHASE 2: Processing message:', {
+        //   speakerKey,
+        //   transcriptType: message.transcriptType,
+        //   isInterim: messageAnalysis.isInterim,
+        //   isFinal: messageAnalysis.isFinal,
+        //   content: content.substring(0, 50) + '...'
+        // });
         
         // PHASE 3: Use speaker-based accumulation for all transcript messages
         if (messageAnalysis.isInterim) {
           // For interim messages, buffer and replace previous interim from same speaker
-          console.log('BUFFERING: Interim message for speaker:', speakerKey);
+          // console.log('BUFFERING: Interim message for speaker:', speakerKey);
           
           // Store in buffer
           messageBufferRef.current.set(speakerKey, vapiMessage);
@@ -635,7 +635,7 @@ export function useVapi(): UseVapiReturn {
           bufferTimeoutRef.current = setTimeout(() => {
             const bufferedMessage = messageBufferRef.current.get(speakerKey);
             if (bufferedMessage) {
-              console.log('PROCESSING: Buffered interim message after timeout');
+              // console.log('PROCESSING: Buffered interim message after timeout');
               processSpeakerMessage(bufferedMessage);
               messageBufferRef.current.delete(speakerKey);
             }
@@ -643,11 +643,11 @@ export function useVapi(): UseVapiReturn {
           
         } else if (messageAnalysis.isFinal) {
           // For final messages, process immediately with speaker accumulation
-          console.log('PROCESSING: Final message with speaker accumulation');
+          // console.log('PROCESSING: Final message with speaker accumulation');
           
           // Clear any buffered interim message for this speaker
           if (messageBufferRef.current.has(speakerKey)) {
-            console.log('CLEARING: Buffered interim message for final');
+            // console.log('CLEARING: Buffered interim message for final');
             messageBufferRef.current.delete(speakerKey);
           }
           
@@ -662,7 +662,7 @@ export function useVapi(): UseVapiReturn {
           
         } else {
           // Unknown message type, use speaker accumulation
-          console.log('PROCESSING: Unknown message type, using speaker accumulation');
+          // console.log('PROCESSING: Unknown message type, using speaker accumulation');
           processSpeakerMessage(vapiMessage);
         }
       });
@@ -723,12 +723,12 @@ export function useVapi(): UseVapiReturn {
         }
       };
 
-      console.log('Starting VAPI interview with variables:', {
-        respondent_name: respondentName || 'the respondent',
-        discussion_guide_preview: formattedDiscussionGuide.substring(0, 100) + '...',
-        project_id: projectId,
-        human_respondent_id: humanRespondentId
-      });
+      // console.log('Starting VAPI interview with variables:', {
+      //   respondent_name: respondentName || 'the respondent',
+      //   discussion_guide_preview: formattedDiscussionGuide.substring(0, 100) + '...',
+      //   project_id: projectId,
+      //   human_respondent_id: humanRespondentId
+      // });
 
       // Create voice session in database
       await createVoiceSessionInDatabase();

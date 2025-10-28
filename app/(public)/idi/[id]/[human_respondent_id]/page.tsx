@@ -350,14 +350,7 @@ export default function InterviewPage() {
                   {vapiLoading ? "Starting..." : "Start Interview"}
                 </button>
                 
-                <div className="text-center">
-                  <button
-                    onClick={() => {/* TODO: Implement text chat switch */}}
-                    className="text-purple-600 underline hover:text-purple-700"
-                  >
-                    Switch to text chat
-                  </button>
-                </div>
+               
               </div>
             </div>
           </div>
@@ -368,13 +361,13 @@ export default function InterviewPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold">{respondentData.project.name}</h1>
+              <h1 className="text-2xl font-bold">{respondentData?.project?.name}</h1>
               <div className="flex items-center gap-2 text-sm text-gray-500">
-                <span>{new Date(respondentData.project.created_at).toLocaleDateString()}</span>
+                <span>{new Date(respondentData?.project?.created_at || '').toLocaleDateString()}</span>
                 <span>•</span>
                 <span>In-Depth Interview</span>
-                <Badge variant={respondentData.status === "completed" ? "default" : "secondary"}>
-                  {respondentData.status}
+                <Badge variant={respondentData?.status === "completed" ? "default" : "secondary"}>
+                  {respondentData?.status}
                 </Badge>
                 {isCallActive && (
                   <Badge variant="default" className="bg-green-500">

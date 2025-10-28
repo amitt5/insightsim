@@ -270,66 +270,10 @@ export default function InterviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-4 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">{respondentData.project.name}</h1>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>{new Date(respondentData.project.created_at).toLocaleDateString()}</span>
-              <span>•</span>
-              <span>In-Depth Interview</span>
-              <Badge variant={respondentData.status === "completed" ? "default" : "secondary"}>
-                {respondentData.status}
-              </Badge>
-              {isCallActive && (
-                <Badge variant="default" className="bg-green-500">
-                  <Mic className="w-3 h-3 mr-1" />
-                  Voice Active
-                </Badge>
-              )}
-            </div>
-          </div>
-          
-          {/* Interview Controls */}
-          <div className="flex items-center gap-2">
-            {!isCallActive ? (
-              <Button
-                onClick={handleStartVoiceInterview}
-                disabled={vapiLoading}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                {vapiLoading ? "Starting..." : "Start Interview"}
-              </Button>
-            ) : (
-              <Button
-                onClick={handleStopVoiceInterview}
-                disabled={vapiLoading}
-                variant="destructive"
-              >
-                <Square className="w-4 h-4 mr-2" />
-                {vapiLoading ? "Stopping..." : "End Interview"}
-              </Button>
-            )}
-            
-            {/* PHASE 1: Debug button for message analysis */}
-            {process.env.NODE_ENV === 'development' && (
-              <Button
-                onClick={exportMessageAnalysis}
-                variant="outline"
-                size="sm"
-                className="text-xs"
-              >
-                Export Analysis
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Error Display */}
-        {(error || vapiError) && (
+    <div className="min-h-screen bg-gray-100">
+      {/* Error Display */}
+      {(error || vapiError) && (
+        <div className="container mx-auto p-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -346,28 +290,141 @@ export default function InterviewPage() {
               )}
             </AlertDescription>
           </Alert>
-        )}
+        </div>
+      )}
 
-        {/* Chat Window */}
-        <Card className="h-[600px]">
-          <CardContent className="p-4 h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto space-y-6">
-              {/* Welcome message when no messages exist */}
-              {allMessages.length === 0 && !isCallActive && (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center space-y-4">
-                    <div className="text-6xl">🎤</div>
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-semibold text-gray-700">Ready to Start Interview</h3>
-                      <p className="text-sm text-gray-500 max-w-md">
-                        Click "Start Interview" to begin your voice interview with {respondentData?.name || 'the respondent'}. 
-                        The AI moderator will guide you through the discussion questions.
-                      </p>
-                    </div>
-                  </div>
+      {/* Pre-interview layout when no messages exist */}
+      {true ? (
+        <div className="container mx-auto p-4 h-screen flex gap-4">
+          {/* Debug info */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="fixed top-4 right-4 bg-yellow-100 p-2 text-xs">
+              Debug: messages={allMessages.length}, isCallActive={isCallActive.toString()}
+            </div>
+          )}
+          {/* Left Section - Placeholder */}
+          <div className="w-1/3 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <p className="text-gray-600 text-lg">
+                We'll populate images, videos, and more in this space throughout the interview.
+              </p>
+              <p className="text-gray-500">
+                Stay tuned.
+              </p>
+            </div>
+          </div>
+
+          {/* Right Section - Interview Controls */}
+          <div className="w-2/3 bg-white border border-gray-200 rounded-lg p-8">
+            <div className="space-y-6">
+              {/* Header with microphone icon */}
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <Mic className="w-5 h-5 text-purple-600" />
                 </div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Your interview is about to begin!
+                </h1>
+              </div>
+
+              {/* Instructions */}
+              <div className="space-y-4 text-gray-600">
+                <p>
+                  Click the "Start Interview" button to begin the interview. Make sure you are in a quiet, focused setting.
+                </p>
+                <p>
+                  First you'll be asked to grant permission to use your microphone. Hit "allow" to continue.
+                </p>
+                <p>
+                  Once the interview starts, an AI moderator will ask you questions and dynamically respond to your answers. You can interrupt the AI moderator at any time by hitting the "interrupt" button and if you need to take a break, just ask the AI moderator to pause the interview until you're ready to proceed.
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="space-y-4">
+                <button
+                  onClick={handleStartVoiceInterview}
+                  disabled={vapiLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-4 text-lg font-semibold rounded-lg shadow-lg border-0 cursor-pointer"
+                >
+                  {vapiLoading ? "Starting..." : "Start Interview"}
+                </button>
+                
+                <div className="text-center">
+                  <button
+                    onClick={() => {/* TODO: Implement text chat switch */}}
+                    className="text-purple-600 underline hover:text-purple-700"
+                  >
+                    Switch to text chat
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Regular interview layout when messages exist or call is active */
+        <div className="container mx-auto p-4 space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold">{respondentData.project.name}</h1>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <span>{new Date(respondentData.project.created_at).toLocaleDateString()}</span>
+                <span>•</span>
+                <span>In-Depth Interview</span>
+                <Badge variant={respondentData.status === "completed" ? "default" : "secondary"}>
+                  {respondentData.status}
+                </Badge>
+                {isCallActive && (
+                  <Badge variant="default" className="bg-green-500">
+                    <Mic className="w-3 h-3 mr-1" />
+                    Voice Active
+                  </Badge>
+                )}
+              </div>
+            </div>
+            
+            {/* Interview Controls */}
+            <div className="flex items-center gap-2">
+              {!isCallActive ? (
+                <Button
+                  onClick={handleStartVoiceInterview}
+                  disabled={vapiLoading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  {vapiLoading ? "Starting..." : "Start Interview"}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleStopVoiceInterview}
+                  disabled={vapiLoading}
+                  variant="destructive"
+                >
+                  <Square className="w-4 h-4 mr-2" />
+                  {vapiLoading ? "Stopping..." : "End Interview"}
+                </Button>
               )}
               
+              {/* PHASE 1: Debug button for message analysis */}
+              {process.env.NODE_ENV === 'development' && (
+                <Button
+                  onClick={exportMessageAnalysis}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  Export Analysis
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Chat Window */}
+          <Card className="h-[600px]">
+            <CardContent className="p-4 h-full flex flex-col">
+              <div className="flex-1 overflow-y-auto space-y-6">
               {allMessages.map((message, i) => {
                 // Only log rendering for debugging when needed
                 if (process.env.NODE_ENV === 'development' && i < 3) {
@@ -574,7 +631,8 @@ export default function InterviewPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

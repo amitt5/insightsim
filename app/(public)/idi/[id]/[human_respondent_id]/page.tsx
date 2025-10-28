@@ -37,6 +37,12 @@ export default function InterviewPage() {
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isAiResponding, setIsAiResponding] = useState(false);
+  const [voiceActivity, setVoiceActivity] = useState({
+    isUserSpeaking: false,
+    isAiSpeaking: false,
+    userLevel: 0,
+    aiLevel: 0
+  });
 
   // VAPI hook integration
   const {
@@ -50,6 +56,55 @@ export default function InterviewPage() {
     clearError: clearVapiError,
     exportMessageAnalysis
   } = useVapi();
+
+  // Calculate voice activity bar heights based on real voice activity
+  const getVoiceBarHeights = () => {
+    const { isUserSpeaking, isAiSpeaking, userLevel, aiLevel } = voiceActivity;
+    
+    if (!isUserSpeaking && !isAiSpeaking) {
+      // Silent state - all bars low
+      return [20, 25, 30, 25, 20];
+    }
+    
+    if (isUserSpeaking && isAiSpeaking) {
+      // Both speaking - mixed pattern
+      const userIntensity = Math.min(userLevel * 0.8, 1);
+      const aiIntensity = Math.min(aiLevel * 0.6, 1);
+      return [
+        30 + (userIntensity * 40),
+        40 + (aiIntensity * 35),
+        50 + (Math.max(userIntensity, aiIntensity) * 40),
+        40 + (aiIntensity * 35),
+        30 + (userIntensity * 40)
+      ];
+    }
+    
+    if (isUserSpeaking) {
+      // User speaking - higher activity
+      const intensity = Math.min(userLevel * 0.9, 1);
+      return [
+        40 + (intensity * 40),
+        50 + (intensity * 35),
+        60 + (intensity * 35),
+        50 + (intensity * 35),
+        40 + (intensity * 40)
+      ];
+    }
+    
+    if (isAiSpeaking) {
+      // AI speaking - moderate activity
+      const intensity = Math.min(aiLevel * 0.7, 1);
+      return [
+        25 + (intensity * 35),
+        35 + (intensity * 30),
+        45 + (intensity * 30),
+        35 + (intensity * 30),
+        25 + (intensity * 35)
+      ];
+    }
+    
+    return [20, 25, 30, 25, 20];
+  };
 
   // Combine text messages and VAPI transcript
   const allMessages = useMemo(() => {
@@ -71,6 +126,63 @@ export default function InterviewPage() {
     
     return sorted;
   }, [messages, vapiTranscript]);
+
+  // Track voice activity based on VAPI events
+  useEffect(() => {
+    if (!isCallActive) {
+      // Reset voice activity when call is not active
+      setVoiceActivity({
+        isUserSpeaking: false,
+        isAiSpeaking: false,
+        userLevel: 0,
+        aiLevel: 0
+      });
+      return;
+    }
+
+    // Listen to VAPI transcript events to detect voice activity
+    const handleVoiceActivity = () => {
+      // Check recent messages to determine who is speaking
+      const recentMessages = allMessages.slice(-3); // Last 3 messages
+      const now = Date.now();
+      const recentThreshold = 3000; // 3 seconds
+
+      let isUserSpeaking = false;
+      let isAiSpeaking = false;
+      let userLevel = 0;
+      let aiLevel = 0;
+
+      recentMessages.forEach(message => {
+        const messageTime = new Date(message.created_at).getTime();
+        const isRecent = (now - messageTime) < recentThreshold;
+        
+        if (isRecent && message.metadata?.isVoice) {
+          if (message.sender_type === 'respondent') {
+            isUserSpeaking = true;
+            userLevel = Math.min(0.8 + Math.random() * 0.2, 1); // Simulate voice level
+          } else if (message.sender_type === 'moderator') {
+            isAiSpeaking = true;
+            aiLevel = Math.min(0.6 + Math.random() * 0.3, 1); // Simulate voice level
+          }
+        }
+      });
+
+      setVoiceActivity({
+        isUserSpeaking,
+        isAiSpeaking,
+        userLevel,
+        aiLevel
+      });
+    };
+
+    // Update voice activity when messages change
+    handleVoiceActivity();
+
+    // Set up interval to update voice activity
+    const interval = setInterval(handleVoiceActivity, 500);
+
+    return () => clearInterval(interval);
+  }, [isCallActive, allMessages]);
 
   const fetchMessages = async () => {
     try {
@@ -209,6 +321,57 @@ export default function InterviewPage() {
       setError('Failed to stop voice interview. Please try again.');
     }
   };
+
+  // Voice activity simulation (replace with real VAPI voice detection)
+  useEffect(() => {
+    if (!isCallActive) {
+      setVoiceActivity({
+        isUserSpeaking: false,
+        isAiSpeaking: false,
+        userLevel: 0,
+        aiLevel: 0
+      });
+      return;
+    }
+
+    // Simulate voice activity based on AI responding state
+    const interval = setInterval(() => {
+      setVoiceActivity(prev => {
+        // Simulate AI speaking when AI is responding
+        if (isAiResponding) {
+          return {
+            ...prev,
+            isAiSpeaking: true,
+            aiLevel: Math.random() * 0.8 + 0.2, // 0.2 to 1.0
+            isUserSpeaking: false,
+            userLevel: 0
+          };
+        }
+        
+        // Simulate user speaking occasionally
+        if (Math.random() < 0.3) {
+          return {
+            ...prev,
+            isUserSpeaking: true,
+            userLevel: Math.random() * 0.9 + 0.1, // 0.1 to 1.0
+            isAiSpeaking: false,
+            aiLevel: 0
+          };
+        }
+        
+        // Silent state
+        return {
+          ...prev,
+          isUserSpeaking: false,
+          isAiSpeaking: false,
+          userLevel: 0,
+          aiLevel: 0
+        };
+      });
+    }, 200); // Update every 200ms for smooth animation
+
+    return () => clearInterval(interval);
+  }, [isCallActive, isAiResponding]);
 
   useEffect(() => {
     const fetchRespondentData = async () => {
@@ -355,69 +518,102 @@ export default function InterviewPage() {
             </div>
           </div>
         </div>
-      ) : (
-        /* Regular interview layout when messages exist or call is active */
-        <div className="container mx-auto p-4 space-y-4">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold">{respondentData?.project?.name}</h1>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <span>{new Date(respondentData?.project?.created_at || '').toLocaleDateString()}</span>
-                <span>•</span>
-                <span>In-Depth Interview</span>
-                <Badge variant={respondentData?.status === "completed" ? "default" : "secondary"}>
-                  {respondentData?.status}
-                </Badge>
-                {isCallActive && (
-                  <Badge variant="default" className="bg-green-500">
-                    <Mic className="w-3 h-3 mr-1" />
-                    Voice Active
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
-            {/* Interview Controls */}
-            <div className="flex items-center gap-2">
-              {!isCallActive ? (
-                <Button
-                  onClick={handleStartVoiceInterview}
-                  disabled={vapiLoading}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  {vapiLoading ? "Starting..." : "Start Interview"}
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleStopVoiceInterview}
-                  disabled={vapiLoading}
-                  variant="destructive"
-                >
-                  <Square className="w-4 h-4 mr-2" />
-                  {vapiLoading ? "Stopping..." : "End Interview"}
-                </Button>
-              )}
-              
-              {/* PHASE 1: Debug button for message analysis */}
-              {process.env.NODE_ENV === 'development' && (
-                <Button
-                  onClick={exportMessageAnalysis}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                >
-                  Export Analysis
-                </Button>
-              )}
+      ) : isCallActive ? (
+        /* Voice interview layout when call is active */
+        <div className="container mx-auto p-4 h-screen flex gap-4">
+          {/* Left Section - Media Content */}
+          <div className="w-1/3 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <p className="text-gray-600 text-lg">
+                We'll populate images, videos, and more in this space throughout the interview.
+              </p>
+              <p className="text-gray-500">
+                Stay tuned.
+              </p>
             </div>
           </div>
 
-          {/* Chat Window */}
-          <Card className="h-[600px]">
-            <CardContent className="p-4 h-full flex flex-col">
-              <div className="flex-1 overflow-y-auto space-y-6">
+          {/* Right Section - Voice Activity Indicator */}
+          <div className="w-2/3 bg-white border border-gray-200 rounded-lg p-8 flex flex-col items-center justify-center space-y-8">
+            {/* Voice Activity Bars */}
+            <div className="flex items-end space-x-2 h-20">
+              {getVoiceBarHeights().map((height, index) => (
+                <div 
+                  key={index}
+                  className="w-3 bg-purple-600 rounded-full transition-all duration-300 ease-in-out"
+                  style={{ 
+                    height: `${height}%`
+                  }}
+                ></div>
+              ))}
+            </div>
+
+            {/* Interrupt Button */}
+            <div className="flex flex-col items-center space-y-2">
+              <button
+                onClick={handleStopVoiceInterview}
+                className="w-12 h-12 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg"
+              >
+                <Square className="w-6 h-6 text-white" />
+              </button>
+              <span className="text-sm text-gray-600">Hit to interrupt</span>
+            </div>
+
+            {/* Switch to text chat link */}
+            <button
+              onClick={() => {/* TODO: Implement text chat switch */}}
+              className="text-blue-600 underline hover:text-blue-700"
+            >
+              Switch to text chat
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Regular chat layout when messages exist but call is not active */
+      <div className="container mx-auto p-4 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+              <h1 className="text-2xl font-bold">{respondentData?.project?.name}</h1>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+                <span>{new Date(respondentData?.project?.created_at || '').toLocaleDateString()}</span>
+              <span>•</span>
+              <span>In-Depth Interview</span>
+                <Badge variant={respondentData?.status === "completed" ? "default" : "secondary"}>
+                  {respondentData?.status}
+                </Badge>
+              </div>
+          </div>
+          
+          {/* Interview Controls */}
+          <div className="flex items-center gap-2">
+              <Button
+                onClick={handleStartVoiceInterview}
+                disabled={vapiLoading}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {vapiLoading ? "Starting..." : "Start Interview"}
+              </Button>
+            
+            {/* PHASE 1: Debug button for message analysis */}
+            {process.env.NODE_ENV === 'development' && (
+              <Button
+                onClick={exportMessageAnalysis}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                Export Analysis
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Chat Window */}
+        <Card className="h-[600px]">
+          <CardContent className="p-4 h-full flex flex-col">
+            <div className="flex-1 overflow-y-auto space-y-6">
               {allMessages.map((message, i) => {
                 // Only log rendering for debugging when needed
                 if (process.env.NODE_ENV === 'development' && i < 3) {
@@ -624,7 +820,7 @@ export default function InterviewPage() {
             </div>
           </CardContent>
         </Card>
-        </div>
+      </div>
       )}
     </div>
   );

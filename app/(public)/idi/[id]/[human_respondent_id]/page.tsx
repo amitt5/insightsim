@@ -294,7 +294,7 @@ export default function InterviewPage() {
       )}
 
       {/* Pre-interview layout when no messages exist */}
-      {true ? (
+      {allMessages.length === 0 && !isCallActive ? (
         <div className="container mx-auto p-4 h-screen flex gap-4">
           {/* Debug info */}
           {process.env.NODE_ENV === 'development' && (

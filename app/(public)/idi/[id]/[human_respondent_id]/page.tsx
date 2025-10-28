@@ -544,10 +544,10 @@ export default function InterviewPage() {
                     </span>
                   </div>
                   
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  {/* <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600">Messages:</span>
                     <span className="font-medium">{allMessages.length}</span>
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="mt-6 p-4 bg-gray-50 rounded-lg">

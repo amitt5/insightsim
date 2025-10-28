@@ -53,6 +53,9 @@ export interface UseVapiReturn {
   clearTranscript: () => void;
   clearVoiceSession: () => void;
   
+  // Callback functions
+  onCallEnd: (callback: () => void) => void;
+  
   // PHASE 1: Debug functions
   exportMessageAnalysis: () => any;
 }
@@ -90,6 +93,9 @@ export function useVapi(): UseVapiReturn {
   const retryQueueRef = useRef<any[]>([]);
   const isSavingRef = useRef<boolean>(false);
   const saveBatchMessagesRef = useRef<(() => Promise<void>) | null>(null);
+  
+  // Callback management
+  const callEndCallbackRef = useRef<(() => void) | null>(null);
 
   // PHASE 3: Database persistence functions (moved before processSpeakerMessage)
   const queueMessageForSaving = useCallback((message: VapiMessage) => {
@@ -405,6 +411,11 @@ export function useVapi(): UseVapiReturn {
           saveBatchMessages();
         }
         updateVoiceSessionStatus('ended');
+        
+        // Trigger call end callback if set
+        if (callEndCallbackRef.current) {
+          callEndCallbackRef.current();
+        }
       });
 
       vapi.on('message', (message: any) => {
@@ -835,6 +846,11 @@ export function useVapi(): UseVapiReturn {
     console.log('✅ Voice session state cleared');
   }, []);
 
+  // Callback functions
+  const onCallEnd = useCallback((callback: () => void) => {
+    callEndCallbackRef.current = callback;
+  }, []);
+
   // PHASE 1: Debug function to export message analysis data
   const exportMessageAnalysis = useCallback(() => {
     const analysisData = {
@@ -894,6 +910,9 @@ export function useVapi(): UseVapiReturn {
     clearError,
     clearTranscript,
     clearVoiceSession,
+    
+    // Callback functions
+    onCallEnd,
     
     // PHASE 1: Debug functions
     exportMessageAnalysis

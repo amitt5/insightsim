@@ -37,6 +37,7 @@ export default function InterviewPage() {
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isAiResponding, setIsAiResponding] = useState(false);
+  const [isInterviewCompleted, setIsInterviewCompleted] = useState(false);
   const [voiceActivity, setVoiceActivity] = useState({
     isUserSpeaking: false,
     isAiSpeaking: false,
@@ -54,6 +55,7 @@ export default function InterviewPage() {
     stopInterview,
     sendMessage: sendVapiMessage,
     clearError: clearVapiError,
+    onCallEnd,
     exportMessageAnalysis
   } = useVapi();
 
@@ -228,6 +230,36 @@ export default function InterviewPage() {
     }
   };
 
+  const markInterviewAsComplete = async () => {
+    try {
+      const response = await fetch(`/api/public/human-respondents/${humanRespondentId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to mark interview as complete');
+      }
+
+      const data = await response.json();
+      console.log('Interview marked as complete:', data);
+      setIsInterviewCompleted(true);
+      
+      // Update the respondent data to reflect the new status
+      if (respondentData) {
+        setRespondentData({
+          ...respondentData,
+          status: 'completed'
+        });
+      }
+    } catch (err) {
+      console.error('Error marking interview as complete:', err);
+      setError('Failed to mark interview as complete. Please try again.');
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSending || isAiResponding) return;
 
@@ -373,6 +405,14 @@ export default function InterviewPage() {
     return () => clearInterval(interval);
   }, [isCallActive, isAiResponding]);
 
+  // Set up callback to mark interview as complete when call ends
+  useEffect(() => {
+    onCallEnd(() => {
+      console.log('Call ended, marking interview as complete');
+      markInterviewAsComplete();
+    });
+  }, [onCallEnd, markInterviewAsComplete]);
+
   useEffect(() => {
     const fetchRespondentData = async () => {
       try {
@@ -396,6 +436,11 @@ export default function InterviewPage() {
         
         setRespondentData(data);
         setError(null);
+        
+        // Check if interview is already completed
+        if (data.status === 'completed') {
+          setIsInterviewCompleted(true);
+        }
         
         // After loading respondent data, fetch messages (but don't auto-start interview)
         await fetchMessages();
@@ -458,8 +503,62 @@ export default function InterviewPage() {
 
 
 
-        {/* Pre-interview layout when no messages exist */}
-        {allMessages.length === 0 && !isCallActive ? (
+        {/* Interview completed layout */}
+        {isInterviewCompleted ? (
+          <div className="container mx-auto p-4 h-screen flex gap-4">
+            {/* Left Section - Completion Message */}
+            <div className="w-1/3 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800">Interview Complete!</h2>
+                <p className="text-gray-600">
+                  Thank you for participating in this interview. Your responses have been recorded and will be used for research purposes.
+                </p>
+              </div>
+            </div>
+
+            {/* Right Section - Summary */}
+            <div className="w-2/3 bg-white border border-gray-200 rounded-lg p-8">
+              <div className="space-y-6">
+                <h1 className="text-2xl font-bold text-gray-800">Interview Summary</h1>
+                
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Participant:</span>
+                    <span className="font-medium">{respondentData?.name}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Project:</span>
+                    <span className="font-medium">{respondentData?.project?.name}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Status:</span>
+                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                      Completed
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Messages:</span>
+                    <span className="font-medium">{allMessages.length}</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    This interview has been successfully completed. You can close this window or navigate away.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : allMessages.length === 0 && !isCallActive ? (
           <div className="container mx-auto p-4 h-screen flex gap-4">
             {/* Debug info */}
             {process.env.NODE_ENV === 'development' && (
@@ -589,6 +688,16 @@ export default function InterviewPage() {
                     >
                       {vapiLoading ? "Starting..." : "Start Interview"}
                     </button>
+                    
+                    {/* Manual complete button - only show if interview has messages but isn't completed */}
+                    {allMessages.length > 0 && !isInterviewCompleted && (
+                      <button
+                        onClick={markInterviewAsComplete}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white py-2 text-sm font-medium rounded-lg shadow border-0 cursor-pointer"
+                      >
+                        Complete Interview
+                      </button>
+                    )}
                   </>
                 )}
               </div>

@@ -456,8 +456,10 @@ export default function InterviewPage() {
         </div>
       )}
 
-      {/* Pre-interview layout when no messages exist */}
-      {allMessages.length === 0 && !isCallActive ? (
+
+
+       {/* Pre-interview layout when no messages exist */}
+       {allMessages.length === 0 && !isCallActive ? (
         <div className="container mx-auto p-4 h-screen flex gap-4">
           {/* Debug info */}
           {process.env.NODE_ENV === 'development' && (
@@ -519,7 +521,7 @@ export default function InterviewPage() {
           </div>
         </div>
       ) : isCallActive ? (
-        /* Voice interview layout when call is active */
+        /* Voice interview layout - always show when not in pre-interview state */
         <div className="container mx-auto p-4 h-screen flex gap-4">
           {/* Left Section - Media Content */}
           <div className="w-1/3 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
@@ -535,41 +537,57 @@ export default function InterviewPage() {
 
           {/* Right Section - Voice Activity Indicator */}
           <div className="w-2/3 bg-white border border-gray-200 rounded-lg p-8 flex flex-col items-center justify-center space-y-8">
-            {/* Voice Activity Bars */}
-            <div className="flex items-end space-x-2 h-20">
-              {getVoiceBarHeights().map((height, index) => {
-                const { isUserSpeaking, isAiSpeaking } = voiceActivity;
-                let barColor = 'bg-purple-600'; // Default color
-                
-                if (isUserSpeaking && !isAiSpeaking) {
-                  barColor = 'bg-red-500'; // User speaking - red
-                } else if (isAiSpeaking && !isUserSpeaking) {
-                  barColor = 'bg-purple-600'; // AI speaking - purple
-                } else if (isUserSpeaking && isAiSpeaking) {
-                  barColor = 'bg-orange-500'; // Both speaking - orange
-                }
-                
-                return (
-                  <div 
-                    key={index}
-                    className={`w-3 ${barColor} rounded-full transition-all duration-300 ease-in-out`}
-                    style={{ 
-                      height: `${height}%`
-                    }}
-                  ></div>
-                );
-              })}
-            </div>
+            {/* Voice Activity Bars - only show when call is active */}
+            {isCallActive && (
+              <div className="flex items-end space-x-2 h-20">
+                {getVoiceBarHeights().map((height, index) => {
+                  const { isUserSpeaking, isAiSpeaking } = voiceActivity;
+                  let barColor = 'bg-purple-600'; // Default color
+                  
+                  if (isUserSpeaking && !isAiSpeaking) {
+                    barColor = 'bg-red-500'; // User speaking - red
+                  } else if (isAiSpeaking && !isUserSpeaking) {
+                    barColor = 'bg-purple-600'; // AI speaking - purple
+                  } else if (isUserSpeaking && isAiSpeaking) {
+                    barColor = 'bg-orange-500'; // Both speaking - orange
+                  }
+                  
+                  return (
+                    <div 
+                      key={index}
+                      className={`w-3 ${barColor} rounded-full transition-all duration-300 ease-in-out`}
+                      style={{ 
+                        height: `${height}%`
+                      }}
+                    ></div>
+                  );
+                })}
+              </div>
+            )}
 
-            {/* Interrupt Button */}
+            {/* Control Button */}
             <div className="flex flex-col items-center space-y-2">
-              <button
-                onClick={handleStopVoiceInterview}
-                className="w-12 h-12 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg"
-              >
-                <Square className="w-6 h-6 text-white" />
-              </button>
-              <span className="text-sm text-gray-600">Hit to interrupt</span>
+              {isCallActive ? (
+                <>
+                  <button
+                    onClick={handleStopVoiceInterview}
+                    className="w-12 h-12 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg"
+                  >
+                    <Square className="w-6 h-6 text-white" />
+                  </button>
+                  <span className="text-sm text-gray-600">Hit to interrupt</span>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleStartVoiceInterview}
+                    disabled={vapiLoading}
+                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-4 text-lg font-semibold rounded-lg shadow-lg border-0 cursor-pointer"
+                  >
+                    {vapiLoading ? "Starting..." : "Start Interview"}
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Switch to text chat link */}
@@ -583,7 +601,7 @@ export default function InterviewPage() {
         </div>
       ) : (
         /* Regular chat layout when messages exist but call is not active */
-      <div className="container mx-auto p-4 space-y-4">
+        <div className="container mx-auto p-4 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -835,6 +853,7 @@ export default function InterviewPage() {
         </Card>
       </div>
       )}
+     
     </div>
   );
 }

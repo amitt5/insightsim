@@ -29,7 +29,8 @@ export default function PublicIDIPage() {
     name: "",
     age: "",
     gender: "",
-    email: ""
+    email: "",
+    language: "en"
   });
 
   useEffect(() => {
@@ -81,7 +82,8 @@ export default function PublicIDIPage() {
           project_id: projectId,
           ...formData,
           age: parseInt(formData.age),
-          interview_type: type
+          interview_type: type,
+          language: formData.language
         }),
       });
 
@@ -198,6 +200,41 @@ export default function PublicIDIPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="language">Language</Label>
+                <Select
+                  value={formData.language}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="es">Spanish</SelectItem>
+                    <SelectItem value="fr">French</SelectItem>
+                    <SelectItem value="de">German</SelectItem>
+                    <SelectItem value="it">Italian</SelectItem>
+                    <SelectItem value="pt">Portuguese</SelectItem>
+                    <SelectItem value="ru">Russian</SelectItem>
+                    <SelectItem value="ja">Japanese</SelectItem>
+                    <SelectItem value="ko">Korean</SelectItem>
+                    <SelectItem value="zh">Chinese</SelectItem>
+                    <SelectItem value="ar">Arabic</SelectItem>
+                    <SelectItem value="hi">Hindi</SelectItem>
+                    <SelectItem value="nl">Dutch</SelectItem>
+                    <SelectItem value="sv">Swedish</SelectItem>
+                    <SelectItem value="no">Norwegian</SelectItem>
+                    <SelectItem value="da">Danish</SelectItem>
+                    <SelectItem value="fi">Finnish</SelectItem>
+                    <SelectItem value="pl">Polish</SelectItem>
+                    <SelectItem value="tr">Turkish</SelectItem>
+                    <SelectItem value="th">Thai</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Interview Type Selection */}

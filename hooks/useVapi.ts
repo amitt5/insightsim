@@ -44,7 +44,7 @@ export interface UseVapiReturn {
   isLoading: boolean;
   
   // Functions
-  startInterview: (respondentName?: string, discussionGuide?: string[], projectId?: string, humanRespondentId?: string) => Promise<void>;
+  startInterview: (respondentName?: string, discussionGuide?: string[], projectId?: string, humanRespondentId?: string, language?: string) => Promise<void>;
   stopInterview: () => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
   
@@ -726,7 +726,7 @@ export function useVapi(): UseVapiReturn {
   }, [updateVoiceSessionStatus, saveBatchMessages]);
 
   // Start interview function
-  const startInterview = useCallback(async (respondentName?: string, discussionGuide?: string[], projectId?: string, humanRespondentId?: string) => {
+  const startInterview = useCallback(async (respondentName?: string, discussionGuide?: string[], projectId?: string, humanRespondentId?: string, language?: string) => {
     if (!vapiRef.current) {
       initializeVapi();
     }
@@ -758,13 +758,15 @@ export function useVapi(): UseVapiReturn {
       const assistantOverrides = {
         variableValues: {
           respondent_name: respondentName || 'the respondent',
-          discussion_guide: formattedDiscussionGuide
+          discussion_guide: formattedDiscussionGuide,
+          language: language || 'en'
         }
       };
 
       // console.log('Starting VAPI interview with variables:', {
       //   respondent_name: respondentName || 'the respondent',
       //   discussion_guide_preview: formattedDiscussionGuide.substring(0, 100) + '...',
+      //   language: language || 'en',
       //   project_id: projectId,
       //   human_respondent_id: humanRespondentId
       // });

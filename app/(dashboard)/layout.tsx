@@ -52,7 +52,7 @@ export default function DashboardLayout({
               <span>Projects</span>
               {/* <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">Beta</Badge> */}
             </Link>
-            {/* <Link 
+            <Link 
               href="/simulations"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >
@@ -63,7 +63,7 @@ export default function DashboardLayout({
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >
               Human Interviews
-            </Link> */}
+            </Link>
             {isAdmin && (
               <Link 
                 href="/analysis"

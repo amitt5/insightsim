@@ -720,6 +720,12 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         )}
       </div>
 
+       {/* Navigation hint for users */}
+       <div className="mb-4 flex items-center text-gray-600 text-sm">
+        {/* <HelpCircle className="h-4 w-4 mr-2" /> */}
+        <span>Click on the tabs below to navigate between different sections of your project</span>
+      </div>
+
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList>
           <TabsTrigger value="brief">Brief</TabsTrigger>

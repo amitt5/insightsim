@@ -16,6 +16,7 @@ interface HumanRespondent {
   age: number;
   gender: string;
   email: string;
+  language: string;
   status: 'in_progress' | 'completed';
   project: {
     id: string;
@@ -317,14 +318,16 @@ export default function InterviewPage() {
     try {
       clearVapiError();
       
-      // Get respondent name and discussion guide
+      // Get respondent name, discussion guide, and language
       const respondentName = respondentData?.name || 'the respondent';
       const discussionGuide = respondentData?.project?.discussion_questions || [];
+      const language = respondentData?.language || 'en';
       
       console.log('Starting voice interview with:', {
         respondentName,
         discussionGuideCount: discussionGuide.length,
         discussionGuide: discussionGuide,
+        language,
         projectId,
         humanRespondentId
       });
@@ -338,7 +341,7 @@ export default function InterviewPage() {
         throw new Error('Project data not available');
       }
       
-      await startInterview(respondentName, discussionGuide, projectId, humanRespondentId);
+      await startInterview(respondentName, discussionGuide, projectId, humanRespondentId, language);
     } catch (err) {
       console.error('Failed to start voice interview:', err);
       setError('Failed to start voice interview. Please try again.');
@@ -538,6 +541,11 @@ export default function InterviewPage() {
                   </div>
                   
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Language:</span>
+                    <span className="font-medium">{respondentData?.language?.toUpperCase() || 'EN'}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600">Status:</span>
                     <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
                       Completed
@@ -583,13 +591,23 @@ export default function InterviewPage() {
             <div className="w-2/3 bg-white border border-gray-200 rounded-lg p-8">
               <div className="space-y-6">
                 {/* Header with microphone icon */}
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Mic className="w-5 h-5 text-purple-600" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Mic className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-gray-800">
+                      Your interview is about to begin!
+                    </h1>
                   </div>
-                  <h1 className="text-2xl font-bold text-gray-800">
-                    Your interview is about to begin!
-                  </h1>
+                  
+                  {/* Language indicator */}
+                  <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full">
+                    <span className="text-sm text-gray-600">Language:</span>
+                    <span className="text-sm font-medium text-gray-800">
+                      {respondentData?.language?.toUpperCase() || 'EN'}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Instructions */}
@@ -638,6 +656,13 @@ export default function InterviewPage() {
 
             {/* Right Section - Voice Activity Indicator */}
             <div className="w-2/3 bg-white border border-gray-200 rounded-lg p-8 flex flex-col items-center justify-center space-y-8">
+              {/* Language indicator for active interview */}
+              <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full">
+                <span className="text-sm text-gray-600">Language:</span>
+                <span className="text-sm font-medium text-gray-800">
+                  {respondentData?.language?.toUpperCase() || 'EN'}
+                </span>
+              </div>
               {/* Voice Activity Bars - only show when call is active */}
               {isCallActive && (
                 <div className="flex items-end space-x-2 h-20">

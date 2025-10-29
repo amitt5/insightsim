@@ -763,13 +763,15 @@ export function useVapi(): UseVapiReturn {
         }
       };
 
-      // console.log('Starting VAPI interview with variables:', {
-      //   respondent_name: respondentName || 'the respondent',
-      //   discussion_guide_preview: formattedDiscussionGuide.substring(0, 100) + '...',
-      //   language: language || 'en',
-      //   project_id: projectId,
-      //   human_respondent_id: humanRespondentId
-      // });
+      console.log('VAPI Assistant Overrides:', assistantOverrides);
+
+      console.log('Starting VAPI interview with variables:', {
+        respondent_name: respondentName || 'the respondent',
+        discussion_guide_preview: formattedDiscussionGuide.substring(0, 100) + '...',
+        language: language || 'en',
+        project_id: projectId,
+        human_respondent_id: humanRespondentId
+      });
 
       // Create voice session in database
       await createVoiceSessionInDatabase();

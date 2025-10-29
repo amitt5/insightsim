@@ -72,6 +72,14 @@ export default function PublicIDIPage() {
 
     setIsSubmitting(true);
 
+    // Debug logging
+    console.log('Starting VAPI interview with form data:', {
+      ...formData,
+      age: parseInt(formData.age),
+      interview_type: type,
+      language: formData.language
+    });
+
     try {
       const response = await fetch('/api/public/human-respondents', {
         method: 'POST',

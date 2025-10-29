@@ -801,6 +801,18 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
               )}
             </Tooltip>
           </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="analysis" disabled={!briefText}>Analysis</TabsTrigger>
+              </TooltipTrigger>
+              {!briefText && (
+                <TooltipContent>
+                  <p>Add a brief first to access this feature</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </TabsList>
 
         <TabsContent value="brief" className="space-y-4">
@@ -1208,6 +1220,294 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
 
         <TabsContent value="interviews">
           <HumanInterviewsTable projectId={project.id} />
+        </TabsContent>
+
+        <TabsContent value="analysis" className="space-y-6">
+          <div>
+            <label className="text-sm font-medium text-gray-500">Analysis</label>
+            <p className="text-sm text-gray-400 mt-1">
+              View insights and analysis from your research data
+            </p>
+          </div>
+
+          {/* Analysis Sub-tabs */}
+          <Tabs defaultValue="synthetic" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="synthetic" className="w-full">Synthetic</TabsTrigger>
+              <TabsTrigger value="human" className="w-full">Human</TabsTrigger>
+              <TabsTrigger value="combined" className="w-full">Combined</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="synthetic" className="space-y-6 mt-6">
+              <div className="space-y-6">
+                <div className="bg-white border rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">QUESTION 1: What aspects of the new footwear line does the participant like most?</h3>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Left Column - AI Summary and Chart */}
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          Participants overwhelmingly prefer the design and style of the new footwear line, with color and pattern also being popular. Comfort is important as well. Sustainability, material and texture, visual interest, and unique features are mentioned less frequently. Participants want shoes that are both stylish and comfortable, with unique details and environmentally conscious materials.
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-3">CATEGORIES (MULTI-SELECT) Bar Chart:</h4>
+                        <div className="space-y-3">
+                          {[
+                            { category: "Design and Style", value: 58, color: "bg-blue-500" },
+                            { category: "Color and Pattern", value: 38, color: "bg-green-500" },
+                            { category: "Comfort", value: 35, color: "bg-purple-500" },
+                            { category: "Sustainability", value: 25, color: "bg-orange-500" },
+                            { category: "Material and Texture", value: 20, color: "bg-pink-500" },
+                            { category: "Other", value: 18, color: "bg-gray-500" },
+                            { category: "Unique Features", value: 15, color: "bg-indigo-500" },
+                            { category: "Visual Interest", value: 15, color: "bg-red-500" },
+                            { category: "Versatility", value: 10, color: "bg-yellow-500" },
+                            { category: "Quality", value: 8, color: "bg-teal-500" }
+                          ].map((item, index) => (
+                            <div key={index} className="flex items-center space-x-3">
+                              <div className="w-32 text-sm text-gray-600 truncate">{item.category}</div>
+                              <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                <div 
+                                  className={`${item.color} h-6 rounded-full flex items-center justify-end pr-2`}
+                                  style={{ width: `${(item.value / 60) * 100}%` }}
+                                >
+                                  <span className="text-xs text-white font-medium">{item.value}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column - Quotes */}
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-3">QUOTES 5</h4>
+                      <div className="space-y-4">
+                        {[
+                          {
+                            tags: ["Design and Style"],
+                            quote: "Oh my gosh, I absolutely love how unique and funky these shoes are! The colors and patterns are so bold and expressive. I can't wait to mix and match them with different outfits and show off my style."
+                          },
+                          {
+                            tags: ["Design and Style", "Visual Interest"],
+                            quote: "I think it's because I like to stand out and be different. These shoes really make a statement and add some personality to any outfit. Plus, they're just fun and playful, which I love."
+                          },
+                          {
+                            tags: ["Design and Style", "Color and Pattern"],
+                            quote: "I think they'll really spice up some of my more basic outfits and add some personality. The patterns are so unique and the colors are vibrant without being overwhelming."
+                          },
+                          {
+                            tags: ["Comfort", "Quality"],
+                            quote: "What really sold me was how comfortable they are right out of the box. I can wear them all day without any issues, and the quality feels really solid."
+                          },
+                          {
+                            tags: ["Sustainability", "Material and Texture"],
+                            quote: "I appreciate that they're made from sustainable materials. It's important to me that my fashion choices align with my values, and these shoes do that perfectly."
+                          }
+                        ].map((quote, index) => (
+                          <div key={index} className="bg-gray-50 border rounded-lg p-4">
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {quote.tags.map((tag, tagIndex) => (
+                                <span key={tagIndex} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="text-sm text-gray-700 italic">"{quote.quote}"</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="human" className="space-y-6 mt-6">
+              <div className="space-y-6">
+                <div className="bg-white border rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">QUESTION 1: What aspects of the new footwear line does the participant like most?</h3>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Left Column - AI Summary and Chart */}
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          Human participants show a strong preference for comfort and fit, with design elements being secondary. Quality and durability are highly valued, while sustainability concerns are more prominent than in synthetic responses. Participants emphasize practical aspects like all-day wearability and long-term value.
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-3">CATEGORIES (MULTI-SELECT) Bar Chart:</h4>
+                        <div className="space-y-3">
+                          {[
+                            { category: "Comfort", value: 52, color: "bg-blue-500" },
+                            { category: "Quality", value: 45, color: "bg-green-500" },
+                            { category: "Design and Style", value: 38, color: "bg-purple-500" },
+                            { category: "Sustainability", value: 32, color: "bg-orange-500" },
+                            { category: "Fit", value: 28, color: "bg-pink-500" },
+                            { category: "Durability", value: 25, color: "bg-gray-500" },
+                            { category: "Color and Pattern", value: 22, color: "bg-indigo-500" },
+                            { category: "Price Value", value: 18, color: "bg-red-500" },
+                            { category: "Material and Texture", value: 15, color: "bg-yellow-500" },
+                            { category: "Brand Reputation", value: 12, color: "bg-teal-500" }
+                          ].map((item, index) => (
+                            <div key={index} className="flex items-center space-x-3">
+                              <div className="w-32 text-sm text-gray-600 truncate">{item.category}</div>
+                              <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                <div 
+                                  className={`${item.color} h-6 rounded-full flex items-center justify-end pr-2`}
+                                  style={{ width: `${(item.value / 60) * 100}%` }}
+                                >
+                                  <span className="text-xs text-white font-medium">{item.value}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column - Quotes */}
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-3">QUOTES 5</h4>
+                      <div className="space-y-4">
+                        {[
+                          {
+                            tags: ["Comfort", "Quality"],
+                            quote: "I've been wearing these for a week now and my feet feel great even after long days. The cushioning is perfect and they don't cause any blisters or discomfort."
+                          },
+                          {
+                            tags: ["Sustainability", "Quality"],
+                            quote: "I love that they're made from recycled materials and the company has a good environmental track record. Plus, they feel really well-made and sturdy."
+                          },
+                          {
+                            tags: ["Design and Style", "Fit"],
+                            quote: "They look great with both casual and business casual outfits. The fit is true to size and they don't pinch or feel tight anywhere."
+                          },
+                          {
+                            tags: ["Durability", "Price Value"],
+                            quote: "I've had similar shoes that fell apart after a few months, but these still look and feel new. Worth every penny for the quality you get."
+                          },
+                          {
+                            tags: ["Material and Texture", "Comfort"],
+                            quote: "The material feels really nice against my skin and breathes well. I don't get that sweaty, uncomfortable feeling I've had with other shoes."
+                          }
+                        ].map((quote, index) => (
+                          <div key={index} className="bg-gray-50 border rounded-lg p-4">
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {quote.tags.map((tag, tagIndex) => (
+                                <span key={tagIndex} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="text-sm text-gray-700 italic">"{quote.quote}"</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="combined" className="space-y-6 mt-6">
+              <div className="space-y-6">
+                <div className="bg-white border rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">QUESTION 1: What aspects of the new footwear line does the participant like most?</h3>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Left Column - AI Summary and Chart */}
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          Combined analysis reveals a balanced preference for both aesthetic and functional aspects. Design and style lead the preferences, closely followed by comfort and quality. Sustainability emerges as a significant factor, while practical considerations like fit and durability are also important. The data shows consumers want both style and substance.
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-3">CATEGORIES (MULTI-SELECT) Bar Chart:</h4>
+                        <div className="space-y-3">
+                          {[
+                            { category: "Design and Style", value: 48, color: "bg-blue-500" },
+                            { category: "Comfort", value: 44, color: "bg-green-500" },
+                            { category: "Quality", value: 40, color: "bg-purple-500" },
+                            { category: "Color and Pattern", value: 30, color: "bg-orange-500" },
+                            { category: "Sustainability", value: 29, color: "bg-pink-500" },
+                            { category: "Material and Texture", value: 18, color: "bg-gray-500" },
+                            { category: "Fit", value: 16, color: "bg-indigo-500" },
+                            { category: "Durability", value: 14, color: "bg-red-500" },
+                            { category: "Visual Interest", value: 12, color: "bg-yellow-500" },
+                            { category: "Unique Features", value: 10, color: "bg-teal-500" }
+                          ].map((item, index) => (
+                            <div key={index} className="flex items-center space-x-3">
+                              <div className="w-32 text-sm text-gray-600 truncate">{item.category}</div>
+                              <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                <div 
+                                  className={`${item.color} h-6 rounded-full flex items-center justify-end pr-2`}
+                                  style={{ width: `${(item.value / 60) * 100}%` }}
+                                >
+                                  <span className="text-xs text-white font-medium">{item.value}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column - Quotes */}
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-3">QUOTES 5</h4>
+                      <div className="space-y-4">
+                        {[
+                          {
+                            tags: ["Design and Style", "Comfort"],
+                            quote: "These shoes are the perfect combination of style and comfort. I can wear them all day and they still look amazing. The design is trendy but not too flashy."
+                          },
+                          {
+                            tags: ["Quality", "Sustainability"],
+                            quote: "I appreciate the quality craftsmanship and the fact that they're made sustainably. It's nice to have shoes that look good and align with my values."
+                          },
+                          {
+                            tags: ["Color and Pattern", "Visual Interest"],
+                            quote: "The color combinations are really eye-catching without being overwhelming. They add just the right amount of visual interest to my outfits."
+                          },
+                          {
+                            tags: ["Comfort", "Fit"],
+                            quote: "The fit is perfect and they're incredibly comfortable. I've worn them on long walks and my feet never hurt. Plus, they look great with everything."
+                          },
+                          {
+                            tags: ["Material and Texture", "Durability"],
+                            quote: "The materials feel premium and durable. I can tell these will last a long time, which makes the investment worthwhile."
+                          }
+                        ].map((quote, index) => (
+                          <div key={index} className="bg-gray-50 border rounded-lg p-4">
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {quote.tags.map((tag, tagIndex) => (
+                                <span key={tagIndex} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="text-sm text-gray-700 italic">"{quote.quote}"</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
 

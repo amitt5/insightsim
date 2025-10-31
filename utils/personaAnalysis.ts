@@ -1,7 +1,7 @@
 // AI-powered analysis functions for persona generation
 
 import { runSimulationAPI } from "@/utils/api";
-import { createRequirementsAnalysisPrompt, createSourceIdentificationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createRequirementsAnalysisPrompt, createSourceIdentificationPrompt, createPersonaFromThreeFieldsPrompt } from "@/utils/buildMessagesForOpenAI";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
 export interface AnalysisResult {
@@ -40,6 +40,56 @@ export interface AnalysisProgress {
   data?: any;
   analysisResult?: AnalysisResult;
   sourceResults?: SourceSelection[];
+}
+
+export interface GeneratedPersonaInput {
+  basicDemographics: string;
+  behaviorsAttitudes: string;
+  researchContext: string;
+}
+
+export async function generatePersonaFromThreeFields(inputs: GeneratedPersonaInput) {
+  const prompt = createPersonaFromThreeFieldsPrompt(inputs);
+  const messages: ChatCompletionMessageParam[] = [{ role: "system", content: prompt }];
+
+  const result = await runSimulationAPI(messages, 'gpt-4o-mini', 'enhanced-persona-from-text');
+  let reply = result.reply || '';
+  reply = reply.replace(/^```[a-zA-Z]*\n?/, '').replace(/```$/, '').trim();
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(reply);
+  } catch {
+    // Attempt minimal cleanup
+    const cleaned = reply.replace(/^\uFEFF/, '').trim();
+    parsed = JSON.parse(cleaned);
+  }
+
+  // Coerce fields to expected shapes
+  const coerceArray = (v: any) => Array.isArray(v) ? v.filter((x) => typeof x === 'string') : (typeof v === 'string' && v ? v.split(',').map((s) => s.trim()).filter(Boolean) : []);
+  const coerceNumber = (v: any) => typeof v === 'number' ? v : (typeof v === 'string' && v.trim() ? Number(v) : undefined);
+
+  const persona = {
+    name: typeof parsed?.name === 'string' ? parsed.name : 'Generated Persona',
+    age: coerceNumber(parsed?.age),
+    gender: typeof parsed?.gender === 'string' ? parsed.gender : undefined,
+    occupation: typeof parsed?.occupation === 'string' ? parsed.occupation : undefined,
+    location: typeof parsed?.location === 'string' ? parsed.location : undefined,
+    archetype: typeof parsed?.archetype === 'string' ? parsed.archetype : undefined,
+    bio: typeof parsed?.bio === 'string' ? parsed.bio : undefined,
+    traits: coerceArray(parsed?.traits),
+    goal: typeof parsed?.goal === 'string' ? parsed.goal : undefined,
+    attitude: typeof parsed?.attitude === 'string' ? parsed.attitude : undefined,
+    family_status: typeof parsed?.family_status === 'string' ? parsed.family_status : undefined,
+    education_level: typeof parsed?.education_level === 'string' ? parsed.education_level : undefined,
+    income_level: typeof parsed?.income_level === 'string' ? parsed.income_level : undefined,
+    lifestyle: typeof parsed?.lifestyle === 'string' ? parsed.lifestyle : undefined,
+    category_products: coerceArray(parsed?.category_products),
+    product_relationship: typeof parsed?.product_relationship === 'string' ? parsed.product_relationship : undefined,
+    category_habits: typeof parsed?.category_habits === 'string' ? parsed.category_habits : undefined,
+  };
+
+  return persona;
 }
 
 // AI-powered function to analyze requirements

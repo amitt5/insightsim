@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useParams } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
@@ -10,40 +10,109 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { generatePersonaFromThreeFields } from "@/utils/personaAnalysis"
+import { Persona } from "@/utils/types"
 
 export default function EnhancedPersonasIdPage() {
   const params = useParams<{ id: string }>()
+  const router = useRouter()
   const isNew = (params?.id || "").toLowerCase() === "new"
+  const personaId = isNew ? null : params?.id
 
   const [basicDemographics, setBasicDemographics] = useState("")
   const [behaviorsAttitudes, setBehaviorsAttitudes] = useState("")
   const [researchContext, setResearchContext] = useState("")
   const [showGenerated, setShowGenerated] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
 
-  // Fixed example persona details for now (UI only, no logic)
+  // Persona form state
   const [personaForm, setPersonaForm] = useState({
-    name: "Sarah Mitchell",
-    age: "38",
-    gender: "Female",
-    occupation: "Software Engineer",
-    location: "San Jose, CA",
-    archetype: "The Digitally Empowered Homeowner",
-    bio: "Sarah is a tech-savvy homeowner who values efficiency and smart home technology.",
-    traits: "Tech-Savvy, Efficiency-Driven, Proactive",
-    goal: "To find a home insurance solution that seamlessly integrates with her lifestyle",
-    attitude: "Optimistic about using technology to manage home tasks",
-    family_status: "Married with one child",
-    education_level: "Bachelor's Degree in Computer Science",
-    income_level: "Upper-middle income bracket",
-    lifestyle: "Enjoys DIY home projects and weekend cycling.",
-    category_products: "Home Insurance A, Home Insurance B",
-    product_relationship: "Prefers transparent policies and responsive support",
-    category_habits: "Reviews coverage annually; compares options online",
+    name: "",
+    age: "",
+    gender: "",
+    occupation: "",
+    location: "",
+    archetype: "",
+    bio: "",
+    traits: "",
+    goal: "",
+    attitude: "",
+    family_status: "",
+    education_level: "",
+    income_level: "",
+    lifestyle: "",
+    category_products: "",
+    product_relationship: "",
+    category_habits: "",
   })
+
+  // Load existing persona when ID is present
+  useEffect(() => {
+    if (personaId && !isNew) {
+      const loadPersona = async () => {
+        try {
+          const response = await fetch(`/api/personas?id=${personaId}`)
+          if (response.ok) {
+            const personas = await response.json()
+            const persona = Array.isArray(personas) ? personas.find((p: Persona) => p.id === personaId) : personas
+            if (persona) {
+              setPersonaForm({
+                name: persona.name || "",
+                age: persona.age ? String(persona.age) : "",
+                gender: persona.gender || "",
+                occupation: persona.occupation || "",
+                location: persona.location || "",
+                archetype: persona.archetype || "",
+                bio: persona.bio || "",
+                traits: Array.isArray(persona.traits) ? persona.traits.join(", ") : (persona.traits || ""),
+                goal: persona.goal || "",
+                attitude: persona.attitude || "",
+                family_status: persona.family_status || "",
+                education_level: persona.education_level || "",
+                income_level: persona.income_level || "",
+                lifestyle: persona.lifestyle || "",
+                category_products: Array.isArray(persona.category_products) ? persona.category_products.join(", ") : (persona.category_products || ""),
+                product_relationship: persona.product_relationship || "",
+                category_habits: persona.category_habits || "",
+              })
+              setShowGenerated(true)
+            }
+          }
+        } catch (error) {
+          console.error("Error loading persona:", error)
+        }
+      }
+      loadPersona()
+    }
+  }, [personaId, isNew])
 
   const handlePersonaChange = (field: string, value: string) => {
     setPersonaForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Save persona to database
+  const savePersona = async (personaData: any, isUpdate = false) => {
+    try {
+      const response = await fetch('/api/personas', {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(personaData),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to save persona')
+      }
+
+      const savedPersona = await response.json()
+      return savedPersona
+    } catch (error: any) {
+      console.error('Error saving persona:', error)
+      throw error
+    }
   }
 
   return (
@@ -94,14 +163,19 @@ export default function EnhancedPersonasIdPage() {
             <Button
               type="button"
               className="w-full sm:w-auto"
+              disabled={isGenerating || isSaving}
               onClick={async () => {
+                setIsGenerating(true)
                 try {
+                  // Generate persona from LLM
                   const generated = await generatePersonaFromThreeFields({
                     basicDemographics,
                     behaviorsAttitudes,
                     researchContext,
                   })
-                  setPersonaForm({
+                  
+                  // Transform generated persona for form display
+                  const formData = {
                     name: generated.name || "",
                     age: generated.age ? String(generated.age) : "",
                     gender: generated.gender || "",
@@ -119,15 +193,70 @@ export default function EnhancedPersonasIdPage() {
                     category_products: Array.isArray(generated.category_products) ? generated.category_products.join(", ") : (generated.category_products || ""),
                     product_relationship: generated.product_relationship || "",
                     category_habits: generated.category_habits || "",
+                  }
+                  
+                  setPersonaForm(formData)
+                  setShowGenerated(true)
+                  
+                  // Now save to database with grounded=true
+                  setIsSaving(true)
+                  try {
+                    // Transform form data back to API format
+                    const personaData = {
+                      name: generated.name || "",
+                      age: generated.age,
+                      gender: generated.gender || "",
+                      occupation: generated.occupation || "",
+                      location: generated.location || "",
+                      archetype: generated.archetype || "",
+                      bio: generated.bio || "",
+                      traits: generated.traits || [],
+                      goal: generated.goal || "",
+                      attitude: generated.attitude || "",
+                      family_status: generated.family_status || "",
+                      education_level: generated.education_level || "",
+                      income_level: generated.income_level || "",
+                      lifestyle: generated.lifestyle || "",
+                      category_products: generated.category_products || [],
+                      product_relationship: generated.product_relationship || "",
+                      category_habits: generated.category_habits || "",
+                      grounded: true,
+                    }
+
+                    const savedPersona = await savePersona(personaData, false)
+                    
+                    // Redirect to the persona ID URL
+                    if (savedPersona?.id) {
+                      toast({
+                        title: "Success",
+                        description: "Persona generated and saved successfully",
+                      })
+                      router.push(`/personas/enhanced/${savedPersona.id}`)
+                    }
+                  } catch (saveError: any) {
+                    console.error('Save failed:', saveError)
+                    toast({
+                      title: "Generation succeeded, but save failed",
+                      description: saveError?.message || "Please save manually using 'Save Changes' button",
+                      variant: "destructive",
+                    })
+                    // Still show the persona form so user can save manually
+                  } finally {
+                    setIsSaving(false)
+                  }
+                } catch (e: any) {
+                  toast({
+                    title: "Generation failed",
+                    description: e?.message || "Please try again.",
+                    variant: "destructive"
                   })
                   setShowGenerated(true)
-                } catch (e: any) {
-                  toast({ title: "Generation failed", description: e?.message || "Please try again." , variant: "destructive"})
-                  setShowGenerated(true)
+                } finally {
+                  setIsGenerating(false)
                 }
               }}
             >
-              Generate Persona
+              {isGenerating || isSaving ? (isGenerating ? "Generating..." : "Saving...") : "Generate Persona"}
             </Button>
           </div>
         </CardContent>
@@ -239,8 +368,54 @@ export default function EnhancedPersonasIdPage() {
               </div>
 
               <div className="pt-2">
-                <Button type="button" disabled>
-                  Save Changes
+                <Button
+                  type="button"
+                  disabled={!personaId || isSaving}
+                  onClick={async () => {
+                    if (!personaId) return
+                    
+                    setIsSaving(true)
+                    try {
+                      // Transform form data to API format
+                      const personaData = {
+                        id: personaId,
+                        name: personaForm.name || "",
+                        age: personaForm.age ? parseInt(personaForm.age) : undefined,
+                        gender: personaForm.gender || "",
+                        occupation: personaForm.occupation || "",
+                        location: personaForm.location || "",
+                        archetype: personaForm.archetype || "",
+                        bio: personaForm.bio || "",
+                        traits: personaForm.traits ? personaForm.traits.split(',').map(t => t.trim()).filter(Boolean) : [],
+                        goal: personaForm.goal || "",
+                        attitude: personaForm.attitude || "",
+                        family_status: personaForm.family_status || "",
+                        education_level: personaForm.education_level || "",
+                        income_level: personaForm.income_level || "",
+                        lifestyle: personaForm.lifestyle || "",
+                        category_products: personaForm.category_products ? personaForm.category_products.split(',').map(p => p.trim()).filter(Boolean) : [],
+                        product_relationship: personaForm.product_relationship || "",
+                        category_habits: personaForm.category_habits || "",
+                      }
+
+                      await savePersona(personaData, true)
+                      
+                      toast({
+                        title: "Success",
+                        description: "Persona updated successfully",
+                      })
+                    } catch (error: any) {
+                      toast({
+                        title: "Error",
+                        description: error?.message || "Failed to save changes",
+                        variant: "destructive",
+                      })
+                    } finally {
+                      setIsSaving(false)
+                    }
+                  }}
+                >
+                  {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
             </div>

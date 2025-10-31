@@ -85,6 +85,7 @@ export interface Persona {
     attitude?: string;
     user_id?: string;
     editable?: boolean;
+    grounded?: boolean;
     family_status?: string;
     education_level?: string;
     income_level?: string;

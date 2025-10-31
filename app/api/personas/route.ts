@@ -38,6 +38,31 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Failed to fetch user role" }, { status: 500 })
     }
 
+    const url = new URL(request.url);
+    const idParam = url.searchParams.get('id');
+    
+    // If ID is provided, fetch single persona
+    if (idParam) {
+      let query = supabase.from('personas').select('*').eq('id', idParam)
+      
+      // Only filter by user_id if the user is not an admin
+      if (userData?.role !== 'admin') {
+        query = query.or(`user_id.eq.${userId},user_id.is.null`)
+      }
+      
+      const { data, error } = await query.maybeSingle();
+      
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      
+      if (!data) {
+        return NextResponse.json({ error: "Persona not found" }, { status: 404 });
+      }
+      
+      return NextResponse.json(data);
+    }
+
     let query = supabase.from('personas').select('*')
     
     // Always filter by editable = true (exclude null and false)
@@ -49,7 +74,6 @@ export async function GET(request: Request) {
     }
     
     // Add tag filtering if tags query parameter is provided
-    const url = new URL(request.url);
     const tagsParam = url.searchParams.get('tags');
     
     if (tagsParam) {
@@ -87,6 +111,10 @@ export async function POST(request: Request) {
 
     personaData.user_id = userId
     personaData.editable = true
+    // grounded field will be passed from the request body, default to false if not provided
+    if (personaData.grounded === undefined) {
+      personaData.grounded = false
+    }
 
     // Insert the new persona into the database
     const { data, error } = await supabase
@@ -116,9 +144,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Persona id is required' }, { status: 400 });
     }
     // Only allow updating personas that belong to the user
-    const { data, error } = await supabase
-      .from('personas')
-      .update({
+    const updateData: any = {
         name: personaData.name,
         age: personaData.age,
         gender: personaData.gender,
@@ -138,7 +164,16 @@ export async function PUT(request: Request) {
         category_habits: personaData.category_habits,
         tags: personaData.tags,
         editable: true
-      })
+    }
+    
+    // Include grounded field if provided
+    if (personaData.grounded !== undefined) {
+      updateData.grounded = personaData.grounded
+    }
+    
+    const { data, error } = await supabase
+      .from('personas')
+      .update(updateData)
       .eq('id', personaData.id)
       .eq('user_id', userId)
       .select();

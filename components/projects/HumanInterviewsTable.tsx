@@ -72,7 +72,7 @@ export default function HumanInterviewsTable({ projectId }: HumanInterviewsTable
   }
 
   const openInterview = (respondentId: string) => {
-    const interviewUrl = `/idi/${projectId}/${respondentId}`
+    const interviewUrl = `/idi/${projectId}/${respondentId}/text`
     window.open(interviewUrl, '_blank')
   }
 

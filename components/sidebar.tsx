@@ -20,7 +20,7 @@ export function Sidebar({ className, activePath = "" }: SidebarProps) {
 
   const links: Array<{ href: string; label: string; icon: any; beta?: boolean; adminOnly?: boolean }> = [
     // { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/projects", label: "Projects", icon: Folder, beta: true },
+    { href: "/projects", label: "Projects", icon: Folder },
     { href: "/simulations", label: "Simulations", icon: MessageSquare },
     { href: "/personas", label: "Personas", icon: Users },
     { href: "/analysis", label: "Analysis", icon: TrendingUp, adminOnly: true },
@@ -66,9 +66,9 @@ export function Sidebar({ className, activePath = "" }: SidebarProps) {
                 {!isCollapsed && (
                   <span className="flex items-center gap-2">
                     {link.label}
-                    {link.beta && (
+                    {/* {link.beta && (
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">Beta</Badge>
-                    )}
+                    )} */}
                   </span>
                 )}
               </Link>

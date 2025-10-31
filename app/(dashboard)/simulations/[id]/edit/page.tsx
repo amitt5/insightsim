@@ -89,7 +89,10 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   
   const router = useRouter()
-  const { personas, loading, error, mutate } = usePersonas(simulationData.project_id)
+  const { personas, loading, error, mutate } = usePersonas(
+    simulationData.project_id,
+    simulationData.project_id === null
+  )
   const supabase = createClientComponentClient();
 
   const [simulationStatus, setSimulationStatus] = useState<string>('Draft')
@@ -796,7 +799,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       const messages: ChatCompletionMessageParam[] = [
         { role: "system", content: prompt }
       ];
-      const result = await runSimulationAPI(messages,'gpt-4o-mini', 'generate-personas');
+      const result = await runSimulationAPI(messages,'groq', 'generate-personas');
       let title = '';
       let topic = '';
       let discussionQuestions = [];
@@ -1840,343 +1843,35 @@ Key Questions:
                 <CardTitle>Select {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'}</CardTitle>
                 <CardDescription>Choose AI personas to participate in your simulation</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="mb-4 flex justify-end gap-2">
-                  <Tooltip delayDuration={50}>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <Button
-                          variant="default"
-                          onClick={handleGeneratePersonasClick}
-                          disabled={isGeneratingPersonas || !simulationData?.brief_text}
-                          className="flex items-center gap-2"
-                        >
-                          {isGeneratingPersonas ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4" />
-                              Generate Personas
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-[300px]">
-                      {!simulationData?.brief_text ? (
-                        <p>Please add a brief in the previous step to generate personas</p>
-                      ) : (
-                        <p>Generate AI personas based on your brief</p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                  <CreatePersonaDialog
-                    open={openPersonaModal}
-                    onOpenChange={setOpenPersonaModal}
-                    onHideSystemPersonasChange={setHideSystemPersonas}
-                    hideSystemPersonas={hideSystemPersonas}
-                    onSuccess={mutate}
-                    variant="outline"
-                  />
-                </div>
-
-                {/* AI Persona Assistant Dialog - Placeholder for now */}
-                <Dialog open={aiPersonaAssistantOpen} onOpenChange={setAiPersonaAssistantOpen}>
-                  <DialogContent className="sm:max-w-[600px] max-h-[90vh] p-0 flex flex-col">
-                    <DialogHeader className="px-6 pt-6">
-                      <DialogTitle className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-primary" />
-                        AI Persona Assistant
-                      </DialogTitle>
-                      <DialogDescription>
-                        {(() => {
-                          const stageInfo = getStageInfo(aiPersonaStep);
-                          if (aiPersonaStep <= 6) {
-                            return `Step ${stageInfo.stage} of 3: ${stageInfo.stageTitle} (Question ${stageInfo.questionNumber} of ${stageInfo.totalQuestions})`;
-                          } else {
-                            return 'Step 3 of 3: Generated Personas';
-                          }
-                        })()}
-                      </DialogDescription>
-                      {/* Progress Indicator */}
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300" 
-                          style={{ width: `${(aiPersonaStep / 7) * 100}%` }}
-                        ></div>
-                      </div>
-                    </DialogHeader>
-
-                    <div className="space-y-6 px-6 py-6 flex-1 overflow-y-auto">
-                      {/* Step 1: Problem Solved (Mandatory) */}
-                      {aiPersonaStep === 1 && (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="problemSolved" className="text-base font-medium">
-                              You mentioned your study is about "{simulationData.study_title || 'your product/service'}". In a sentence or two, what problem does this product solve for people?
-                            </Label>
-                            <Textarea
-                              id="problemSolved"
-                              placeholder="e.g., Our fitness app helps busy professionals stay consistent with their workout routines by providing quick 15-minute exercises they can do anywhere..."
-                              rows={4}
-                              value={aiPersonaData.problemSolved}
-                              onChange={(e) => handleAiPersonaInputChange('problemSolved', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Step 2: Competitors (Optional) */}
-                      {aiPersonaStep === 2 && (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="competitors" className="text-base font-medium">
-                              Who are your main competitors, if any? <span className="text-gray-500 font-normal">(Optional)</span>
-                            </Label>
-                            <Textarea
-                              id="competitors"
-                              placeholder="e.g., Nike Training Club, Peloton Digital, Fitbit Premium, or 'No direct competitors that I know of'..."
-                              rows={3}
-                              value={aiPersonaData.competitors}
-                              onChange={(e) => handleAiPersonaInputChange('competitors', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Step 3: Target Description (Mandatory) */}
-                      {aiPersonaStep === 3 && (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="targetDescription" className="text-base font-medium">
-                              Describe the person you imagine using your product. Don't worry about getting it perfect, just give me a general idea.
-                            </Label>
-                            <Textarea
-                              id="targetDescription"
-                              placeholder="e.g., Working professionals in their 30s who care about staying fit but struggle to find time for long gym sessions..."
-                              rows={3}
-                              value={aiPersonaData.targetDescription}
-                              onChange={(e) => handleAiPersonaInputChange('targetDescription', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Step 4: Location (Mandatory) */}
-                      {aiPersonaStep === 4 && (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="location" className="text-base font-medium">
-                              Where do they live? (e.g., Urban cities in the US, suburbs in the UK)
-                            </Label>
-                            <Input
-                              id="location"
-                              placeholder="e.g., Major cities across North America, London and Manchester UK..."
-                              value={aiPersonaData.location}
-                              onChange={(e) => handleAiPersonaInputChange('location', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Step 5: Primary Goals (Optional) */}
-                      {aiPersonaStep === 5 && (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="primaryGoals" className="text-base font-medium">
-                              What are their primary goals or what are they trying to achieve that your product could help with? <span className="text-gray-500 font-normal">(Optional)</span>
-                            </Label>
-                            <Textarea
-                              id="primaryGoals"
-                              placeholder="e.g., Stay healthy and fit, maintain energy throughout the day, reduce stress, look good for special events..."
-                              rows={3}
-                              value={aiPersonaData.primaryGoals}
-                              onChange={(e) => handleAiPersonaInputChange('primaryGoals', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Step 6: Frustrations (Optional) */}
-                      {aiPersonaStep === 6 && (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="frustrations" className="text-base font-medium">
-                              What are their biggest frustrations or challenges related to this goal? <span className="text-gray-500 font-normal">(Optional)</span>
-                            </Label>
-                            <Textarea
-                              id="frustrations"
-                              placeholder="e.g., Not enough time for hour-long gym sessions, intimidated by crowded gyms, lack of consistency, not knowing which exercises are effective..."
-                              rows={3}
-                              value={aiPersonaData.frustrations}
-                              onChange={(e) => handleAiPersonaInputChange('frustrations', e.target.value)}
-                            />
-                          </div>
-
-                          {/* Generate Personas Button */}
-                          <div className="pt-4">
-                            <Button 
-                              onClick={handleGeneratePersonas}
-                              disabled={isGeneratingPersonas}
-                              className="w-full"
-                            >
-                              {isGeneratingPersonas ? (
-                                <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Generating Personas...
-                                </>
-                              ) : (
-                                <>
-                                  <Sparkles className="mr-2 h-4 w-4" />
-                                  Generate Personas
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Step 7: Generated Personas */}
-                      {aiPersonaStep === 7 && (
-                        <div className="space-y-4">
-                          <div className="text-center mb-6">
-                            <h3 className="text-lg font-semibold mb-2">Generated Personas</h3>
-                            <p className="text-sm text-gray-600">Select the personas you'd like to use in your simulation</p>
-                          </div>
-
-                          <div className="space-y-4 max-h-96 overflow-y-auto">
-                            {generatedPersonas.map((persona) => (
-                              <div key={persona.id} className="relative border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                                {/* Selection Checkbox */}
-                                <div className="absolute top-3 right-3">
-                                  <input
-                                    type="checkbox"
-                                    id={`persona-${persona.id}`}
-                                    checked={selectedGeneratedPersonas.includes(persona.id)}
-                                    onChange={() => toggleGeneratedPersona(persona.id)}
-                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                  />
-                                </div>
-
-                                {/* Persona Header */}
-                                <div className="pr-8 mb-3">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h4 className="font-medium text-base">
-                                      {persona.name}, {persona.age}{persona.gender?.charAt(0)}, {persona.occupation}
-                                      {persona.location && `, ${persona.location}`}
-                                    </h4>
-                                  </div>
-                                  <div className="text-sm text-primary font-medium mb-2">
-                                    {persona.archetype}
-                                  </div>
-                                </div>
-
-                                {/* Bio */}
-                                <p className="text-sm text-gray-600 mb-3">
-                                  {persona.bio}
-                                </p>
-
-                                {/* Goal */}
-                                <div className="mb-3">
-                                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Goal:</span>
-                                  <p className="text-sm text-gray-700 mt-1">{persona.goal}</p>
-                                </div>
-
-                                {/* Traits */}
-                                <div className="mb-4">
-                                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Key Traits:</span>
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {persona.traits?.map((trait: string, index: number) => (
-                                      <span key={index} className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
-                                        {trait}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {/* Edit/View Details Button */}
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  onClick={() => handleEditGeneratedPersona(persona)}
-                                >
-                                  Edit / View Details
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-
-                          {selectedGeneratedPersonas.length > 0 && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                              <p className="text-sm text-blue-700">
-                                {selectedGeneratedPersonas.length} persona{selectedGeneratedPersonas.length !== 1 ? 's' : ''} selected
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Edit Generated Persona Dialog */}
-                          <CreatePersonaDialog
-                            open={editGeneratedPersonaOpen}
-                            onOpenChange={setEditGeneratedPersonaOpen}
-                            onSuccess={handleEditGeneratedPersonaSuccess}
-                            initialData={editingGeneratedPersona || undefined}
-                            mode="edit"
-                            hideTrigger={true}
-                            variant="default"
-                            isGeneratedPersona={true}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    <DialogFooter className="flex justify-between px-6 py-4 border-t">
-                      <div className="flex gap-2">
-                        {aiPersonaStep > 1 && (
-                          <Button variant="outline" onClick={handleAiPersonaBack}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back
-                          </Button>
-                        )}
-                        <Button variant="outline" onClick={handleAiPersonaClose}>
-                          Cancel
-                        </Button>
-                      </div>
-                      
-                      <div>
-                        {aiPersonaStep < 6 && (
-                          <Button 
-                            onClick={handleAiPersonaNext}
-                            disabled={!getQuestionValidation(aiPersonaStep).isValid}
-                          >
-                            Next
+              <div className="px-6 py-4 border-b">
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={prevStep}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button onClick={nextStep}
+                            disabled={selectedPersonas.length === 0}>
+                            Continue
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
-                        )}
-                        {aiPersonaStep === 7 && (
-                          <Button 
-                            disabled={selectedGeneratedPersonas.length === 0 || isSavingPersonas}
-                            onClick={handleAddSelectedPersonas}
-                          >
-                            {isSavingPersonas ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Saving Personas...
-                              </>
-                            ) : (
-                              <>
-                                Add Selected Personas
-                                <Sparkles className="ml-2 h-4 w-4" />
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </div>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                        </span>
+                      </TooltipTrigger>
+                      {(selectedPersonas.length === 0) && (
+                        <TooltipContent side="top">
+                          Select at least one participant to proceed
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+              <CardContent>
+               
+
 
                 {loading ? (
                   <div className="p-4 text-center text-gray-500">Loading personas...</div>

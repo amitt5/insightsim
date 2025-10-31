@@ -1,34 +1,19 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
+import { checkProjectAccess } from "@/utils/projectAccess"
 
 export async function GET(
   request: Request,
   { params }: { params: { projectId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    // Use centralized project access control
+    const accessResult = await checkProjectAccess(params.projectId)
     
-    // Get session data to verify user is logged in
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!accessResult.success) {
+      return accessResult.response!
     }
 
-    // First get the project to verify ownership
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .select("user_id")
-      .eq("id", params.projectId)
-      .single()
-
-    if (projectError || !project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 })
-    }
-
-    if (project.user_id !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const { supabase } = accessResult
 
     // Get all personas for this project
     const { data: projectPersonas, error: personasError } = await supabase
@@ -46,7 +31,7 @@ export async function GET(
     }
 
     // Extract personas from the join
-    const personas = projectPersonas.map(pp => pp.personas)
+    const personas = projectPersonas.map((pp: any) => pp.personas)
 
     return NextResponse.json({ personas })
   } catch (error) {
@@ -60,28 +45,14 @@ export async function POST(
   { params }: { params: { projectId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    // Use centralized project access control
+    const accessResult = await checkProjectAccess(params.projectId)
     
-    // Get session data to verify user is logged in
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!accessResult.success) {
+      return accessResult.response!
     }
 
-    // First get the project to verify ownership
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .select("user_id")
-      .eq("id", params.projectId)
-      .single()
-
-    if (projectError || !project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 })
-    }
-
-    if (project.user_id !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const { supabase, session } = accessResult
 
     // Get personas data from request body
     const { personas } = await request.json()

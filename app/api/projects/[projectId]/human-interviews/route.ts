@@ -1,34 +1,19 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
+import { checkProjectAccess } from "@/utils/projectAccess"
 
 export async function GET(
   request: Request,
   { params }: { params: { projectId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    // Use centralized project access control
+    const accessResult = await checkProjectAccess(params.projectId)
     
-    // Get session data to verify user is logged in
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!accessResult.success) {
+      return accessResult.response!
     }
 
-    // First get the project to verify ownership
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .select("user_id")
-      .eq("id", params.projectId)
-      .single()
-
-    if (projectError || !project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 })
-    }
-
-    if (project.user_id !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const { supabase } = accessResult
 
     // Get all human respondents for this project
     const { data: humanRespondents, error: respondentsError } = await supabase
@@ -50,7 +35,7 @@ export async function GET(
 
     // Get message counts for each respondent
     const respondentsWithCounts = await Promise.all(
-      humanRespondents.map(async (respondent) => {
+      humanRespondents.map(async (respondent: any) => {
         const { count: messageCount, error: msgCountError } = await supabase
           .from("human_conversations")
           .select("*", { count: "exact", head: true })

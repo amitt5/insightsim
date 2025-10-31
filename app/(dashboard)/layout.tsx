@@ -50,7 +50,7 @@ export default function DashboardLayout({
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >
               <span>Projects</span>
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">Beta</Badge>
+              {/* <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">Beta</Badge> */}
             </Link>
             <Link 
               href="/simulations"
@@ -72,12 +72,12 @@ export default function DashboardLayout({
                 Analysis (demo)
               </Link>
             )}
-            <Link 
+            {/* <Link 
               href="/personas"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >
               Personas
-            </Link>
+            </Link> */}
             {/* <Link 
               href="/calibration"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"

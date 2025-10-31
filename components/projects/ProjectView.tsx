@@ -10,16 +10,24 @@ import ProjectMediaUpload from "./ProjectMediaUpload"
 import { PersonaCard } from "@/components/persona-card"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
-import { createTitleGenerationPrompt,createBriefExtractionPrompt, createPersonaGenerationPrompt, buildDiscussionQuestionsPrompt,buildDiscussionQuestionsFromBrief, createBriefPersonaGenerationPrompt, createTargetSegmentGenerationPrompt } from "@/utils/buildMessagesForOpenAI";
+import { createTitleGenerationPrompt, createBriefExtractionPrompt, buildDiscussionQuestionsFromBrief } from "@/utils/buildMessagesForOpenAI";
+import { runSimulationAPI } from '@/utils/api';
+import { createTargetSegmentGenerationPrompt } from '@/utils/buildMessagesForOpenAI';
+import { createBriefPersonaGenerationPrompt } from '@/utils/buildMessagesForOpenAI';
 
-import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
-import { runSimulationAPI } from "@/utils/api"
 import { ArrowLeft, ArrowRight, Upload, X,Edit2, Save, FileIcon, Sparkles, Loader2, HelpCircle } from "lucide-react"
 import AIBriefAssistant from "./AIBriefAssistant"
 import { RagDocumentUpload, RagDocumentList } from "./rag"
 import { TargetSegmentSelectionModal } from "./TargetSegmentSelectionModal"
 import { runPersonaAnalysis, AnalysisProgress } from "@/utils/personaAnalysis"
 import warmUpService from "@/utils/warmupService"
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+
+// Define the tab interface
+interface TabItem {
+  value: string;
+  label: string;
+}
 
 interface ProjectViewProps {
   project: Project;
@@ -710,6 +718,12 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
             Save Name
           </Button>
         )}
+      </div>
+
+       {/* Navigation hint for users */}
+       <div className="mb-4 flex items-center text-gray-600 text-sm">
+        {/* <HelpCircle className="h-4 w-4 mr-2" /> */}
+        <span>Click on the tabs below to navigate between different sections of your project</span>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">

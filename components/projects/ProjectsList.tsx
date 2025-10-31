@@ -21,6 +21,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 interface ProjectViewModel {
   id: string;
@@ -41,11 +51,46 @@ export default function ProjectsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Function to create new project
-  const handleCreateNewProject = async () => {
+  // Function to open modal for project name input
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+    setProjectName("");
+  };
+
+  // Function to close modal and reset form
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setProjectName("");
+    setIsSubmitting(false);
+  };
+
+  // Function to create new project with name
+  const handleCreateProject = async () => {
+    // Validate project name
+    if (!projectName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a project name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (projectName.trim().length < 2) {
+      toast({
+        title: "Error",
+        description: "Project name must be at least 2 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      setIsCreating(true);
+      setIsSubmitting(true);
       
       toast({
         title: "Creating project...",
@@ -57,7 +102,7 @@ export default function ProjectsList() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}), // Empty body for default values
+        body: JSON.stringify({ name: projectName.trim() }),
       });
 
       if (response.ok) {
@@ -67,6 +112,7 @@ export default function ProjectsList() {
             title: "Project created!",
             description: "Redirecting to the project...",
           });
+          handleCloseModal();
           router.push(`/projects/${data.project.id}`);
         }
       } else {
@@ -84,7 +130,7 @@ export default function ProjectsList() {
         variant: "destructive",
       });
     } finally {
-      setIsCreating(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -189,7 +235,7 @@ export default function ProjectsList() {
           <h1 className="text-2xl font-bold">Research Projects</h1>
           <p className="text-gray-600">Manage your qualitative research projects</p>
         </div>
-        <Button onClick={handleCreateNewProject} disabled={isCreating}>
+        <Button onClick={handleOpenModal} disabled={isCreating}>
           {isCreating ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -237,14 +283,15 @@ export default function ProjectsList() {
                 });
 
                 return (
-                  <TableRow key={project.id} className="hover:bg-gray-50">
+                  <TableRow 
+                    key={project.id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => router.push(`/projects/${project.id}`)}
+                  >
                     <TableCell>
-                      <Link 
-                        href={`/projects/${project.id}`}
-                        className="font-semibold hover:text-blue-600 transition-colors"
-                      >
+                      <span className="font-semibold">
                         {project.name}
-                      </Link>
+                      </span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-gray-600">
@@ -267,49 +314,33 @@ export default function ProjectsList() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link 
-                              href={`/projects/${project.id}`}
-                              className="flex items-center gap-2"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                              Edit Project
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`/api/projects/${project.id}`, {
-                                  method: 'DELETE',
-                                });
-                                if (!response.ok) throw new Error('Failed to delete project');
-                                setProjects(prev => prev.filter(p => p.id !== project.id));
-                                toast({
-                                  title: "Success",
-                                  description: "Project deleted successfully",
-                                });
-                              } catch (error) {
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to delete project",
-                                  variant: "destructive",
-                                });
-                              }
-                            }}
-                            className="flex items-center gap-2 text-red-600 focus:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const response = await fetch(`/api/projects/${project.id}`, {
+                              method: 'DELETE',
+                            });
+                            if (!response.ok) throw new Error('Failed to delete project');
+                            setProjects(prev => prev.filter(p => p.id !== project.id));
+                            toast({
+                              title: "Success",
+                              description: "Project deleted successfully",
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to delete project",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
@@ -318,6 +349,63 @@ export default function ProjectsList() {
           </Table>
         </div>
       )}
+
+      {/* Create Project Modal */}
+      <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+            <DialogDescription>
+              Enter a name for your new research project. You can always change this later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="project-name">
+                Name
+              </Label>
+              <Input
+                id="project-name"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="Enter project name..."
+                className="col-span-3"
+                disabled={isSubmitting}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isSubmitting && projectName.trim()) {
+                    handleCreateProject();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseModal}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreateProject}
+              disabled={isSubmitting || !projectName.trim()}
+              className="flex items-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Project'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

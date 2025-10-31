@@ -116,6 +116,21 @@ export default function InterviewPage() {
     }
   };
 
+  const handleCopyTranscript = async () => {
+    try {
+      const transcript = messages
+        .map((message) => {
+          const who = message.sender_type === 'respondent' ? (respondentData?.name || 'Respondent') : 'Moderator';
+          const time = message.created_at ? new Date(message.created_at).toLocaleString() : '';
+          return `${who}${time ? ` [${time}]` : ''}: ${message.message}`;
+        })
+        .join("\n");
+      await navigator.clipboard.writeText(transcript);
+    } catch (err) {
+      console.error('Failed to copy transcript:', err);
+    }
+  };
+
   useEffect(() => {
     const fetchRespondentData = async () => {
       try {
@@ -194,6 +209,12 @@ export default function InterviewPage() {
               <Badge variant={respondentData.status === "completed" ? "default" : "secondary"}>
                 {respondentData.status}
               </Badge>
+              
+            </div>
+            <div className="mt-2">
+              <Button variant="outline" size="sm" onClick={handleCopyTranscript}>
+                Copy transcript
+              </Button>
             </div>
           </div>
         </div>

@@ -584,7 +584,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     if (isGeneratingSyntheticAnalysis) return;
     setIsGeneratingSyntheticAnalysis(true);
     try {
-      const response = await fetch(`/api/projects/${project.id}/analysis/synthetic/prepare`, {
+      const response = await fetch(`/api/projects/${project.id}/analysis/synthetic/run`, {
         method: 'POST',
       });
       if (!response.ok) {
@@ -593,10 +593,10 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       }
       const data = await response.json();
       toast({
-        title: 'Data prepared',
-        description: 'Fetched simulation transcripts for analysis.',
+        title: 'Analysis ready',
+        description: 'Synthetic analysis JSON generated.',
       });
-      console.log('Started synthetic analysis job', data);
+      console.log('Synthetic analysis JSON', data);
     } catch (error: any) {
       console.error('Error starting synthetic analysis:', error);
       toast({

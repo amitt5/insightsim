@@ -82,6 +82,12 @@ export async function GET(request: Request) {
       query = query.overlaps('tags', tags);
     }
     
+    // Add grounded filtering if grounded query parameter is provided
+    const groundedParam = url.searchParams.get('grounded');
+    if (groundedParam === 'true') {
+      query = query.eq('grounded', true);
+    }
+    
     console.log('query111',userId, userData, query)
     const { data, error } = await query
 

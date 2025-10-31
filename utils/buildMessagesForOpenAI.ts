@@ -608,7 +608,8 @@ export function createBriefPersonaGenerationPrompt(simulation: Simulation | Proj
   - Make personas realistic and relatable for moderators to work with during sessions
   - Align persona goals and frustrations with the research objectives outlined in the brief
   - Each persona must represent a single individual only, not couples or groups.
-  - No persona should include multiple names (e.g., “John & Mary”).
+  - Each persona must be a single person, not a couple or a group of people.
+  - No persona should include multiple names (e.g., “John and Mary”).
   - Use singular pronouns and a single consistent viewpoint.
   `;
 

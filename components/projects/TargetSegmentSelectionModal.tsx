@@ -27,21 +27,21 @@ function AnalysisScrollingDisplay({
   step?: AnalysisStep;
 }) {
   const getDisplayText = () => {
-    console.log('AnalysisScrollingDisplay - step:', step);
-    console.log('AnalysisScrollingDisplay - analysisData:', analysisData);
-    console.log('AnalysisScrollingDisplay - sourceData:', sourceData);
+    // console.log('AnalysisScrollingDisplay - step:', step);
+    // console.log('AnalysisScrollingDisplay - analysisData:', analysisData);
+    // console.log('AnalysisScrollingDisplay - sourceData:', sourceData);
     
     // Show data whenever it's available, regardless of exact step
     if (sourceData && sourceData.length > 0) {
-      console.log('AnalysisScrollingDisplay - Showing sourceData');
+      // console.log('AnalysisScrollingDisplay - Showing sourceData');
       return JSON.stringify(sourceData, null, 2);
     }
     if (analysisData) {
-      console.log('AnalysisScrollingDisplay - Showing analysisData');
+      // console.log('AnalysisScrollingDisplay - Showing analysisData');
       return JSON.stringify(analysisData, null, 2);
     }
     
-    console.log('AnalysisScrollingDisplay - No data available');
+    // console.log('AnalysisScrollingDisplay - No data available');
     return '';
   };
 
@@ -100,14 +100,14 @@ export function TargetSegmentSelectionModal({
   const analysisMessage = externalAnalysisMessage ?? internalAnalysisMessage;
   
   // Debug logging
-  console.log('TargetSegmentSelectionModal - Props:', {
-    analysisStep,
-    analysisMessage,
-    analysisData,
-    sourceData,
-    externalAnalysisStep,
-    externalAnalysisMessage
-  });
+  // console.log('TargetSegmentSelectionModal - Props:', {
+  //   analysisStep,
+  //   analysisMessage,
+  //   analysisData,
+  //   sourceData,
+  //   externalAnalysisStep,
+  //   externalAnalysisMessage
+  // });
 
   const handleSegmentToggle = (segment: string, checked: boolean) => {
     if (checked) {

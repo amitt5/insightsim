@@ -48,7 +48,7 @@ export function usePersonas(projectId?: string | null, fetchAll: boolean = false
         setLoading(false);
         return [];
       }
-      console.log('Processed persona:',projectId, data);
+      // console.log('Processed persona:',projectId, data);
       
       // Process traits for each persona
       const processedData = data.map((persona: any) => {

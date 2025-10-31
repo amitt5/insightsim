@@ -123,7 +123,7 @@ export default function LoginPage() {
       await new Promise(resolve => setTimeout(resolve, 100))
       
       console.log("🔄 About to redirect to /simulations...")
-      router.push("/simulations")
+      router.push("/projects")
       
     } catch (error: any) {
       console.log("💥 Google signin catch block error:", error.message)
@@ -258,7 +258,7 @@ export default function LoginPage() {
       await new Promise(resolve => setTimeout(resolve, 100))
       
       console.log("🔄 About to redirect to /simulations...")
-      router.push("/simulations")
+      router.push("/projects")
       
     } catch (error: any) {
       console.log("💥 Catch block error:", error.message)

@@ -99,15 +99,15 @@ export function TargetSegmentSelectionModal({
   const analysisStep = externalAnalysisStep ?? internalAnalysisStep;
   const analysisMessage = externalAnalysisMessage ?? internalAnalysisMessage;
   
-  // Debug logging
-  console.log('TargetSegmentSelectionModal - Props:', {
-    analysisStep,
-    analysisMessage,
-    analysisData,
-    sourceData,
-    externalAnalysisStep,
-    externalAnalysisMessage
-  });
+  // // Debug logging
+  // console.log('TargetSegmentSelectionModal - Props:', {
+  //   analysisStep,
+  //   analysisMessage,
+  //   analysisData,
+  //   sourceData,
+  //   externalAnalysisStep,
+  //   externalAnalysisMessage
+  // });
 
   const handleSegmentToggle = (segment: string, checked: boolean) => {
     if (checked) {

@@ -121,7 +121,9 @@ export default function StudyList({ project, simulations }: StudyListProps) {
                 <TableRow key={simulation.id}>
                   <TableCell>
                     <Link 
-                      href={`/simulations/${simulation.id}`}
+                      href={simulation.status?.toLowerCase() === 'draft' 
+                        ? `/simulations/${simulation.id}/edit` 
+                        : `/simulations/${simulation.id}`}
                       className="text-blue-600 hover:underline font-medium"
                     >
                       {simulation.study_title}

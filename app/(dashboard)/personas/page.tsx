@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { usePersonas } from "@/lib/usePersonas"
+// import { usePersonas } from "@/lib/usePersonas"
 import { PersonaCard } from "@/components/persona-card"
 import { CreatePersonaDialog } from "@/components/create-persona-dialog"
 import PersonaFilter from "@/components/persona-filter"
@@ -11,7 +11,7 @@ import { Persona } from "@/utils/types"
 
 export default function PersonasPage() {
   const [open, setOpen] = useState(false)
-  const { personas, loading, error, mutate } = usePersonas(null, true)
+  // const { personas, loading, error, mutate } = usePersonas(null, true)
   const [hideSystemPersonas, setHideSystemPersonas] = useState(false)
   const [filteredPersonas, setFilteredPersonas] = useState<Persona[]>([])
 
@@ -21,9 +21,10 @@ export default function PersonasPage() {
   }
 
   // Filter personas based on hideSystemPersonas state
-  const baseFilteredPersonas = hideSystemPersonas 
-    ? personas.filter(persona => persona.editable === true)
-    : personas;
+  const baseFilteredPersonas = [];
+  // const baseFilteredPersonas = hideSystemPersonas 
+  //   ? personas.filter(persona => persona.editable === true)
+  //   : personas;
 
   // Handle filtered personas from the filter component
   const handleFilteredPersonasChange = useCallback((filtered: Persona[]) => {
@@ -34,13 +35,13 @@ export default function PersonasPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Personas</h1>
-        <CreatePersonaDialog 
+        {/* <CreatePersonaDialog 
           open={open}
           onOpenChange={setOpen}
           onHideSystemPersonasChange={setHideSystemPersonas}
           hideSystemPersonas={hideSystemPersonas}
           onSuccess={mutate}
-        />
+        /> */}
       </div>
 
       <Card>
@@ -48,7 +49,7 @@ export default function PersonasPage() {
           <CardTitle>All Personas</CardTitle>
           <CardDescription>Manage your AI participant personas for simulations</CardDescription>
         </CardHeader>
-        <CardContent>
+        {/* <CardContent>
           {loading ? (
             <div className="p-4 text-center text-gray-500">Loading personas...</div>
           ) : error ? (
@@ -74,7 +75,7 @@ export default function PersonasPage() {
               )}
             </div>
           )}
-        </CardContent>
+        </CardContent> */}
       </Card>
     </div>
   )

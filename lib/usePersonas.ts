@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const processTraits = (traits: string | string[]) => {
   let processedTraits: string[] = [];
@@ -39,24 +39,23 @@ export function usePersonas(projectId?: string | null, fetchAll: boolean = false
         data = responseData.personas; // Project personas API returns { personas: [...] }
       } else if (fetchAll) {
         // Fetch all personas when explicitly requested
-        res = await fetch("/api/personas");
-        if (!res.ok) throw new Error("Failed to fetch personas");
-        data = await res.json();
+        // res = await fetch("/api/personas");
+        // if (!res.ok) throw new Error("Failed to fetch personas");
+        // data = await res.json();
       } else {
         // Don't fetch anything if no projectId is provided and fetchAll is false
         setPersonas([]);
         setLoading(false);
         return [];
       }
+      // console.log('Processed persona:',projectId, data);
       
       // Process traits for each persona
       const processedData = data.map((persona: any) => {
-        console.log('Raw persona from API:', persona);
         const processed = {
           ...persona,
           traits: processTraits(persona.traits)
         };
-        console.log('Processed persona:', processed);
         return processed;
       });
       // sort personas by user_id
@@ -85,7 +84,16 @@ export function usePersonas(projectId?: string | null, fetchAll: boolean = false
     return fetchPersonas();
   }, [fetchPersonas]);
 
+  // Guard against duplicate effect invocations (e.g., React 18 StrictMode double-invoke)
+  const fetchKey = `${projectId ?? "__none__"}|${fetchAll ? "1" : "0"}`;
+  const lastFetchKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (lastFetchKeyRef.current === fetchKey) {
+      return;
+    }
+    lastFetchKeyRef.current = fetchKey;
+
     if (projectId || fetchAll) {
       fetchPersonas();
     } else {
@@ -93,7 +101,7 @@ export function usePersonas(projectId?: string | null, fetchAll: boolean = false
       setLoading(false);
       setPersonas([]);
     }
-  }, [fetchPersonas, projectId, fetchAll]);
+  }, [fetchKey, fetchPersonas, projectId, fetchAll]);
 
   return { personas, loading, error, mutate };
 } 

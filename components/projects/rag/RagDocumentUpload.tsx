@@ -7,7 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { RagDocument } from "@/utils/types";
 
 interface RagDocumentUploadProps {
-  projectId: string;
+  projectId?: string;
+  personaId?: string;
   onUploadSuccess?: (document: RagDocument) => void;
   onUploadError?: (error: string) => void;
 }
@@ -21,6 +22,7 @@ interface UploadingFile {
 
 export default function RagDocumentUpload({ 
   projectId, 
+  personaId,
   onUploadSuccess, 
   onUploadError 
 }: RagDocumentUploadProps) {
@@ -69,7 +71,7 @@ export default function RagDocumentUpload({
     validFiles.forEach((file, index) => {
       uploadFile(file, index);
     });
-  }, [toast, projectId, onUploadSuccess, onUploadError]);
+    }, [toast, projectId, personaId, onUploadSuccess, onUploadError]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -117,7 +119,11 @@ export default function RagDocumentUpload({
       }, 200);
 
       // Upload file to API
-      const response = await fetch(`/api/projects/${projectId}/rag/documents`, {
+      const apiUrl = personaId 
+        ? `/api/personas/${personaId}/rag/documents`
+        : `/api/projects/${projectId}/rag/documents`;
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         body: formData,
       });

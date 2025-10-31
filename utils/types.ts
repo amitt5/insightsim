@@ -148,7 +148,8 @@ export interface KeyInsight {
 // RAG Document interfaces
 export interface RagDocument {
   id: string;
-  project_id: string;
+  project_id?: string | null;
+  persona_id?: string | null;
   user_id: string;
   filename: string;
   original_filename: string;

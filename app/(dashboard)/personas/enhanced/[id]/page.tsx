@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { generatePersonaFromThreeFields } from "@/utils/personaAnalysis"
-import { Persona } from "@/utils/types"
+import { Persona, RagDocument } from "@/utils/types"
+import { RagDocumentUpload, RagDocumentList } from "@/components/projects/rag"
 
 export default function EnhancedPersonasIdPage() {
   const params = useParams<{ id: string }>()
@@ -24,6 +25,8 @@ export default function EnhancedPersonasIdPage() {
   const [showGenerated, setShowGenerated] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [ragDocuments, setRagDocuments] = useState<RagDocument[]>([])
+  const [processingDocuments, setProcessingDocuments] = useState<Set<string>>(new Set())
   const { toast } = useToast()
 
   // Persona form state
@@ -87,6 +90,36 @@ export default function EnhancedPersonasIdPage() {
     }
   }, [personaId, isNew])
 
+  // Load RAG documents for the persona
+  useEffect(() => {
+    if (personaId && !isNew) {
+      const fetchRagDocuments = async () => {
+        try {
+          const response = await fetch(`/api/personas/${personaId}/rag/documents`)
+          if (response.ok) {
+            const data = await response.json()
+            setRagDocuments(data.documents || [])
+          } else if (response.status !== 404) {
+            // Only show error if it's not a 404 (404 means no documents yet)
+            toast({
+              title: "Error",
+              description: "Failed to load documents",
+              variant: "destructive",
+            })
+          }
+        } catch (error) {
+          console.error("Error fetching RAG documents:", error)
+          toast({
+            title: "Error",
+            description: "Failed to load documents",
+            variant: "destructive",
+          })
+        }
+      }
+      fetchRagDocuments()
+    }
+  }, [personaId, isNew, toast])
+
   const handlePersonaChange = (field: string, value: string) => {
     setPersonaForm(prev => ({ ...prev, [field]: value }))
   }
@@ -112,6 +145,95 @@ export default function EnhancedPersonasIdPage() {
     } catch (error: any) {
       console.error('Error saving persona:', error)
       throw error
+    }
+  }
+
+  // Handle RAG document upload
+  const handleRagDocumentUpload = (document: RagDocument) => {
+    setRagDocuments(prev => [...prev, document])
+  }
+
+  // Handle RAG document delete
+  const handleRagDocumentDelete = async (documentId: string) => {
+    if (!personaId) return
+    
+    try {
+      const response = await fetch(`/api/personas/${personaId}/rag/documents/${documentId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete document')
+      }
+
+      setRagDocuments(prev => prev.filter(doc => doc.id !== documentId))
+      
+      toast({
+        title: "Document deleted",
+        description: "Document has been deleted successfully",
+      })
+    } catch (error: any) {
+      console.error('Error deleting document:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete document",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Handle RAG document process
+  const handleRagDocumentProcess = async (documentId: string) => {
+    if (!personaId) return
+    
+    try {
+      // Add to processing set
+      setProcessingDocuments(prev => new Set(prev).add(documentId))
+
+      const response = await fetch(`/api/personas/${personaId}/rag/documents/${documentId}/process`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to process document')
+      }
+
+      const result = await response.json()
+      
+      // Update document in the list
+      setRagDocuments(prev => prev.map(doc => 
+        doc.id === documentId 
+          ? { ...doc, status: 'completed' as const }
+          : doc
+      ))
+
+      toast({
+        title: "Processing successful",
+        description: "Document has been processed successfully",
+      })
+    } catch (error: any) {
+      console.error('Error processing document:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process document",
+        variant: "destructive",
+      })
+      
+      // Update document status to failed
+      setRagDocuments(prev => prev.map(doc => 
+        doc.id === documentId 
+          ? { ...doc, status: 'failed' as const, processing_error: error.message }
+          : doc
+      ))
+    } finally {
+      // Remove from processing set
+      setProcessingDocuments(prev => {
+        const next = new Set(prev)
+        next.delete(documentId)
+        return next
+      })
     }
   }
 
@@ -419,6 +541,35 @@ export default function EnhancedPersonasIdPage() {
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* RAG Documents Section - Only show if persona has been saved (has ID) */}
+      {personaId && !isNew && (
+        <Card>
+          <CardHeader>
+            <CardTitle>RAG Documents</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-500">Upload Documents</label>
+              <p className="text-sm text-gray-400 mt-1">
+                Upload and manage documents for this persona's retrieval-augmented generation
+              </p>
+            </div>
+            
+            <RagDocumentUpload 
+              personaId={personaId}
+              onUploadSuccess={handleRagDocumentUpload}
+            />
+            
+            <RagDocumentList 
+              documents={ragDocuments}
+              onDelete={handleRagDocumentDelete}
+              onProcess={handleRagDocumentProcess}
+              processingDocuments={processingDocuments}
+            />
           </CardContent>
         </Card>
       )}

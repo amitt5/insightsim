@@ -1132,7 +1132,7 @@ const debugAPIRawResponse = async () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" asChild>
-              <Link href="/simulations">
+              <Link href={`/projects/${simulation.project_id}`}>
           <ArrowLeft className="h-4 w-4" />
               </Link>
         </Button>

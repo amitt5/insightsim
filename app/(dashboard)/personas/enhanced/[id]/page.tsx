@@ -84,6 +84,11 @@ export default function EnhancedPersonasIdPage() {
                 category_habits: persona.category_habits || "",
               })
               setShowGenerated(true)
+              
+              // If persona is grounded, minimize the initial section
+              if (persona.grounded) {
+                setIsInitialSectionMinimized(true)
+              }
             }
           }
         } catch (error) {
@@ -371,6 +376,9 @@ export default function EnhancedPersonasIdPage() {
                     
                     // Redirect to the persona ID URL
                     if (savedPersona?.id) {
+                      // Minimize the initial section after successful save
+                      setIsInitialSectionMinimized(true)
+                      
                       toast({
                         title: "Success",
                         description: "Persona generated and saved successfully",

@@ -661,6 +661,48 @@ The structure of each object must conform to the following TypeScript interface:
 }
 
 /**
+ * Builds a prompt to generate a single persona from three free-text inputs
+ * provided in Step 1 of Enhanced Personas: demographics, behaviors/attitudes,
+ * and research context. The model must return a single Persona JSON object.
+ */
+export function createPersonaFromThreeFieldsPrompt({
+  basicDemographics,
+  behaviorsAttitudes,
+  researchContext,
+}: {
+  basicDemographics: string;
+  behaviorsAttitudes: string;
+  researchContext: string;
+}): string {
+  const systemPrompt = `You are an expert persona generator for qualitative market research. Create one realistic, internally consistent persona based ONLY on the user's inputs. Output MUST be a single valid JSON object.`;
+
+  const task = `TASK: Generate one persona grounded in the inputs below. Use singular pronouns and a single viewpoint. Do not create multiple people. The persona should be suitable for qualitative interviews.`;
+
+  const inputs = `INPUTS\n---\nBASIC DEMOGRAPHICS:\n${basicDemographics || ""}\n\nBEHAVIORS & ATTITUDES:\n${behaviorsAttitudes || ""}\n\nRESEARCH CONTEXT (goals, scenarios, what we want to learn):\n${researchContext || ""}\n---`;
+
+  const outputFormat = `OUTPUT FORMAT (STRICT): Return ONLY a valid JSON object matching this structure. No markdown. No extra text.\n\n{\n  "name": "Sarah Mitchell",\n  "age": 38,\n  "gender": "Female",
+  "occupation": "Software Engineer",
+  "location": "San Jose, CA",
+  "archetype": "The Digitally Empowered Homeowner",
+  "bio": "2-3 sentence narrative about the person relevant to the research",
+  "traits": ["Tech-Savvy", "Efficiency-Driven", "Proactive"],
+  "goal": "Primary goal relevant to the research context",
+  "attitude": "Their perspective on the topic/category",
+  "family_status": "Short phrase, e.g., 'Married with two young children'",
+  "education_level": "e.g., 'Bachelor's Degree in Communications'",
+  "income_level": "e.g., 'Upper-middle income bracket'",
+  "lifestyle": "Brief narrative of hobbies, routines, and values",
+  "category_products": ["Example Product A", "Example Product B"],
+  "product_relationship": "Qualitative relationship with products used",
+  "category_habits": "Specific behaviors and routines related to product category"
+}`;
+
+  const constraints = `CONSTRAINTS:\n- Single individual only.\n- If name contains ' and ' or multiple people, regenerate internally before returning.\n- Keep age numeric if provided; traits must be an array of strings.`;
+
+  return `${systemPrompt}\n\n${task}\n\n${inputs}\n\n${constraints}\n\n${outputFormat}`;
+}
+
+/**
  * Creates a structured prompt for an AI model to generate target segments from a research brief.
  * @param briefText - The research brief text to analyze
  * @returns A detailed prompt string ready for an LLM.

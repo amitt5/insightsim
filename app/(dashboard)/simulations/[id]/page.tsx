@@ -87,7 +87,7 @@ export default function SimulationViewPage() {
   const [signedStimulusUrls, setSignedStimulusUrls] = useState<string[]>([])
   const [isLoadingSignedUrls, setIsLoadingSignedUrls] = useState(false)
   const [selectedStimulusImages, setSelectedStimulusImages] = useState<boolean[]>([])
-  const [askedQuestionIndices, setAskedQuestionIndices] = useState<number[]>([])
+  const [askedQuestionIndices, setAskedQuestionIndices] = useState<number[]>([0])
   const [projectMediaUrls, setProjectMediaUrls] = useState<string[]>([])
   const [signedProjectMediaUrls, setSignedProjectMediaUrls] = useState<string[]>([])
   const [selectedProjectMediaImages, setSelectedProjectMediaImages] = useState<boolean[]>([])
@@ -396,7 +396,7 @@ const debugAPIRawResponse = async () => {
     if (questionIndex !== undefined && !askedQuestionIndices.includes(questionIndex)) {
       setAskedQuestionIndices(prev => [...prev, questionIndex]);
     }
-    
+    console.log('amit-askedQuestionIndices', askedQuestionIndices);
     // Scroll to and focus the textarea after a brief delay to ensure the text is set
     setTimeout(() => {
       if (textareaRef.current) {
@@ -1132,7 +1132,7 @@ const debugAPIRawResponse = async () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" asChild>
-              <Link href="/simulations">
+              <Link href={`/projects/${simulation.project_id}`}>
           <ArrowLeft className="h-4 w-4" />
               </Link>
         </Button>

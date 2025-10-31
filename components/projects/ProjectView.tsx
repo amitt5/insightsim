@@ -578,6 +578,36 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   };
 
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [isGeneratingSyntheticAnalysis, setIsGeneratingSyntheticAnalysis] = useState(false);
+
+  const handleGenerateSyntheticAnalysis = async () => {
+    if (isGeneratingSyntheticAnalysis) return;
+    setIsGeneratingSyntheticAnalysis(true);
+    try {
+      const response = await fetch(`/api/projects/${project.id}/analysis/synthetic/prepare`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to start analysis');
+      }
+      const data = await response.json();
+      toast({
+        title: 'Data prepared',
+        description: 'Fetched simulation transcripts for analysis.',
+      });
+      console.log('Started synthetic analysis job', data);
+    } catch (error: any) {
+      console.error('Error starting synthetic analysis:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to start analysis',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingSyntheticAnalysis(false);
+    }
+  };
 
   const handleSaveBrief = async () => {
     setIsSavingBrief(true);
@@ -1241,7 +1271,28 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
             <TabsContent value="synthetic" className="space-y-6 mt-6">
               <div className="space-y-6">
                 <div className="bg-white border rounded-lg p-6">
-                  <h3 className="text-lg font-semibold mb-4">QUESTION 1: What aspects of the new footwear line does the participant like most?</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">QUESTION 1: What aspects of the new footwear line does the participant like most?</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateSyntheticAnalysis}
+                      disabled={isGeneratingSyntheticAnalysis}
+                      className="flex items-center gap-2"
+                    >
+                      {isGeneratingSyntheticAnalysis ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          Generate
+                        </>
+                      )}
+                    </Button>
+                  </div>
                   
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Left Column - AI Summary and Chart */}
@@ -1509,6 +1560,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
             </TabsContent>
           </Tabs>
         </TabsContent>
+
+        
       </Tabs>
 
       {/* Target Segment Selection Modal */}

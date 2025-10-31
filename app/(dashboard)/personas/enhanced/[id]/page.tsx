@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 import { generatePersonaFromThreeFields } from "@/utils/personaAnalysis"
 import { Persona, RagDocument } from "@/utils/types"
 import { RagDocumentUpload, RagDocumentList } from "@/components/projects/rag"
+import { ChevronDown, ChevronUp } from "lucide-react"
 
 export default function EnhancedPersonasIdPage() {
   const params = useParams<{ id: string }>()
@@ -27,6 +28,9 @@ export default function EnhancedPersonasIdPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [ragDocuments, setRagDocuments] = useState<RagDocument[]>([])
   const [processingDocuments, setProcessingDocuments] = useState<Set<string>>(new Set())
+  const [isInitialSectionMinimized, setIsInitialSectionMinimized] = useState(false)
+  const [isGeneratedSectionMinimized, setIsGeneratedSectionMinimized] = useState(false)
+  const [isRagSectionMinimized, setIsRagSectionMinimized] = useState(false)
   const { toast } = useToast()
 
   // Persona form state
@@ -247,10 +251,28 @@ export default function EnhancedPersonasIdPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Initial Persona Creation</CardTitle>
+        <CardHeader className="cursor-pointer" onClick={() => setIsInitialSectionMinimized(!isInitialSectionMinimized)}>
+          <div className="flex items-center justify-between">
+            <CardTitle>Initial Persona Creation</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsInitialSectionMinimized(!isInitialSectionMinimized)
+              }}
+            >
+              {isInitialSectionMinimized ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronUp className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        {!isInitialSectionMinimized && (
+          <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Basic Demographics</label>
             <Textarea
@@ -381,15 +403,34 @@ export default function EnhancedPersonasIdPage() {
               {isGenerating || isSaving ? (isGenerating ? "Generating..." : "Saving...") : "Generate Persona"}
             </Button>
           </div>
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
 
       {showGenerated && (
         <Card>
-          <CardHeader>
-            <CardTitle>Generated Persona (Not yet research-enhanced)</CardTitle>
+          <CardHeader className="cursor-pointer" onClick={() => setIsGeneratedSectionMinimized(!isGeneratedSectionMinimized)}>
+            <div className="flex items-center justify-between">
+              <CardTitle>Generated Persona (Not yet research-enhanced)</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsGeneratedSectionMinimized(!isGeneratedSectionMinimized)
+                }}
+              >
+                {isGeneratedSectionMinimized ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronUp className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
+          {!isGeneratedSectionMinimized && (
+            <CardContent>
             <div className="grid gap-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -542,16 +583,35 @@ export default function EnhancedPersonasIdPage() {
               </div>
             </div>
           </CardContent>
+          )}
         </Card>
       )}
 
       {/* RAG Documents Section - Only show if persona has been saved (has ID) */}
       {personaId && !isNew && (
         <Card>
-          <CardHeader>
-            <CardTitle>RAG Documents</CardTitle>
+          <CardHeader className="cursor-pointer" onClick={() => setIsRagSectionMinimized(!isRagSectionMinimized)}>
+            <div className="flex items-center justify-between">
+              <CardTitle>RAG Documents</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsRagSectionMinimized(!isRagSectionMinimized)
+                }}
+              >
+                {isRagSectionMinimized ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronUp className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          {!isRagSectionMinimized && (
+            <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-500">Upload Documents</label>
               <p className="text-sm text-gray-400 mt-1">
@@ -571,6 +631,7 @@ export default function EnhancedPersonasIdPage() {
               processingDocuments={processingDocuments}
             />
           </CardContent>
+          )}
         </Card>
       )}
     </div>

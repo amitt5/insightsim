@@ -142,6 +142,30 @@ export async function POST(
       validateAnalysisJson(parsed)
     }
 
+    // Save to database (upsert - overwrites if exists)
+    const supabase = access.supabase
+    const { error: dbError } = await supabase
+      .from('project_analysis')
+      .upsert({
+        project_id: projectId,
+        source: 'synthetic',
+        analysis_json: parsed,
+        model: 'gpt-4o-mini',
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'project_id,source'
+      })
+
+    if (dbError) {
+      console.error('Error saving analysis to database:', dbError)
+      // Still return the analysis even if DB save fails
+      return NextResponse.json({ 
+        success: true, 
+        analysis: parsed,
+        warning: 'Analysis generated but failed to save to database'
+      })
+    }
+
     return NextResponse.json({ success: true, analysis: parsed })
   } catch (error: any) {
     console.error('Error running synthetic analysis:', error)

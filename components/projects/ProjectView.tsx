@@ -771,11 +771,35 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       }
     };
 
+    const fetchSyntheticAnalysis = async () => {
+      try {
+        const response = await fetch(`/api/projects/${project.id}/analysis/synthetic`);
+        if (response.status === 404) {
+          // No analysis yet - normal, show empty state
+          setSyntheticAnalysis(null);
+        } else if (!response.ok) {
+          // Actual server error - but don't show toast, just leave empty
+          console.error('Server error fetching analysis:', response.status, response.statusText);
+          setSyntheticAnalysis(null);
+        } else {
+          const data = await response.json();
+          if (data?.analysis) {
+            setSyntheticAnalysis(data.analysis);
+          }
+        }
+      } catch (error) {
+        // Network or other errors - silent fail, show empty state
+        console.error('Error fetching synthetic analysis:', error);
+        setSyntheticAnalysis(null);
+      }
+    };
+
     // Only fetch data if project.id exists
     if (project.id) {
       fetchProjectPersonas();
       fetchProjectSimulations();
       fetchRagDocuments();
+      fetchSyntheticAnalysis();
     }
   }, [project.id, toast]);
 
@@ -1057,31 +1081,28 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     if (isGeneratingSyntheticAnalysis) return;
     setIsGeneratingSyntheticAnalysis(true);
     try {
-      console.log('Synthetic analysis JSON', analysisObj);
-      setSyntheticAnalysis(analysisObj.analysis);
-      setIsGeneratingSyntheticAnalysis(false);
-      // const response = await fetch(`/api/projects/${project.id}/analysis/synthetic/run`, {
-      //   method: 'POST',
-      // });
-      // if (!response.ok) {
-      //   const errorData = await response.json().catch(() => ({}));
-      //   throw new Error(errorData.error || 'Failed to start analysis');
-      // }
-      // const data = await response.json();
-      // toast({
-      //   title: 'Analysis ready',
-      //   description: 'Synthetic analysis JSON generated.',
-      // });
-      // console.log('Synthetic analysis JSON', data);
-      // if (data?.analysis) {
-      //   setSyntheticAnalysis(data.analysis);
-      //   setSelectedSyntheticQuestionIndex(0);
-      // }
+      const response = await fetch(`/api/projects/${project.id}/analysis/synthetic/run`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to generate analysis');
+      }
+      const data = await response.json();
+      if (data?.analysis) {
+        setSyntheticAnalysis(data.analysis);
+        toast({
+          title: 'Analysis ready',
+          description: 'Synthetic analysis generated and saved.',
+        });
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error: any) {
-      console.error('Error starting synthetic analysis:', error);
+      console.error('Error generating synthetic analysis:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to start analysis',
+        description: error.message || 'Failed to generate analysis',
         variant: 'destructive',
       });
     } finally {

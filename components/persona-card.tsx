@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { UserCircle, Pencil, Copy, Trash } from "lucide-react"
 import { Persona } from "@/utils/types"
 import { CreatePersonaDialog } from "./create-persona-dialog"
@@ -94,7 +95,7 @@ export function PersonaCard({
   }
 
   return (
-    <>
+    <TooltipProvider>
       <Card 
         className={cardClasses}
         onClick={selectable && onToggle ? onToggle : undefined}
@@ -193,7 +194,16 @@ export function PersonaCard({
           </div>
           <div className="p-4">
             {persona.archetype && <Badge className="mb-2">{persona.archetype}</Badge>}
-            {persona.bio && <p className="mb-3 text-sm text-gray-600 line-clamp-3">{persona.bio}</p>}
+            {persona.bio && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="mb-3 text-sm text-gray-600 line-clamp-3 cursor-help">{persona.bio}</p>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-md">
+                  <p className="whitespace-normal">{persona.bio}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             <div className="mb-2">
               <span className="text-xs font-medium text-gray-500">TRAITS</span>
               <div className="mt-1 flex flex-wrap gap-1">
@@ -207,37 +217,79 @@ export function PersonaCard({
             {persona.goal && (
               <div className="mb-2">
                 <span className="text-xs font-medium text-gray-500">GOAL</span>
-                <p className="text-xs text-gray-600 line-clamp-2">{persona.goal}</p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xs text-gray-600 line-clamp-2 cursor-help">{persona.goal}</p>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-md">
+                    <p className="whitespace-normal">{persona.goal}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
             {persona.attitude && (
               <div className="mb-2">
                 <span className="text-xs font-medium text-gray-500">ATTITUDE</span>
-                <p className="text-xs text-gray-600 line-clamp-2">{persona.attitude}</p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xs text-gray-600 line-clamp-2 cursor-help">{persona.attitude}</p>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-md">
+                    <p className="whitespace-normal">{persona.attitude}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
             {persona.family_status && (
               <div className="mb-2">
                 <span className="text-xs font-medium text-gray-500">FAMILY STATUS</span>
-                <p className="text-xs text-gray-600 line-clamp-2">{persona.family_status}</p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xs text-gray-600 line-clamp-2 cursor-help">{persona.family_status}</p>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-md">
+                    <p className="whitespace-normal">{persona.family_status}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
             {persona.education_level && (
               <div className="mb-2">
                 <span className="text-xs font-medium text-gray-500">EDUCATION</span>
-                <p className="text-xs text-gray-600 line-clamp-2">{persona.education_level}</p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xs text-gray-600 line-clamp-2 cursor-help">{persona.education_level}</p>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-md">
+                    <p className="whitespace-normal">{persona.education_level}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
             {persona.income_level && (
               <div className="mb-2">
                 <span className="text-xs font-medium text-gray-500">INCOME</span>
-                <p className="text-xs text-gray-600 line-clamp-2">{persona.income_level}</p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xs text-gray-600 line-clamp-2 cursor-help">{persona.income_level}</p>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-md">
+                    <p className="whitespace-normal">{persona.income_level}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
             {persona.lifestyle && (
               <div className="mb-2">
                 <span className="text-xs font-medium text-gray-500">LIFESTYLE</span>
-                <p className="text-xs text-gray-600 line-clamp-3">{persona.lifestyle}</p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xs text-gray-600 line-clamp-3 cursor-help">{persona.lifestyle}</p>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-md">
+                    <p className="whitespace-normal">{persona.lifestyle}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
             {persona.category_products && persona.category_products.length > 0 && (
@@ -255,13 +307,27 @@ export function PersonaCard({
             {persona.product_relationship && (
               <div className="mb-2">
                 <span className="text-xs font-medium text-gray-500">PRODUCT RELATIONSHIP</span>
-                <p className="text-xs text-gray-600 line-clamp-3">{persona.product_relationship}</p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xs text-gray-600 line-clamp-3 cursor-help">{persona.product_relationship}</p>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-md">
+                    <p className="whitespace-normal">{persona.product_relationship}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
             {persona.category_habits && (
               <div className="mb-2">
                 <span className="text-xs font-medium text-gray-500">CATEGORY HABITS</span>
-                <p className="text-xs text-gray-600 line-clamp-3">{persona.category_habits}</p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xs text-gray-600 line-clamp-3 cursor-help">{persona.category_habits}</p>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-md">
+                    <p className="whitespace-normal">{persona.category_habits}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
 
@@ -285,6 +351,6 @@ export function PersonaCard({
         hideTrigger={true}
         onSuccess={onUpdate}
       />
-    </>
+    </TooltipProvider>
   )
 }

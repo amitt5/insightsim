@@ -1754,11 +1754,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
               <div className="space-y-6">
                 <div className="bg-white border rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">
-                      {syntheticAnalysis && syntheticAnalysis.length > 0
-                        ? (syntheticAnalysis[selectedSyntheticQuestionIndex]?.question || 'Analysis')
-                        : 'Synthetic Analysis'}
-                    </h3>
+                    <h3 className="text-lg font-semibold">Synthetic Analysis</h3>
                     <Button
                       variant="outline"
                       size="sm"
@@ -1785,24 +1781,36 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                       <Loader2 className="h-4 w-4 animate-spin" /> Generating analysis...
                     </div>
                   ) : syntheticAnalysis && syntheticAnalysis.length > 0 ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Left Column - AI Summary and Chart */}
-                      <div className="space-y-6">
-                        {/* Question selector if multiple questions */}
-                        {syntheticAnalysis.length > 1 && (
-                          <div className="mb-2">
-                            <label className="text-sm text-gray-600 mr-2">Question:</label>
-                            <select
-                              className="border rounded px-2 py-1 text-sm"
-                              value={selectedSyntheticQuestionIndex}
-                              onChange={(e) => setSelectedSyntheticQuestionIndex(Number(e.target.value))}
-                            >
-                              {syntheticAnalysis.map((q: any, idx: number) => (
-                                <option key={idx} value={idx}>{q.question?.slice(0, 80) || `Question ${idx+1}`}</option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
+                    <div className="space-y-6">
+                      {/* Question selector - always show if we have questions */}
+                      <div className="mb-4 pb-4 border-b">
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">Question:</label>
+                        <select
+                          className="w-full border rounded-md px-3 py-2 text-sm bg-white"
+                          value={selectedSyntheticQuestionIndex}
+                          onChange={(e) => setSelectedSyntheticQuestionIndex(Number(e.target.value))}
+                        >
+                          {syntheticAnalysis.map((q: any, idx: number) => (
+                            <option key={idx} value={idx}>
+                              {idx + 1}. {q.question || `Question ${idx + 1}`}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Showing {selectedSyntheticQuestionIndex + 1} of {syntheticAnalysis.length} questions
+                        </p>
+                      </div>
+                      
+                      {/* Current Question Title */}
+                      <div className="mb-4">
+                        <h4 className="text-lg font-semibold text-gray-800">
+                          {syntheticAnalysis[selectedSyntheticQuestionIndex]?.question || 'Question'}
+                        </h4>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left Column - AI Summary and Chart */}
+                        <div className="space-y-6">
                         <div>
                           <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
                           <p className="text-sm text-gray-600 leading-relaxed">
@@ -1856,6 +1864,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                           ))}
                         </div>
                       </div>
+                    </div>
                     </div>
                   ) : (
                     <div className="text-sm text-gray-500">No analysis yet. Click Generate to analyze your simulations.</div>

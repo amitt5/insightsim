@@ -795,12 +795,36 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       }
     };
 
+    const fetchHumanAnalysis = async () => {
+      try {
+        const response = await fetch(`/api/projects/${project.id}/analysis/human`);
+        if (response.status === 404) {
+          // No analysis yet - normal, show empty state
+          setHumanAnalysis(null);
+        } else if (!response.ok) {
+          // Actual server error - but don't show toast, just leave empty
+          console.error('Server error fetching human analysis:', response.status, response.statusText);
+          setHumanAnalysis(null);
+        } else {
+          const data = await response.json();
+          if (data?.analysis) {
+            setHumanAnalysis(data.analysis.analysis || data.analysis);
+          }
+        }
+      } catch (error) {
+        // Network or other errors - silent fail, show empty state
+        console.error('Error fetching human analysis:', error);
+        setHumanAnalysis(null);
+      }
+    };
+
     // Only fetch data if project.id exists
     if (project.id) {
       fetchProjectPersonas();
       fetchProjectSimulations();
       fetchRagDocuments();
       fetchSyntheticAnalysis();
+      fetchHumanAnalysis();
     }
   }, [project.id, toast]);
 
@@ -1078,6 +1102,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [isGeneratingSyntheticAnalysis, setIsGeneratingSyntheticAnalysis] = useState(false);
   const [syntheticAnalysis, setSyntheticAnalysis] = useState<any | null>(null);
   const [isGeneratingHumanAnalysis, setIsGeneratingHumanAnalysis] = useState(false);
+  const [humanAnalysis, setHumanAnalysis] = useState<any | null>(null);
 
   const handleGenerateSyntheticAnalysis = async () => {
     if (isGeneratingSyntheticAnalysis) return;
@@ -1127,7 +1152,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       console.log('=== Human Analysis Generated ===');
       console.log('Full response:', data);
       if (data?.analysis) {
-        console.log('Analysis JSON:', JSON.stringify(data.analysis, null, 2));
+        setHumanAnalysis(data.analysis.analysis || data.analysis);
         toast({
           title: 'Analysis ready',
           description: 'Human analysis generated and saved.',
@@ -1936,89 +1961,82 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                       )}
                     </Button>
                   </div>
-                  <h3 className="text-lg font-semibold mb-4">QUESTION 1: What aspects of the new footwear line does the participant like most?</h3>
-                  
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left Column - AI Summary and Chart */}
-                    <div className="space-y-6">
-                      <div>
-                        <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                          Human participants show a strong preference for comfort and fit, with design elements being secondary. Quality and durability are highly valued, while sustainability concerns are more prominent than in synthetic responses. Participants emphasize practical aspects like all-day wearability and long-term value.
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-medium text-gray-700 mb-3">CATEGORIES (MULTI-SELECT) Bar Chart:</h4>
-                        <div className="space-y-3">
-                          {[
-                            { category: "Comfort", value: 52, color: "bg-blue-500" },
-                            { category: "Quality", value: 45, color: "bg-green-500" },
-                            { category: "Design and Style", value: 38, color: "bg-purple-500" },
-                            { category: "Sustainability", value: 32, color: "bg-orange-500" },
-                            { category: "Fit", value: 28, color: "bg-pink-500" },
-                            { category: "Durability", value: 25, color: "bg-gray-500" },
-                            { category: "Color and Pattern", value: 22, color: "bg-indigo-500" },
-                            { category: "Price Value", value: 18, color: "bg-red-500" },
-                            { category: "Material and Texture", value: 15, color: "bg-yellow-500" },
-                            { category: "Brand Reputation", value: 12, color: "bg-teal-500" }
-                          ].map((item, index) => (
-                            <div key={index} className="flex items-center space-x-3">
-                              <div className="w-32 text-sm text-gray-600 truncate">{item.category}</div>
-                              <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
-                                <div 
-                                  className={`${item.color} h-6 rounded-full flex items-center justify-end pr-2`}
-                                  style={{ width: `${(item.value / 60) * 100}%` }}
-                                >
-                                  <span className="text-xs text-white font-medium">{item.value}</span>
+                  {/* Content */}
+                  {isGeneratingHumanAnalysis ? (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Generating analysis...
+                    </div>
+                  ) : humanAnalysis && humanAnalysis.length > 0 ? (
+                    <div className="space-y-8">
+                      {humanAnalysis.map((question: any, questionIdx: number) => (
+                        <div key={questionIdx} className="border-t pt-6 first:border-t-0 first:pt-0">
+                          <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                            {questionIdx + 1}. {question.question || `Question ${questionIdx + 1}`}
+                          </h4>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Left Column - AI Summary and Chart */}
+                            <div className="space-y-6">
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                  {question.summary || ''}
+                                </p>
+                              </div>
+                              
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-3">CATEGORIES (MULTI-SELECT) Bar Chart:</h4>
+                                <div className="space-y-3">
+                                  {(question.categories || [])
+                                    .slice()
+                                    .sort((a: any, b: any) => (b.percentage || 0) - (a.percentage || 0))
+                                    .map((item: any, index: number) => {
+                                      const colors = ["bg-blue-500","bg-green-500","bg-purple-500","bg-orange-500","bg-pink-500","bg-gray-500","bg-indigo-500","bg-red-500","bg-yellow-500","bg-teal-500"];
+                                      const color = colors[index % colors.length];
+                                      const pct = Math.max(0, Math.min(100, Number(item.percentage) || 0));
+                                      return (
+                                        <div key={index} className="flex items-center space-x-3">
+                                          <div className="w-32 text-sm text-gray-600 truncate">{item.name}</div>
+                                          <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                            <div 
+                                              className={`${color} h-6 rounded-full flex items-center justify-end pr-2`}
+                                              style={{ width: `${pct}%` }}
+                                            >
+                                              <span className="text-xs text-white font-medium">{pct}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
                                 </div>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Right Column - Quotes */}
-                    <div>
-                      <h4 className="font-medium text-gray-700 mb-3">QUOTES 5</h4>
-                      <div className="space-y-4">
-                        {[
-                          {
-                            tags: ["Comfort", "Quality"],
-                            quote: "I've been wearing these for a week now and my feet feel great even after long days. The cushioning is perfect and they don't cause any blisters or discomfort."
-                          },
-                          {
-                            tags: ["Sustainability", "Quality"],
-                            quote: "I love that they're made from recycled materials and the company has a good environmental track record. Plus, they feel really well-made and sturdy."
-                          },
-                          {
-                            tags: ["Design and Style", "Fit"],
-                            quote: "They look great with both casual and business casual outfits. The fit is true to size and they don't pinch or feel tight anywhere."
-                          },
-                          {
-                            tags: ["Durability", "Price Value"],
-                            quote: "I've had similar shoes that fell apart after a few months, but these still look and feel new. Worth every penny for the quality you get."
-                          },
-                          {
-                            tags: ["Material and Texture", "Comfort"],
-                            quote: "The material feels really nice against my skin and breathes well. I don't get that sweaty, uncomfortable feeling I've had with other shoes."
-                          }
-                        ].map((quote, index) => (
-                          <div key={index} className="bg-gray-50 border rounded-lg p-4">
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {quote.tags.map((tag, tagIndex) => (
-                                <span key={tagIndex} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                                  {tag}
-                                </span>
-                              ))}
+                            {/* Right Column - Quotes */}
+                            <div>
+                              <h4 className="font-medium text-gray-700 mb-3">QUOTES</h4>
+                              <div className="space-y-4">
+                                {(question.verbatims || []).map((q: any, idx: number) => (
+                                  <div key={idx} className="bg-gray-50 border rounded-lg p-4">
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                      {(q.tags || []).map((tag: string, tagIndex: number) => (
+                                        <span key={tagIndex} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <p className="text-sm text-gray-700 italic">"{q.quote}"</p>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <p className="text-sm text-gray-700 italic">"{quote.quote}"</p>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">No analysis yet. Click Generate to analyze your human interviews.</div>
+                  )}
                 </div>
               </div>
             </TabsContent>

@@ -556,28 +556,30 @@ const debugAPIRawResponse = async () => {
       }, {});
       
       // Format messages for display
-      const formatted = (data.messages || []).map((msg: SimulationMessage) => {
-        let speakerName = "Unknown";
-        
-        if (msg.sender_type === 'moderator') {
-          speakerName = 'Moderator';
-        } else if (msg.sender_id && personaIdToNameMap[msg.sender_id]) {
-          speakerName = personaIdToNameMap[msg.sender_id];
-        }
-        
-        // Format timestamp (if available)
-        const timestamp = msg.created_at 
-          ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : `${msg.turn_number}`;
-        
-        return {
-          speaker: speakerName,
-          text: msg.message,
-          time: timestamp,
-          sender_id: msg.sender_id,
-          sender_type: msg.sender_type
-        };
-      });
+      const formatted = (data.messages || [])
+        .map((msg: SimulationMessage) => {
+          let speakerName = "Unknown";
+          
+          if (msg.sender_type === 'moderator') {
+            speakerName = 'Moderator';
+          } else if (msg.sender_id && personaIdToNameMap[msg.sender_id]) {
+            speakerName = personaIdToNameMap[msg.sender_id];
+          }
+          
+          // Format timestamp (if available)
+          const timestamp = msg.created_at 
+            ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : `${msg.turn_number}`;
+          
+          return {
+            speaker: speakerName,
+            text: msg.message,
+            time: timestamp,
+            sender_id: msg.sender_id,
+            sender_type: msg.sender_type
+          };
+        })
+        .filter((formattedMsg: FormattedMessage) => formattedMsg.speaker !== "Unknown");
       
       setFormattedMessages(formatted);
       

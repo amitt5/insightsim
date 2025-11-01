@@ -1825,10 +1825,10 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
 
           {/* Analysis Sub-tabs */}
           <Tabs defaultValue="synthetic" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="synthetic" className="w-full">Synthetic</TabsTrigger>
               <TabsTrigger value="human" className="w-full">Human</TabsTrigger>
-              <TabsTrigger value="combined" className="w-full">Combined</TabsTrigger>
+              {/* <TabsTrigger value="combined" className="w-full">Combined</TabsTrigger> */}
             </TabsList>
 
             <TabsContent value="synthetic" className="space-y-6 mt-6">
@@ -2041,13 +2041,13 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
               </div>
             </TabsContent>
 
-            <TabsContent value="combined" className="space-y-6 mt-6">
+            {/* Combined tab - commented out for now, will be implemented later */}
+            {/* <TabsContent value="combined" className="space-y-6 mt-6">
               <div className="space-y-6">
                 <div className="bg-white border rounded-lg p-6">
                   <h3 className="text-lg font-semibold mb-4">QUESTION 1: What aspects of the new footwear line does the participant like most?</h3>
                   
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left Column - AI Summary and Chart */}
                     <div className="space-y-6">
                       <div>
                         <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
@@ -2087,7 +2087,6 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                       </div>
                     </div>
 
-                    {/* Right Column - Quotes */}
                     <div>
                       <h4 className="font-medium text-gray-700 mb-3">QUOTES 5</h4>
                       <div className="space-y-4">
@@ -2129,7 +2128,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                   </div>
                 </div>
               </div>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
         </TabsContent>
 

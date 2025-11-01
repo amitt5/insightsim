@@ -180,6 +180,478 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     }
   };
 
+  const analysisObj = {
+    "analysis": [
+        {
+            "question": "What does homeownership mean to you, and how do you feel about the responsibilities that come with it?",
+            "summary": "Homeownership is viewed as a significant milestone that symbolizes stability and security for families. Participants express pride in owning their homes but also acknowledge the overwhelming responsibilities that come with it, such as maintenance and financial obligations. Many feel a strong sense of duty to protect their investment and ensure a safe environment for their families, which can sometimes lead to feelings of anxiety.",
+            "categories": [
+                {
+                    "name": "Stability and Security",
+                    "percentage": 80
+                },
+                {
+                    "name": "Responsibilities and Obligations",
+                    "percentage": 75
+                },
+                {
+                    "name": "Pride in Ownership",
+                    "percentage": 60
+                },
+                {
+                    "name": "Financial Concerns",
+                    "percentage": 55
+                },
+                {
+                    "name": "Emotional Impact",
+                    "percentage": 50
+                }
+            ],
+            "verbatims": [
+                {
+                    "quote": "Homeownership to me represents stability and security.",
+                    "tags": [
+                        "Stability and Security"
+                    ]
+                },
+                {
+                    "quote": "I feel a heavy weight when it comes to making sure everything is taken care of.",
+                    "tags": [
+                        "Responsibilities and Obligations"
+                    ]
+                },
+                {
+                    "quote": "It signifies stability for my family and a place where we can create lasting memories.",
+                    "tags": [
+                        "Pride in Ownership"
+                    ]
+                },
+                {
+                    "quote": "I want to ensure that my family and I are safe, and that we have a reliable plan in place.",
+                    "tags": [
+                        "Financial Concerns",
+                        "Emotional Impact"
+                    ]
+                },
+                {
+                    "quote": "I want to be proactive and make informed decisions, especially when it comes to home insurance.",
+                    "tags": [
+                        "Responsibilities and Obligations"
+                    ]
+                }
+            ]
+        },
+        {
+            "question": "Can you describe your thoughts and feelings when it comes to protecting your home? What are your main concerns?",
+            "summary": "Participants emphasize the importance of protecting their homes, viewing it as a top priority. Main concerns include risks from natural disasters, theft, and ensuring adequate insurance coverage. Many express anxiety about being underinsured and the potential financial implications of unexpected events, highlighting the need for comprehensive protection.",
+            "categories": [
+                {
+                    "name": "Home Protection Importance",
+                    "percentage": 85
+                },
+                {
+                    "name": "Concerns about Risks",
+                    "percentage": 80
+                },
+                {
+                    "name": "Financial Security",
+                    "percentage": 70
+                },
+                {
+                    "name": "Insurance Coverage",
+                    "percentage": 65
+                },
+                {
+                    "name": "Anxiety about Vulnerability",
+                    "percentage": 60
+                }
+            ],
+            "verbatims": [
+                {
+                    "quote": "Protecting my home is a top priority for me.",
+                    "tags": [
+                        "Home Protection Importance"
+                    ]
+                },
+                {
+                    "quote": "I worry about potential risks like natural disasters, theft, or even accidents.",
+                    "tags": [
+                        "Concerns about Risks"
+                    ]
+                },
+                {
+                    "quote": "I want to feel secure knowing that if something unfortunate happens, we have the right support.",
+                    "tags": [
+                        "Financial Security",
+                        "Insurance Coverage"
+                    ]
+                },
+                {
+                    "quote": "The thought of my family being vulnerable really drives my desire to have a solid insurance plan in place.",
+                    "tags": [
+                        "Anxiety about Vulnerability"
+                    ]
+                },
+                {
+                    "quote": "I strive to understand the specifics of our policy to avoid any surprises in the event of a claim.",
+                    "tags": [
+                        "Insurance Coverage"
+                    ]
+                }
+            ]
+        },
+        {
+            "question": "Tell me about your experiences with home insurance. How have they shaped your perceptions of the industry?",
+            "summary": "Participants report mixed experiences with home insurance, often feeling overwhelmed by the options and complexities involved. Many have faced challenges during the claims process, leading to a desire for clearer communication and better customer service. Positive experiences with supportive agents have shifted perceptions towards valuing transparency and personalized service.",
+            "categories": [
+                {
+                    "name": "Mixed Experiences",
+                    "percentage": 75
+                },
+                {
+                    "name": "Challenges with Claims Process",
+                    "percentage": 70
+                },
+                {
+                    "name": "Importance of Communication",
+                    "percentage": 65
+                },
+                {
+                    "name": "Value of Customer Service",
+                    "percentage": 60
+                },
+                {
+                    "name": "Need for Transparency",
+                    "percentage": 55
+                }
+            ],
+            "verbatims": [
+                {
+                    "quote": "My experiences with home insurance have been quite mixed.",
+                    "tags": [
+                        "Mixed Experiences"
+                    ]
+                },
+                {
+                    "quote": "Navigating the claims process was frustrating.",
+                    "tags": [
+                        "Challenges with Claims Process"
+                    ]
+                },
+                {
+                    "quote": "I want to deal with companies that take the time to explain the details of my coverage clearly.",
+                    "tags": [
+                        "Importance of Communication"
+                    ]
+                },
+                {
+                    "quote": "This experience taught me the importance of communication and support in the insurance process.",
+                    "tags": [
+                        "Value of Customer Service"
+                    ]
+                },
+                {
+                    "quote": "I realized that there are companies out there genuinely committed to helping families like mine.",
+                    "tags": [
+                        "Need for Transparency"
+                    ]
+                }
+            ]
+        },
+        {
+            "question": "What role do you think technology plays in your home insurance decisions? How has it changed your expectations?",
+            "summary": "Technology is seen as a crucial factor in home insurance decisions, with participants appreciating the convenience of online tools for comparing policies and managing claims. Expectations have shifted towards a demand for user-friendly digital experiences and integration with smart home technologies. Many express a desire for insurers to leverage technology to enhance customer service and efficiency.",
+            "categories": [
+                {
+                    "name": "Importance of Technology",
+                    "percentage": 80
+                },
+                {
+                    "name": "Convenience of Online Tools",
+                    "percentage": 75
+                },
+                {
+                    "name": "Expectations for User Experience",
+                    "percentage": 70
+                },
+                {
+                    "name": "Integration with Smart Home Tech",
+                    "percentage": 65
+                },
+                {
+                    "name": "Desire for Efficiency",
+                    "percentage": 60
+                }
+            ],
+            "verbatims": [
+                {
+                    "quote": "Technology plays a significant role in my home insurance decisions.",
+                    "tags": [
+                        "Importance of Technology"
+                    ]
+                },
+                {
+                    "quote": "I appreciate being able to access information quickly and conduct my research at my own pace.",
+                    "tags": [
+                        "Convenience of Online Tools"
+                    ]
+                },
+                {
+                    "quote": "I now expect insurance companies to have user-friendly websites and apps.",
+                    "tags": [
+                        "Expectations for User Experience"
+                    ]
+                },
+                {
+                    "quote": "I see the value in smart home devices potentially lowering premiums.",
+                    "tags": [
+                        "Integration with Smart Home Tech"
+                    ]
+                },
+                {
+                    "quote": "I expect my insurance provider to leverage technology not just for efficiency, but also to enhance my overall experience.",
+                    "tags": [
+                        "Desire for Efficiency"
+                    ]
+                }
+            ]
+        },
+        {
+            "question": "When you think about a brand that you trust for home protection, what qualities or attributes come to mind? Why are these important to you?",
+            "summary": "Trustworthy brands are characterized by reliability, transparency, and excellent customer service. Participants emphasize the need for insurers to have a solid track record and clear communication regarding policy details. These attributes are crucial for building confidence and peace of mind in the home protection process.",
+            "categories": [
+                {
+                    "name": "Reliability",
+                    "percentage": 85
+                },
+                {
+                    "name": "Transparency",
+                    "percentage": 80
+                },
+                {
+                    "name": "Customer Service",
+                    "percentage": 75
+                },
+                {
+                    "name": "Clear Communication",
+                    "percentage": 70
+                },
+                {
+                    "name": "Trust and Confidence",
+                    "percentage": 65
+                }
+            ],
+            "verbatims": [
+                {
+                    "quote": "Reliability is crucial; I want to know that the company has a solid track record.",
+                    "tags": [
+                        "Reliability"
+                    ]
+                },
+                {
+                    "quote": "Transparency is equally important because I don't want to be caught off guard by hidden clauses.",
+                    "tags": [
+                        "Transparency"
+                    ]
+                },
+                {
+                    "quote": "Good customer service is vital, too, as I expect to be treated with respect.",
+                    "tags": [
+                        "Customer Service"
+                    ]
+                },
+                {
+                    "quote": "These attributes matter to me because they directly affect my peace of mind.",
+                    "tags": [
+                        "Clear Communication",
+                        "Trust and Confidence"
+                    ]
+                },
+                {
+                    "quote": "Knowing that I can count on my insurance provider during a crisis allows me to focus on what truly matters.",
+                    "tags": [
+                        "Trust and Confidence"
+                    ]
+                }
+            ]
+        },
+        {
+            "question": "Imagine you have a friend who is a new homeowner. What would you tell them about choosing a home insurance provider? What factors would you emphasize?",
+            "summary": "Participants emphasize the importance of thorough research when selecting a home insurance provider. Key factors include understanding coverage options, customer service quality, and the claims process. Recommendations also include seeking out providers with positive reviews and ensuring clear communication about policy details.",
+            "categories": [
+                {
+                    "name": "Research and Comparison",
+                    "percentage": 85
+                },
+                {
+                    "name": "Understanding Coverage Options",
+                    "percentage": 80
+                },
+                {
+                    "name": "Customer Service Quality",
+                    "percentage": 75
+                },
+                {
+                    "name": "Importance of Reviews",
+                    "percentage": 70
+                },
+                {
+                    "name": "Clear Communication",
+                    "percentage": 65
+                }
+            ],
+            "verbatims": [
+                {
+                    "quote": "I would emphasize the importance of researching multiple providers.",
+                    "tags": [
+                        "Research and Comparison"
+                    ]
+                },
+                {
+                    "quote": "I’d urge them to read online reviews and seek recommendations.",
+                    "tags": [
+                        "Importance of Reviews"
+                    ]
+                },
+                {
+                    "quote": "It’s crucial to fully understand what a policy covers and what it excludes.",
+                    "tags": [
+                        "Understanding Coverage Options"
+                    ]
+                },
+                {
+                    "quote": "I would stress the significance of clear communication.",
+                    "tags": [
+                        "Clear Communication"
+                    ]
+                },
+                {
+                    "quote": "Choosing a provider that is transparent about coverage details is essential.",
+                    "tags": [
+                        "Customer Service Quality"
+                    ]
+                }
+            ]
+        },
+        {
+            "question": "Describe a time when you felt particularly secure or vulnerable in your home. How did that experience influence your views on home protection?",
+            "summary": "Participants share experiences that highlight feelings of vulnerability during storms or after neighborhood incidents, which have influenced their views on home protection. Many emphasize the importance of proactive measures and comprehensive insurance coverage to mitigate risks. These experiences reinforce the belief that home protection involves both insurance and physical security measures.",
+            "categories": [
+                {
+                    "name": "Feelings of Vulnerability",
+                    "percentage": 80
+                },
+                {
+                    "name": "Importance of Proactive Measures",
+                    "percentage": 75
+                },
+                {
+                    "name": "Influence on Home Protection Views",
+                    "percentage": 70
+                },
+                {
+                    "name": "Need for Comprehensive Coverage",
+                    "percentage": 65
+                },
+                {
+                    "name": "Physical Security Measures",
+                    "percentage": 60
+                }
+            ],
+            "verbatims": [
+                {
+                    "quote": "I felt an overwhelming sense of vulnerability.",
+                    "tags": [
+                        "Feelings of Vulnerability"
+                    ]
+                },
+                {
+                    "quote": "This experience reinforced my views on home protection.",
+                    "tags": [
+                        "Influence on Home Protection Views"
+                    ]
+                },
+                {
+                    "quote": "It made me realize that feeling secure is not just about having insurance.",
+                    "tags": [
+                        "Importance of Proactive Measures"
+                    ]
+                },
+                {
+                    "quote": "I became more committed to seeking out policies that not only protect against damages.",
+                    "tags": [
+                        "Need for Comprehensive Coverage"
+                    ]
+                },
+                {
+                    "quote": "Investing in preventative measures is just as crucial as having insurance.",
+                    "tags": [
+                        "Physical Security Measures"
+                    ]
+                }
+            ]
+        },
+        {
+            "question": "If you could design the perfect home insurance experience for yourself, what features or services would you include to make it feel more trustworthy and supportive?",
+            "summary": "Participants envision an ideal home insurance experience that prioritizes transparency, user-friendly technology, and personalized support. Desired features include intuitive online platforms for managing policies, dedicated claims representatives, and educational resources about home safety. These elements are seen as essential for building trust and ensuring a supportive insurance experience.",
+            "categories": [
+                {
+                    "name": "User-Friendly Technology",
+                    "percentage": 85
+                },
+                {
+                    "name": "Transparency in Policies",
+                    "percentage": 80
+                },
+                {
+                    "name": "Personalized Support",
+                    "percentage": 75
+                },
+                {
+                    "name": "Educational Resources",
+                    "percentage": 70
+                },
+                {
+                    "name": "Trust and Support",
+                    "percentage": 65
+                }
+            ],
+            "verbatims": [
+                {
+                    "quote": "I would prioritize a seamless and transparent claims process.",
+                    "tags": [
+                        "Transparency in Policies"
+                    ]
+                },
+                {
+                    "quote": "I’d want an intuitive online platform where I could easily access my policy.",
+                    "tags": [
+                        "User-Friendly Technology"
+                    ]
+                },
+                {
+                    "quote": "I would appreciate a dedicated personal claims representative.",
+                    "tags": [
+                        "Personalized Support"
+                    ]
+                },
+                {
+                    "quote": "Having a resource center with educational materials about home safety would be invaluable.",
+                    "tags": [
+                        "Educational Resources"
+                    ]
+                },
+                {
+                    "quote": "These elements combined would create a supportive, trustworthy experience.",
+                    "tags": [
+                        "Trust and Support"
+                    ]
+                }
+            ]
+        }
+    ]
+  }
+
   // Update brief text when project changes
   useEffect(() => {
     setBriefText(project.brief_text || '');
@@ -299,11 +771,60 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       }
     };
 
+    const fetchSyntheticAnalysis = async () => {
+      try {
+        const response = await fetch(`/api/projects/${project.id}/analysis/synthetic`);
+        if (response.status === 404) {
+          // No analysis yet - normal, show empty state
+          setSyntheticAnalysis(null);
+        } else if (!response.ok) {
+          // Actual server error - but don't show toast, just leave empty
+          console.error('Server error fetching analysis:', response.status, response.statusText);
+          setSyntheticAnalysis(null);
+        } else {
+          const data = await response.json();
+          console.log('fetchSyntheticAnalysis', data);
+          if (data?.analysis) {
+            setSyntheticAnalysis(data.analysis.analysis || data.analysis);
+          }
+        }
+      } catch (error) {
+        // Network or other errors - silent fail, show empty state
+        console.error('Error fetching synthetic analysis:', error);
+        setSyntheticAnalysis(null);
+      }
+    };
+
+    const fetchHumanAnalysis = async () => {
+      try {
+        const response = await fetch(`/api/projects/${project.id}/analysis/human`);
+        if (response.status === 404) {
+          // No analysis yet - normal, show empty state
+          setHumanAnalysis(null);
+        } else if (!response.ok) {
+          // Actual server error - but don't show toast, just leave empty
+          console.error('Server error fetching human analysis:', response.status, response.statusText);
+          setHumanAnalysis(null);
+        } else {
+          const data = await response.json();
+          if (data?.analysis) {
+            setHumanAnalysis(data.analysis.analysis || data.analysis);
+          }
+        }
+      } catch (error) {
+        // Network or other errors - silent fail, show empty state
+        console.error('Error fetching human analysis:', error);
+        setHumanAnalysis(null);
+      }
+    };
+
     // Only fetch data if project.id exists
     if (project.id) {
       fetchProjectPersonas();
       fetchProjectSimulations();
       fetchRagDocuments();
+      fetchSyntheticAnalysis();
+      fetchHumanAnalysis();
     }
   }, [project.id, toast]);
 
@@ -578,6 +1099,78 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   };
 
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [isGeneratingSyntheticAnalysis, setIsGeneratingSyntheticAnalysis] = useState(false);
+  const [syntheticAnalysis, setSyntheticAnalysis] = useState<any | null>(null);
+  const [isGeneratingHumanAnalysis, setIsGeneratingHumanAnalysis] = useState(false);
+  const [humanAnalysis, setHumanAnalysis] = useState<any | null>(null);
+
+  const handleGenerateSyntheticAnalysis = async () => {
+    if (isGeneratingSyntheticAnalysis) return;
+    setIsGeneratingSyntheticAnalysis(true);
+    try {
+      const response = await fetch(`/api/projects/${project.id}/analysis/synthetic/run`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to generate analysis');
+      }
+      const data = await response.json();
+      if (data?.analysis) {
+        setSyntheticAnalysis(data.analysis.analysis || data.analysis);
+        toast({
+          title: 'Analysis ready',
+          description: 'Synthetic analysis generated and saved.',
+        });
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error: any) {
+      console.error('Error generating synthetic analysis:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to generate analysis',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingSyntheticAnalysis(false);
+    }
+  };
+
+  const handleGenerateHumanAnalysis = async () => {
+    if (isGeneratingHumanAnalysis) return;
+    setIsGeneratingHumanAnalysis(true);
+    try {
+      const response = await fetch(`/api/projects/${project.id}/analysis/human/run`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to generate human analysis');
+      }
+      const data = await response.json();
+      console.log('=== Human Analysis Generated ===');
+      console.log('Full response:', data);
+      if (data?.analysis) {
+        setHumanAnalysis(data.analysis.analysis || data.analysis);
+        toast({
+          title: 'Analysis ready',
+          description: 'Human analysis generated and saved.',
+        });
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error: any) {
+      console.error('Error generating human analysis:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to generate human analysis',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingHumanAnalysis(false);
+    }
+  };
 
   const handleSaveBrief = async () => {
     setIsSavingBrief(true);
@@ -793,6 +1386,18 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
             <Tooltip>
               <TooltipTrigger asChild>
                 <TabsTrigger value="interviews" disabled={!briefText}>Human Interviews</TabsTrigger>
+              </TooltipTrigger>
+              {!briefText && (
+                <TooltipContent>
+                  <p>Add a brief first to access this feature</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="analysis" disabled={!briefText}>Analysis</TabsTrigger>
               </TooltipTrigger>
               {!briefText && (
                 <TooltipContent>
@@ -1209,6 +1814,325 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         <TabsContent value="interviews">
           <HumanInterviewsTable projectId={project.id} />
         </TabsContent>
+
+        <TabsContent value="analysis" className="space-y-6">
+          <div>
+            <label className="text-sm font-medium text-gray-500">Analysis</label>
+            <p className="text-sm text-gray-400 mt-1">
+              View insights and analysis from your research data
+            </p>
+          </div>
+
+          {/* Analysis Sub-tabs */}
+          <Tabs defaultValue="synthetic" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="synthetic" className="w-full">Synthetic</TabsTrigger>
+              <TabsTrigger value="human" className="w-full">Human</TabsTrigger>
+              {/* <TabsTrigger value="combined" className="w-full">Combined</TabsTrigger> */}
+            </TabsList>
+
+            <TabsContent value="synthetic" className="space-y-6 mt-6">
+              <div className="space-y-6">
+                <div className="bg-white border rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Synthetic Analysis</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateSyntheticAnalysis}
+                      disabled={isGeneratingSyntheticAnalysis}
+                      className="flex items-center gap-2"
+                    >
+                      {isGeneratingSyntheticAnalysis ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          Generate
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  {/* Content */}
+                  {isGeneratingSyntheticAnalysis ? (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Generating analysis...
+                    </div>
+                  ) : syntheticAnalysis && syntheticAnalysis.length > 0 ? (
+                    <div className="space-y-8">
+                      {syntheticAnalysis.map((question: any, questionIdx: number) => (
+                        <div key={questionIdx} className="border-t pt-6 first:border-t-0 first:pt-0">
+                          <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                            {questionIdx + 1}. {question.question || `Question ${questionIdx + 1}`}
+                          </h4>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Left Column - AI Summary and Chart */}
+                            <div className="space-y-6">
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                  {question.summary || ''}
+                                </p>
+                              </div>
+                              
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-3">CATEGORIES (MULTI-SELECT) Bar Chart:</h4>
+                                <div className="space-y-3">
+                                  {(question.categories || [])
+                                    .slice()
+                                    .sort((a: any, b: any) => (b.percentage || 0) - (a.percentage || 0))
+                                    .map((item: any, index: number) => {
+                                      const colors = ["bg-blue-500","bg-green-500","bg-purple-500","bg-orange-500","bg-pink-500","bg-gray-500","bg-indigo-500","bg-red-500","bg-yellow-500","bg-teal-500"];
+                                      const color = colors[index % colors.length];
+                                      const pct = Math.max(0, Math.min(100, Number(item.percentage) || 0));
+                                      return (
+                                        <div key={index} className="flex items-center space-x-3">
+                                          <div className="w-32 text-sm text-gray-600 truncate">{item.name}</div>
+                                          <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                            <div 
+                                              className={`${color} h-6 rounded-full flex items-center justify-end pr-2`}
+                                              style={{ width: `${pct}%` }}
+                                            >
+                                              <span className="text-xs text-white font-medium">{pct}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right Column - Quotes */}
+                            <div>
+                              <h4 className="font-medium text-gray-700 mb-3">QUOTES</h4>
+                              <div className="space-y-4">
+                                {(question.verbatims || []).map((q: any, idx: number) => (
+                                  <div key={idx} className="bg-gray-50 border rounded-lg p-4">
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                      {(q.tags || []).map((tag: string, tagIndex: number) => (
+                                        <span key={tagIndex} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <p className="text-sm text-gray-700 italic">"{q.quote}"</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">No analysis yet. Click Generate to analyze your simulations.</div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="human" className="space-y-6 mt-6">
+              <div className="space-y-6">
+                <div className="bg-white border rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Human Analysis</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateHumanAnalysis}
+                      disabled={isGeneratingHumanAnalysis}
+                      className="flex items-center gap-2"
+                    >
+                      {isGeneratingHumanAnalysis ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          Generate
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  {/* Content */}
+                  {isGeneratingHumanAnalysis ? (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Generating analysis...
+                    </div>
+                  ) : humanAnalysis && humanAnalysis.length > 0 ? (
+                    <div className="space-y-8">
+                      {humanAnalysis.map((question: any, questionIdx: number) => (
+                        <div key={questionIdx} className="border-t pt-6 first:border-t-0 first:pt-0">
+                          <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                            {questionIdx + 1}. {question.question || `Question ${questionIdx + 1}`}
+                          </h4>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Left Column - AI Summary and Chart */}
+                            <div className="space-y-6">
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                  {question.summary || ''}
+                                </p>
+                              </div>
+                              
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-3">CATEGORIES (MULTI-SELECT) Bar Chart:</h4>
+                                <div className="space-y-3">
+                                  {(question.categories || [])
+                                    .slice()
+                                    .sort((a: any, b: any) => (b.percentage || 0) - (a.percentage || 0))
+                                    .map((item: any, index: number) => {
+                                      const colors = ["bg-blue-500","bg-green-500","bg-purple-500","bg-orange-500","bg-pink-500","bg-gray-500","bg-indigo-500","bg-red-500","bg-yellow-500","bg-teal-500"];
+                                      const color = colors[index % colors.length];
+                                      const pct = Math.max(0, Math.min(100, Number(item.percentage) || 0));
+                                      return (
+                                        <div key={index} className="flex items-center space-x-3">
+                                          <div className="w-32 text-sm text-gray-600 truncate">{item.name}</div>
+                                          <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                            <div 
+                                              className={`${color} h-6 rounded-full flex items-center justify-end pr-2`}
+                                              style={{ width: `${pct}%` }}
+                                            >
+                                              <span className="text-xs text-white font-medium">{pct}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right Column - Quotes */}
+                            <div>
+                              <h4 className="font-medium text-gray-700 mb-3">QUOTES</h4>
+                              <div className="space-y-4">
+                                {(question.verbatims || []).map((q: any, idx: number) => (
+                                  <div key={idx} className="bg-gray-50 border rounded-lg p-4">
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                      {(q.tags || []).map((tag: string, tagIndex: number) => (
+                                        <span key={tagIndex} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <p className="text-sm text-gray-700 italic">"{q.quote}"</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">No analysis yet. Click Generate to analyze your human interviews.</div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Combined tab - commented out for now, will be implemented later */}
+            {/* <TabsContent value="combined" className="space-y-6 mt-6">
+              <div className="space-y-6">
+                <div className="bg-white border rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">QUESTION 1: What aspects of the new footwear line does the participant like most?</h3>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          Combined analysis reveals a balanced preference for both aesthetic and functional aspects. Design and style lead the preferences, closely followed by comfort and quality. Sustainability emerges as a significant factor, while practical considerations like fit and durability are also important. The data shows consumers want both style and substance.
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-3">CATEGORIES (MULTI-SELECT) Bar Chart:</h4>
+                        <div className="space-y-3">
+                          {[
+                            { category: "Design and Style", value: 48, color: "bg-blue-500" },
+                            { category: "Comfort", value: 44, color: "bg-green-500" },
+                            { category: "Quality", value: 40, color: "bg-purple-500" },
+                            { category: "Color and Pattern", value: 30, color: "bg-orange-500" },
+                            { category: "Sustainability", value: 29, color: "bg-pink-500" },
+                            { category: "Material and Texture", value: 18, color: "bg-gray-500" },
+                            { category: "Fit", value: 16, color: "bg-indigo-500" },
+                            { category: "Durability", value: 14, color: "bg-red-500" },
+                            { category: "Visual Interest", value: 12, color: "bg-yellow-500" },
+                            { category: "Unique Features", value: 10, color: "bg-teal-500" }
+                          ].map((item, index) => (
+                            <div key={index} className="flex items-center space-x-3">
+                              <div className="w-32 text-sm text-gray-600 truncate">{item.category}</div>
+                              <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                <div 
+                                  className={`${item.color} h-6 rounded-full flex items-center justify-end pr-2`}
+                                  style={{ width: `${(item.value / 60) * 100}%` }}
+                                >
+                                  <span className="text-xs text-white font-medium">{item.value}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-3">QUOTES 5</h4>
+                      <div className="space-y-4">
+                        {[
+                          {
+                            tags: ["Design and Style", "Comfort"],
+                            quote: "These shoes are the perfect combination of style and comfort. I can wear them all day and they still look amazing. The design is trendy but not too flashy."
+                          },
+                          {
+                            tags: ["Quality", "Sustainability"],
+                            quote: "I appreciate the quality craftsmanship and the fact that they're made sustainably. It's nice to have shoes that look good and align with my values."
+                          },
+                          {
+                            tags: ["Color and Pattern", "Visual Interest"],
+                            quote: "The color combinations are really eye-catching without being overwhelming. They add just the right amount of visual interest to my outfits."
+                          },
+                          {
+                            tags: ["Comfort", "Fit"],
+                            quote: "The fit is perfect and they're incredibly comfortable. I've worn them on long walks and my feet never hurt. Plus, they look great with everything."
+                          },
+                          {
+                            tags: ["Material and Texture", "Durability"],
+                            quote: "The materials feel premium and durable. I can tell these will last a long time, which makes the investment worthwhile."
+                          }
+                        ].map((quote, index) => (
+                          <div key={index} className="bg-gray-50 border rounded-lg p-4">
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {quote.tags.map((tag, tagIndex) => (
+                                <span key={tagIndex} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="text-sm text-gray-700 italic">"{quote.quote}"</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabsContent> */}
+          </Tabs>
+        </TabsContent>
+
+        
       </Tabs>
 
       {/* Target Segment Selection Modal */}

@@ -1077,6 +1077,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [isGeneratingSyntheticAnalysis, setIsGeneratingSyntheticAnalysis] = useState(false);
   const [syntheticAnalysis, setSyntheticAnalysis] = useState<any | null>(null);
+  const [isGeneratingHumanAnalysis, setIsGeneratingHumanAnalysis] = useState(false);
 
   const handleGenerateSyntheticAnalysis = async () => {
     if (isGeneratingSyntheticAnalysis) return;
@@ -1108,6 +1109,45 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       });
     } finally {
       setIsGeneratingSyntheticAnalysis(false);
+    }
+  };
+
+  const handlePrepareHumanAnalysis = async () => {
+    if (isGeneratingHumanAnalysis) return;
+    setIsGeneratingHumanAnalysis(true);
+    try {
+      const response = await fetch(`/api/projects/${project.id}/analysis/human/prepare`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to prepare human analysis');
+      }
+      const data = await response.json();
+      console.log('=== Human Analysis Prepared Data ===');
+      console.log('Full response:', data);
+      if (data?.data) {
+        console.log('Merged interviews:', JSON.stringify(data.data, null, 2));
+        console.log('Total interviews:', data.data.interviews?.length || 0);
+        data.data.interviews?.forEach((interview: any, idx: number) => {
+          console.log(`\nInterview ${idx + 1} (${interview.name || interview.email}):`);
+          console.log(`- Total merged messages: ${interview.messages?.length || 0}`);
+          console.log(`- Sample messages:`, interview.messages?.slice(0, 5) || []);
+        });
+        toast({
+          title: 'Data prepared',
+          description: `Fetched and merged ${data.data.interviews?.length || 0} human interview(s). Check console for details.`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Error preparing human analysis:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to prepare human analysis',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingHumanAnalysis(false);
     }
   };
 
@@ -1878,6 +1918,28 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
             <TabsContent value="human" className="space-y-6 mt-6">
               <div className="space-y-6">
                 <div className="bg-white border rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Human Analysis</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePrepareHumanAnalysis}
+                      disabled={isGeneratingHumanAnalysis}
+                      className="flex items-center gap-2"
+                    >
+                      {isGeneratingHumanAnalysis ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Preparing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          Generate
+                        </>
+                      )}
+                    </Button>
+                  </div>
                   <h3 className="text-lg font-semibold mb-4">QUESTION 1: What aspects of the new footwear line does the participant like most?</h3>
                   
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

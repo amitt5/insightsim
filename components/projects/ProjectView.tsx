@@ -1052,7 +1052,6 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [isGeneratingSyntheticAnalysis, setIsGeneratingSyntheticAnalysis] = useState(false);
   const [syntheticAnalysis, setSyntheticAnalysis] = useState<any | null>(null);
-  const [selectedSyntheticQuestionIndex, setSelectedSyntheticQuestionIndex] = useState<number>(0);
 
   const handleGenerateSyntheticAnalysis = async () => {
     if (isGeneratingSyntheticAnalysis) return;
@@ -1060,7 +1059,6 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     try {
       console.log('Synthetic analysis JSON', analysisObj);
       setSyntheticAnalysis(analysisObj.analysis);
-      setSelectedSyntheticQuestionIndex(0);
       setIsGeneratingSyntheticAnalysis(false);
       // const response = await fetch(`/api/projects/${project.id}/analysis/synthetic/run`, {
       //   method: 'POST',
@@ -1781,90 +1779,72 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                       <Loader2 className="h-4 w-4 animate-spin" /> Generating analysis...
                     </div>
                   ) : syntheticAnalysis && syntheticAnalysis.length > 0 ? (
-                    <div className="space-y-6">
-                      {/* Question selector - always show if we have questions */}
-                      <div className="mb-4 pb-4 border-b">
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">Question:</label>
-                        <select
-                          className="w-full border rounded-md px-3 py-2 text-sm bg-white"
-                          value={selectedSyntheticQuestionIndex}
-                          onChange={(e) => setSelectedSyntheticQuestionIndex(Number(e.target.value))}
-                        >
-                          {syntheticAnalysis.map((q: any, idx: number) => (
-                            <option key={idx} value={idx}>
-                              {idx + 1}. {q.question || `Question ${idx + 1}`}
-                            </option>
-                          ))}
-                        </select>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Showing {selectedSyntheticQuestionIndex + 1} of {syntheticAnalysis.length} questions
-                        </p>
-                      </div>
-                      
-                      {/* Current Question Title */}
-                      <div className="mb-4">
-                        <h4 className="text-lg font-semibold text-gray-800">
-                          {syntheticAnalysis[selectedSyntheticQuestionIndex]?.question || 'Question'}
-                        </h4>
-                      </div>
+                    <div className="space-y-8">
+                      {syntheticAnalysis.map((question: any, questionIdx: number) => (
+                        <div key={questionIdx} className="border-t pt-6 first:border-t-0 first:pt-0">
+                          <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                            {questionIdx + 1}. {question.question || `Question ${questionIdx + 1}`}
+                          </h4>
 
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Left Column - AI Summary and Chart */}
-                        <div className="space-y-6">
-                        <div>
-                          <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
-                          <p className="text-sm text-gray-600 leading-relaxed">
-                            {syntheticAnalysis[selectedSyntheticQuestionIndex]?.summary || ''}
-                          </p>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-gray-700 mb-3">CATEGORIES (MULTI-SELECT) Bar Chart:</h4>
-                          <div className="space-y-3">
-                            {(syntheticAnalysis[selectedSyntheticQuestionIndex]?.categories || [])
-                              .slice()
-                              .sort((a: any, b: any) => (b.percentage || 0) - (a.percentage || 0))
-                              .map((item: any, index: number) => {
-                                const colors = ["bg-blue-500","bg-green-500","bg-purple-500","bg-orange-500","bg-pink-500","bg-gray-500","bg-indigo-500","bg-red-500","bg-yellow-500","bg-teal-500"];
-                                const color = colors[index % colors.length];
-                                const pct = Math.max(0, Math.min(100, Number(item.percentage) || 0));
-                                return (
-                                  <div key={index} className="flex items-center space-x-3">
-                                    <div className="w-32 text-sm text-gray-600 truncate">{item.name}</div>
-                                    <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
-                                      <div 
-                                        className={`${color} h-6 rounded-full flex items-center justify-end pr-2`}
-                                        style={{ width: `${pct}%` }}
-                                      >
-                                        <span className="text-xs text-white font-medium">{pct}</span>
-                                      </div>
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Left Column - AI Summary and Chart */}
+                            <div className="space-y-6">
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-3">AI SUMMARY:</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                  {question.summary || ''}
+                                </p>
+                              </div>
+                              
+                              <div>
+                                <h4 className="font-medium text-gray-700 mb-3">CATEGORIES (MULTI-SELECT) Bar Chart:</h4>
+                                <div className="space-y-3">
+                                  {(question.categories || [])
+                                    .slice()
+                                    .sort((a: any, b: any) => (b.percentage || 0) - (a.percentage || 0))
+                                    .map((item: any, index: number) => {
+                                      const colors = ["bg-blue-500","bg-green-500","bg-purple-500","bg-orange-500","bg-pink-500","bg-gray-500","bg-indigo-500","bg-red-500","bg-yellow-500","bg-teal-500"];
+                                      const color = colors[index % colors.length];
+                                      const pct = Math.max(0, Math.min(100, Number(item.percentage) || 0));
+                                      return (
+                                        <div key={index} className="flex items-center space-x-3">
+                                          <div className="w-32 text-sm text-gray-600 truncate">{item.name}</div>
+                                          <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                            <div 
+                                              className={`${color} h-6 rounded-full flex items-center justify-end pr-2`}
+                                              style={{ width: `${pct}%` }}
+                                            >
+                                              <span className="text-xs text-white font-medium">{pct}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right Column - Quotes */}
+                            <div>
+                              <h4 className="font-medium text-gray-700 mb-3">QUOTES</h4>
+                              <div className="space-y-4">
+                                {(question.verbatims || []).map((q: any, idx: number) => (
+                                  <div key={idx} className="bg-gray-50 border rounded-lg p-4">
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                      {(q.tags || []).map((tag: string, tagIndex: number) => (
+                                        <span key={tagIndex} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                          {tag}
+                                        </span>
+                                      ))}
                                     </div>
+                                    <p className="text-sm text-gray-700 italic">"{q.quote}"</p>
                                   </div>
-                                );
-                              })}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right Column - Quotes */}
-                      <div>
-                        <h4 className="font-medium text-gray-700 mb-3">QUOTES</h4>
-                        <div className="space-y-4">
-                          {(syntheticAnalysis[selectedSyntheticQuestionIndex]?.verbatims || []).map((q: any, idx: number) => (
-                            <div key={idx} className="bg-gray-50 border rounded-lg p-4">
-                              <div className="flex flex-wrap gap-1 mb-2">
-                                {(q.tags || []).map((tag: string, tagIndex: number) => (
-                                  <span key={tagIndex} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                    {tag}
-                                  </span>
                                 ))}
                               </div>
-                              <p className="text-sm text-gray-700 italic">"{q.quote}"</p>
                             </div>
-                          ))}
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      ))}
                     </div>
                   ) : (
                     <div className="text-sm text-gray-500">No analysis yet. Click Generate to analyze your simulations.</div>

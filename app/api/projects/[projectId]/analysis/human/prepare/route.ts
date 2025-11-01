@@ -110,24 +110,29 @@ export async function POST(
       }
     }
 
-    // Build normalized payload
-    const payload = {
-      projectId,
-      source: "human",
-      interviews: (respondents || []).map((r: any) => ({
+    // Build normalized payload - filter out interviews with 0 messages
+    const interviews = (respondents || [])
+      .map((r: any) => ({
         respondentId: r.id,
         name: r.name,
         email: r.email,
         age: r.age,
         gender: r.gender,
         messages: messagesByRespondent[r.id] || [],
-      })),
+      }))
+      .filter((interview: any) => interview.messages.length > 0) // Filter out empty conversations
+
+    const payload = {
+      projectId,
+      source: "human",
+      interviews,
       gatheredAt: new Date().toISOString(),
     }
 
     // Console log for testing
     console.log("=== Human Interviews Prepare - Merged Messages ===")
     console.log(`Total respondents: ${(respondents || []).length}`)
+    console.log(`Interviews with messages (after filtering): ${interviews.length}`)
     console.log("Payload structure:", JSON.stringify(payload, null, 2))
     console.log("Sample merged messages (first respondent):", 
       payload.interviews[0]?.messages?.slice(0, 3) || "No messages")

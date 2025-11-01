@@ -1112,38 +1112,34 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     }
   };
 
-  const handlePrepareHumanAnalysis = async () => {
+  const handleGenerateHumanAnalysis = async () => {
     if (isGeneratingHumanAnalysis) return;
     setIsGeneratingHumanAnalysis(true);
     try {
-      const response = await fetch(`/api/projects/${project.id}/analysis/human/prepare`, {
+      const response = await fetch(`/api/projects/${project.id}/analysis/human/run`, {
         method: 'POST',
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to prepare human analysis');
+        throw new Error(errorData.error || 'Failed to generate human analysis');
       }
       const data = await response.json();
-      console.log('=== Human Analysis Prepared Data ===');
+      console.log('=== Human Analysis Generated ===');
       console.log('Full response:', data);
-      if (data?.data) {
-        console.log('Merged interviews:', JSON.stringify(data.data, null, 2));
-        console.log('Total interviews:', data.data.interviews?.length || 0);
-        data.data.interviews?.forEach((interview: any, idx: number) => {
-          console.log(`\nInterview ${idx + 1} (${interview.name || interview.email}):`);
-          console.log(`- Total merged messages: ${interview.messages?.length || 0}`);
-          console.log(`- Sample messages:`, interview.messages?.slice(0, 5) || []);
-        });
+      if (data?.analysis) {
+        console.log('Analysis JSON:', JSON.stringify(data.analysis, null, 2));
         toast({
-          title: 'Data prepared',
-          description: `Fetched and merged ${data.data.interviews?.length || 0} human interview(s). Check console for details.`,
+          title: 'Analysis ready',
+          description: 'Human analysis generated and saved.',
         });
+      } else {
+        throw new Error('Invalid response from server');
       }
     } catch (error: any) {
-      console.error('Error preparing human analysis:', error);
+      console.error('Error generating human analysis:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to prepare human analysis',
+        description: error.message || 'Failed to generate human analysis',
         variant: 'destructive',
       });
     } finally {
@@ -1923,14 +1919,14 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handlePrepareHumanAnalysis}
+                      onClick={handleGenerateHumanAnalysis}
                       disabled={isGeneratingHumanAnalysis}
                       className="flex items-center gap-2"
                     >
                       {isGeneratingHumanAnalysis ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          Preparing...
+                          Generating...
                         </>
                       ) : (
                         <>

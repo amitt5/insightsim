@@ -1058,9 +1058,10 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     if (isGeneratingSyntheticAnalysis) return;
     setIsGeneratingSyntheticAnalysis(true);
     try {
-      console.log('Synthetic analysis JSON', syntheticAnalysis);
-      setSyntheticAnalysis(analysisObj);
+      console.log('Synthetic analysis JSON', analysisObj);
+      setSyntheticAnalysis(analysisObj.analysis);
       setSelectedSyntheticQuestionIndex(0);
+      setIsGeneratingSyntheticAnalysis(false);
       // const response = await fetch(`/api/projects/${project.id}/analysis/synthetic/run`, {
       //   method: 'POST',
       // });

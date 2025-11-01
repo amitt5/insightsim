@@ -783,8 +783,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           setSyntheticAnalysis(null);
         } else {
           const data = await response.json();
+          console.log('fetchSyntheticAnalysis', data);
           if (data?.analysis) {
-            setSyntheticAnalysis(data.analysis);
+            setSyntheticAnalysis(data.analysis.analysis || data.analysis);
           }
         }
       } catch (error) {
@@ -1090,7 +1091,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       }
       const data = await response.json();
       if (data?.analysis) {
-        setSyntheticAnalysis(data.analysis);
+        setSyntheticAnalysis(data.analysis.analysis || data.analysis);
         toast({
           title: 'Analysis ready',
           description: 'Synthetic analysis generated and saved.',

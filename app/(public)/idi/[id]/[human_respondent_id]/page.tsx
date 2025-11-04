@@ -1,6 +1,6 @@
 "use client"
 import { useParams } from "next/navigation";
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -56,7 +56,8 @@ export default function InterviewPage() {
     sendMessage: sendVapiMessage,
     clearError: clearVapiError,
     onCallEnd,
-    exportMessageAnalysis
+    exportMessageAnalysis,
+    onRawMessage
   } = useVapi();
 
   // Calculate voice activity bar heights based on real voice activity
@@ -131,6 +132,11 @@ export default function InterviewPage() {
 
   // Track voice activity based on VAPI events
   useEffect(() => {
+    // Tap raw VAPI message for debugging/logging the exact payload
+    onRawMessage((raw) => {
+      console.log('[VAPI raw message]', raw);
+    });
+
     if (!isCallActive) {
       // Reset voice activity when call is not active
       setVoiceActivity({
@@ -601,7 +607,9 @@ export default function InterviewPage() {
                     First you'll be asked to grant permission to use your microphone. Hit "allow" to continue.
                   </p>
                   <p>
-                    Once the interview starts, an AI moderator will ask you questions and dynamically respond to your answers. You can interrupt the AI moderator at any time by hitting the "interrupt" button and if you need to take a break, just ask the AI moderator to pause the interview until you're ready to proceed.
+                    Once the interview starts, an AI moderator will ask you questions and dynamically respond to your answers. You can stop the interview at any time by hitting the "stop interview" button.
+                    
+                    {/* You can interrupt the AI moderator at any time by hitting the "interrupt" button and if you need to take a break, just ask the AI moderator to pause the interview until you're ready to proceed. */}
                   </p>
                 </div>
 
@@ -679,7 +687,7 @@ export default function InterviewPage() {
                     >
                       <Square className="w-6 h-6 text-white" />
                     </button>
-                    <span className="text-sm text-gray-600">Hit to interrupt</span>
+                    <span className="text-sm text-gray-600">Hit to Stop</span>
                   </>
                 ) : (
                   <>

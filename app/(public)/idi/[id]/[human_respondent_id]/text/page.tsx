@@ -1,6 +1,6 @@
 "use client"
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -33,6 +33,7 @@ export default function InterviewPage() {
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isAiResponding, setIsAiResponding] = useState(false);
+  const isInitializingRef = useRef(false); // Prevent duplicate initialization calls
 
   const fetchMessages = async () => {
     try {
@@ -53,6 +54,16 @@ export default function InterviewPage() {
   };
 
   const getAiResponse = async (isFirstMessage: boolean = false) => {
+    // Double-check: verify no moderator message exists before creating one
+    if (isFirstMessage) {
+      const currentMessages = await fetchMessages();
+      const hasModeratorMessage = currentMessages.some((msg: any) => msg.sender_type === 'moderator');
+      if (hasModeratorMessage) {
+        // Moderator message already exists, don't create another one
+        return;
+      }
+    }
+
     setIsAiResponding(true);
     try {
       const response = await fetch('/api/public/ai-moderator', {
@@ -135,8 +146,16 @@ export default function InterviewPage() {
   };
 
   useEffect(() => {
+    // Prevent duplicate initialization calls
+    if (isInitializingRef.current) {
+      return;
+    }
+
+    let isMounted = true; // Track if component is still mounted
+
     const fetchRespondentData = async () => {
       try {
+        isInitializingRef.current = true;
         setIsLoading(true);
         const response = await fetch(`/api/public/human-respondents/${humanRespondentId}`);
         
@@ -155,17 +174,24 @@ export default function InterviewPage() {
           throw new Error('Invalid project ID');
         }
         
+        if (!isMounted) return;
+        
         setRespondentData(data);
         setError(null);
         
         // After loading respondent data, fetch messages and check conversation state
         const fetchedMessages = await fetchMessages();
         
+        if (!isMounted) return;
+        
+        // Check if any moderator message already exists (prevents duplicate first question)
+        const hasModeratorMessage = fetchedMessages.some((msg: any) => msg.sender_type === 'moderator');
+        
         // Only start the interview if:
-        // 1. No messages exist (new interview), OR
+        // 1. No messages exist (new interview) AND no moderator message exists, OR
         // 2. Last message is from respondent (AI should follow up)
         // Don't ask again if last message is from moderator (waiting for user reply)
-        const shouldStartInterview = fetchedMessages.length === 0;
+        const shouldStartInterview = fetchedMessages.length === 0 && !hasModeratorMessage;
         const lastMessage = fetchedMessages[fetchedMessages.length - 1];
         const lastMessageIsFromRespondent = lastMessage?.sender_type === 'respondent';
         
@@ -178,15 +204,25 @@ export default function InterviewPage() {
         }
         // If last message is from moderator, don't call getAiResponse - wait for user reply
       } catch (err: any) {
+        if (!isMounted) return;
         console.error("Failed to fetch respondent data:", err);
         setError(err.message || "Failed to load interview data");
         setRespondentData(null);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
+        isInitializingRef.current = false;
       }
     };
     
     fetchRespondentData();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      isInitializingRef.current = false;
+    };
   }, [projectId, humanRespondentId]);
 
   if (isLoading) {

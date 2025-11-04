@@ -54,14 +54,14 @@ export async function PATCH(
     // Await params to get the projectId
     const { projectId } = await params
     
-    // Create supabase client
-    const supabase = createRouteHandlerClient({ cookies })
+    // Use centralized project access control
+    const accessResult = await checkProjectAccess(projectId)
     
-    // Get session data to verify user is logged in
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!accessResult.success) {
+      return accessResult.response!
     }
+
+    const { supabase, userData } = accessResult
 
     // Get update data from request body
     const updates = await request.json()
@@ -87,6 +87,13 @@ export async function PATCH(
       .update(updates)
       .eq("id", projectId)
       .eq("is_deleted", false)
+
+    // Only filter by user_id if the user is not an admin
+    if (userData?.role !== 'admin') {
+      updateQuery = updateQuery.eq("user_id", accessResult.session.user.id)
+    }
+
+    const { data: project, error } = await updateQuery
       .select()
       .single()
 
@@ -111,16 +118,17 @@ export async function DELETE(
   { params }: { params: { projectId: string } }
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    // Use centralized project access control
+    const accessResult = await checkProjectAccess(params.projectId)
     
-    // Get session data to verify user is logged in
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!accessResult.success) {
+      return accessResult.response!
     }
 
-    // Soft delete the project
-    const { data: project, error } = await supabase
+    const { supabase, userData } = accessResult
+
+    // Build delete query conditionally
+    let deleteQuery = supabase
       .from("projects")
       .update({
         is_deleted: true,
@@ -128,7 +136,13 @@ export async function DELETE(
         updated_at: new Date().toISOString()
       })
       .eq("id", params.projectId)
-      .eq("user_id", session.user.id)
+
+    // Only filter by user_id if the user is not an admin
+    if (userData?.role !== 'admin') {
+      deleteQuery = deleteQuery.eq("user_id", accessResult.session.user.id)
+    }
+
+    const { data: project, error } = await deleteQuery
       .select()
       .single()
 

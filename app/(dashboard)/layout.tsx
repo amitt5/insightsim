@@ -52,17 +52,17 @@ export default function DashboardLayout({
               <span>Projects</span>
               {/* <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">Beta</Badge> */}
             </Link>
-            {/* <Link 
-              href="/simulations"
-              className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
-            >
-              Simulations
-            </Link>
             <Link 
               href="/personas/enhanced"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >
               Enhanced Personas
+            </Link>
+            {/* <Link 
+              href="/simulations"
+              className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
+            >
+              Simulations
             </Link>
             <Link 
               href="/interviews"

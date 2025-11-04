@@ -11,6 +11,7 @@ import {
   generateVoiceSessionId 
 } from '@/utils/voiceApi';
 import { processMessageInSequence, ProcessedMessage } from '@/utils/messageProcessor';
+import { ConversationTranscript, ConversationTurn } from '@/types/conversation';
 
 // Message interface compatible with existing InterviewPage component
 export interface VapiMessage extends ProcessedMessage {}
@@ -55,6 +56,7 @@ export interface UseVapiReturn {
   
   // Callback functions
   onCallEnd: (callback: () => void) => void;
+  onRawMessage: (callback: (message: any) => void) => void;
   
   // PHASE 1: Debug functions
   exportMessageAnalysis: () => any;
@@ -98,6 +100,10 @@ export function useVapi(): UseVapiReturn {
   const callEndCallbackRef = useRef<(() => void) | null>(null);
   // Prevent duplicate end handling
   const isEndingRef = useRef<boolean>(false);
+  // Raw message tap for consumers
+  const rawMessageCallbackRef = useRef<((message: any) => void) | null>(null);
+  // Latest conversation transcript from conversation-update events
+  const latestConversationRef = useRef<ConversationTranscript>([]);
 
   // PHASE 3: Database persistence functions (moved before processSpeakerMessage)
   const queueMessageForSaving = useCallback((message: VapiMessage) => {
@@ -418,6 +424,19 @@ export function useVapi(): UseVapiReturn {
         if (messageQueueRef.current.length > 0) {
           saveBatchMessages();
         }
+        
+        // Save full conversation transcript on call end (fire-and-forget)
+        try {
+          if (latestConversationRef.current && latestConversationRef.current.length > 0 && humanRespondentIdRef.current) {
+            fetch(`/api/public/human-respondents/${humanRespondentIdRef.current}/conversation`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ conversation: latestConversationRef.current })
+            }).catch(() => {});
+          }
+        } catch (e) {
+          console.warn('Failed to trigger conversation save on end', e);
+        }
         updateVoiceSessionStatus('ended');
         
         // Trigger call end callback if set
@@ -432,6 +451,31 @@ export function useVapi(): UseVapiReturn {
         // PHASE 1: Comprehensive message analysis and logging
         //console.log(`\n=== VAPI MESSAGE #${messageCountRef.current} ===`);
         console.debug('Raw message object:', message);
+
+        // Expose raw message to consumer callback (if registered)
+        if (rawMessageCallbackRef.current && message.type === 'conversation-update') {
+          try {
+            rawMessageCallbackRef.current(message);
+          } catch (err) {
+            console.error('Error in onRawMessage callback:', err);
+          }
+        }
+
+        // Capture and map latest conversation transcript
+        if (message?.type === 'conversation-update' && Array.isArray(message?.conversation)) {
+          try {
+            const mapped: ConversationTranscript = (message.conversation as any[])
+              .map((t) => ({
+                role: t?.role,
+                content: t?.content,
+              }))
+              .filter((t: ConversationTurn) => !!t && !!t.content && !!t.role);
+            latestConversationRef.current = mapped;
+          } catch (e) {
+            console.warn('Failed to map conversation-update payload', e);
+          }
+        }
+
         // console.log('Message type:', typeof message);
         // console.log('Message keys:', Object.keys(message));
         
@@ -879,6 +923,10 @@ export function useVapi(): UseVapiReturn {
     callEndCallbackRef.current = callback;
   }, []);
 
+  const onRawMessage = useCallback((callback: (message: any) => void) => {
+    rawMessageCallbackRef.current = callback;
+  }, []);
+
   // PHASE 1: Debug function to export message analysis data
   const exportMessageAnalysis = useCallback(() => {
     const analysisData = {
@@ -941,6 +989,7 @@ export function useVapi(): UseVapiReturn {
     
     // Callback functions
     onCallEnd,
+    onRawMessage,
     
     // PHASE 1: Debug functions
     exportMessageAnalysis

@@ -43,9 +43,12 @@ export default function InterviewPage() {
       }
       
       const data = await response.json();
-      setMessages(data.messages || []);
+      const messagesList = data.messages || [];
+      setMessages(messagesList);
+      return messagesList; // Return messages for immediate use
     } catch (err) {
       console.error("Error fetching messages:", err);
+      return [];
     }
   };
 
@@ -155,13 +158,25 @@ export default function InterviewPage() {
         setRespondentData(data);
         setError(null);
         
-        // After loading respondent data, fetch messages and start interview
-        await fetchMessages();
+        // After loading respondent data, fetch messages and check conversation state
+        const fetchedMessages = await fetchMessages();
         
-        // If no messages exist, start the interview
-        if (!messages.length) {
+        // Only start the interview if:
+        // 1. No messages exist (new interview), OR
+        // 2. Last message is from respondent (AI should follow up)
+        // Don't ask again if last message is from moderator (waiting for user reply)
+        const shouldStartInterview = fetchedMessages.length === 0;
+        const lastMessage = fetchedMessages[fetchedMessages.length - 1];
+        const lastMessageIsFromRespondent = lastMessage?.sender_type === 'respondent';
+        
+        if (shouldStartInterview) {
+          // New interview - start with first message
           await getAiResponse(true);
+        } else if (lastMessageIsFromRespondent) {
+          // Last message is from respondent - AI should respond
+          await getAiResponse(false);
         }
+        // If last message is from moderator, don't call getAiResponse - wait for user reply
       } catch (err: any) {
         console.error("Failed to fetch respondent data:", err);
         setError(err.message || "Failed to load interview data");

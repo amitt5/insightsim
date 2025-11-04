@@ -53,6 +53,32 @@ export default function InterviewPage() {
     }
   };
 
+  const fetchRespondentData = async () => {
+    try {
+      const response = await fetch(`/api/public/human-respondents/${humanRespondentId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Verify this respondent belongs to this project
+      if (data.project_id !== projectId) {
+        throw new Error('Invalid project ID');
+      }
+      
+      setRespondentData(data);
+      return data;
+    } catch (err: any) {
+      console.error("Failed to fetch respondent data:", err);
+      throw err;
+    }
+  };
+
   const getAiResponse = async (isFirstMessage: boolean = false) => {
     // Double-check: verify no moderator message exists before creating one
     if (isFirstMessage) {
@@ -84,6 +110,11 @@ export default function InterviewPage() {
 
       const data = await response.json();
       await fetchMessages(); // Refresh messages to include AI response
+      
+      // If interview was completed, refresh respondent data to get updated status
+      if (data.interview_completed) {
+        await fetchRespondentData();
+      }
     } catch (err) {
       console.error('Error getting AI response:', err);
       setError('Failed to get interviewer response. Please try again.');
@@ -145,6 +176,31 @@ export default function InterviewPage() {
     }
   };
 
+  const handleEndInterview = async () => {
+    if (!confirm('Are you sure you want to end this interview? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/public/human-respondents/${humanRespondentId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to end interview');
+      }
+
+      // Refresh respondent data to get updated status
+      await fetchRespondentData();
+    } catch (err) {
+      console.error('Error ending interview:', err);
+      setError('Failed to end interview. Please try again.');
+    }
+  };
+
   useEffect(() => {
     // Prevent duplicate initialization calls
     if (isInitializingRef.current) {
@@ -153,26 +209,12 @@ export default function InterviewPage() {
 
     let isMounted = true; // Track if component is still mounted
 
-    const fetchRespondentData = async () => {
+    const initializeInterview = async () => {
       try {
         isInitializingRef.current = true;
         setIsLoading(true);
-        const response = await fetch(`/api/public/human-respondents/${humanRespondentId}`);
         
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('humandata', data);
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        // Verify this respondent belongs to this project
-        if (data.project_id !== projectId) {
-          throw new Error('Invalid project ID');
-        }
+        const data = await fetchRespondentData();
         
         if (!isMounted) return;
         
@@ -216,7 +258,7 @@ export default function InterviewPage() {
       }
     };
     
-    fetchRespondentData();
+    initializeInterview();
 
     // Cleanup function
     return () => {
@@ -386,19 +428,38 @@ export default function InterviewPage() {
 
             {/* Message Input */}
             <div className="mt-4 border-t pt-4 space-y-4">
-              <Textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="min-h-[100px]"
-              />
-              <Button 
-                onClick={handleSendMessage}
-                disabled={!newMessage.trim() || isSending}
-                className="w-full"
-              >
-                {isSending ? "Sending..." : "Send Message"}
-              </Button>
+              {respondentData?.status === 'completed' ? (
+                <div className="text-center py-4 text-sm text-gray-500">
+                  Interview completed. Thank you for participating!
+                </div>
+              ) : (
+                <>
+                  <Textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="min-h-[100px]"
+                    disabled={!respondentData}
+                  />
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleSendMessage}
+                      disabled={!newMessage.trim() || isSending || isAiResponding || !respondentData}
+                      className="flex-1"
+                    >
+                      {isSending ? "Sending..." : "Send Message"}
+                    </Button>
+                    <Button 
+                      onClick={handleEndInterview}
+                      disabled={isSending || isAiResponding || !respondentData}
+                      variant="outline"
+                      className="px-4"
+                    >
+                      End Interview
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

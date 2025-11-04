@@ -1,6 +1,6 @@
 "use client"
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -33,6 +33,7 @@ export default function InterviewPage() {
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isAiResponding, setIsAiResponding] = useState(false);
+  const isInitializingRef = useRef(false); // Prevent duplicate initialization calls
 
   const fetchMessages = async () => {
     try {
@@ -43,13 +44,52 @@ export default function InterviewPage() {
       }
       
       const data = await response.json();
-      setMessages(data.messages || []);
+      const messagesList = data.messages || [];
+      setMessages(messagesList);
+      return messagesList; // Return messages for immediate use
     } catch (err) {
       console.error("Error fetching messages:", err);
+      return [];
+    }
+  };
+
+  const fetchRespondentData = async () => {
+    try {
+      const response = await fetch(`/api/public/human-respondents/${humanRespondentId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Verify this respondent belongs to this project
+      if (data.project_id !== projectId) {
+        throw new Error('Invalid project ID');
+      }
+      
+      setRespondentData(data);
+      return data;
+    } catch (err: any) {
+      console.error("Failed to fetch respondent data:", err);
+      throw err;
     }
   };
 
   const getAiResponse = async (isFirstMessage: boolean = false) => {
+    // Double-check: verify no moderator message exists before creating one
+    if (isFirstMessage) {
+      const currentMessages = await fetchMessages();
+      const hasModeratorMessage = currentMessages.some((msg: any) => msg.sender_type === 'moderator');
+      if (hasModeratorMessage) {
+        // Moderator message already exists, don't create another one
+        return;
+      }
+    }
+
     setIsAiResponding(true);
     try {
       const response = await fetch('/api/public/ai-moderator', {
@@ -70,6 +110,11 @@ export default function InterviewPage() {
 
       const data = await response.json();
       await fetchMessages(); // Refresh messages to include AI response
+      
+      // If interview was completed, refresh respondent data to get updated status
+      if (data.interview_completed) {
+        await fetchRespondentData();
+      }
     } catch (err) {
       console.error('Error getting AI response:', err);
       setError('Failed to get interviewer response. Please try again.');
@@ -131,47 +176,95 @@ export default function InterviewPage() {
     }
   };
 
-  useEffect(() => {
-    const fetchRespondentData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/public/human-respondents/${humanRespondentId}`);
-        
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('humandata', data);
-        if (data.error) {
-          throw new Error(data.error);
-        }
+  const handleEndInterview = async () => {
+    if (!confirm('Are you sure you want to end this interview? This action cannot be undone.')) {
+      return;
+    }
 
-        // Verify this respondent belongs to this project
-        if (data.project_id !== projectId) {
-          throw new Error('Invalid project ID');
-        }
+    try {
+      const response = await fetch(`/api/public/human-respondents/${humanRespondentId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to end interview');
+      }
+
+      // Refresh respondent data to get updated status
+      await fetchRespondentData();
+    } catch (err) {
+      console.error('Error ending interview:', err);
+      setError('Failed to end interview. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    // Prevent duplicate initialization calls
+    if (isInitializingRef.current) {
+      return;
+    }
+
+    let isMounted = true; // Track if component is still mounted
+
+    const initializeInterview = async () => {
+      try {
+        isInitializingRef.current = true;
+        setIsLoading(true);
+        
+        const data = await fetchRespondentData();
+        
+        if (!isMounted) return;
         
         setRespondentData(data);
         setError(null);
         
-        // After loading respondent data, fetch messages and start interview
-        await fetchMessages();
+        // After loading respondent data, fetch messages and check conversation state
+        const fetchedMessages = await fetchMessages();
         
-        // If no messages exist, start the interview
-        if (!messages.length) {
+        if (!isMounted) return;
+        
+        // Check if any moderator message already exists (prevents duplicate first question)
+        const hasModeratorMessage = fetchedMessages.some((msg: any) => msg.sender_type === 'moderator');
+        
+        // Only start the interview if:
+        // 1. No messages exist (new interview) AND no moderator message exists, OR
+        // 2. Last message is from respondent (AI should follow up)
+        // Don't ask again if last message is from moderator (waiting for user reply)
+        const shouldStartInterview = fetchedMessages.length === 0 && !hasModeratorMessage;
+        const lastMessage = fetchedMessages[fetchedMessages.length - 1];
+        const lastMessageIsFromRespondent = lastMessage?.sender_type === 'respondent';
+        
+        if (shouldStartInterview) {
+          // New interview - start with first message
           await getAiResponse(true);
+        } else if (lastMessageIsFromRespondent) {
+          // Last message is from respondent - AI should respond
+          await getAiResponse(false);
         }
+        // If last message is from moderator, don't call getAiResponse - wait for user reply
       } catch (err: any) {
+        if (!isMounted) return;
         console.error("Failed to fetch respondent data:", err);
         setError(err.message || "Failed to load interview data");
         setRespondentData(null);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
+        isInitializingRef.current = false;
       }
     };
     
-    fetchRespondentData();
+    initializeInterview();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      isInitializingRef.current = false;
+    };
   }, [projectId, humanRespondentId]);
 
   if (isLoading) {
@@ -335,19 +428,38 @@ export default function InterviewPage() {
 
             {/* Message Input */}
             <div className="mt-4 border-t pt-4 space-y-4">
-              <Textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="min-h-[100px]"
-              />
-              <Button 
-                onClick={handleSendMessage}
-                disabled={!newMessage.trim() || isSending}
-                className="w-full"
-              >
-                {isSending ? "Sending..." : "Send Message"}
-              </Button>
+              {respondentData?.status === 'completed' ? (
+                <div className="text-center py-4 text-sm text-gray-500">
+                  Interview completed. Thank you for participating!
+                </div>
+              ) : (
+                <>
+                  <Textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="min-h-[100px]"
+                    disabled={!respondentData}
+                  />
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleSendMessage}
+                      disabled={!newMessage.trim() || isSending || isAiResponding || !respondentData}
+                      className="flex-1"
+                    >
+                      {isSending ? "Sending..." : "Send Message"}
+                    </Button>
+                    <Button 
+                      onClick={handleEndInterview}
+                      disabled={isSending || isAiResponding || !respondentData}
+                      variant="outline"
+                      className="px-4"
+                    >
+                      End Interview
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

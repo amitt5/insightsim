@@ -601,7 +601,9 @@ export default function InterviewPage() {
                     First you'll be asked to grant permission to use your microphone. Hit "allow" to continue.
                   </p>
                   <p>
-                    Once the interview starts, an AI moderator will ask you questions and dynamically respond to your answers. You can interrupt the AI moderator at any time by hitting the "interrupt" button and if you need to take a break, just ask the AI moderator to pause the interview until you're ready to proceed.
+                    Once the interview starts, an AI moderator will ask you questions and dynamically respond to your answers. You can stop the interview at any time by hitting the "stop interview" button.
+                    
+                    {/* You can interrupt the AI moderator at any time by hitting the "interrupt" button and if you need to take a break, just ask the AI moderator to pause the interview until you're ready to proceed. */}
                   </p>
                 </div>
 
@@ -679,7 +681,7 @@ export default function InterviewPage() {
                     >
                       <Square className="w-6 h-6 text-white" />
                     </button>
-                    <span className="text-sm text-gray-600">Hit to interrupt</span>
+                    <span className="text-sm text-gray-600">Hit to Stop</span>
                   </>
                 ) : (
                   <>

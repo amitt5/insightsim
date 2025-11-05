@@ -1,9 +1,15 @@
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
+import {
+  getOrCreateCollection,
+  getFileUploadUrl,
+  uploadFileToNeedle,
+  getFileDownloadUrl,
+  addFileToCollection,
+} from "@/lib/needle"
 
-
-// POST route to process a RAG document (extract text, create chunks, generate embeddings)
+// POST route to process a RAG document using Needle API
 export async function POST(
   request: Request,
   { params }: { params: { projectId: string; documentId: string } }
@@ -25,16 +31,16 @@ export async function POST(
       .eq("project_id", params.projectId)
       .eq("user_id", session.user.id)
       .single()
-    console.log('document111', document)
+
     if (fetchError) {
       console.error("Error fetching document:", fetchError)
       return NextResponse.json({ error: "Document not found" }, { status: 404 })
     }
-    console.log('document222', document)
+
     if (!document) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 })
     }
-    console.log('document333', document)
+
     // Check if document is already processed
     if (document.status === 'completed') {
       return NextResponse.json({ 
@@ -42,7 +48,7 @@ export async function POST(
         document 
       })
     }
-    console.log('document444', document)
+
     // Update document status to processing
     const { error: updateError } = await supabase
       .from("rag_documents")
@@ -51,16 +57,52 @@ export async function POST(
         updated_at: new Date().toISOString()
       })
       .eq("id", params.documentId)
-    console.log('updateError111', updateError)
+
     if (updateError) {
       console.error("Error updating document status:", updateError)
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
-    console.log('updateError222', updateError)
+
     try {
-      // Step 1: Download file from Supabase storage
-      console.log(`Downloading aaaamit file: ${document.file_path}`)
-      const { data: fileData, error: downloadError } = await supabase.storage
+      // Step 1: Get or create Needle collection for the project
+      console.log(`Getting or creating Needle collection for project: ${params.projectId}`)
+      
+      // Get project to check for existing collection ID
+      const { data: project, error: projectError } = await supabase
+        .from("projects")
+        .select("needle_collection_id")
+        .eq("id", params.projectId)
+        .eq("user_id", session.user.id)
+        .single()
+
+      if (projectError || !project) {
+        console.error("Error fetching project:", projectError)
+        throw new Error("Failed to fetch project information")
+      }
+
+      const collectionId = await getOrCreateCollection(
+        params.projectId,
+        project.needle_collection_id || null
+      )
+
+      // Update project with collection ID if it's new
+      if (!project.needle_collection_id) {
+        const { error: updateProjectError } = await supabase
+          .from("projects")
+          .update({ needle_collection_id: collectionId })
+          .eq("id", params.projectId)
+
+        if (updateProjectError) {
+          console.error("Error updating project with collection ID:", updateProjectError)
+          // Continue anyway, collection is created
+        }
+      }
+
+      console.log(`Using Needle collection: ${collectionId}`)
+
+      // Step 2: Download file from Supabase storage
+      console.log(`Downloading file from Supabase: ${document.file_path}`)
+      const { data: fileBlob, error: downloadError } = await supabase.storage
         .from('rag-documents')
         .download(document.file_path)
 
@@ -69,74 +111,67 @@ export async function POST(
         throw new Error("Failed to download document from storage")
       }
 
-      // Step 2: Send file to Python service for text extraction
-      console.log("Sending file to Python PDF service for text extraction...")
-      const formData = new FormData()
-      formData.append('file', fileData, document.original_filename)
+      // Convert Blob to Buffer for Needle upload
+      const fileBuffer = Buffer.from(await fileBlob.arrayBuffer())
+      const contentType = document.mime_type || 'application/pdf'
 
-      const pythonServiceUrl = process.env.PYTHON_PDF_SERVICE_URL || 'http://localhost:8000'
-      console.log('pythonServiceUrl111', pythonServiceUrl)
-      const response = await fetch(`${pythonServiceUrl}/extract-for-cag`, {
-        method: 'POST',
-        body: formData,
-      })
-      console.log('response111222', response)
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to extract text from PDF')
-      }
+      console.log(`File downloaded: ${fileBuffer.length} bytes, type: ${contentType}`)
 
-      const chunkingResult = await response.json()
-      console.log(`Text extraction successful for CAG approach: ${chunkingResult.total_chunks} full-text document created`)
-      console.log(`Full text length: ${chunkingResult.avg_chunk_size} characters`)
+      // Step 3: Get upload URL from Needle
+      console.log("Getting upload URL from Needle...")
+      const uploadUrlResponse = await getFileUploadUrl(contentType)
+      const { upload_url, file_id } = uploadUrlResponse.result
 
-      // Step 3: Store full text in database (CAG approach - no chunking)
-      console.log("Storing full text in database for CAG approach...")
-      
-      // For CAG approach, we store the full text directly in the rag_documents table
-      // instead of creating multiple chunks
-      const { error: updateTextError } = await supabase
+      console.log(`Got upload URL, file_id: ${file_id}`)
+
+      // Step 4: Upload file to Needle
+      console.log("Uploading file to Needle...")
+      await uploadFileToNeedle(upload_url, fileBuffer, contentType)
+      console.log("File uploaded successfully to Needle")
+
+      // Step 5: Get download URL for the uploaded file (required for adding to collection)
+      console.log("Getting file download URL from Needle...")
+      const downloadUrlResponse = await getFileDownloadUrl(file_id)
+      const fileUrl = downloadUrlResponse.result.download_url
+
+      console.log(`Got file download URL for Needle collection`)
+
+      // Step 6: Add file to collection
+      console.log(`Adding file to Needle collection: ${collectionId}`)
+      const addFileResponse = await addFileToCollection(
+        collectionId,
+        fileUrl,
+        document.original_filename,
+        document.updated_at
+      )
+
+      console.log(`File added to collection successfully`)
+
+      // Step 7: Update document with Needle information
+      const { error: updateDocumentError } = await supabase
         .from("rag_documents")
         .update({ 
-          full_text: chunkingResult.chunks[0].text, // Store full text from the single "chunk"
-          text_length: chunkingResult.chunks[0].metadata.text_length,
-          pages_count: chunkingResult.chunks[0].metadata.pages_count,
-          processing_method: 'cag_extract_only',
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", params.documentId)
-
-      if (updateTextError) {
-        console.error("Error storing full text:", updateTextError)
-        throw new Error("Failed to store document full text")
-      }
-
-      console.log(`Successfully stored full text (${chunkingResult.chunks[0].text.length} characters) for CAG approach`)
-
-      // Update document status to completed
-      const { error: completeError } = await supabase
-        .from("rag_documents")
-        .update({ 
+          needle_collection_id: collectionId,
+          needle_file_id: file_id,
+          processing_method: 'needle',
           status: 'completed',
           updated_at: new Date().toISOString()
         })
         .eq("id", params.documentId)
 
-      if (completeError) {
-        console.error("Error completing document processing:", completeError)
-        throw new Error("Failed to update document status")
+      if (updateDocumentError) {
+        console.error("Error updating document with Needle info:", updateDocumentError)
+        throw new Error("Failed to update document with Needle information")
       }
 
-      console.log(`Successfully processed RAG document: ${document.original_filename}`)
+      console.log(`Successfully processed RAG document with Needle: ${document.original_filename}`)
       
       return NextResponse.json({
         success: true,
-        message: "Document processed successfully for CAG approach - text extracted and stored as full text",
-        totalChunks: chunkingResult.total_chunks, // Will be 1 for CAG approach
-        avgChunkSize: chunkingResult.avg_chunk_size, // Will be full text length
-        textLength: chunkingResult.chunks[0].text.length,
-        pagesCount: chunkingResult.chunks[0].metadata.pages_count,
-        processingMethod: 'cag_extract_only',
+        message: "Document processed successfully with Needle API",
+        collectionId: collectionId,
+        fileId: file_id,
+        processingMethod: 'needle',
         document: {
           id: document.id,
           filename: document.original_filename,
@@ -145,20 +180,20 @@ export async function POST(
       })
 
     } catch (processingError: any) {
-      console.error("Error processing document:", processingError)
+      console.error("Error processing document with Needle:", processingError)
       
       // Update document status to failed
       await supabase
         .from("rag_documents")
         .update({ 
           status: 'failed',
-          processing_error: processingError.message,
+          processing_error: processingError.message || 'Document processing failed',
           updated_at: new Date().toISOString()
         })
         .eq("id", params.documentId)
 
       return NextResponse.json({ 
-        error: processingError.message || 'Document processing failed' 
+        error: processingError.message || 'Document processing failed. Please try again.' 
       }, { status: 500 })
     }
 

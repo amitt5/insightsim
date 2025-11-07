@@ -518,6 +518,20 @@ export default function HumanInterviewsTable({ projectId }: HumanInterviewsTable
                             </div>
                           </>
                         )}
+                        {interview.status === 'processed' && interview.transcript_text && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const interviewUrl = `/idi/${projectId}/uploaded/${interview.id}/text`
+                              window.open(interviewUrl, '_blank')
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            View
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

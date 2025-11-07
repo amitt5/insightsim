@@ -18,10 +18,16 @@ export async function GET(
 
     const { supabase } = accessResult
 
-    // Fetch uploaded interviews for the project
+    // Fetch uploaded interviews for the project with project info
     const { data: interviews, error } = await supabase
       .from("uploaded_interviews")
-      .select("*")
+      .select(`
+        *,
+        project:projects (
+          id,
+          name
+        )
+      `)
       .eq("project_id", params.projectId)
       .order("created_at", { ascending: false })
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Copy, ExternalLink, MessageSquare, Calendar, Upload, FileText, Mic, Trash2 } from "lucide-react"
+import { Copy, ExternalLink, MessageSquare, Calendar, Upload, FileText, Mic, Trash2, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import InterviewUpload from "./InterviewUpload"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -48,6 +48,7 @@ export default function HumanInterviewsTable({ projectId }: HumanInterviewsTable
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'conducted' | 'uploaded'>('conducted')
+  const [transcribingIds, setTranscribingIds] = useState<Set<string>>(new Set())
 
   const fetchHumanInterviews = async () => {
     try {
@@ -151,6 +152,125 @@ export default function HumanInterviewsTable({ projectId }: HumanInterviewsTable
     if (bytes < 1024) return bytes + ' B'
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  }
+
+  const handleCheckStatus = async (interviewId: string) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}/uploaded-interviews/${interviewId}/transcribe/check`, {
+        method: 'GET',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to check status')
+      }
+
+      const result = await response.json()
+      
+      // Refresh the list
+      await fetchUploadedInterviews()
+
+      if (result.status === 'completed') {
+        toast({
+          title: "Transcription completed",
+          description: "Your audio file has been transcribed successfully.",
+        })
+      } else if (result.status === 'error') {
+        toast({
+          title: "Transcription failed",
+          description: result.error || "There was an error with the transcription.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Status checked",
+          description: `Transcription is ${result.status}.`,
+        })
+      }
+    } catch (err: any) {
+      console.error('Error checking status:', err)
+      toast({
+        title: "Error",
+        description: err.message || 'Failed to check transcription status',
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleTranscribe = async (interviewId: string) => {
+    setTranscribingIds(prev => new Set(prev).add(interviewId))
+    
+    try {
+      const response = await fetch(`/api/projects/${projectId}/uploaded-interviews/${interviewId}/transcribe`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Transcription failed')
+      }
+
+      const result = await response.json()
+      
+      toast({
+        title: "Transcription started",
+        description: result.message || "Your audio file is being transcribed. This may take a few minutes.",
+      })
+
+      // Refresh the list to show updated status
+      await fetchUploadedInterviews()
+      
+      // Poll for updates every 5 seconds until complete
+      const pollInterval = setInterval(async () => {
+        const response = await fetch(`/api/projects/${projectId}/uploaded-interviews`)
+        if (response.ok) {
+          const data = await response.json()
+          const updated = (data.interviews || []).find((i: UploadedInterview) => i.id === interviewId)
+          if (updated && (updated.status === 'processed' || updated.status === 'error')) {
+            clearInterval(pollInterval)
+            setTranscribingIds(prev => {
+              const newSet = new Set(prev)
+              newSet.delete(interviewId)
+              return newSet
+            })
+            // Update state with new data
+            setUploadedInterviews(data.interviews || [])
+            if (updated.status === 'processed') {
+              toast({
+                title: "Transcription completed",
+                description: "Your audio file has been transcribed successfully.",
+              })
+            }
+          } else if (updated) {
+            // Update state even if not complete yet
+            setUploadedInterviews(data.interviews || [])
+          }
+        }
+      }, 5000)
+
+      // Stop polling after 5 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval)
+        setTranscribingIds(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(interviewId)
+          return newSet
+        })
+      }, 5 * 60 * 1000)
+
+    } catch (err: any) {
+      console.error('Error starting transcription:', err)
+      toast({
+        title: "Error",
+        description: err.message || 'Failed to start transcription',
+        variant: "destructive",
+      })
+      setTranscribingIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(interviewId)
+        return newSet
+      })
+    }
   }
 
   useEffect(() => {
@@ -358,6 +478,46 @@ export default function HumanInterviewsTable({ projectId }: HumanInterviewsTable
                         )}
                       </div>
                       <div className="flex items-center gap-2">
+                        {interview.file_type === 'audio' && 
+                         interview.status !== 'processed' && 
+                         interview.status !== 'processing' && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleTranscribe(interview.id)}
+                            disabled={transcribingIds.has(interview.id)}
+                            className="flex items-center gap-2"
+                          >
+                            {transcribingIds.has(interview.id) ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Starting...
+                              </>
+                            ) : (
+                              <>
+                                <Mic className="h-4 w-4" />
+                                Transcribe
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        {interview.status === 'processing' && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCheckStatus(interview.id)}
+                              className="flex items-center gap-2"
+                            >
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Check Status
+                            </Button>
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Transcribing...
+                            </div>
+                          </>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

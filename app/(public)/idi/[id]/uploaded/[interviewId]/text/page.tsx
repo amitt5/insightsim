@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import EditSpeakersModal from "@/components/projects/EditSpeakersModal"
+import { useToast } from "@/hooks/use-toast"
+import { Settings } from "lucide-react"
 
 interface UploadedInterview {
   id: string;
@@ -12,6 +15,12 @@ interface UploadedInterview {
   status: 'uploaded' | 'processing' | 'processed' | 'error';
   transcript_text: string | null;
   created_at: string;
+  metadata?: {
+    speaker_mappings?: Record<string, {
+      name: string;
+      role: 'moderator' | 'respondent';
+    }>;
+  };
   project: {
     id: string;
     name: string;
@@ -24,6 +33,11 @@ interface ParsedMessage {
   timestamp: string;
 }
 
+interface SpeakerMapping {
+  name: string;
+  role: 'moderator' | 'respondent';
+}
+
 export default function UploadedInterviewPage() {
   const params = useParams();
   const projectId = params.id as string;
@@ -33,7 +47,10 @@ export default function UploadedInterviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [interviewData, setInterviewData] = useState<UploadedInterview | null>(null);
   const [messages, setMessages] = useState<ParsedMessage[]>([]);
+  const [speakerMappings, setSpeakerMappings] = useState<Record<string, SpeakerMapping>>({});
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // Parse transcript text into messages with speaker labels
   const parseTranscript = (transcriptText: string): ParsedMessage[] => {
@@ -114,6 +131,11 @@ export default function UploadedInterviewPage() {
       
       setInterviewData(interview);
       
+      // Load speaker mappings from metadata
+      if (interview.metadata?.speaker_mappings) {
+        setSpeakerMappings(interview.metadata.speaker_mappings);
+      }
+      
       // Parse transcript if available
       if (interview.transcript_text) {
         const parsedMessages = parseTranscript(interview.transcript_text);
@@ -132,10 +154,60 @@ export default function UploadedInterviewPage() {
       if (!interviewData?.transcript_text) return;
       
       await navigator.clipboard.writeText(interviewData.transcript_text);
-      // You could add a toast notification here
+      toast({
+        title: "Transcript copied",
+        description: "The transcript has been copied to your clipboard.",
+      });
     } catch (err) {
       console.error('Failed to copy transcript:', err);
+      toast({
+        title: "Error",
+        description: "Failed to copy transcript",
+        variant: "destructive",
+      });
     }
+  };
+
+  const handleSaveSpeakers = async (mappings: Record<string, SpeakerMapping>) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}/uploaded-interviews/${interviewId}/speakers`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ speaker_mappings: mappings }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save speaker mappings');
+      }
+
+      // Update local state
+      setSpeakerMappings(mappings);
+      
+      // Refresh interview data to get updated metadata
+      await fetchInterviewData();
+    } catch (error: any) {
+      console.error('Error saving speaker mappings:', error);
+      throw error;
+    }
+  };
+
+  // Get unique speakers from messages
+  const getUniqueSpeakers = (): string[] => {
+    const speakers = new Set(messages.map(m => m.speaker));
+    return Array.from(speakers).sort();
+  };
+
+  // Get speaker display info
+  const getSpeakerInfo = (speaker: string) => {
+    const mapping = speakerMappings[speaker];
+    return {
+      name: mapping?.name || `Speaker ${speaker}`,
+      role: mapping?.role || 'respondent',
+      avatarLetter: mapping?.name ? mapping.name[0].toUpperCase() : speaker
+    };
   };
 
   // Get unique speakers for avatar colors
@@ -239,9 +311,13 @@ export default function UploadedInterviewPage() {
                 {interviewData.status}
               </Badge>
             </div>
-            <div className="mt-2">
+            <div className="mt-2 flex gap-2">
               <Button variant="outline" size="sm" onClick={handleCopyTranscript}>
                 Copy transcript
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setIsEditModalOpen(true)}>
+                <Settings className="h-4 w-4 mr-2" />
+                Edit Speakers
               </Button>
             </div>
           </div>
@@ -252,27 +328,48 @@ export default function UploadedInterviewPage() {
           <CardContent className="p-4 h-full flex flex-col">
             <div className="flex-1 overflow-y-auto space-y-6">
               {messages.map((message, i) => {
+                const speakerInfo = getSpeakerInfo(message.speaker);
                 const speakerColor = getSpeakerColor(message.speaker);
+                const isModerator = speakerInfo.role === 'moderator';
                 
                 return (
-                  <div key={`message-${i}`} className="flex gap-4 items-end flex-row-reverse">
+                  <div 
+                    key={`message-${i}`} 
+                    className={`flex gap-4 items-end ${isModerator ? "" : "flex-row-reverse"}`}
+                  >
                     <div 
                       className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-white font-medium"
-                      style={{ backgroundColor: speakerColor }}
+                      style={{ backgroundColor: isModerator ? '#9238FF' : speakerColor }}
                     >
-                      {message.speaker}
+                      {speakerInfo.avatarLetter}
                     </div>
-                    <div className="flex-1 text-right">
-                      <div className="inline-block rounded-lg px-4 py-2 max-w-[80%] bg-primary text-primary-foreground">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-semibold text-sm text-primary-foreground ml-2">
-                            Speaker {message.speaker}
-                          </span>
-                          <span className="text-xs text-primary-foreground/70">
+                    <div className={`flex-1 ${isModerator ? "" : "text-right"}`}>
+                      <div className={`inline-block rounded-lg px-4 py-2 max-w-[80%] ${
+                        isModerator 
+                          ? "bg-muted" 
+                          : "bg-primary text-primary-foreground"
+                      }`}>
+                        <div className={`flex items-center justify-between mb-1 ${isModerator ? "" : "flex-row-reverse"}`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`font-semibold text-sm ${
+                              isModerator ? "text-gray-500" : "text-primary-foreground"
+                            }`}>
+                              {speakerInfo.name}
+                            </span>
+                            <Badge 
+                              variant={isModerator ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {speakerInfo.role}
+                            </Badge>
+                          </div>
+                          <span className={`text-xs ${
+                            isModerator ? "text-gray-500" : "text-primary-foreground/70"
+                          }`}>
                             {message.timestamp}
                           </span>
                         </div>
-                        <p className="text-sm">{message.text}</p>
+                        <p className={`text-sm ${isModerator ? "" : ""}`}>{message.text}</p>
                       </div>
                     </div>
                   </div>
@@ -282,6 +379,15 @@ export default function UploadedInterviewPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit Speakers Modal */}
+        <EditSpeakersModal
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          speakers={getUniqueSpeakers()}
+          currentMappings={speakerMappings}
+          onSave={handleSaveSpeakers}
+        />
       </div>
     </div>
   );

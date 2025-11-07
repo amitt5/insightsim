@@ -79,6 +79,18 @@ export async function POST(
       return NextResponse.json({ error: respondentsError.message }, { status: 500 })
     }
 
+    // Fetch uploaded interviews for this project
+    const { data: uploadedInterviews, error: uploadedError } = await supabase
+      .from("uploaded_interviews")
+      .select("id, original_filename, transcript_text, file_type, status")
+      .eq("project_id", projectId)
+      .eq("status", "processed") // Only include processed interviews with transcripts
+
+    if (uploadedError) {
+      console.error("Error fetching uploaded interviews:", uploadedError)
+      // Continue without uploaded interviews rather than failing
+    }
+
     const respondentIds = (respondents || []).map((r: any) => r.id)
     let messagesByRespondent: Record<string, any[]> = {}
 
@@ -110,8 +122,8 @@ export async function POST(
       }
     }
 
-    // Build normalized payload - filter out interviews with 0 messages
-    const interviews = (respondents || [])
+    // Build normalized payload for conducted interviews - filter out interviews with 0 messages
+    const conductedInterviews = (respondents || [])
       .map((r: any) => ({
         respondentId: r.id,
         name: r.name,
@@ -122,6 +134,39 @@ export async function POST(
       }))
       .filter((interview: any) => interview.messages.length > 0) // Filter out empty conversations
 
+    // Build normalized payload for uploaded interviews
+    // Convert transcript text into a conversation-like format
+    const uploadedInterviewData = (uploadedInterviews || [])
+      .filter((ui: any) => ui.transcript_text && ui.transcript_text.trim().length > 0)
+      .map((ui: any) => {
+        // For uploaded interviews, we'll treat the transcript as a single respondent message
+        // This is a simplified approach - you might want to parse the transcript more intelligently
+        const transcriptLines = ui.transcript_text.split('\n').filter((line: string) => line.trim().length > 0)
+        
+        // Create a simple conversation structure from the transcript
+        // Each line becomes a respondent message (you may want to improve this parsing)
+        const messages = transcriptLines.map((line: string, index: number) => ({
+          role: "respondent",
+          text: line.trim(),
+          turn: index + 1,
+          createdAt: new Date().toISOString(), // Use upload date if available
+        }))
+
+        return {
+          respondentId: ui.id,
+          name: ui.original_filename.replace(/\.[^/.]+$/, ""), // Use filename without extension as name
+          email: "",
+          age: null,
+          gender: "",
+          messages: messages,
+          source: "uploaded" // Mark as uploaded
+        }
+      })
+      .filter((interview: any) => interview.messages.length > 0)
+
+    // Combine both types of interviews
+    const interviews = [...conductedInterviews, ...uploadedInterviewData]
+
     const payload = {
       projectId,
       source: "human",
@@ -131,8 +176,11 @@ export async function POST(
 
     // Console log for testing
     console.log("=== Human Interviews Prepare - Merged Messages ===")
-    console.log(`Total respondents: ${(respondents || []).length}`)
-    console.log(`Interviews with messages (after filtering): ${interviews.length}`)
+    console.log(`Total conducted respondents: ${(respondents || []).length}`)
+    console.log(`Total uploaded interviews: ${(uploadedInterviews || []).length}`)
+    console.log(`Conducted interviews with messages: ${conductedInterviews.length}`)
+    console.log(`Uploaded interviews with transcripts: ${uploadedInterviewData.length}`)
+    console.log(`Total interviews (after filtering): ${interviews.length}`)
     console.log("Payload structure:", JSON.stringify(payload, null, 2))
     console.log("Sample merged messages (first respondent):", 
       payload.interviews[0]?.messages?.slice(0, 3) || "No messages")

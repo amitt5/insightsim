@@ -44,10 +44,10 @@ export default function RagDocumentUpload({
         return false;
       }
       
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
         toast({
           title: "File too large",
-          description: "Maximum file size is 10MB",
+          description: "Maximum file size is 50MB",
           variant: "destructive",
         });
         return false;

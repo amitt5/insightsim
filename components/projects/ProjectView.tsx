@@ -55,7 +55,6 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [isSavingBrief, setIsSavingBrief] = useState(false);
   const [projectMediaUrls, setProjectMediaUrls] = useState<string[]>(project.media_urls || []);
   const [ragDocuments, setRagDocuments] = useState<RagDocument[]>([]);
-  const [processingDocuments, setProcessingDocuments] = useState<Set<string>>(new Set());
   
   // Target segment selection modal state
   const [showTargetSegmentModal, setShowTargetSegmentModal] = useState(false);
@@ -135,50 +134,6 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     }
   };
 
-  const handleRagDocumentProcess = async (documentId: string) => {
-    try {
-      // Add to processing set
-      setProcessingDocuments(prev => new Set(prev).add(documentId));
-
-      const response = await fetch(`/api/projects/${project.id}/rag/documents/${documentId}/process`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to process document');
-      }
-
-      const result = await response.json();
-      
-      toast({
-        title: "Processing started",
-        description: "Document processing has been initiated. This may take a few minutes.",
-      });
-
-      // Refresh documents to get updated status
-      const refreshResponse = await fetch(`/api/projects/${project.id}/rag/documents`);
-      if (refreshResponse.ok) {
-        const refreshData = await refreshResponse.json();
-        setRagDocuments(refreshData.documents || []);
-      }
-
-    } catch (error: any) {
-      console.error('Error processing document:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to process document",
-        variant: "destructive",
-      });
-    } finally {
-      // Remove from processing set
-      setProcessingDocuments(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(documentId);
-        return newSet;
-      });
-    }
-  };
 
   const analysisObj = {
     "analysis": [
@@ -1731,8 +1686,6 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           <RagDocumentList 
             documents={ragDocuments}
             onDelete={handleRagDocumentDelete}
-            onProcess={handleRagDocumentProcess}
-            processingDocuments={processingDocuments}
           />
         </TabsContent>
 

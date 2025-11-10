@@ -153,7 +153,7 @@ export interface RagDocument {
   user_id: string;
   filename: string;
   original_filename: string;
-  file_path: string;
+  file_path: string | null;
   file_size: number;
   mime_type: string;
   status: 'uploaded' | 'processing' | 'completed' | 'failed';

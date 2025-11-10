@@ -2,13 +2,19 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 import { v4 as uuidv4 } from 'uuid'
+import {
+  getOrCreateFileSearchStore,
+  uploadFileToFileSearchStore,
+  waitForImportOperation,
+} from "@/lib/googleFileSearch"
 
 // GET route to fetch all RAG documents for a project
 export async function GET(
   request: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const supabase = createRouteHandlerClient({ cookies })
     
     // Get session data to verify user is logged in
@@ -21,7 +27,7 @@ export async function GET(
     const { data: documents, error } = await supabase
       .from("rag_documents")
       .select("*")
-      .eq("project_id", params.projectId)
+      .eq("project_id", resolvedParams.projectId)
       .eq("user_id", session.user.id)
       .order("created_at", { ascending: false })
 
@@ -40,12 +46,13 @@ export async function GET(
   }
 }
 
-// POST route to upload a new RAG document
+// POST route to upload a new RAG document directly to Google File Search Store
 export async function POST(
   request: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const supabase = createRouteHandlerClient({ cookies })
     
     // Get session data to verify user is logged in
@@ -54,10 +61,21 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Verify user has access to this project
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("id, google_file_search_store_id")
+      .eq("id", resolvedParams.projectId)
+      .eq("user_id", session.user.id)
+      .single()
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 })
+    }
+
     // Parse form data
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const bucket = formData.get('bucket') as string || 'rag-documents'
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -70,15 +88,15 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Validate file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024 // 10MB
+    // Validate file size (50MB limit)
+    const maxSize = 50 * 1024 * 1024 // 50MB
     if (file.size > maxSize) {
       return NextResponse.json({ 
-        error: 'File size too large. Maximum size is 10MB.' 
+        error: 'File size too large. Maximum size is 50MB.' 
       }, { status: 400 })
     }
 
-    // Generate unique file path
+    // Generate unique file name for Google File Search
     const fileExtension = file.name.split('.').pop()
     const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "")
     const sanitizedFileName = fileNameWithoutExt
@@ -88,36 +106,155 @@ export async function POST(
       .replace(/\-\-+/g, '-')
     
     const uniqueId = uuidv4()
-    const filePath = `${params.projectId}/${sanitizedFileName}-${uniqueId}.${fileExtension}`
+    const googleFileName = `${sanitizedFileName}-${uniqueId}.${fileExtension}`
 
-    console.log(`Uploading RAG document to bucket: ${bucket}, path: ${filePath}`)
+    console.log(`Uploading RAG document to Google File Search Store: ${file.name}`)
 
-    // Upload to Supabase storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      })
+    // Step 1: Get or create File Search Store for the project
+    const storeName = await getOrCreateFileSearchStore(
+      resolvedParams.projectId,
+      project.google_file_search_store_id
+    )
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
+    // Update project with store ID if it's new
+    if (!project.google_file_search_store_id) {
+      const { error: updateProjectError } = await supabase
+        .from("projects")
+        .update({ google_file_search_store_id: storeName })
+        .eq("id", resolvedParams.projectId)
+
+      if (updateProjectError) {
+        console.error("Error updating project with store ID:", updateProjectError)
+        // Continue anyway, we can update it later
+      }
+    }
+
+    // Step 2: Upload file directly to Google File Search Store
+    let operationName: string;
+    let googleFileNameResult: string = googleFileName;
+    console.log(`Store Name: ${storeName}`)
+    console.log(`Google File Name: ${googleFileName}`) 
+    console.log(`File:`, JSON.stringify(file, null, 2))
+    try {
+      const uploadResult = await uploadFileToFileSearchStore(
+        storeName,
+        file,
+        googleFileName
+      )
+      console.log(`Upload Result:`, JSON.stringify(uploadResult, null, 2))
+      operationName = uploadResult.name;
+      googleFileNameResult = uploadResult.fileName; // Use the actual file name from Google
+      console.log(`File upload initiated, operation: ${operationName}, file: ${googleFileNameResult}`)
+    } catch (uploadError: any) {
+      console.error("Error uploading file to Google File Search Store:", uploadError)
+      
+      // Create document record with failed status
+      const documentData = {
+        id: uuidv4(),
+        project_id: resolvedParams.projectId,
+        user_id: session.user.id,
+        filename: googleFileName,
+        original_filename: file.name,
+        file_path: null, // No Supabase storage path
+        file_size: file.size,
+        mime_type: file.type,
+        status: 'failed',
+        processing_method: 'google_file_search',
+        processing_error: uploadError.message || 'Failed to upload to Google File Search Store',
+        google_file_name: null
+      }
+
+      const { data: document, error: dbError } = await supabase
+        .from("rag_documents")
+        .insert(documentData)
+        .select()
+        .single()
+
+      if (dbError) {
+        console.error('Database error:', dbError)
+        return NextResponse.json({ 
+          error: dbError.message || 'Failed to save document record' 
+        }, { status: 500 })
+      }
+
       return NextResponse.json({ 
-        error: uploadError.message || 'Upload failed' 
+        error: uploadError.message || 'Failed to upload to Google File Search Store',
+        document
       }, { status: 500 })
     }
 
-    // Create document record in database
+    // Step 3: Wait for import operation to complete
+    let importResult;
+    try {
+      importResult = await waitForImportOperation(operationName)
+      console.log(`File import completed successfully`)
+      console.log(`Operation response:`, JSON.stringify(importResult.response, null, 2))
+      
+      // Extract file name from operation response if available
+      // The response structure might vary, so check multiple possible locations
+      if (importResult.response?.file?.name) {
+        googleFileNameResult = importResult.response.file.name;
+      } else if (importResult.response?.name) {
+        googleFileNameResult = importResult.response.name;
+      } else if (importResult.response?.fileName) {
+        googleFileNameResult = importResult.response.fileName;
+      }
+      
+      // Remove 'files/' prefix if present
+      if (googleFileNameResult.startsWith('files/')) {
+        googleFileNameResult = googleFileNameResult.replace('files/', '');
+      }
+    } catch (waitError: any) {
+      console.error("Error waiting for import operation:", waitError)
+      
+      // Create document record with failed status
+      const documentData = {
+        id: uuidv4(),
+        project_id: resolvedParams.projectId,
+        user_id: session.user.id,
+        filename: googleFileName,
+        original_filename: file.name,
+        file_path: null,
+        file_size: file.size,
+        mime_type: file.type,
+        status: 'failed',
+        processing_method: 'google_file_search',
+        processing_error: waitError.message || 'Failed to complete import operation',
+        google_file_name: null
+      }
+
+      const { data: document, error: dbError } = await supabase
+        .from("rag_documents")
+        .insert(documentData)
+        .select()
+        .single()
+
+      if (dbError) {
+        console.error('Database error:', dbError)
+        return NextResponse.json({ 
+          error: dbError.message || 'Failed to save document record' 
+        }, { status: 500 })
+      }
+
+      return NextResponse.json({ 
+        error: waitError.message || 'Failed to complete import operation',
+        document
+      }, { status: 500 })
+    }
+
+    // Step 4: Create document record in database with completed status
     const documentData = {
       id: uuidv4(),
-      project_id: params.projectId,
+      project_id: resolvedParams.projectId,
       user_id: session.user.id,
-      filename: `${sanitizedFileName}-${uniqueId}.${fileExtension}`,
+      filename: googleFileName,
       original_filename: file.name,
-      file_path: filePath,
+      file_path: null, // No Supabase storage path
       file_size: file.size,
       mime_type: file.type,
-      status: 'uploaded'
+      status: 'completed',
+      processing_method: 'google_file_search',
+      google_file_name: googleFileNameResult
     }
 
     const { data: document, error: dbError } = await supabase
@@ -128,18 +265,17 @@ export async function POST(
 
     if (dbError) {
       console.error('Database error:', dbError)
-      // Clean up uploaded file if database insert fails
-      await supabase.storage.from(bucket).remove([filePath])
       return NextResponse.json({ 
         error: dbError.message || 'Failed to save document record' 
       }, { status: 500 })
     }
 
-    console.log(`Successfully uploaded RAG document: ${filePath}`)
+    console.log(`Successfully uploaded and processed RAG document: ${file.name}`)
     
     return NextResponse.json({
       success: true,
-      document
+      document,
+      processingMethod: 'google_file_search'
     })
 
   } catch (error: any) {

@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from 'uuid'
 import {
   getOrCreateFileSearchStore,
   uploadFileToFileSearchStore,
-  waitForImportOperation,
 } from "@/lib/googleFileSearch"
 
 // GET route to fetch all RAG documents for a project
@@ -139,22 +138,20 @@ export async function POST(
       }
     }
 
-    // Step 2: Upload file directly to Google File Search Store
-    let operationName: string;
+    // Step 2: Upload file directly to Google File Search Store using Python SDK
+    // The Python script handles the upload and waits for operation completion
     let googleFileNameResult: string = googleFileName;
-    console.log(`Store Name: ${storeName}`)
-    console.log(`Google File Name: ${googleFileName}`) 
-    console.log(`File:`, JSON.stringify(file, null, 2))
+
     try {
       const uploadResult = await uploadFileToFileSearchStore(
         storeName,
         file,
         googleFileName
       )
-      console.log(`Upload Result:`, JSON.stringify(uploadResult, null, 2))
-      operationName = uploadResult.name;
-      googleFileNameResult = uploadResult.fileName; // Use the actual file name from Google
-      console.log(`File upload initiated, operation: ${operationName}, file: ${googleFileNameResult}`)
+      // Python script already waits for operation to complete
+      // So we get the final result directly
+      googleFileNameResult = uploadResult.fileName;
+      console.log(`File upload and import completed successfully, file: ${googleFileNameResult}`)
     } catch (uploadError: any) {
       console.error("Error uploading file to Google File Search Store:", uploadError)
       
@@ -189,65 +186,6 @@ export async function POST(
 
       return NextResponse.json({ 
         error: uploadError.message || 'Failed to upload to Google File Search Store',
-        document
-      }, { status: 500 })
-    }
-
-    // Step 3: Wait for import operation to complete
-    let importResult;
-    try {
-      importResult = await waitForImportOperation(operationName)
-      console.log(`File import completed successfully`)
-      console.log(`Operation response:`, JSON.stringify(importResult.response, null, 2))
-      
-      // Extract file name from operation response if available
-      // The response structure might vary, so check multiple possible locations
-      if (importResult.response?.file?.name) {
-        googleFileNameResult = importResult.response.file.name;
-      } else if (importResult.response?.name) {
-        googleFileNameResult = importResult.response.name;
-      } else if (importResult.response?.fileName) {
-        googleFileNameResult = importResult.response.fileName;
-      }
-      
-      // Remove 'files/' prefix if present
-      if (googleFileNameResult.startsWith('files/')) {
-        googleFileNameResult = googleFileNameResult.replace('files/', '');
-      }
-    } catch (waitError: any) {
-      console.error("Error waiting for import operation:", waitError)
-      
-      // Create document record with failed status
-      const documentData = {
-        id: uuidv4(),
-        project_id: resolvedParams.projectId,
-        user_id: session.user.id,
-        filename: googleFileName,
-        original_filename: file.name,
-        file_path: null,
-        file_size: file.size,
-        mime_type: file.type,
-        status: 'failed',
-        processing_method: 'google_file_search',
-        processing_error: waitError.message || 'Failed to complete import operation',
-        google_file_name: null
-      }
-
-      const { data: document, error: dbError } = await supabase
-        .from("rag_documents")
-        .insert(documentData)
-        .select()
-        .single()
-
-      if (dbError) {
-        console.error('Database error:', dbError)
-        return NextResponse.json({ 
-          error: dbError.message || 'Failed to save document record' 
-        }, { status: 500 })
-      }
-
-      return NextResponse.json({ 
-        error: waitError.message || 'Failed to complete import operation',
         document
       }, { status: 500 })
     }

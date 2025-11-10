@@ -80,21 +80,36 @@ def main():
             }), file=sys.stderr)
             sys.exit(1)
 
-        # Extract file name from operation response
-        file_name = None
+        # Extract document resource name from operation response
+        # The document resource name format is: fileSearchStores/{store_id}/documents/{document_id}
+        document_resource_name = None
         if hasattr(operation, 'response'):
             response = operation.response
             if isinstance(response, dict):
-                if 'file' in response and 'name' in response['file']:
-                    file_name = response['file']['name']
+                # Check for document resource name (fileSearchStores/.../documents/...)
+                if 'document' in response and 'name' in response['document']:
+                    document_resource_name = response['document']['name']
                 elif 'name' in response:
-                    file_name = response['name']
+                    name = response['name']
+                    # Check if it's the document resource name format
+                    if name.startswith('fileSearchStores/'):
+                        document_resource_name = name
+                    # Otherwise it might be files/{id} which we can't use directly for deletion
+                    # We'll need to look it up later
+                # Also check for file reference (legacy - if document not found)
+                if not document_resource_name and 'file' in response and 'name' in response['file']:
+                    # This is files/{id}, not the document resource name
+                    # We can't use this directly, will need lookup later
+                    # For now, we'll return None and the Node.js code will look it up
+                    pass
 
         # Return success result
+        # If we have document_resource_name, use it; otherwise use display_name
+        # The Node.js code will look up the document resource name if needed
         result = {
             "success": True,
             "operation_name": operation.name if hasattr(operation, 'name') else None,
-            "file_name": file_name or display_name,
+            "file_name": document_resource_name or display_name,  # Use document resource name if available
             "done": operation.done
         }
 

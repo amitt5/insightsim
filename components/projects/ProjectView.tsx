@@ -134,6 +134,59 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     }
   };
 
+  const handleListFiles = async () => {
+    try {
+      // Get the store ID from project
+      const projectResponse = await fetch(`/api/projects/${project.id}`);
+      if (!projectResponse.ok) {
+        throw new Error('Failed to fetch project');
+      }
+      const projectData = await projectResponse.json();
+      const storeId = projectData?.project?.google_file_search_store_id;
+
+      if (!storeId) {
+        console.log('No File Search Store found for this project');
+        toast({
+          title: "No store found",
+          description: "No File Search Store exists for this project yet. Upload a file first.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Extract store ID from full store name (format: fileSearchStores/{id})
+      const storeIdOnly = storeId.replace('fileSearchStores/', '');
+
+      // Call API to list files
+      const filesResponse = await fetch(`/api/projects/${project.id}/rag/stores/${storeIdOnly}/files`);
+      
+      if (!filesResponse.ok) {
+        const errorData = await filesResponse.json();
+        throw new Error(errorData.error || 'Failed to list files');
+      }
+
+      const result = await filesResponse.json();
+      
+      // Console log the results
+      console.log('=== Files in Google File Search Store ===');
+      console.log('Store Name:', result.storeName);
+      console.log('Files:', JSON.stringify(result.files, null, 2));
+      console.log('==========================================');
+
+      toast({
+        title: "Files listed",
+        description: `Found files in store. Check console for details.`,
+      });
+    } catch (error: any) {
+      console.error('Error listing files:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to list files",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   const analysisObj = {
     "analysis": [
@@ -1683,10 +1736,23 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
             onUploadSuccess={handleRagDocumentUpload}
           />
           
-          <RagDocumentList 
-            documents={ragDocuments}
-            onDelete={handleRagDocumentDelete}
-          />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">RAG Documents</h3>
+              <Button
+                variant="outline"
+                onClick={handleListFiles}
+                className="flex items-center gap-2"
+              >
+                <FileIcon className="h-4 w-4" />
+                List Files
+              </Button>
+            </div>
+            <RagDocumentList 
+              documents={ragDocuments}
+              onDelete={handleRagDocumentDelete}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="personas">

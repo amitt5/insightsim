@@ -1,3 +1,4 @@
+import {GoogleGenAI} from '@google/genai';
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
@@ -72,6 +73,15 @@ export async function POST(
     if (projectError || !project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 })
     }
+
+    // const ai = new GoogleGenAI({apiKey: process.env.GEMINI_API_KEY});
+
+
+    // const response = await ai.models.generateContent({
+    //   model: 'gemini-2.5-flash',
+    //   contents: 'Why is the sky blue?',
+    // });
+    // console.log('amit211', response.text);
 
     // Parse form data
     const formData = await request.formData()

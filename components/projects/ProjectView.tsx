@@ -786,7 +786,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           const data = await response.json();
           console.log('fetchSyntheticAnalysis', data);
           if (data?.analysis) {
-            setSyntheticAnalysis(data.analysis.analysis || data.analysis);
+            // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+            const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+            setSyntheticAnalysis(normalized);
           }
         }
       } catch (error) {
@@ -809,7 +811,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         } else {
           const data = await response.json();
           if (data?.analysis) {
-            setHumanAnalysis(data.analysis.analysis || data.analysis);
+            // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+            const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+            setHumanAnalysis(normalized);
           }
         }
       } catch (error) {
@@ -818,13 +822,6 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         setHumanAnalysis(null);
       }
     };
-
-    // Update hasAnalysis whenever synthetic or human analysis changes
-    useEffect(() => {
-      const hasAnyAnalysis = (syntheticAnalysis && Array.isArray(syntheticAnalysis) && syntheticAnalysis.length > 0) ||
-                            (humanAnalysis && Array.isArray(humanAnalysis) && humanAnalysis.length > 0);
-      setHasAnalysis(hasAnyAnalysis);
-    }, [syntheticAnalysis, humanAnalysis]);
 
     // Only fetch data if project.id exists
     if (project.id) {
@@ -1113,6 +1110,14 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [humanAnalysis, setHumanAnalysis] = useState<any | null>(null);
   const [hasAnalysis, setHasAnalysis] = useState(false);
 
+  // Update hasAnalysis whenever synthetic or human analysis changes
+  useEffect(() => {
+    // Since we normalize the data when setting it, analysis should always be an array or null
+    const hasAnyAnalysis = (Array.isArray(syntheticAnalysis) && syntheticAnalysis.length > 0) ||
+                          (Array.isArray(humanAnalysis) && humanAnalysis.length > 0);
+    setHasAnalysis(hasAnyAnalysis);
+  }, [syntheticAnalysis, humanAnalysis]);
+
   const handleGenerateSyntheticAnalysis = async () => {
     if (isGeneratingSyntheticAnalysis) return;
     setIsGeneratingSyntheticAnalysis(true);
@@ -1126,7 +1131,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       }
       const data = await response.json();
       if (data?.analysis) {
-        setSyntheticAnalysis(data.analysis.analysis || data.analysis);
+        // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+        const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+        setSyntheticAnalysis(normalized);
         toast({
           title: 'Analysis ready',
           description: 'Synthetic analysis generated and saved.',
@@ -1161,7 +1168,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       console.log('=== Human Analysis Generated ===');
       console.log('Full response:', data);
       if (data?.analysis) {
-        setHumanAnalysis(data.analysis.analysis || data.analysis);
+        // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+        const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+        setHumanAnalysis(normalized);
         toast({
           title: 'Analysis ready',
           description: 'Human analysis generated and saved.',

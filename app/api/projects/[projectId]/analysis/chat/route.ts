@@ -92,7 +92,9 @@ export async function POST(
       .single()
 
     if (!syntheticError && syntheticData?.analysis_json) {
-      syntheticAnalysis = syntheticData.analysis_json.analysis || syntheticData.analysis_json
+      // Normalize: if analysis_json has an 'analysis' property (array), use that; otherwise use analysis_json itself
+      const data = syntheticData.analysis_json;
+      syntheticAnalysis = Array.isArray(data) ? data : (data.analysis || data);
     }
 
     // Fetch human analysis
@@ -104,7 +106,9 @@ export async function POST(
       .single()
 
     if (!humanError && humanData?.analysis_json) {
-      humanAnalysis = humanData.analysis_json.analysis || humanData.analysis_json
+      // Normalize: if analysis_json has an 'analysis' property (array), use that; otherwise use analysis_json itself
+      const data = humanData.analysis_json;
+      humanAnalysis = Array.isArray(data) ? data : (data.analysis || data);
     }
 
     // Check if we have at least one analysis

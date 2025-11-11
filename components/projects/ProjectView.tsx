@@ -22,6 +22,7 @@ import { TargetSegmentSelectionModal } from "./TargetSegmentSelectionModal"
 import { runPersonaAnalysis, AnalysisProgress } from "@/utils/personaAnalysis"
 import warmUpService from "@/utils/warmupService"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import AnalysisChat from "./AnalysisChat"
 
 // Define the tab interface
 interface TabItem {
@@ -818,6 +819,13 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       }
     };
 
+    // Update hasAnalysis whenever synthetic or human analysis changes
+    useEffect(() => {
+      const hasAnyAnalysis = (syntheticAnalysis && Array.isArray(syntheticAnalysis) && syntheticAnalysis.length > 0) ||
+                            (humanAnalysis && Array.isArray(humanAnalysis) && humanAnalysis.length > 0);
+      setHasAnalysis(hasAnyAnalysis);
+    }, [syntheticAnalysis, humanAnalysis]);
+
     // Only fetch data if project.id exists
     if (project.id) {
       fetchProjectPersonas();
@@ -1103,6 +1111,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [syntheticAnalysis, setSyntheticAnalysis] = useState<any | null>(null);
   const [isGeneratingHumanAnalysis, setIsGeneratingHumanAnalysis] = useState(false);
   const [humanAnalysis, setHumanAnalysis] = useState<any | null>(null);
+  const [hasAnalysis, setHasAnalysis] = useState(false);
 
   const handleGenerateSyntheticAnalysis = async () => {
     if (isGeneratingSyntheticAnalysis) return;
@@ -1404,6 +1413,22 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                   <p>Add a brief first to access this feature</p>
                 </TooltipContent>
               )}
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="ask-analysis" disabled={!briefText || !hasAnalysis}>Ask Analysis</TabsTrigger>
+              </TooltipTrigger>
+              {!briefText ? (
+                <TooltipContent>
+                  <p>Add a brief first to access this feature</p>
+                </TooltipContent>
+              ) : !hasAnalysis ? (
+                <TooltipContent>
+                  <p>Generate analysis first to chat with your data</p>
+                </TooltipContent>
+              ) : null}
             </Tooltip>
           </TooltipProvider>
         </TabsList>
@@ -2130,6 +2155,19 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
               </div>
             </TabsContent> */}
           </Tabs>
+        </TabsContent>
+
+        <TabsContent value="ask-analysis" className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-gray-500">Ask Analysis</label>
+            <p className="text-sm text-gray-400 mt-1">
+              Chat with your analysis data to get insights and answers to your questions
+            </p>
+          </div>
+          <AnalysisChat 
+            projectId={project.id}
+            hasAnalysis={hasAnalysis}
+          />
         </TabsContent>
 
         

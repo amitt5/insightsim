@@ -7,9 +7,13 @@ import { tmpdir } from 'os';
 
 const execAsync = promisify(exec);
 
-const API_KEY = process.env.GEMINI_API_KEY;
-if (!API_KEY) {
-  throw new Error('GEMINI_API_KEY environment variable is not set');
+// Lazy getter for API key - only throws when actually needed
+function getApiKey(): string {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY environment variable is not set. Please set it in your .env.local file or environment variables.');
+  }
+  return apiKey;
 }
 
 /**
@@ -27,7 +31,7 @@ export async function getOrCreateFileSearchStore(
   }
 
   try {
-    const client = new GoogleGenAI({ apiKey: API_KEY });
+    const client = new GoogleGenAI({ apiKey: getApiKey() });
 
     // Create a new file search store
     // The store name will be based on the project ID
@@ -46,7 +50,7 @@ export async function getOrCreateFileSearchStore(
     // If store already exists, try to get it
     if (error.message?.includes('already exists') || error.code === 409) {
       // Try to list stores and find the one for this project
-      const client = new GoogleGenAI({ apiKey: API_KEY });
+      const client = new GoogleGenAI({ apiKey: getApiKey() });
       const stores = await client.fileSearchStores.list();
       const projectStore = stores.find((s: any) => 
         s.displayName?.includes(projectId) || s.name?.includes(projectId)
@@ -89,7 +93,7 @@ export async function uploadFileToFileSearchStore(
 
     // Execute the Python script
     const { stdout, stderr } = await execAsync(
-      `python3 "${scriptPath}" "${API_KEY}" "${tempFilePath}" "${storeName}" "${displayName}"`
+      `python3 "${scriptPath}" "${getApiKey()}" "${tempFilePath}" "${storeName}" "${displayName}"`
     );
 
     // Parse the JSON response from the Python script
@@ -134,7 +138,7 @@ export async function listFilesInStore(
   storeName: string
 ): Promise<any[]> {
   try {
-    const client = new GoogleGenAI({ apiKey: API_KEY });
+    const client = new GoogleGenAI({ apiKey: getApiKey() });
 
     // List documents in the store
     const documents = await client.fileSearchStores.documents.list({
@@ -157,7 +161,7 @@ export async function deleteFileFromStore(
   storeName?: string
 ): Promise<void> {
   try {
-    const client = new GoogleGenAI({ apiKey: API_KEY });
+    const client = new GoogleGenAI({ apiKey: getApiKey() });
 
     // The fileName might be in different formats:
     // - fileSearchStores/{store_id}/documents/{document_id}

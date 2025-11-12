@@ -120,10 +120,23 @@ export async function POST(
     console.log(`Uploading RAG document to Google File Search Store: ${file.name}`)
 
     // Step 1: Get or create File Search Store for the project
-    const storeName = await getOrCreateFileSearchStore(
-      resolvedParams.projectId,
-      project.google_file_search_store_id
-    )
+    let storeName: string;
+    try {
+      storeName = await getOrCreateFileSearchStore(
+        resolvedParams.projectId,
+        project.google_file_search_store_id
+      )
+    } catch (error: any) {
+      // Check if it's a missing API key error
+      if (error.message?.includes('GEMINI_API_KEY')) {
+        return NextResponse.json({ 
+          error: 'Google Gemini API key is not configured. Please set GEMINI_API_KEY environment variable.',
+          details: error.message
+        }, { status: 500 })
+      }
+      // Re-throw other errors
+      throw error;
+    }
 
     // Update project with store ID if it's new
     if (!project.google_file_search_store_id) {
@@ -154,6 +167,14 @@ export async function POST(
       console.log(`File upload and import completed successfully, file: ${googleFileNameResult}`)
     } catch (uploadError: any) {
       console.error("Error uploading file to Google File Search Store:", uploadError)
+      
+      // Check if it's a missing API key error
+      if (uploadError.message?.includes('GEMINI_API_KEY')) {
+        return NextResponse.json({ 
+          error: 'Google Gemini API key is not configured. Please set GEMINI_API_KEY environment variable.',
+          details: uploadError.message
+        }, { status: 500 })
+      }
       
       // Create document record with failed status
       const documentData = {
@@ -228,6 +249,15 @@ export async function POST(
 
   } catch (error: any) {
     console.error('Error in RAG document upload API:', error)
+    
+    // Check if it's a missing API key error
+    if (error.message?.includes('GEMINI_API_KEY')) {
+      return NextResponse.json({ 
+        error: 'Google Gemini API key is not configured. Please set GEMINI_API_KEY environment variable.',
+        details: error.message
+      }, { status: 500 })
+    }
+    
     return NextResponse.json({ 
       error: error.message || 'An unexpected error occurred' 
     }, { status: 500 })

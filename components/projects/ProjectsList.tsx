@@ -38,6 +38,7 @@ interface ProjectViewModel {
   objective: string;
   target_group: string;
   created_at: string;
+  updated_at: string;
   studies_count: number;
   simulation_count: number;
   interview_count: number;
@@ -208,7 +209,13 @@ export default function ProjectsList() {
         
         const data = await response.json();
         console.log('ProjectsApiResponse', data);
-        setProjects(data.projects);
+        // Sort projects by updated_at (most recent first)
+        const sortedProjects = (data.projects || []).sort((a: ProjectViewModel, b: ProjectViewModel) => {
+          const dateA = new Date(a.updated_at || a.created_at).getTime();
+          const dateB = new Date(b.updated_at || b.created_at).getTime();
+          return dateB - dateA; // Descending order (newest first)
+        });
+        setProjects(sortedProjects);
         setError(null);
       } catch (err) {
         console.error("Failed to fetch simulations:", err);

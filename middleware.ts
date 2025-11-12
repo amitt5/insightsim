@@ -8,6 +8,7 @@ export async function middleware(request: NextRequest) {
 
   // Public paths that don't require authentication
   const publicPaths = [
+    '/',           // Add this line to make the landing page public
     '/idi/',
     '/api/public/'
   ];

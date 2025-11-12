@@ -22,6 +22,7 @@ import { TargetSegmentSelectionModal } from "./TargetSegmentSelectionModal"
 import { runPersonaAnalysis, AnalysisProgress } from "@/utils/personaAnalysis"
 import warmUpService from "@/utils/warmupService"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import AnalysisChat from "./AnalysisChat"
 
 // Define the tab interface
 interface TabItem {
@@ -793,7 +794,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           const data = await response.json();
           console.log('fetchSyntheticAnalysis', data);
           if (data?.analysis) {
-            setSyntheticAnalysis(data.analysis.analysis || data.analysis);
+            // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+            const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+            setSyntheticAnalysis(normalized);
           }
         }
       } catch (error) {
@@ -816,7 +819,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         } else {
           const data = await response.json();
           if (data?.analysis) {
-            setHumanAnalysis(data.analysis.analysis || data.analysis);
+            // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+            const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+            setHumanAnalysis(normalized);
           }
         }
       } catch (error) {
@@ -1111,6 +1116,15 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [syntheticAnalysis, setSyntheticAnalysis] = useState<any | null>(null);
   const [isGeneratingHumanAnalysis, setIsGeneratingHumanAnalysis] = useState(false);
   const [humanAnalysis, setHumanAnalysis] = useState<any | null>(null);
+  const [hasAnalysis, setHasAnalysis] = useState(false);
+
+  // Update hasAnalysis whenever synthetic or human analysis changes
+  useEffect(() => {
+    // Since we normalize the data when setting it, analysis should always be an array or null
+    const hasAnyAnalysis = (Array.isArray(syntheticAnalysis) && syntheticAnalysis.length > 0) ||
+                          (Array.isArray(humanAnalysis) && humanAnalysis.length > 0);
+    setHasAnalysis(hasAnyAnalysis);
+  }, [syntheticAnalysis, humanAnalysis]);
 
   const handleGenerateSyntheticAnalysis = async () => {
     if (isGeneratingSyntheticAnalysis) return;
@@ -1125,7 +1139,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       }
       const data = await response.json();
       if (data?.analysis) {
-        setSyntheticAnalysis(data.analysis.analysis || data.analysis);
+        // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+        const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+        setSyntheticAnalysis(normalized);
         toast({
           title: 'Analysis ready',
           description: 'Synthetic analysis generated and saved.',
@@ -1160,7 +1176,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       console.log('=== Human Analysis Generated ===');
       console.log('Full response:', data);
       if (data?.analysis) {
-        setHumanAnalysis(data.analysis.analysis || data.analysis);
+        // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+        const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+        setHumanAnalysis(normalized);
         toast({
           title: 'Analysis ready',
           description: 'Human analysis generated and saved.',
@@ -1412,6 +1430,22 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                   <p>Add a brief first to access this feature</p>
                 </TooltipContent>
               )}
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="ask-analysis" disabled={!briefText || !hasAnalysis}>Ask Analysis</TabsTrigger>
+              </TooltipTrigger>
+              {!briefText ? (
+                <TooltipContent>
+                  <p>Add a brief first to access this feature</p>
+                </TooltipContent>
+              ) : !hasAnalysis ? (
+                <TooltipContent>
+                  <p>Generate analysis first to chat with your data</p>
+                </TooltipContent>
+              ) : null}
             </Tooltip>
           </TooltipProvider>
         </TabsList>
@@ -2149,6 +2183,19 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
               </div>
             </TabsContent> */}
           </Tabs>
+        </TabsContent>
+
+        <TabsContent value="ask-analysis" className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-gray-500">Ask Analysis</label>
+            <p className="text-sm text-gray-400 mt-1">
+              Chat with your analysis data to get insights and answers to your questions
+            </p>
+          </div>
+          <AnalysisChat 
+            projectId={project.id}
+            hasAnalysis={hasAnalysis}
+          />
         </TabsContent>
 
         

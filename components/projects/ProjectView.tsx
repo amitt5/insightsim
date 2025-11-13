@@ -998,29 +998,29 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     
     try {
       // Step 1 & 2: Run analysis with progress updates
-      const { analysis, sources } = await runPersonaAnalysis(
-        project.brief_text,
-        selectedSegments,
-        (progress: AnalysisProgress) => {
-          console.log('ProjectView - Progress update:', progress);
-          console.log('ProjectView - Setting analysisStep to:', progress.step);
-          setAnalysisStep(progress.step);
-          setAnalysisMessage(progress.message);
-          if (progress.analysisResult) {
-            console.log('ProjectView - Setting analysis data:', progress.analysisResult);
-            setAnalysisData(progress.analysisResult);
-          }
-          if (progress.sourceResults) {
-            console.log('ProjectView - Setting source data:', progress.sourceResults);
-            setSourceData(progress.sourceResults);
-          }
-        }
-      );
-      console.log('analysis111', analysis, sources);
+      // const { analysis, sources } = await runPersonaAnalysis(
+      //   project.brief_text,
+      //   selectedSegments,
+      //   (progress: AnalysisProgress) => {
+      //     console.log('ProjectView - Progress update:', progress);
+      //     console.log('ProjectView - Setting analysisStep to:', progress.step);
+      //     setAnalysisStep(progress.step);
+      //     setAnalysisMessage(progress.message);
+      //     if (progress.analysisResult) {
+      //       console.log('ProjectView - Setting analysis data:', progress.analysisResult);
+      //       setAnalysisData(progress.analysisResult);
+      //     }
+      //     if (progress.sourceResults) {
+      //       console.log('ProjectView - Setting source data:', progress.sourceResults);
+      //       setSourceData(progress.sourceResults);
+      //     }
+      //   }
+      // );
+      // console.log('analysis111', analysis, sources);
 
-      // Step 4: Generate personas with enhanced data (minimum 2 seconds)
-      setAnalysisStep('generating_personas');
-      setAnalysisMessage('Generating Personas...');
+      // // Step 4: Generate personas with enhanced data (minimum 2 seconds)
+      // setAnalysisStep('generating_personas');
+      // setAnalysisMessage('Generating Personas...');
       
       const personaStartTime = Date.now();
       
@@ -1031,11 +1031,11 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       const result = await runSimulationAPI(messages, 'groq', 'persona-generation');
       console.log('[generate personas with segments] result111', result);
       // Ensure persona generation shows for at least 2 seconds
-      const personaElapsed = Date.now() - personaStartTime;
-      const personaRemainingTime = Math.max(0, 2000 - personaElapsed);
-      if (personaRemainingTime > 0) {
-        await new Promise(resolve => setTimeout(resolve, personaRemainingTime));
-      }
+      // const personaElapsed = Date.now() - personaStartTime;
+      // const personaRemainingTime = Math.max(0, 2000 - personaElapsed);
+      // if (personaRemainingTime > 0) {
+        // await new Promise(resolve => setTimeout(resolve, personaRemainingTime));
+      // }
 
       try {
         let responseText = result.reply || "";
@@ -1048,8 +1048,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         const generatedPersonas = Array.isArray(parsedResponse) ? parsedResponse : (parsedResponse.personas || []);
 
         console.log('generatedPersonas with segments', generatedPersonas);
-        console.log('Analysis results:', analysis);
-        console.log('Source selections:', sources);
+        // console.log('Analysis results:', analysis);
+        // console.log('Source selections:', sources);
         
         // Add editable field to each persona
         const personasWithEditable = generatedPersonas.map((persona: any) => ({

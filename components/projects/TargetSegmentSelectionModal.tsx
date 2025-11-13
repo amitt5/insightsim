@@ -119,8 +119,15 @@ export function TargetSegmentSelectionModal({
 
   const handleGenerate = () => {
     if (selectedSegments.length > 0) {
-      setInternalAnalysisStep('analyzing_requirements');
-      setInternalAnalysisMessage('System Analyzing Requirements...');
+      // Commented out intermediate stages - skipping directly to persona generation
+      // setInternalAnalysisStep('analyzing_requirements');
+      // setInternalAnalysisMessage('System Analyzing Requirements...');
+      // setInternalAnalysisStep('source_selection');
+      // setInternalAnalysisMessage('Intelligent Source Selection...');
+      // setInternalAnalysisStep('scraping_web');
+      // setInternalAnalysisMessage('Scraping the Web...');
+      
+      // Directly generate personas
       onGenerate(selectedSegments);
     }
   };

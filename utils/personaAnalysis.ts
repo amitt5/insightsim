@@ -205,62 +205,63 @@ export async function runPersonaAnalysis(
       identifySources(brief, selectedSegments, analysis)
     );
     
+    // Commented out intermediate stages - skipping directly to persona generation
     // Step 1: Analysis (exactly 2 seconds)
-    onProgress({
-      step: 'analyzing_requirements',
-      message: 'System Analyzing Requirements...'
-    });
+    // onProgress({
+    //   step: 'analyzing_requirements',
+    //   message: 'System Analyzing Requirements...'
+    // });
     
     // Wait for analysis to complete, but ensure we show this step for at least 2 seconds
-    const analysisStartTime = Date.now();
+    // const analysisStartTime = Date.now();
     const analysis = await analysisPromise;
-    const analysisElapsed = Date.now() - analysisStartTime;
-    const analysisRemainingTime = Math.max(0, 2000 - analysisElapsed);
+    // const analysisElapsed = Date.now() - analysisStartTime;
+    // const analysisRemainingTime = Math.max(0, 2000 - analysisElapsed);
     
     // Send analysis results to UI
-    onProgress({
-      step: 'analyzing_requirements',
-      message: 'System Analyzing Requirements...',
-      analysisResult: analysis
-    });
+    // onProgress({
+    //   step: 'analyzing_requirements',
+    //   message: 'System Analyzing Requirements...',
+    //   analysisResult: analysis
+    // });
     
     // Wait for remaining time if needed
-    if (analysisRemainingTime > 0) {
-      await new Promise(resolve => setTimeout(resolve, analysisRemainingTime));
-    }
+    // if (analysisRemainingTime > 0) {
+    //   await new Promise(resolve => setTimeout(resolve, analysisRemainingTime));
+    // }
     
     // Step 2: Source Selection (exactly 2 seconds)
-    onProgress({
-      step: 'source_selection',
-      message: 'Intelligent Source Selection...'
-    });
+    // onProgress({
+    //   step: 'source_selection',
+    //   message: 'Intelligent Source Selection...'
+    // });
     
     // Wait for sources to complete, but ensure we show this step for at least 2 seconds
-    const sourceStartTime = Date.now();
+    // const sourceStartTime = Date.now();
     const sources = await sourcePromise;
-    const sourceElapsed = Date.now() - sourceStartTime;
-    const sourceRemainingTime = Math.max(0, 2000 - sourceElapsed);
+    // const sourceElapsed = Date.now() - sourceStartTime;
+    // const sourceRemainingTime = Math.max(0, 2000 - sourceElapsed);
     
     // Send source results to UI
-    onProgress({
-      step: 'source_selection',
-      message: 'Intelligent Source Selection...',
-      sourceResults: sources
-    });
+    // onProgress({
+    //   step: 'source_selection',
+    //   message: 'Intelligent Source Selection...',
+    //   sourceResults: sources
+    // });
     
     // Wait for remaining time if needed
-    if (sourceRemainingTime > 0) {
-      await new Promise(resolve => setTimeout(resolve, sourceRemainingTime));
-    }
+    // if (sourceRemainingTime > 0) {
+    //   await new Promise(resolve => setTimeout(resolve, sourceRemainingTime));
+    // }
     
     // Step 3: Scraping the Web (exactly 4 seconds)
-    onProgress({
-      step: 'scraping_web',
-      message: 'Scraping the Web...'
-    });
+    // onProgress({
+    //   step: 'scraping_web',
+    //   message: 'Scraping the Web...'
+    // });
     
     // Simulate web scraping for exactly 4 seconds
-    await new Promise(resolve => setTimeout(resolve, 4000));
+    // await new Promise(resolve => setTimeout(resolve, 4000));
     
     return { analysis, sources };
   } catch (error) {

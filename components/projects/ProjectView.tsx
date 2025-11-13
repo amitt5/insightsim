@@ -1441,7 +1441,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="interviews" disabled={!briefText}>Human Interviews</TabsTrigger>
+                <TabsTrigger value="interviews" disabled={!briefText}>Human Interviews(beta)</TabsTrigger>
               </TooltipTrigger>
               {!briefText && (
                 <TooltipContent>
@@ -1465,7 +1465,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="ask-analysis" disabled={!briefText || !hasAnalysis}>Ask Analysis</TabsTrigger>
+                <TabsTrigger value="ask-analysis" disabled={!briefText || !hasAnalysis}>Ask Analysis(beta)</TabsTrigger>
               </TooltipTrigger>
               {!briefText ? (
                 <TooltipContent>

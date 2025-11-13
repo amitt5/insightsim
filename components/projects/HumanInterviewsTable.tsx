@@ -326,7 +326,7 @@ export default function HumanInterviewsTable({ projectId }: HumanInterviewsTable
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'conducted' | 'uploaded')}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="conducted">Conducted Interviews</TabsTrigger>
-          <TabsTrigger value="uploaded">Uploaded Interviews (Beta)</TabsTrigger>
+          <TabsTrigger value="uploaded">Uploaded Interviews (demo)</TabsTrigger>
         </TabsList>
 
         {/* Conducted Interviews Tab */}

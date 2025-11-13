@@ -62,7 +62,7 @@ export default function DashboardLayout({
               href="/personas/enhanced"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >
-              Enhanced Personas
+              Enhanced Personas (beta)
             </Link>
             <Link 
               href="/interviews"

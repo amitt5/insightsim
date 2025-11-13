@@ -7,7 +7,6 @@ This script is called from Node.js via subprocess.
 
 import sys
 import json
-import requests
 
 try:
     from google import genai
@@ -33,100 +32,100 @@ def main():
         store_name = sys.argv[2]
         query = sys.argv[3]
 
-        # Use REST API directly to avoid SDK API issues
-        # Try different models in order of preference
-        models_to_try = ['gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-1.5-pro-002']
-        
+        # Initialize Google GenAI client (same as upload script)
+        client = genai.Client(api_key=api_key)
+
         # Ensure store_name is in correct format
         if not store_name.startswith('fileSearchStores/'):
             store_name = f'fileSearchStores/{store_name}'
+
+        # Use SDK's generate_content method with file search
+        # Based on official docs: https://ai.google.dev/gemini-api/docs/file-search#javascript
+        # Try gemini-2.5-flash first, fallback to gemini-2.5-pro
+        models_to_try = ['gemini-2.5-flash', 'gemini-2.5-pro']
         
-        # Try different tools format - maybe it needs to be an object, not an array
-        request_body = {
-            'contents': [{
-                'role': 'user',
-                'parts': [{'text': query}]
-            }],
-            'tools': {
-                'fileSearch': {
-                    'fileSearchStoreNames': [store_name]
-                }
-            }
-        }
-        
-        # Try each model until one works
+        response = None
         last_error = None
+        
         for model in models_to_try:
-            url = f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}'
-            
-            # Make the API request
-            api_response = requests.post(url, json=request_body)
-            
-            if api_response.ok:
-                response_data = api_response.json()
-                break
-            else:
-                error_text = api_response.text
-                last_error = f'Model {model}: {api_response.status_code} - {error_text}'
-                # If it's a 404 (model not found), try next model
-                if api_response.status_code == 404:
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=query,  # Can be a string directly
+                    config=types.GenerateContentConfig(
+                        tools=[
+                            types.Tool(
+                                file_search=types.FileSearch(
+                                    file_search_store_names=[store_name]
+                                )
+                            )
+                        ]
+                    )
+                )
+                break  # Success, exit loop
+            except Exception as e:
+                last_error = str(e)
+                # If it's a model not found error, try next model
+                if 'not found' in str(e).lower() or '404' in str(e):
                     continue
                 else:
                     # For other errors, raise immediately
-                    raise Exception(f'Google API error: {api_response.status_code} - {error_text}')
-        else:
-            # If all models failed, raise the last error
-            raise Exception(f'All models failed. Last error: {last_error}')
+                    raise
         
-        # Extract the response - REST API returns JSON directly
+        if response is None:
+            raise Exception(f'All models failed. Last error: {last_error}')
+
+        # Extract the response
         result = {
             "success": True,
             "candidates": []
         }
 
-        # Process candidates from REST API response
-        candidates = response_data.get('candidates', [])
-        for candidate in candidates:
-            candidate_data = {
-                "content": {
-                    "parts": []
-                },
-                "groundingMetadata": {
-                    "groundingChunks": []
+        # Process candidates from SDK response
+        if hasattr(response, 'candidates') and response.candidates:
+            for candidate in response.candidates:
+                candidate_data = {
+                    "content": {
+                        "parts": []
+                    },
+                    "groundingMetadata": {
+                        "groundingChunks": []
+                    }
                 }
-            }
 
-            # Extract content parts
-            content = candidate.get('content', {})
-            parts = content.get('parts', [])
-            for part in parts:
-                if 'text' in part:
-                    candidate_data["content"]["parts"].append({"text": part['text']})
+                # Extract content parts
+                if hasattr(candidate, 'content') and candidate.content:
+                    if hasattr(candidate.content, 'parts'):
+                        for part in candidate.content.parts:
+                            if hasattr(part, 'text'):
+                                candidate_data["content"]["parts"].append({"text": part.text})
 
-            # Extract grounding metadata
-            grounding_metadata = candidate.get('groundingMetadata', {})
-            grounding_chunks = grounding_metadata.get('groundingChunks', [])
-            for chunk in grounding_chunks:
-                chunk_data = {
-                    "documentChunkInfo": {},
-                    "chunk": {}
-                }
-                
-                doc_chunk_info = chunk.get('documentChunkInfo', {})
-                if 'documentName' in doc_chunk_info:
-                    chunk_data["documentChunkInfo"]["documentName"] = doc_chunk_info['documentName']
-                if 'chunkIndex' in doc_chunk_info:
-                    chunk_data["documentChunkInfo"]["chunkIndex"] = doc_chunk_info['chunkIndex']
-                
-                chunk_obj = chunk.get('chunk', {})
-                if 'chunkId' in chunk_obj:
-                    chunk_data["chunk"]["chunkId"] = chunk_obj['chunkId']
-                if 'chunkRelevanceScore' in chunk_obj:
-                    chunk_data["chunk"]["chunkRelevanceScore"] = chunk_obj['chunkRelevanceScore']
-                
-                candidate_data["groundingMetadata"]["groundingChunks"].append(chunk_data)
+                # Extract grounding metadata
+                if hasattr(candidate, 'grounding_metadata') and candidate.grounding_metadata:
+                    if hasattr(candidate.grounding_metadata, 'grounding_chunks'):
+                        for chunk in candidate.grounding_metadata.grounding_chunks:
+                            chunk_data = {
+                                "documentChunkInfo": {},
+                                "chunk": {}
+                            }
+                            
+                            if hasattr(chunk, 'document_chunk_info'):
+                                doc_info = chunk.document_chunk_info
+                                if hasattr(doc_info, 'document_name'):
+                                    chunk_data["documentChunkInfo"]["documentName"] = doc_info.document_name
+                                if hasattr(doc_info, 'chunk_index'):
+                                    chunk_data["documentChunkInfo"]["chunkIndex"] = doc_info.chunk_index
+                            
+                            if hasattr(chunk, 'chunk'):
+                                chunk_obj = chunk.chunk
+                                if hasattr(chunk_obj, 'chunk_id'):
+                                    chunk_data["chunk"]["chunkId"] = chunk_obj.chunk_id
+                                if hasattr(chunk_obj, 'chunk_relevance_score'):
+                                    chunk_data["chunk"]["chunkRelevanceScore"] = chunk_obj.chunk_relevance_score
+                            
+                            candidate_data["groundingMetadata"]["groundingChunks"].append(chunk_data)
 
-            result["candidates"].append(candidate_data)
+                result["candidates"].append(candidate_data)
 
         print(json.dumps(result))
         sys.exit(0)

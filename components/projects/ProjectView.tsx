@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Project, Simulation, RagDocument } from "@/utils/types"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Project, Simulation, RagDocument, Persona } from "@/utils/types"
 import { useToast } from "@/hooks/use-toast"
 import StudyList from "./StudyList"
 import HumanInterviewsTable from "./HumanInterviewsTable"
@@ -43,6 +44,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   });
   const [activeTab, setActiveTab] = useState(project.active_tab || 'brief');
   const [projectPersonas, setProjectPersonas] = useState<any[]>([]);
+  const [enhancedPersonas, setEnhancedPersonas] = useState<Persona[]>([]);
+  const [isLoadingEnhancedPersonas, setIsLoadingEnhancedPersonas] = useState(false);
+  const [personaFilter, setPersonaFilter] = useState<'all' | 'project' | 'enhanced'>('all');
   const [simulations, setSimulations] = useState<Simulation[]>([]);
   const [isGeneratingPersonas, setIsGeneratingPersonas] = useState(false);
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
@@ -840,6 +844,32 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       fetchHumanAnalysis();
     }
   }, [project.id, toast]);
+
+  // Fetch enhanced personas when personas tab is active
+  useEffect(() => {
+    const fetchEnhancedPersonas = async () => {
+      if (activeTab !== 'personas') return;
+      
+      setIsLoadingEnhancedPersonas(true);
+      try {
+        const response = await fetch('/api/personas?grounded=true');
+        if (response.ok) {
+          const data = await response.json();
+          setEnhancedPersonas(Array.isArray(data) ? data : []);
+        } else {
+          console.error('Error fetching enhanced personas:', response.status, response.statusText);
+          // Don't show error toast, just log it
+        }
+      } catch (error) {
+        console.error('Network error fetching enhanced personas:', error);
+        // Don't show error toast, just log it
+      } finally {
+        setIsLoadingEnhancedPersonas(false);
+      }
+    };
+
+    fetchEnhancedPersonas();
+  }, [activeTab, project.id]);
 
   const handleShowTargetSegmentModal = async () => {
     if (!project.brief_text) {
@@ -1791,7 +1821,17 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
 
         <TabsContent value="personas">
           <div className="space-y-4">
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-between items-center gap-2">
+              <Select value={personaFilter} onValueChange={(value: 'all' | 'project' | 'enhanced') => setPersonaFilter(value)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter personas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="project">Project Only</SelectItem>
+                  <SelectItem value="enhanced">Enhanced Only</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
                 variant="default"
                 onClick={handleShowTargetSegmentModal}
@@ -1812,33 +1852,58 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
               </Button>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-              {isLoadingPersonas ? (
-                <div className="col-span-full flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                </div>
-              ) : (
-                <>
-                  {projectPersonas.map((persona) => (
-                    <PersonaCard
-                      key={persona.id}
-                      persona={{ ...persona }}
-                      selected={false}
-                      onToggle={() => {}}
-                      selectable={false}
-                      onUpdate={(updatedPersona) => {
-                        setProjectPersonas(prev => prev.map(p => p.id === updatedPersona.id ? updatedPersona : p));
-                      }}
-                    />
-                  ))}
-                  {projectPersonas.length === 0 && !isGeneratingPersonas && (
-                    <div className="col-span-full text-center py-8 text-gray-500">
-                      No personas generated yet. Click "Generate Personas" to create personas based on your brief.
+            {(() => {
+              // Create a Set of enhanced persona IDs for efficient lookup
+              const enhancedPersonaIds = new Set(enhancedPersonas.map(p => p.id));
+              
+              // Filter personas based on selected filter
+              let filteredPersonas: any[] = [];
+              if (personaFilter === 'all') {
+                // Show both, no deduplication - duplicates appear twice
+                filteredPersonas = [...projectPersonas, ...enhancedPersonas];
+              } else if (personaFilter === 'project') {
+                filteredPersonas = [...projectPersonas];
+              } else if (personaFilter === 'enhanced') {
+                filteredPersonas = [...enhancedPersonas];
+              }
+
+              return (
+                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                  {(isLoadingPersonas || isLoadingEnhancedPersonas) ? (
+                    <div className="col-span-full flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                     </div>
+                  ) : (
+                    <>
+                      {filteredPersonas.map((persona, index) => (
+                        <PersonaCard
+                          key={`${persona.id}-${index}`}
+                          persona={{ ...persona }}
+                          selected={false}
+                          onToggle={() => {}}
+                          selectable={false}
+                          isEnhanced={enhancedPersonaIds.has(persona.id)}
+                          onUpdate={(updatedPersona) => {
+                            if (enhancedPersonaIds.has(updatedPersona.id)) {
+                              setEnhancedPersonas(prev => prev.map(p => p.id === updatedPersona.id ? updatedPersona : p));
+                            } else {
+                              setProjectPersonas(prev => prev.map(p => p.id === updatedPersona.id ? updatedPersona : p));
+                            }
+                          }}
+                        />
+                      ))}
+                      {filteredPersonas.length === 0 && !isGeneratingPersonas && (
+                        <div className="col-span-full text-center py-8 text-gray-500">
+                          {personaFilter === 'all' && "No personas available. Generate personas or use enhanced personas."}
+                          {personaFilter === 'project' && "No project personas yet. Click 'Generate Personas' to create some."}
+                          {personaFilter === 'enhanced' && "No enhanced personas yet. Create enhanced personas from the Enhanced Personas page."}
+                        </div>
+                      )}
+                    </>
                   )}
-                </>
-              )}
-            </div>
+                </div>
+              );
+            })()}
 
             {/* Edit Persona Dialog */}
             <CreatePersonaDialog

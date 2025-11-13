@@ -255,7 +255,7 @@ const debugAPIRawResponse = async () => {
     console.log('RAG document selection changed:', index, checked, newSelectedRagDocuments);
   };
 
-  // Fetch full text for selected RAG documents
+  // Fetch full text for selected RAG documents (OLD CAG APPROACH - DEPRECATED)
   const fetchSelectedDocumentTexts = async () => {
     const projectId = simulationData?.simulation?.project_id;
     if (!projectId) {
@@ -292,6 +292,91 @@ const debugAPIRawResponse = async () => {
     }
 
     return documentTexts;
+  };
+
+  // Fetch relevant context from Google File Search Store (NEW APPROACH)
+  const fetchRagContextFromGoogle = async (userMessage: string) => {
+    const projectId = simulationData?.simulation?.project_id;
+    if (!projectId) {
+      console.warn('📤 [RAG SEARCH] No project_id found - cannot search documents');
+      return [];
+    }
+
+    const selectedDocuments = ragDocuments.filter((_, index) => selectedRagDocuments[index]);
+    
+    // If no documents are selected, return empty array
+    if (selectedDocuments.length === 0) {
+      console.log('📤 [RAG SEARCH] No documents selected - skipping search');
+      return [];
+    }
+
+    // If no user message, return empty array
+    if (!userMessage || userMessage.trim().length === 0) {
+      console.log('📤 [RAG SEARCH] No user message provided - skipping search');
+      return [];
+    }
+
+    console.log('📤 [RAG SEARCH] Starting Google File Search...');
+    console.log('📤 [RAG SEARCH] User message:', userMessage);
+    console.log('📤 [RAG SEARCH] Selected documents:', selectedDocuments.length);
+    console.log('📤 [RAG SEARCH] Selected document names:', selectedDocuments.map(d => d.original_filename));
+
+    try {
+      // Call the Google File Search API
+      const response = await fetch(`/api/projects/${projectId}/rag/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: userMessage,
+          limit: 10 // Get up to 10 relevant chunks
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('📤 [RAG SEARCH] API Error:', response.status, errorData);
+        return [];
+      }
+
+      const searchData = await response.json();
+      console.log('📤 [RAG SEARCH] Google search response:', searchData);
+      console.log('📤 [RAG SEARCH] Total results found:', searchData.totalResults);
+
+      if (!searchData.success || !searchData.results || searchData.results.length === 0) {
+        console.log('📤 [RAG SEARCH] No relevant chunks found');
+        return [];
+      }
+
+      // Transform Google search results to match expected format
+      const documentTexts = searchData.results.map((result: any, index: number) => {
+        const text = result.text || '';
+        return {
+          id: result.id || `search-result-${index}`,
+          filename: result.source?.filename || 'unknown',
+          text: text,
+          text_length: text.length
+        };
+      });
+
+      console.log('📤 [RAG SEARCH] Extracted context chunks:', documentTexts.length);
+      console.log('📤 [RAG SEARCH] Total context length:', documentTexts.reduce((sum: number, doc: any) => sum + doc.text_length, 0), 'characters');
+      
+      // Log first chunk sample
+      if (documentTexts.length > 0) {
+        console.log('📤 [RAG SEARCH] First chunk sample:', {
+          filename: documentTexts[0].filename,
+          textLength: documentTexts[0].text_length,
+          textPreview: documentTexts[0].text.substring(0, 200) + '...'
+        });
+      }
+
+      return documentTexts;
+    } catch (error: any) {
+      console.error('📤 [RAG SEARCH] Error fetching context from Google:', error);
+      return [];
+    }
   };
 
   // Load signed URLs for stimulus images
@@ -707,10 +792,11 @@ const debugAPIRawResponse = async () => {
         }
       }
       
-      // Fetch selected document texts for CAG
-      const selectedDocumentTexts = await fetchSelectedDocumentTexts();
-      console.log('Selected document texts for CAG:', selectedDocumentTexts);
-      console.log('Valid images to send:', validImages);
+      // Fetch relevant context from Google File Search (NEW APPROACH)
+      console.log('📝 [MESSAGE SEND] Before Google search, message:', newMessage);
+      const selectedDocumentTexts = await fetchRagContextFromGoogle(newMessage);
+      console.log('📝 [MESSAGE SEND] After Google search, context:', selectedDocumentTexts);
+      console.log('📝 [MESSAGE SEND] Valid images to send:', validImages);
       
       setNewMessage('');
       setAttachedImages([]); // Clear attached images after sending

@@ -213,7 +213,7 @@ export default function RagDocumentUpload({
           Drag and drop PDF files here, or click to select files
         </p>
         <p className="text-xs text-gray-400">
-          Maximum file size: 10MB • Supported format: PDF
+          Maximum file size: 50MB • Supported format: PDF
         </p>
       </div>
 

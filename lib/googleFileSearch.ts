@@ -152,6 +152,83 @@ export async function listFilesInStore(
 }
 
 /**
+ * Search a File Search Store using Google Gemini API
+ * @param storeName - The store name (format: fileSearchStores/{store_id})
+ * @param query - The search query string
+ * @param options - Optional search parameters (maxResults, etc.)
+ * @returns Search results with candidates containing content and grounding metadata
+ */
+export async function searchFileStore(
+  storeName: string,
+  query: string,
+  options?: { maxResults?: number }
+): Promise<any> {
+  try {
+    console.log('🔍 [GOOGLE SEARCH] Starting search...');
+    console.log('🔍 [GOOGLE SEARCH] Query:', query);
+    console.log('🔍 [GOOGLE SEARCH] Store:', storeName);
+    console.log('🔍 [GOOGLE SEARCH] Options:', options);
+
+    // Ensure storeName is in the correct format (fileSearchStores/{store_id})
+    let normalizedStoreName = storeName;
+    if (!storeName.startsWith('fileSearchStores/')) {
+      // If it's just the store ID, prepend the prefix
+      normalizedStoreName = `fileSearchStores/${storeName}`;
+    }
+    
+    console.log('🔍 [GOOGLE SEARCH] Normalized store name:', normalizedStoreName);
+
+    // Use Python script to search (similar to upload approach)
+    // This avoids REST API protobuf issues
+    const scriptPath = join(process.cwd(), 'scripts', 'search_file_search.py');
+
+    // Execute the Python script
+    const { stdout, stderr } = await execAsync(
+      `python3 "${scriptPath}" "${getApiKey()}" "${normalizedStoreName}" "${query.replace(/"/g, '\\"')}"`
+    );
+
+    // Parse the JSON response from the Python script
+    const result = JSON.parse(stdout.trim());
+
+    if (!result.success) {
+      throw new Error(result.error || 'Search failed');
+    }
+
+    console.log('🔍 [GOOGLE SEARCH] Raw API response:', JSON.stringify(result, null, 2));
+    console.log('🔍 [GOOGLE SEARCH] Number of candidates:', result.candidates?.length || 0);
+    
+    if (result.candidates && result.candidates.length > 0) {
+      const firstCandidate = result.candidates[0];
+      const groundingChunks = firstCandidate.groundingMetadata?.groundingChunks || [];
+      console.log('🔍 [GOOGLE SEARCH] Grounding chunks found:', groundingChunks.length);
+      
+      if (groundingChunks.length > 0) {
+        console.log('🔍 [GOOGLE SEARCH] First chunk sample:', {
+          documentName: groundingChunks[0].documentChunkInfo?.documentName,
+          chunkIndex: groundingChunks[0].documentChunkInfo?.chunkIndex,
+          relevanceScore: groundingChunks[0].chunk?.chunkRelevanceScore
+        });
+      }
+    }
+
+    return result;
+  } catch (error: any) {
+    // Try to parse error from stderr if stdout failed
+    if (error.stderr) {
+      try {
+        const errorResult = JSON.parse(error.stderr.trim());
+        throw new Error(errorResult.error || 'Search failed');
+      } catch {
+        // If parsing fails, use the original error
+      }
+    }
+    
+    console.error('❌ [GOOGLE SEARCH] Error:', error);
+    throw new Error(`Failed to search file store: ${error.message}`);
+  }
+}
+
+/**
  * Delete a file from Google File Search Store
  * @param fileName - The file name or document resource name to delete
  * @param storeName - Optional store name for lookup

@@ -127,42 +127,44 @@ export function PersonaCard({
                   )}
                 </div>
               </div>
-              <div className="flex gap-1">
-                {persona.editable && (
-                  <>
-                    <button 
-                      className="p-1 hover:bg-white/50 rounded-full transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsEditDialogOpen(true);
-                      }}
-                      title="Edit Persona"
-                    >
-                      <Pencil className="h-4 w-4 text-primary" />
-                    </button>
-                    <button 
-                      className="p-1 hover:bg-white/50 rounded-full transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete();
-                      }}
-                      title="Delete Persona"
-                    >
-                      <Trash className="h-4 w-4 text-red-500" />
-                    </button>
-                  </>
-                )}
-                <button
-                  className="p-1 hover:bg-white/50 rounded-full transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsDuplicateDialogOpen(true);
-                  }}
-                  title="Duplicate Persona"
-                >
-                  <Copy className="h-4 w-4 text-primary" />
-                </button>
-              </div>
+              {!isEnhanced && (
+                <div className="flex gap-1">
+                  {persona.editable && (
+                    <>
+                      <button 
+                        className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsEditDialogOpen(true);
+                        }}
+                        title="Edit Persona"
+                      >
+                        <Pencil className="h-4 w-4 text-primary" />
+                      </button>
+                      <button 
+                        className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete();
+                        }}
+                        title="Delete Persona"
+                      >
+                        <Trash className="h-4 w-4 text-red-500" />
+                      </button>
+                    </>
+                  )}
+                  <button
+                    className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDuplicateDialogOpen(true);
+                    }}
+                    title="Duplicate Persona"
+                  >
+                    <Copy className="h-4 w-4 text-primary" />
+                  </button>
+                </div>
+              )}
             </div>
             
             {/* Row 2: Occupation */}

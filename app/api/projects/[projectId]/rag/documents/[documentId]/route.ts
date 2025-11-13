@@ -1,6 +1,7 @@
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
+import { deleteFileFromStore } from "@/lib/googleFileSearch"
 
 // DELETE route to delete a RAG document
 export async function DELETE(
@@ -34,15 +35,40 @@ export async function DELETE(
       return NextResponse.json({ error: "Document not found" }, { status: 404 })
     }
 
-    // Delete the file from storage
-    const bucket = 'rag-documents' // Default bucket
-    const { error: storageError } = await supabase.storage
-      .from(bucket)
-      .remove([document.file_path])
+    // Delete the file from Google File Search Store if it exists
+    if (document.google_file_name) {
+      try {
+        // Get the store name for lookup if needed
+        const { data: project } = await supabase
+          .from("projects")
+          .select("google_file_search_store_id")
+          .eq("id", params.projectId)
+          .single();
 
-    if (storageError) {
-      console.error('Storage deletion error:', storageError)
-      // Continue with database deletion even if storage deletion fails
+        const storeName = project?.google_file_search_store_id || undefined;
+        
+        await deleteFileFromStore(document.google_file_name, storeName);
+        console.log(`Deleted file from Google File Search Store: ${document.google_file_name}`);
+      } catch (googleDeleteError: any) {
+        console.error('Error deleting file from Google File Search Store:', googleDeleteError);
+        // Continue with database deletion even if Google deletion fails
+        // This prevents orphaned database records if Google deletion fails
+      }
+    } else {
+      console.log('No google_file_name found, skipping Google File Search Store deletion');
+    }
+
+    // Delete the file from Supabase storage if it exists (legacy - for old documents)
+    if (document.file_path) {
+      const bucket = 'rag-documents' // Default bucket
+      const { error: storageError } = await supabase.storage
+        .from(bucket)
+        .remove([document.file_path])
+
+      if (storageError) {
+        console.error('Storage deletion error:', storageError)
+        // Continue with database deletion even if storage deletion fails
+      }
     }
 
     // Delete the document record from database (this will cascade delete chunks)

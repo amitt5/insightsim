@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileIcon, Trash2, Download, Eye, Play, Loader2 } from "lucide-react";
+import { FileIcon, Trash2, Download, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RagDocument } from "@/utils/types";
 
@@ -13,16 +13,12 @@ interface RagDocumentCardProps {
   document: RagDocument;
   onDelete: (documentId: string) => void;
   onView?: (document: RagDocument) => void;
-  onProcess?: (documentId: string) => void;
-  isProcessing?: boolean;
 }
 
 export default function RagDocumentCard({ 
   document, 
   onDelete, 
-  onView,
-  onProcess,
-  isProcessing = false
+  onView
 }: RagDocumentCardProps) {
   const { toast } = useToast();
 
@@ -76,13 +72,6 @@ export default function RagDocumentCard({
     }
   };
 
-  const handleProcess = () => {
-    if (onProcess) {
-      onProcess(document.id);
-    }
-  };
-
-  const canProcess = document.status === 'uploaded' && !isProcessing;
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -116,24 +105,6 @@ export default function RagDocumentCard({
           </div>
 
           <div className="flex items-center space-x-1 ml-2">
-            {canProcess && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleProcess}
-                className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                title="Process document for RAG"
-              >
-                <Play className="h-4 w-4" />
-              </Button>
-            )}
-            
-            {isProcessing && (
-              <div className="h-8 w-8 flex items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-              </div>
-            )}
-            
             <Button
               variant="ghost"
               size="sm"
@@ -150,7 +121,6 @@ export default function RagDocumentCard({
               onClick={handleDelete}
               className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
               title="Delete document"
-              disabled={isProcessing}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

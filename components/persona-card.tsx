@@ -15,6 +15,7 @@ interface PersonaCardProps {
   onToggle?: () => void
   selectable?: boolean
   onUpdate?: (updatedPersona: Persona) => void
+  isEnhanced?: boolean
 }
 
 export function PersonaCard({ 
@@ -22,7 +23,8 @@ export function PersonaCard({
   selected = false, 
   onToggle, 
   selectable = false,
-  onUpdate 
+  onUpdate,
+  isEnhanced = false
 }: PersonaCardProps) {
   const { toast } = useToast();
   
@@ -100,7 +102,14 @@ export function PersonaCard({
         className={cardClasses}
         onClick={selectable && onToggle ? onToggle : undefined}
       >
-        <CardContent className="p-0">
+        <CardContent className="p-0 relative">
+          {isEnhanced && (
+            <div className="absolute top-2 right-2 z-10">
+              <Badge variant="default" className="text-xs bg-purple-100 text-purple-800 hover:bg-purple-200">
+                Enhanced
+              </Badge>
+            </div>
+          )}
           <div className="bg-primary/10 p-4">
             {/* Row 1: Name/Basic Info + Buttons */}
             <div className="flex items-start gap-3 mb-1">
@@ -118,42 +127,44 @@ export function PersonaCard({
                   )}
                 </div>
               </div>
-              <div className="flex gap-1">
-                {persona.editable && (
-                  <>
-                    <button 
-                      className="p-1 hover:bg-white/50 rounded-full transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsEditDialogOpen(true);
-                      }}
-                      title="Edit Persona"
-                    >
-                      <Pencil className="h-4 w-4 text-primary" />
-                    </button>
-                    <button 
-                      className="p-1 hover:bg-white/50 rounded-full transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete();
-                      }}
-                      title="Delete Persona"
-                    >
-                      <Trash className="h-4 w-4 text-red-500" />
-                    </button>
-                  </>
-                )}
-                <button
-                  className="p-1 hover:bg-white/50 rounded-full transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsDuplicateDialogOpen(true);
-                  }}
-                  title="Duplicate Persona"
-                >
-                  <Copy className="h-4 w-4 text-primary" />
-                </button>
-              </div>
+              {!isEnhanced && (
+                <div className="flex gap-1">
+                  {persona.editable && (
+                    <>
+                      <button 
+                        className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsEditDialogOpen(true);
+                        }}
+                        title="Edit Persona"
+                      >
+                        <Pencil className="h-4 w-4 text-primary" />
+                      </button>
+                      <button 
+                        className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete();
+                        }}
+                        title="Delete Persona"
+                      >
+                        <Trash className="h-4 w-4 text-red-500" />
+                      </button>
+                    </>
+                  )}
+                  <button
+                    className="p-1 hover:bg-white/50 rounded-full transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDuplicateDialogOpen(true);
+                    }}
+                    title="Duplicate Persona"
+                  >
+                    <Copy className="h-4 w-4 text-primary" />
+                  </button>
+                </div>
+              )}
             </div>
             
             {/* Row 2: Occupation */}

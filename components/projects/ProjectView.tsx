@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Project, Simulation, RagDocument } from "@/utils/types"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Project, Simulation, RagDocument, Persona } from "@/utils/types"
 import { useToast } from "@/hooks/use-toast"
 import StudyList from "./StudyList"
 import HumanInterviewsTable from "./HumanInterviewsTable"
@@ -19,9 +20,10 @@ import { ArrowLeft, ArrowRight, Upload, X,Edit2, Save, FileIcon, Sparkles, Loade
 import AIBriefAssistant from "./AIBriefAssistant"
 import { RagDocumentUpload, RagDocumentList } from "./rag"
 import { TargetSegmentSelectionModal } from "./TargetSegmentSelectionModal"
-import { runPersonaAnalysis, AnalysisProgress } from "@/utils/personaAnalysis"
+import { AnalysisProgress } from "@/utils/personaAnalysis"
 import warmUpService from "@/utils/warmupService"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import AnalysisChat from "./AnalysisChat"
 
 // Define the tab interface
 interface TabItem {
@@ -42,6 +44,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   });
   const [activeTab, setActiveTab] = useState(project.active_tab || 'brief');
   const [projectPersonas, setProjectPersonas] = useState<any[]>([]);
+  const [enhancedPersonas, setEnhancedPersonas] = useState<Persona[]>([]);
+  const [isLoadingEnhancedPersonas, setIsLoadingEnhancedPersonas] = useState(false);
+  const [personaFilter, setPersonaFilter] = useState<'all' | 'project' | 'enhanced'>('all');
   const [simulations, setSimulations] = useState<Simulation[]>([]);
   const [isGeneratingPersonas, setIsGeneratingPersonas] = useState(false);
   const [isLoadingPersonas, setIsLoadingPersonas] = useState(false);
@@ -55,7 +60,6 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [isSavingBrief, setIsSavingBrief] = useState(false);
   const [projectMediaUrls, setProjectMediaUrls] = useState<string[]>(project.media_urls || []);
   const [ragDocuments, setRagDocuments] = useState<RagDocument[]>([]);
-  const [processingDocuments, setProcessingDocuments] = useState<Set<string>>(new Set());
   
   // Target segment selection modal state
   const [showTargetSegmentModal, setShowTargetSegmentModal] = useState(false);
@@ -135,50 +139,59 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     }
   };
 
-  const handleRagDocumentProcess = async (documentId: string) => {
+  const handleListFiles = async () => {
     try {
-      // Add to processing set
-      setProcessingDocuments(prev => new Set(prev).add(documentId));
+      // Get the store ID from project
+      const projectResponse = await fetch(`/api/projects/${project.id}`);
+      if (!projectResponse.ok) {
+        throw new Error('Failed to fetch project');
+      }
+      const projectData = await projectResponse.json();
+      const storeId = projectData?.project?.google_file_search_store_id;
 
-      const response = await fetch(`/api/projects/${project.id}/rag/documents/${documentId}/process`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to process document');
+      if (!storeId) {
+        console.log('No File Search Store found for this project');
+        toast({
+          title: "No store found",
+          description: "No File Search Store exists for this project yet. Upload a file first.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      const result = await response.json();
+      // Extract store ID from full store name (format: fileSearchStores/{id})
+      const storeIdOnly = storeId.replace('fileSearchStores/', '');
+
+      // Call API to list files
+      const filesResponse = await fetch(`/api/projects/${project.id}/rag/stores/${storeIdOnly}/files`);
       
-      toast({
-        title: "Processing started",
-        description: "Document processing has been initiated. This may take a few minutes.",
-      });
-
-      // Refresh documents to get updated status
-      const refreshResponse = await fetch(`/api/projects/${project.id}/rag/documents`);
-      if (refreshResponse.ok) {
-        const refreshData = await refreshResponse.json();
-        setRagDocuments(refreshData.documents || []);
+      if (!filesResponse.ok) {
+        const errorData = await filesResponse.json();
+        throw new Error(errorData.error || 'Failed to list files');
       }
 
+      const result = await filesResponse.json();
+      
+      // Console log the results
+      console.log('=== Files in Google File Search Store ===');
+      console.log('Store Name:', result.storeName);
+      console.log('Files:', JSON.stringify(result.files, null, 2));
+      console.log('==========================================');
+
+      toast({
+        title: "Files listed",
+        description: `Found files in store. Check console for details.`,
+      });
     } catch (error: any) {
-      console.error('Error processing document:', error);
+      console.error('Error listing files:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to process document",
+        description: error.message || "Failed to list files",
         variant: "destructive",
-      });
-    } finally {
-      // Remove from processing set
-      setProcessingDocuments(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(documentId);
-        return newSet;
       });
     }
   };
+
 
   const analysisObj = {
     "analysis": [
@@ -785,7 +798,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           const data = await response.json();
           console.log('fetchSyntheticAnalysis', data);
           if (data?.analysis) {
-            setSyntheticAnalysis(data.analysis.analysis || data.analysis);
+            // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+            const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+            setSyntheticAnalysis(normalized);
           }
         }
       } catch (error) {
@@ -808,7 +823,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         } else {
           const data = await response.json();
           if (data?.analysis) {
-            setHumanAnalysis(data.analysis.analysis || data.analysis);
+            // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+            const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+            setHumanAnalysis(normalized);
           }
         }
       } catch (error) {
@@ -827,6 +844,32 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       fetchHumanAnalysis();
     }
   }, [project.id, toast]);
+
+  // Fetch enhanced personas when personas tab is active
+  useEffect(() => {
+    const fetchEnhancedPersonas = async () => {
+      if (activeTab !== 'personas') return;
+      
+      setIsLoadingEnhancedPersonas(true);
+      try {
+        const response = await fetch('/api/personas?grounded=true');
+        if (response.ok) {
+          const data = await response.json();
+          setEnhancedPersonas(Array.isArray(data) ? data : []);
+        } else {
+          console.error('Error fetching enhanced personas:', response.status, response.statusText);
+          // Don't show error toast, just log it
+        }
+      } catch (error) {
+        console.error('Network error fetching enhanced personas:', error);
+        // Don't show error toast, just log it
+      } finally {
+        setIsLoadingEnhancedPersonas(false);
+      }
+    };
+
+    fetchEnhancedPersonas();
+  }, [activeTab, project.id]);
 
   const handleShowTargetSegmentModal = async () => {
     if (!project.brief_text) {
@@ -993,29 +1036,29 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
     
     try {
       // Step 1 & 2: Run analysis with progress updates
-      const { analysis, sources } = await runPersonaAnalysis(
-        project.brief_text,
-        selectedSegments,
-        (progress: AnalysisProgress) => {
-          console.log('ProjectView - Progress update:', progress);
-          console.log('ProjectView - Setting analysisStep to:', progress.step);
-          setAnalysisStep(progress.step);
-          setAnalysisMessage(progress.message);
-          if (progress.analysisResult) {
-            console.log('ProjectView - Setting analysis data:', progress.analysisResult);
-            setAnalysisData(progress.analysisResult);
-          }
-          if (progress.sourceResults) {
-            console.log('ProjectView - Setting source data:', progress.sourceResults);
-            setSourceData(progress.sourceResults);
-          }
-        }
-      );
-      console.log('analysis111', analysis, sources);
+      // const { analysis, sources } = await runPersonaAnalysis(
+      //   project.brief_text,
+      //   selectedSegments,
+      //   (progress: AnalysisProgress) => {
+      //     console.log('ProjectView - Progress update:', progress);
+      //     console.log('ProjectView - Setting analysisStep to:', progress.step);
+      //     setAnalysisStep(progress.step);
+      //     setAnalysisMessage(progress.message);
+      //     if (progress.analysisResult) {
+      //       console.log('ProjectView - Setting analysis data:', progress.analysisResult);
+      //       setAnalysisData(progress.analysisResult);
+      //     }
+      //     if (progress.sourceResults) {
+      //       console.log('ProjectView - Setting source data:', progress.sourceResults);
+      //       setSourceData(progress.sourceResults);
+      //     }
+      //   }
+      // );
+      // console.log('analysis111', analysis, sources);
 
-      // Step 4: Generate personas with enhanced data (minimum 2 seconds)
-      setAnalysisStep('generating_personas');
-      setAnalysisMessage('Generating Personas...');
+      // // Step 4: Generate personas with enhanced data (minimum 2 seconds)
+      // setAnalysisStep('generating_personas');
+      // setAnalysisMessage('Generating Personas...');
       
       const personaStartTime = Date.now();
       
@@ -1026,11 +1069,11 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       const result = await runSimulationAPI(messages, 'groq', 'persona-generation');
       console.log('[generate personas with segments] result111', result);
       // Ensure persona generation shows for at least 2 seconds
-      const personaElapsed = Date.now() - personaStartTime;
-      const personaRemainingTime = Math.max(0, 2000 - personaElapsed);
-      if (personaRemainingTime > 0) {
-        await new Promise(resolve => setTimeout(resolve, personaRemainingTime));
-      }
+      // const personaElapsed = Date.now() - personaStartTime;
+      // const personaRemainingTime = Math.max(0, 2000 - personaElapsed);
+      // if (personaRemainingTime > 0) {
+        // await new Promise(resolve => setTimeout(resolve, personaRemainingTime));
+      // }
 
       try {
         let responseText = result.reply || "";
@@ -1043,8 +1086,8 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
         // Handle both direct array response and wrapped response
         const generatedPersonas = Array.isArray(parsedResponse) ? parsedResponse : (parsedResponse.personas || []);
         console.log('generatedPersonas with segments', generatedPersonas);
-        console.log('Analysis results:', analysis);
-        console.log('Source selections:', sources);
+        // console.log('Analysis results:', analysis);
+        // console.log('Source selections:', sources);
         
         // Add editable field to each persona
         const personasWithEditable = generatedPersonas.map((persona: any) => ({
@@ -1103,6 +1146,15 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
   const [syntheticAnalysis, setSyntheticAnalysis] = useState<any | null>(null);
   const [isGeneratingHumanAnalysis, setIsGeneratingHumanAnalysis] = useState(false);
   const [humanAnalysis, setHumanAnalysis] = useState<any | null>(null);
+  const [hasAnalysis, setHasAnalysis] = useState(false);
+
+  // Update hasAnalysis whenever synthetic or human analysis changes
+  useEffect(() => {
+    // Since we normalize the data when setting it, analysis should always be an array or null
+    const hasAnyAnalysis = (Array.isArray(syntheticAnalysis) && syntheticAnalysis.length > 0) ||
+                          (Array.isArray(humanAnalysis) && humanAnalysis.length > 0);
+    setHasAnalysis(hasAnyAnalysis);
+  }, [syntheticAnalysis, humanAnalysis]);
 
   const handleGenerateSyntheticAnalysis = async () => {
     if (isGeneratingSyntheticAnalysis) return;
@@ -1117,7 +1169,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       }
       const data = await response.json();
       if (data?.analysis) {
-        setSyntheticAnalysis(data.analysis.analysis || data.analysis);
+        // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+        const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+        setSyntheticAnalysis(normalized);
         toast({
           title: 'Analysis ready',
           description: 'Synthetic analysis generated and saved.',
@@ -1152,7 +1206,9 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       console.log('=== Human Analysis Generated ===');
       console.log('Full response:', data);
       if (data?.analysis) {
-        setHumanAnalysis(data.analysis.analysis || data.analysis);
+        // Normalize: if analysis has an 'analysis' property (array), use that; otherwise use analysis itself
+        const normalized = Array.isArray(data.analysis) ? data.analysis : (data.analysis.analysis || data.analysis);
+        setHumanAnalysis(normalized);
         toast({
           title: 'Analysis ready',
           description: 'Human analysis generated and saved.',
@@ -1385,7 +1441,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="interviews" disabled={!briefText}>Human Interviews</TabsTrigger>
+                <TabsTrigger value="interviews" disabled={!briefText}>Human Interviews(beta)</TabsTrigger>
               </TooltipTrigger>
               {!briefText && (
                 <TooltipContent>
@@ -1404,6 +1460,22 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
                   <p>Add a brief first to access this feature</p>
                 </TooltipContent>
               )}
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="ask-analysis" disabled={!briefText || !hasAnalysis}>Ask Analysis(beta)</TabsTrigger>
+              </TooltipTrigger>
+              {!briefText ? (
+                <TooltipContent>
+                  <p>Add a brief first to access this feature</p>
+                </TooltipContent>
+              ) : !hasAnalysis ? (
+                <TooltipContent>
+                  <p>Generate analysis first to chat with your data</p>
+                </TooltipContent>
+              ) : null}
             </Tooltip>
           </TooltipProvider>
         </TabsList>
@@ -1728,17 +1800,38 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
             onUploadSuccess={handleRagDocumentUpload}
           />
           
-          <RagDocumentList 
-            documents={ragDocuments}
-            onDelete={handleRagDocumentDelete}
-            onProcess={handleRagDocumentProcess}
-            processingDocuments={processingDocuments}
-          />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">RAG Documents</h3>
+              <Button
+                variant="outline"
+                onClick={handleListFiles}
+                className="flex items-center gap-2"
+              >
+                <FileIcon className="h-4 w-4" />
+                List Files
+              </Button>
+            </div>
+            <RagDocumentList 
+              documents={ragDocuments}
+              onDelete={handleRagDocumentDelete}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="personas">
           <div className="space-y-4">
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-between items-center gap-2">
+              <Select value={personaFilter} onValueChange={(value: 'all' | 'project' | 'enhanced') => setPersonaFilter(value)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter personas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="project">Project Only</SelectItem>
+                  <SelectItem value="enhanced">Enhanced Only</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
                 variant="default"
                 onClick={handleShowTargetSegmentModal}
@@ -1759,33 +1852,58 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
               </Button>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-              {isLoadingPersonas ? (
-                <div className="col-span-full flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                </div>
-              ) : (
-                <>
-                  {projectPersonas.map((persona) => (
-                    <PersonaCard
-                      key={persona.id}
-                      persona={{ ...persona }}
-                      selected={false}
-                      onToggle={() => {}}
-                      selectable={false}
-                      onUpdate={(updatedPersona) => {
-                        setProjectPersonas(prev => prev.map(p => p.id === updatedPersona.id ? updatedPersona : p));
-                      }}
-                    />
-                  ))}
-                  {projectPersonas.length === 0 && !isGeneratingPersonas && (
-                    <div className="col-span-full text-center py-8 text-gray-500">
-                      No personas generated yet. Click "Generate Personas" to create personas based on your brief.
+            {(() => {
+              // Create a Set of enhanced persona IDs for efficient lookup
+              const enhancedPersonaIds = new Set(enhancedPersonas.map(p => p.id));
+              
+              // Filter personas based on selected filter
+              let filteredPersonas: any[] = [];
+              if (personaFilter === 'all') {
+                // Show both, no deduplication - duplicates appear twice
+                filteredPersonas = [...projectPersonas, ...enhancedPersonas];
+              } else if (personaFilter === 'project') {
+                filteredPersonas = [...projectPersonas];
+              } else if (personaFilter === 'enhanced') {
+                filteredPersonas = [...enhancedPersonas];
+              }
+
+              return (
+                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                  {(isLoadingPersonas || isLoadingEnhancedPersonas) ? (
+                    <div className="col-span-full flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                     </div>
+                  ) : (
+                    <>
+                      {filteredPersonas.map((persona, index) => (
+                        <PersonaCard
+                          key={`${persona.id}-${index}`}
+                          persona={{ ...persona }}
+                          selected={false}
+                          onToggle={() => {}}
+                          selectable={false}
+                          isEnhanced={enhancedPersonaIds.has(persona.id)}
+                          onUpdate={(updatedPersona) => {
+                            if (enhancedPersonaIds.has(updatedPersona.id)) {
+                              setEnhancedPersonas(prev => prev.map(p => p.id === updatedPersona.id ? updatedPersona : p));
+                            } else {
+                              setProjectPersonas(prev => prev.map(p => p.id === updatedPersona.id ? updatedPersona : p));
+                            }
+                          }}
+                        />
+                      ))}
+                      {filteredPersonas.length === 0 && !isGeneratingPersonas && (
+                        <div className="col-span-full text-center py-8 text-gray-500">
+                          {personaFilter === 'all' && "No personas available. Generate personas or use enhanced personas."}
+                          {personaFilter === 'project' && "No project personas yet. Click 'Generate Personas' to create some."}
+                          {personaFilter === 'enhanced' && "No enhanced personas yet. Create enhanced personas from the Enhanced Personas page."}
+                        </div>
+                      )}
+                    </>
                   )}
-                </>
-              )}
-            </div>
+                </div>
+              );
+            })()}
 
             {/* Edit Persona Dialog */}
             <CreatePersonaDialog
@@ -2130,6 +2248,19 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
               </div>
             </TabsContent> */}
           </Tabs>
+        </TabsContent>
+
+        <TabsContent value="ask-analysis" className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-gray-500">Ask Analysis</label>
+            <p className="text-sm text-gray-400 mt-1">
+              Chat with your analysis data to get insights and answers to your questions
+            </p>
+          </div>
+          <AnalysisChat 
+            projectId={project.id}
+            hasAnalysis={hasAnalysis}
+          />
         </TabsContent>
 
         

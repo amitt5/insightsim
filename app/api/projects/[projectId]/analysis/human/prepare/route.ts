@@ -79,6 +79,18 @@ export async function POST(
       return NextResponse.json({ error: respondentsError.message }, { status: 500 })
     }
 
+    // Fetch uploaded interviews for this project with metadata (speaker mappings)
+    const { data: uploadedInterviews, error: uploadedError } = await supabase
+      .from("uploaded_interviews")
+      .select("id, original_filename, transcript_text, file_type, status, metadata")
+      .eq("project_id", projectId)
+      .eq("status", "processed") // Only include processed interviews with transcripts
+
+    if (uploadedError) {
+      console.error("Error fetching uploaded interviews:", uploadedError)
+      // Continue without uploaded interviews rather than failing
+    }
+
     const respondentIds = (respondents || []).map((r: any) => r.id)
     let messagesByRespondent: Record<string, any[]> = {}
 
@@ -110,8 +122,8 @@ export async function POST(
       }
     }
 
-    // Build normalized payload - filter out interviews with 0 messages
-    const interviews = (respondents || [])
+    // Build normalized payload for conducted interviews - filter out interviews with 0 messages
+    const conductedInterviews = (respondents || [])
       .map((r: any) => ({
         respondentId: r.id,
         name: r.name,
@@ -122,6 +134,100 @@ export async function POST(
       }))
       .filter((interview: any) => interview.messages.length > 0) // Filter out empty conversations
 
+    // Helper function to parse speaker-separated transcript
+    function parseSpeakerTranscript(transcriptText: string, speakerMappings: Record<string, any> | null): any[] {
+      if (!transcriptText) return []
+
+      // Split by double newlines to get individual utterances
+      const utterances = transcriptText.split('\n\n').filter(line => line.trim().length > 0)
+      
+      const messages: any[] = []
+      let turnNumber = 1
+
+      utterances.forEach((utterance) => {
+        // Match pattern: "Speaker X: text here"
+        const match = utterance.match(/^Speaker\s+([A-Z]):\s*(.+)$/i)
+        
+        if (match) {
+          const speakerId = match[1].toUpperCase()
+          const text = match[2].trim()
+          
+          // Get speaker role from mappings, default to respondent
+          let role = "respondent"
+          if (speakerMappings && speakerMappings[speakerId]) {
+            role = speakerMappings[speakerId].role === 'moderator' ? 'moderator' : 'respondent'
+          }
+          
+          messages.push({
+            role: role,
+            text: text,
+            turn: turnNumber++,
+            createdAt: new Date().toISOString(),
+            speakerId: speakerId // Keep speaker ID for reference
+          })
+        } else {
+          // Fallback: try simpler pattern or treat as continuation
+          const fallbackMatch = utterance.match(/^([A-Z]):\s*(.+)$/i)
+          if (fallbackMatch) {
+            const speakerId = fallbackMatch[1].toUpperCase()
+            const text = fallbackMatch[2].trim()
+            
+            let role = "respondent"
+            if (speakerMappings && speakerMappings[speakerId]) {
+              role = speakerMappings[speakerId].role === 'moderator' ? 'moderator' : 'respondent'
+            }
+            
+            messages.push({
+              role: role,
+              text: text,
+              turn: turnNumber++,
+              createdAt: new Date().toISOString(),
+              speakerId: speakerId
+            })
+          }
+        }
+      })
+
+      return messages
+    }
+
+    // Build normalized payload for uploaded interviews
+    // Parse speaker-separated transcripts and use role mappings
+    const uploadedInterviewData = (uploadedInterviews || [])
+      .filter((ui: any) => ui.transcript_text && ui.transcript_text.trim().length > 0)
+      .map((ui: any) => {
+        // Get speaker mappings from metadata
+        const speakerMappings = ui.metadata?.speaker_mappings || null
+        
+        // Parse transcript with speaker labels
+        const messages = parseSpeakerTranscript(ui.transcript_text, speakerMappings)
+        
+        // Get speaker name from mappings or use default
+        const speakerNames = new Set<string>()
+        messages.forEach((msg: any) => {
+          if (msg.speakerId && speakerMappings && speakerMappings[msg.speakerId]) {
+            speakerNames.add(speakerMappings[msg.speakerId].name)
+          }
+        })
+        const displayName = speakerNames.size > 0 
+          ? Array.from(speakerNames).join(", ")
+          : ui.original_filename.replace(/\.[^/.]+$/, "")
+
+        return {
+          respondentId: ui.id,
+          name: displayName,
+          email: "",
+          age: null,
+          gender: "",
+          messages: messages,
+          source: "uploaded" // Mark as uploaded
+        }
+      })
+      .filter((interview: any) => interview.messages.length > 0)
+
+    // Combine both types of interviews
+    const interviews = [...conductedInterviews, ...uploadedInterviewData]
+
     const payload = {
       projectId,
       source: "human",
@@ -131,8 +237,19 @@ export async function POST(
 
     // Console log for testing
     console.log("=== Human Interviews Prepare - Merged Messages ===")
-    console.log(`Total respondents: ${(respondents || []).length}`)
-    console.log(`Interviews with messages (after filtering): ${interviews.length}`)
+    console.log(`Total conducted respondents: ${(respondents || []).length}`)
+    console.log(`Total uploaded interviews: ${(uploadedInterviews || []).length}`)
+    console.log(`Conducted interviews with messages: ${conductedInterviews.length}`)
+    console.log(`Uploaded interviews with transcripts: ${uploadedInterviewData.length}`)
+    
+    // Log details about uploaded interviews parsing
+    uploadedInterviewData.forEach((interview: any, idx: number) => {
+      const moderatorMessages = interview.messages.filter((m: any) => m.role === 'moderator').length
+      const respondentMessages = interview.messages.filter((m: any) => m.role === 'respondent').length
+      console.log(`Uploaded interview ${idx + 1} (${interview.name}): ${interview.messages.length} messages (${moderatorMessages} moderator, ${respondentMessages} respondent)`)
+    })
+    
+    console.log(`Total interviews (after filtering): ${interviews.length}`)
     console.log("Payload structure:", JSON.stringify(payload, null, 2))
     console.log("Sample merged messages (first respondent):", 
       payload.interviews[0]?.messages?.slice(0, 3) || "No messages")

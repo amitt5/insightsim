@@ -35,6 +35,9 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
   const [openPersonaModal, setOpenPersonaModal] = useState(false)
   const [hideSystemPersonas, setHideSystemPersonas] = useState(false)
+  const [enhancedPersonas, setEnhancedPersonas] = useState<Persona[]>([])
+  const [isLoadingEnhancedPersonas, setIsLoadingEnhancedPersonas] = useState(false)
+  const [personaFilter, setPersonaFilter] = useState<'all' | 'project' | 'enhanced'>('all')
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<{[key: string]: string}>({})
   const [fileError, setFileError] = useState<string | null>(null)
@@ -283,10 +286,55 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     setAutoSaveTimeout(timeout);
   };
 
-  // Filter personas based on hideSystemPersonas state
-  const filteredPersonas = hideSystemPersonas 
-    ? personas.filter(persona => persona.editable === true)
-    : personas;
+  // Fetch enhanced personas when step 2 is active
+  useEffect(() => {
+    const fetchEnhancedPersonas = async () => {
+      if (step !== 2) return;
+      
+      setIsLoadingEnhancedPersonas(true);
+      try {
+        const response = await fetch('/api/personas?grounded=true');
+        if (response.ok) {
+          const data = await response.json();
+          setEnhancedPersonas(Array.isArray(data) ? data : []);
+        } else {
+          console.error('Error fetching enhanced personas:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Network error fetching enhanced personas:', error);
+      } finally {
+        setIsLoadingEnhancedPersonas(false);
+      }
+    };
+
+    fetchEnhancedPersonas();
+  }, [step]);
+
+  // Filter personas based on hideSystemPersonas state and personaFilter
+  const getFilteredPersonas = () => {
+    // Create a Set of enhanced persona IDs for efficient lookup
+    const enhancedPersonaIds = new Set(enhancedPersonas.map(p => p.id));
+    
+    // Combine personas based on filter
+    let combined: Persona[] = [];
+    if (personaFilter === 'all') {
+      // Show both, no deduplication - duplicates appear twice
+      combined = [...personas, ...enhancedPersonas];
+    } else if (personaFilter === 'project') {
+      combined = [...personas];
+    } else if (personaFilter === 'enhanced') {
+      combined = [...enhancedPersonas];
+    }
+    
+    // Apply hideSystemPersonas filter if enabled
+    if (hideSystemPersonas) {
+      combined = combined.filter(persona => persona.editable === true);
+    }
+    
+    return { combined, enhancedPersonaIds };
+  };
+  
+  const { combined: filteredPersonas, enhancedPersonaIds } = getFilteredPersonas();
 
   const togglePersona = (id: string) => {
     if(simulationData.study_type === 'focus-group') {
@@ -1870,26 +1918,47 @@ Key Questions:
                 </div>
               </div>
               <CardContent>
-               
+                <div className="mb-4 flex items-center gap-4">
+                  <Select value={personaFilter} onValueChange={(value: 'all' | 'project' | 'enhanced') => setPersonaFilter(value)}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Filter personas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="project">Project Only</SelectItem>
+                      <SelectItem value="enhanced">Enhanced Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-
-                {loading ? (
+                {(loading || isLoadingEnhancedPersonas) ? (
                   <div className="p-4 text-center text-gray-500">Loading personas...</div>
                 ) : error ? (
                   <div className="p-4 text-center text-red-500">{error}</div>
                 ) : (
-                  <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                    {filteredPersonas.map((persona) => (
-                      <PersonaCard
-                        key={persona.id}
-                        persona={persona}
-                        selected={selectedPersonas.includes(persona.id)}
-                        onToggle={() => togglePersona(persona.id)}
-                        selectable={true}
-                        onUpdate={mutate}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    {filteredPersonas.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">
+                        {personaFilter === 'all' && "No personas available. Generate personas or use enhanced personas."}
+                        {personaFilter === 'project' && "No project personas yet."}
+                        {personaFilter === 'enhanced' && "No enhanced personas yet. Create enhanced personas from the Enhanced Personas page."}
+                      </div>
+                    ) : (
+                      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                        {filteredPersonas.map((persona, index) => (
+                          <PersonaCard
+                            key={`${persona.id}-${index}`}
+                            persona={persona}
+                            selected={selectedPersonas.includes(persona.id)}
+                            onToggle={() => togglePersona(persona.id)}
+                            selectable={true}
+                            isEnhanced={enhancedPersonaIds.has(persona.id)}
+                            onUpdate={mutate}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
               <CardFooter className="justify-between">

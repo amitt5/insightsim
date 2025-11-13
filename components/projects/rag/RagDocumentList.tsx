@@ -10,16 +10,12 @@ interface RagDocumentListProps {
   documents: RagDocument[];
   onDelete: (documentId: string) => void;
   onView?: (document: RagDocument) => void;
-  onProcess?: (documentId: string) => void;
-  processingDocuments?: Set<string>;
 }
 
 export default function RagDocumentList({ 
   documents, 
   onDelete, 
-  onView,
-  onProcess,
-  processingDocuments = new Set()
+  onView
 }: RagDocumentListProps) {
   if (documents.length === 0) {
     return (
@@ -48,8 +44,6 @@ export default function RagDocumentList({
             document={document}
             onDelete={onDelete}
             onView={onView}
-            onProcess={onProcess}
-            isProcessing={processingDocuments.has(document.id)}
           />
         ))}
       </div>

@@ -2,14 +2,12 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Upload, FileIcon, X, Loader2 } from "lucide-react";
+import { Upload, FileIcon, X, Loader2, FileText, Mic } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { RagDocument } from "@/utils/types";
 
-interface RagDocumentUploadProps {
-  projectId?: string;
-  personaId?: string;
-  onUploadSuccess?: (document: RagDocument) => void;
+interface InterviewUploadProps {
+  projectId: string;
+  onUploadSuccess?: () => void;
   onUploadError?: (error: string) => void;
 }
 
@@ -20,40 +18,73 @@ interface UploadingFile {
   error?: string;
 }
 
-export default function RagDocumentUpload({ 
+export default function InterviewUpload({ 
   projectId, 
-  personaId,
   onUploadSuccess, 
   onUploadError 
-}: RagDocumentUploadProps) {
+}: InterviewUploadProps) {
   const { toast } = useToast();
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const getFileType = (file: File): 'transcript' | 'audio' => {
+    const mimeType = file.type.toLowerCase();
+    const fileName = file.name.toLowerCase();
+    
+    if (mimeType.startsWith('audio/') || 
+        mimeType.includes('audio') ||
+        ['.mp3', '.wav', '.m4a', '.ogg', '.flac', '.aac'].some(ext => 
+          fileName.endsWith(ext)
+        )) {
+      return 'audio';
+    }
+    return 'transcript';
+  };
+
+  const validateFile = (file: File): string | null => {
+    const fileType = getFileType(file);
+    const fileName = file.name.toLowerCase();
+    
+    // Check file extension
+    const validTranscriptExts = ['.txt', '.doc', '.docx', '.rtf'];
+    const validAudioExts = ['.mp3', '.wav', '.m4a', '.ogg', '.flac', '.aac'];
+    
+    const isValidExt = fileType === 'audio' 
+      ? validAudioExts.some(ext => fileName.endsWith(ext))
+      : validTranscriptExts.some(ext => fileName.endsWith(ext));
+    
+    if (!isValidExt) {
+      return fileType === 'audio'
+        ? 'Invalid audio file. Supported formats: MP3, WAV, M4A, OGG, FLAC, AAC'
+        : 'Invalid transcript file. Supported formats: TXT, DOC, DOCX, RTF';
+    }
+    
+    // Check file size
+    const maxSize = fileType === 'audio' ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return `File too large. Maximum size is ${fileType === 'audio' ? '50MB' : '10MB'}`;
+    }
+    
+    return null;
+  };
+
   const handleFiles = useCallback((files: FileList | File[]) => {
     const fileArray = Array.from(files);
+    
     // Validate files
-    const validFiles = fileArray.filter(file => {
-      if (file.type !== 'application/pdf') {
+    const validFiles: File[] = [];
+    fileArray.forEach(file => {
+      const error = validateFile(file);
+      if (error) {
         toast({
-          title: "Invalid file type",
-          description: "Only PDF files are supported",
+          title: "Invalid file",
+          description: `${file.name}: ${error}`,
           variant: "destructive",
         });
-        return false;
+      } else {
+        validFiles.push(file);
       }
-      
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        toast({
-          title: "File too large",
-          description: "Maximum file size is 50MB",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      return true;
     });
 
     if (validFiles.length === 0) return;
@@ -69,9 +100,9 @@ export default function RagDocumentUpload({
 
     // Upload files to API
     validFiles.forEach((file, index) => {
-      uploadFile(file, index);
+      uploadFile(file, uploadingFiles.length + index);
     });
-    }, [toast, projectId, personaId, onUploadSuccess, onUploadError]);
+  }, [toast, uploadingFiles.length]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -104,7 +135,6 @@ export default function RagDocumentUpload({
       // Create form data for file upload
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('bucket', 'rag-documents');
 
       // Simulate upload progress
       const progressInterval = setInterval(() => {
@@ -119,11 +149,7 @@ export default function RagDocumentUpload({
       }, 200);
 
       // Upload file to API
-      const apiUrl = personaId 
-        ? `/api/personas/${personaId}/rag/documents`
-        : `/api/projects/${projectId}/rag/documents`;
-      
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`/api/projects/${projectId}/uploaded-interviews`, {
         method: 'POST',
         body: formData,
       });
@@ -144,11 +170,12 @@ export default function RagDocumentUpload({
         )
       );
 
-      onUploadSuccess?.(result.document);
+      onUploadSuccess?.();
       
+      const fileType = getFileType(file);
       toast({
         title: "Upload successful",
-        description: `${file.name} has been uploaded successfully`,
+        description: `${file.name} has been uploaded successfully${fileType === 'audio' ? '. Transcription will be processed shortly.' : ''}`,
       });
 
       // Remove from uploading state after a delay
@@ -175,7 +202,6 @@ export default function RagDocumentUpload({
     }
   };
 
-
   const removeUploadingFile = (index: number) => {
     setUploadingFiles(prev => prev.filter((_, i) => i !== index));
   };
@@ -199,7 +225,7 @@ export default function RagDocumentUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,application/pdf"
+          accept=".txt,.doc,.docx,.rtf,.mp3,.wav,.m4a,.ogg,.flac,.aac,audio/*,text/*"
           multiple
           onChange={onFileInputChange}
           className="hidden"
@@ -207,55 +233,70 @@ export default function RagDocumentUpload({
         />
         <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
         <p className="text-lg font-medium text-gray-700 mb-2">
-          {isDragActive ? 'Drop files here' : 'Upload RAG Documents'}
+          {isDragActive ? 'Drop files here' : 'Upload Interview Files'}
         </p>
         <p className="text-sm text-gray-500 mb-4">
-          Drag and drop PDF files here, or click to select files
+          Drag and drop transcript or audio files here, or click to select files
         </p>
-        <p className="text-xs text-gray-400">
-          Maximum file size: 50MB • Supported format: PDF
-        </p>
+        <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
+          <div className="flex items-center gap-1">
+            <FileText className="h-4 w-4" />
+            <span>Transcripts: TXT, DOC, DOCX, RTF (max 10MB)</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Mic className="h-4 w-4" />
+            <span>Audio: MP3, WAV, M4A, OGG (max 50MB)</span>
+          </div>
+        </div>
       </div>
 
       {/* Upload Progress */}
       {uploadingFiles.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">Uploading files...</h4>
-          {uploadingFiles.map((uploadingFile, index) => (
-            <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-              <FileIcon className="h-5 w-5 text-gray-400" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {uploadingFile.file.name}
-                </p>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadingFile.progress}%` }}
-                  />
+          {uploadingFiles.map((uploadingFile, index) => {
+            const fileType = getFileType(uploadingFile.file);
+            return (
+              <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                {fileType === 'audio' ? (
+                  <Mic className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <FileText className="h-5 w-5 text-gray-400" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {uploadingFile.file.name}
+                  </p>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadingFile.progress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {uploadingFile.progress}% uploaded
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {uploadingFile.progress}% uploaded
-                </p>
+                {uploadingFile.status === 'uploading' && (
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                )}
+                {uploadingFile.status === 'completed' && (
+                  <div className="text-green-600 text-sm">✓</div>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeUploadingFile(index)}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              {uploadingFile.status === 'uploading' && (
-                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-              )}
-              {uploadingFile.status === 'completed' && (
-                <div className="text-green-600 text-sm">✓</div>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeUploadingFile(index)}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
+

@@ -1465,7 +1465,7 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="ask-analysis" disabled={!briefText || !hasAnalysis}>Ask Analysis(beta)</TabsTrigger>
+                <TabsTrigger value="ask-analysis" disabled={!briefText || !hasAnalysis}>Ask Maira(beta)</TabsTrigger>
               </TooltipTrigger>
               {!briefText ? (
                 <TooltipContent>

@@ -164,19 +164,12 @@ export async function searchFileStore(
   options?: { maxResults?: number }
 ): Promise<any> {
   try {
-    console.log('🔍 [GOOGLE SEARCH] Starting search...');
-    console.log('🔍 [GOOGLE SEARCH] Query:', query);
-    console.log('🔍 [GOOGLE SEARCH] Store:', storeName);
-    console.log('🔍 [GOOGLE SEARCH] Options:', options);
-
     // Ensure storeName is in the correct format (fileSearchStores/{store_id})
     let normalizedStoreName = storeName;
     if (!storeName.startsWith('fileSearchStores/')) {
       // If it's just the store ID, prepend the prefix
       normalizedStoreName = `fileSearchStores/${storeName}`;
     }
-    
-    console.log('🔍 [GOOGLE SEARCH] Normalized store name:', normalizedStoreName);
 
     // Use Python script to search (similar to upload approach)
     // This avoids REST API protobuf issues
@@ -192,23 +185,6 @@ export async function searchFileStore(
 
     if (!result.success) {
       throw new Error(result.error || 'Search failed');
-    }
-
-    console.log('🔍 [GOOGLE SEARCH] Raw API response:', JSON.stringify(result, null, 2));
-    console.log('🔍 [GOOGLE SEARCH] Number of candidates:', result.candidates?.length || 0);
-    
-    if (result.candidates && result.candidates.length > 0) {
-      const firstCandidate = result.candidates[0];
-      const groundingChunks = firstCandidate.groundingMetadata?.groundingChunks || [];
-      console.log('🔍 [GOOGLE SEARCH] Grounding chunks found:', groundingChunks.length);
-      
-      if (groundingChunks.length > 0) {
-        console.log('🔍 [GOOGLE SEARCH] First chunk sample:', {
-          documentName: groundingChunks[0].documentChunkInfo?.documentName,
-          chunkIndex: groundingChunks[0].documentChunkInfo?.chunkIndex,
-          relevanceScore: groundingChunks[0].chunk?.chunkRelevanceScore
-        });
-      }
     }
 
     return result;

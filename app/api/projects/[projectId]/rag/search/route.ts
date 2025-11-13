@@ -43,20 +43,12 @@ export async function POST(
       return NextResponse.json({ error: "Query string is required" }, { status: 400 })
     }
 
-    console.log(`🔍 [API] Performing Google File Search for query: "${query}"`)
-    console.log(`🔍 [API] Search parameters: limit=${limit}`)
-    console.log(`🔍 [API] Project ID: ${resolvedParams.projectId}`)
-    console.log(`🔍 [API] File Search Store: ${project.google_file_search_store_id}`)
-
     // Search File Search Store using Google Gemini API
     const searchResults = await searchFileStore(
       project.google_file_search_store_id,
       query,
       { maxResults: limit }
     )
-
-    console.log(`✅ [API] Google File Search completed`)
-    console.log(`✅ [API] Raw search results:`, JSON.stringify(searchResults, null, 2))
 
     // Map Google's response format to match existing response structure
     const mappedResults: Array<{
@@ -153,9 +145,6 @@ export async function POST(
         })
       }
     }
-    
-    console.log(`✅ [API] Mapped results:`, mappedResults)
-    console.log(`✅ [API] Mapped results length:`, mappedResults.length)
     
     return NextResponse.json({
       success: true,

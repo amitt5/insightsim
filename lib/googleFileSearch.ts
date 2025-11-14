@@ -1,11 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-
-const execAsync = promisify(exec);
 
 // Lazy getter for API key - only throws when actually needed
 function getApiKey(): string {
@@ -40,9 +36,7 @@ export async function getOrCreateFileSearchStore(
     // Try to create the store
     // Note: The exact API may vary based on the @google/genai package version
     // This is a placeholder implementation - you may need to adjust based on actual API
-    const store = await client.fileSearchStores.create({
-      displayName: `Project ${projectId} File Search Store`,
-    });
+    const store = await client.fileSearchStores.create({});
 
     // Return the store name in the format: fileSearchStores/{store_id}
     return store.name || storeName;
@@ -51,10 +45,16 @@ export async function getOrCreateFileSearchStore(
     if (error.message?.includes('already exists') || error.code === 409) {
       // Try to list stores and find the one for this project
       const client = new GoogleGenAI({ apiKey: getApiKey() });
-      const stores = await client.fileSearchStores.list();
-      const projectStore = stores.find((s: any) => 
-        s.displayName?.includes(projectId) || s.name?.includes(projectId)
-      );
+      const storesPager = await client.fileSearchStores.list();
+      
+      // Iterate through the pager to find the store
+      let projectStore: any = null;
+      for await (const store of storesPager) {
+        if (store.displayName?.includes(projectId) || store.name?.includes(projectId)) {
+          projectStore = store;
+          break;
+        }
+      }
       
       if (projectStore) {
         return projectStore.name;
@@ -67,7 +67,7 @@ export async function getOrCreateFileSearchStore(
 }
 
 /**
- * Upload a file to Google File Search Store using the Python script
+ * Upload a file to Google File Search Store using the Node.js SDK
  * @param storeName - The store name (format: fileSearchStores/{store_id})
  * @param file - The file to upload
  * @param displayName - The display name for the file in the store
@@ -88,36 +88,75 @@ export async function uploadFileToFileSearchStore(
     const buffer = Buffer.from(arrayBuffer);
     await writeFile(tempFilePath, buffer);
 
-    // Get the path to the Python script
-    const scriptPath = join(process.cwd(), 'scripts', 'upload_to_file_search.py');
+    // Initialize Google GenAI client
+    const client = new GoogleGenAI({ apiKey: getApiKey() });
 
-    // Execute the Python script
-    const { stdout, stderr } = await execAsync(
-      `python3 "${scriptPath}" "${getApiKey()}" "${tempFilePath}" "${storeName}" "${displayName}"`
-    );
+    // Upload and import file into the file search store
+    const operation = await client.fileSearchStores.uploadToFileSearchStore({
+      file: tempFilePath,
+      fileSearchStoreName: storeName,
+      config: {
+        displayName: displayName,
+      },
+    });
 
-    // Parse the JSON response from the Python script
-    const result = JSON.parse(stdout.trim());
+    // Wait until import is complete (matching Python script behavior)
+    const maxWaitTime = 300000; // 5 minutes in milliseconds
+    const pollInterval = 2000; // 2 seconds in milliseconds
+    const startTime = Date.now();
 
-    if (!result.success) {
-      throw new Error(result.error || 'Upload failed');
+    let currentOperation = operation;
+    
+    while (!currentOperation.done) {
+      if (Date.now() - startTime > maxWaitTime) {
+        throw new Error(
+          `Operation timed out after ${maxWaitTime / 1000} seconds. Operation name: ${currentOperation.name || 'unknown'}`
+        );
+      }
+
+      // Wait before polling again
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      
+      // Get updated operation status
+      if (!currentOperation.name) {
+        throw new Error('Operation name is missing');
+      }
+      currentOperation = await client.operations.get({ operation: currentOperation });
     }
 
+    // Check for errors
+    if (currentOperation.error) {
+      throw new Error(
+        `Operation failed: ${JSON.stringify(currentOperation.error)}. Operation name: ${currentOperation.name || 'unknown'}`
+      );
+    }
+
+    // Extract document resource name from operation response
+    // The document resource name format is: fileSearchStores/{store_id}/documents/{document_id}
+    let documentResourceName: string | null = null;
+    
+    if (currentOperation.response) {
+      const response = currentOperation.response as any;
+      
+      // Check for document resource name (fileSearchStores/.../documents/...)
+      if (response.document?.name) {
+        documentResourceName = response.document.name;
+      } else if (response.name) {
+        const name = response.name;
+        // Check if it's the document resource name format
+        if (typeof name === 'string' && name.startsWith('fileSearchStores/')) {
+          documentResourceName = name;
+        }
+      }
+    }
+
+    // Return success result
+    // If we have document_resource_name, use it; otherwise use display_name
     return {
-      fileName: result.file_name || displayName,
+      fileName: documentResourceName || displayName,
       success: true,
     };
   } catch (error: any) {
-    // Try to parse error from stderr if stdout failed
-    if (error.stderr) {
-      try {
-        const errorResult = JSON.parse(error.stderr.trim());
-        throw new Error(errorResult.error || 'Upload failed');
-      } catch {
-        // If parsing fails, use the original error
-      }
-    }
-    
     throw new Error(error.message || 'Failed to upload file to Google File Search Store');
   } finally {
     // Clean up temporary file
@@ -141,11 +180,17 @@ export async function listFilesInStore(
     const client = new GoogleGenAI({ apiKey: getApiKey() });
 
     // List documents in the store
-    const documents = await client.fileSearchStores.documents.list({
+    const documentsPager = await client.fileSearchStores.documents.list({
       parent: storeName,
     });
 
-    return documents || [];
+    // Convert pager to array
+    const documents: any[] = [];
+    for await (const doc of documentsPager) {
+      documents.push(doc);
+    }
+
+    return documents;
   } catch (error: any) {
     throw new Error(`Failed to list files in store: ${error.message}`);
   }
@@ -171,36 +216,114 @@ export async function searchFileStore(
       normalizedStoreName = `fileSearchStores/${storeName}`;
     }
 
-    // Use Python script to search (similar to upload approach)
-    // This avoids REST API protobuf issues
-    const scriptPath = join(process.cwd(), 'scripts', 'search_file_search.py');
+    // Initialize Google GenAI client
+    const client = new GoogleGenAI({ apiKey: getApiKey() });
 
-    // Execute the Python script
-    const { stdout, stderr } = await execAsync(
-      `python3 "${scriptPath}" "${getApiKey()}" "${normalizedStoreName}" "${query.replace(/"/g, '\\"')}"`
-    );
+    // Try gemini-2.5-flash first, fallback to gemini-2.5-pro
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+    
+    let response: any = null;
+    let lastError: string | null = null;
+    
+    for (const model of modelsToTry) {
+      try {
+        response = await client.models.generateContent({
+          model: model,
+          contents: query,
+          config: {
+            tools: [
+              {
+                fileSearch: {
+                  fileSearchStoreNames: [normalizedStoreName],
+                },
+              },
+            ],
+          },
+        });
+        break; // Success, exit loop
+      } catch (error: any) {
+        lastError = error.message || String(error);
+        // If it's a model not found error, try next model
+        if (lastError && (lastError.toLowerCase().includes('not found') || lastError.includes('404'))) {
+          continue;
+        } else {
+          // For other errors, throw immediately
+          throw error;
+        }
+      }
+    }
+    
+    if (!response) {
+      throw new Error(`All models failed. Last error: ${lastError || 'unknown'}`);
+    }
 
-    // Parse the JSON response from the Python script
-    const result = JSON.parse(stdout.trim());
+    // Extract the response
+    const result: any = {
+      success: true,
+      candidates: [],
+    };
 
-    if (!result.success) {
-      throw new Error(result.error || 'Search failed');
+    // Process candidates from SDK response
+    if (response.candidates && Array.isArray(response.candidates)) {
+      for (const candidate of response.candidates) {
+        const candidateData: any = {
+          content: {
+            parts: [],
+          },
+          groundingMetadata: {
+            groundingChunks: [],
+          },
+        };
+
+        // Extract content parts
+        if (candidate.content?.parts) {
+          for (const part of candidate.content.parts) {
+            if (part.text) {
+              candidateData.content.parts.push({ text: part.text });
+            }
+          }
+        }
+
+        // Extract grounding metadata
+        if (candidate.groundingMetadata?.groundingChunks) {
+          for (const chunk of candidate.groundingMetadata.groundingChunks) {
+            const chunkData: any = {
+              documentChunkInfo: {},
+              chunk: {},
+            };
+            
+            if (chunk.documentChunkInfo) {
+              const docInfo = chunk.documentChunkInfo;
+              if (docInfo.documentName) {
+                chunkData.documentChunkInfo.documentName = docInfo.documentName;
+              }
+              if (docInfo.chunkIndex !== undefined) {
+                chunkData.documentChunkInfo.chunkIndex = docInfo.chunkIndex;
+              }
+            }
+            
+            if (chunk.chunk) {
+              const chunkObj = chunk.chunk;
+              if (chunkObj.chunkId) {
+                chunkData.chunk.chunkId = chunkObj.chunkId;
+              }
+              if (chunkObj.chunkRelevanceScore !== undefined) {
+                chunkData.chunk.chunkRelevanceScore = chunkObj.chunkRelevanceScore;
+              }
+            }
+            
+            candidateData.groundingMetadata.groundingChunks.push(chunkData);
+          }
+        }
+
+        result.candidates.push(candidateData);
+      }
     }
 
     return result;
   } catch (error: any) {
-    // Try to parse error from stderr if stdout failed
-    if (error.stderr) {
-      try {
-        const errorResult = JSON.parse(error.stderr.trim());
-        throw new Error(errorResult.error || 'Search failed');
-      } catch {
-        // If parsing fails, use the original error
-      }
-    }
-    
     console.error('❌ [GOOGLE SEARCH] Error:', error);
-    throw new Error(`Failed to search file store: ${error.message}`);
+    throw new Error(`Failed to search file store: ${error.message || 'Unknown error'}`);
   }
 }
 
@@ -233,13 +356,17 @@ export async function deleteFileFromStore(
       // This is more complex and may require listing documents
       if (storeName) {
         // List documents in the store and find the one with matching display name
-        const documents = await client.fileSearchStores.documents.list({
+        const documentsPager = await client.fileSearchStores.documents.list({
           parent: storeName,
         });
         
-        const document = documents.find((doc: any) => 
-          doc.displayName === fileName || doc.name?.includes(fileName)
-        );
+        let document: any = null;
+        for await (const doc of documentsPager) {
+          if (doc.displayName === fileName || doc.name?.includes(fileName)) {
+            document = doc;
+            break;
+          }
+        }
         
         if (document) {
           await client.fileSearchStores.documents.delete({ name: document.name });

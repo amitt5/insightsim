@@ -947,8 +947,9 @@ const debugAPIRawResponse = async () => {
          // if no messages, set the initial message, later also add condition simulationData.simulation.mode === "human-mod"
         setInitialMessage();
       } else {
-        // sort messages by created_at date
-        data.messages.sort((a: SimulationMessage, b: SimulationMessage) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        // sort messages by turn_number to maintain chronological order
+        // (API already orders by turn_number, but we ensure it here as well)
+        data.messages.sort((a: SimulationMessage, b: SimulationMessage) => a.turn_number - b.turn_number);
         // if there are messages, check how many times moderator has spoken and then set the new message to the next question
         // const moderatorMessages = data.messages.filter((msg: SimulationMessage) => msg.sender_type === 'moderator');
         // if(moderatorMessages.length) {

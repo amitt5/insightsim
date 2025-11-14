@@ -141,11 +141,109 @@ export default function SimulationViewPage() {
     return null;
   };
 
-  // Handler for opening follow-up modal
-  const handleOpenFollowUpModal = (questionIndex: number) => {
+  // Function to extract a specific question and its responses from messages
+  const getQuestionAndResponses = (questionIndex: number, messages: SimulationMessage[]): SimulationMessage[] => {
+    if (!simulationData?.simulation?.discussion_questions || questionIndex < 0 || questionIndex >= simulationData.simulation.discussion_questions.length) {
+      return [];
+    }
+
+    const targetQuestion = simulationData.simulation.discussion_questions[questionIndex];
+    const result: SimulationMessage[] = [];
+    let foundQuestion = false;
+    let questionMessageIndex = -1;
+
+    // Find the moderator message that contains this question
+    for (let i = 0; i < messages.length; i++) {
+      if (messages[i].sender_type === 'moderator' && messages[i].message.includes(targetQuestion)) {
+        foundQuestion = true;
+        questionMessageIndex = i;
+        result.push(messages[i]); // Add the question
+        break;
+      }
+    }
+
+    if (!foundQuestion) {
+      return [];
+    }
+
+    // Get all participant responses after this question until the next moderator message
+    for (let i = questionMessageIndex + 1; i < messages.length; i++) {
+      if (messages[i].sender_type === 'moderator') {
+        // Stop when we hit the next moderator message
+        break;
+      }
+      // Add participant responses
+      result.push(messages[i]);
+    }
+
+    return result;
+  };
+
+  // Handler for opening follow-up modal and fetching questions
+  const handleOpenFollowUpModal = async (questionIndex: number) => {
     setSelectedQuestionIndex(questionIndex);
     setIsFollowUpModalOpen(true);
     setFollowUpQuestionsForModal([]); // Clear previous questions
+    
+    // Extract the question and its responses
+    const questionMessages = getQuestionAndResponses(questionIndex, simulationMessages);
+    
+    if (questionMessages.length === 0) {
+      console.warn('No messages found for question index:', questionIndex);
+      return;
+    }
+
+    // Show loading state
+    setIsLoadingFollowUpQuestions(true);
+
+    try {
+      // Build prompt with only this question and its responses
+      const sample = {
+        simulation: simulationData?.simulation || {} as Simulation,
+        messages: questionMessages,
+        personas: simulationData?.personas || [] as Persona[]
+      };
+      
+      const prompt = buildFollowUpQuestionsPrompt(sample);
+      console.log('Fetching follow-up questions for question index:', questionIndex);
+      console.log('Messages used:', questionMessages);
+      
+      // Call API to get follow-up questions
+      const data = await runSimulationAPI(prompt, modelInUse, 'followup');
+      
+      if (data.reply) {
+        // Parse the response
+        const parsedMessages = parseSimulationResponse(data.reply);
+        console.log('Parsed follow-up questions:', parsedMessages);
+        
+        // Extract questions array (handle different response formats)
+        let questions: {question: string}[] = [];
+        if (Array.isArray(parsedMessages)) {
+          questions = parsedMessages;
+        } else if (parsedMessages.questions && Array.isArray(parsedMessages.questions)) {
+          questions = parsedMessages.questions;
+        } else if (parsedMessages && typeof parsedMessages === 'object') {
+          // Try to find any array property
+          for (const key in parsedMessages) {
+            if (Array.isArray(parsedMessages[key])) {
+              questions = parsedMessages[key];
+              break;
+            }
+          }
+        }
+        
+        setFollowUpQuestionsForModal(questions);
+      }
+    } catch (error) {
+      console.error('Error fetching follow-up questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch follow-up questions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingFollowUpQuestions(false);
+    }
   };
 
   
@@ -1860,10 +1958,19 @@ const debugAPIRawResponse = async () => {
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4 space-y-2">
-            {followUpQuestionsForModal.length === 0 ? (
+            {isLoadingFollowUpQuestions ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce" />
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                </div>
+                <p className="text-sm text-gray-500">Generating follow-up questions...</p>
+              </div>
+            ) : followUpQuestionsForModal.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>No follow-up questions available yet.</p>
-                <p className="text-sm mt-2">Click the button to generate follow-up questions.</p>
+                <p className="text-sm mt-2">Please try again or check if the question has responses.</p>
               </div>
             ) : (
               followUpQuestionsForModal.map((questionObj, index) => (

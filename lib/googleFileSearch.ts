@@ -71,7 +71,7 @@ export async function getOrCreateFileSearchStore(
  * @param storeName - The store name (format: fileSearchStores/{store_id})
  * @param fileOrUrl - The file to upload (File object) or blob URL (string) to fetch
  * @param displayName - The display name for the file in the store
- * @returns The upload result with the file name
+ * @returns The upload result with the file name.
  */
 export async function uploadFileToFileSearchStore(
   storeName: string,

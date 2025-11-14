@@ -355,6 +355,16 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
   }
 
   const nextStep = async () => {
+    // If in AI mode and on step 2, prevent going to step 3 (should use Launch Simulation instead)
+    if (simulationData.mode === 'ai-both' && step === 2) {
+      toast({
+        title: "AI Moderator Mode",
+        description: "Please use 'Launch Simulation' button to start the automated simulation.",
+        variant: "default",
+      });
+      return;
+    }
+
     // If moving from step 3 to step 4, upload media files first (only for non-project simulations)
     console.log('amit-nextStep-selectedFiles', selectedFiles);
     if (step === 3 && selectedFiles.length > 0 && simulationData.project_id === null) {
@@ -541,6 +551,102 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
     }
   };
 
+
+  // Handler for launching AI simulation (runs all questions in backend)
+  const handleLaunchAISimulation = async () => {
+    // Validate required fields
+    if (selectedPersonas.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one participant",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!simulationData.discussion_questions || simulationData.discussion_questions.trim().length === 0) {
+      toast({
+        title: "Error",
+        description: "Discussion questions are required to launch simulation",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // First, save the simulation with current data
+      const discussionQuestionsArray = Array.isArray(simulationData.discussion_questions)
+        ? simulationData.discussion_questions
+        : simulationData.discussion_questions
+            .split('\n')
+            .filter(line => line.trim() !== '')
+            .map(line => line.trim());
+
+      // Update simulation status to Running
+      const saveResponse = await fetch(`/api/simulations/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...simulationData,
+          discussion_questions: discussionQuestionsArray,
+          personas: selectedPersonas,
+          status: 'Running',
+          active_step: step,
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json();
+        throw new Error(errorData.error || 'Failed to save simulation');
+      }
+
+      // Call backend API to run all questions
+      toast({
+        title: "Launching simulation...",
+        description: "This may take a few minutes. You'll be redirected when complete.",
+      });
+
+      const runResponse = await fetch(`/api/simulations/${id}/run-all-questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!runResponse.ok) {
+        const errorData = await runResponse.json();
+        throw new Error(errorData.error || 'Failed to run simulation');
+      }
+
+      const runData = await runResponse.json();
+
+      // Redirect based on project_id
+      if (simulationData.project_id) {
+        router.push(`/projects/${simulationData.project_id}`);
+      } else {
+        router.push('/simulations');
+      }
+
+      toast({
+        title: "Success",
+        description: "Simulation launched successfully! You can now view it and ask follow-up questions.",
+      });
+    } catch (error: any) {
+      console.error("Error launching AI simulation:", error);
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred while launching the simulation.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Function to save active_step to database
   const saveActiveStep = async (activeStep: number) => {
@@ -1663,7 +1769,42 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
                   </SelectContent>
                 </Select>
               </div>
-              
+
+                {/* Simulation Mode Selection */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label>Simulation Mode</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="p-0 h-5 w-5 bg-transparent border-none cursor-pointer hover:bg-gray-100 rounded-full flex items-center justify-center"
+                            onClick={() => setSimulationModeHelpOpen(true)}
+                          >
+                            <HelpCircle className="h-4 w-4 text-gray-500" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          Help me choose simulation mode
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <RadioGroup 
+                    value={simulationData.mode}
+                    onValueChange={handleRadioChange}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="human-mod" id="human-mod" />
+                      <Label htmlFor="human-mod">Human {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'} + AI {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'} </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="ai-both" id="ai-both" />
+                      <Label htmlFor="ai-both">AI {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'} + AI {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'} </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
 
                 {/* Study Type Help Dialog */}
                 <Dialog open={studyTypeHelpOpen} onOpenChange={setStudyTypeHelpOpen}>
@@ -1712,41 +1853,6 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-
-                {/* <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label>Simulation Mode</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="p-0 h-5 w-5 bg-transparent border-none cursor-pointer hover:bg-gray-100 rounded-full flex items-center justify-center"
-                            onClick={() => setSimulationModeHelpOpen(true)}
-                          >
-                            <HelpCircle className="h-4 w-4 text-gray-500" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          Help me choose simulation mode
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <RadioGroup 
-                    value={simulationData.mode}
-                    onValueChange={handleRadioChange}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="human-mod" id="human-mod" />
-                      <Label htmlFor="human-mod">Human {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'} + AI {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'} </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="ai-both" id="ai-both" />
-                      <Label htmlFor="ai-both">AI {simulationData.study_type === 'focus-group' ? 'Moderator' : 'Interviewer'} + AI {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'} </Label>
-                    </div>
-                  </RadioGroup>
-                </div> */}
 
                 {/* Simulation Mode Help Dialog */}
                 <Dialog open={simulationModeHelpOpen} onOpenChange={setSimulationModeHelpOpen}>
@@ -1889,7 +1995,37 @@ Key Questions:
             <Card>
               <CardHeader>
                 <CardTitle>Select {simulationData.study_type === 'focus-group' ? 'Participants' : 'Participant'}</CardTitle>
-                <CardDescription>Choose AI personas to participate in your simulation</CardDescription>
+                <CardDescription>
+                  {simulationData.mode === 'ai-both' 
+                    ? 'Choose AI personas to participate. After selection, the simulation will run automatically with all discussion questions.'
+                    : 'Choose AI personas to participate in your simulation'}
+                </CardDescription>
+                {simulationData.mode === 'ai-both' && (
+                  <div className="mt-2 space-y-2">
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <p className="text-sm text-blue-800">
+                        <strong>AI Moderator Mode:</strong> Steps 3 and 4 will be skipped. Make sure you have discussion questions set up before launching.
+                      </p>
+                    </div>
+                    {(!simulationData.discussion_questions || simulationData.discussion_questions.trim().length === 0) && (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <p className="text-sm text-yellow-800 mb-2">
+                          <strong>Discussion questions required:</strong> You need to set up discussion questions before launching.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setStep(3);
+                            saveActiveStep(3);
+                          }}
+                        >
+                          Go to Step 3 to Set Discussion Questions
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardHeader>
               <div className="px-6 py-4 border-b">
                 <div className="flex justify-between">
@@ -1897,24 +2033,61 @@ Key Questions:
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>
-                          <Button onClick={nextStep}
-                            disabled={selectedPersonas.length === 0}>
-                            Continue
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      {(selectedPersonas.length === 0) && (
-                        <TooltipContent side="top">
-                          Select at least one participant to proceed
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  </TooltipProvider>
+                  {simulationData.mode === 'ai-both' ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button 
+                              onClick={handleLaunchAISimulation}
+                              disabled={selectedPersonas.length === 0 || !simulationData.discussion_questions || simulationData.discussion_questions.trim().length === 0}
+                            >
+                              {isUploading ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Launching...
+                                </>
+                              ) : (
+                                <>
+                                  Launch Simulation
+                                  <ArrowRight className="ml-2 h-4 w-4" />
+                                </>
+                              )}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {(selectedPersonas.length === 0) && (
+                          <TooltipContent side="top">
+                            Select at least one participant to proceed
+                          </TooltipContent>
+                        )}
+                        {(simulationData.mode === 'ai-both' && (!simulationData.discussion_questions || simulationData.discussion_questions.trim().length === 0)) && (
+                          <TooltipContent side="top">
+                            Discussion questions are required to launch simulation
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button onClick={nextStep}
+                              disabled={selectedPersonas.length === 0}>
+                              Continue
+                              <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {(selectedPersonas.length === 0) && (
+                          <TooltipContent side="top">
+                            Select at least one participant to proceed
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
               </div>
               <CardContent>
@@ -1975,16 +2148,40 @@ Key Questions:
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span>
-                        <Button onClick={nextStep}
-                          disabled={selectedPersonas.length === 0}>
-                          Continue
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
+                        {simulationData.mode === 'ai-both' ? (
+                          <Button 
+                            onClick={handleLaunchAISimulation}
+                            disabled={selectedPersonas.length === 0 || !simulationData.discussion_questions || simulationData.discussion_questions.trim().length === 0}
+                          >
+                            {isUploading ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Launching...
+                              </>
+                            ) : (
+                              <>
+                                Launch Simulation
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <Button onClick={nextStep}
+                            disabled={selectedPersonas.length === 0}>
+                            Continue
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        )}
                       </span>
                     </TooltipTrigger>
                     {(selectedPersonas.length === 0) && (
                       <TooltipContent side="top">
                         Select at least one participant to proceed
+                      </TooltipContent>
+                    )}
+                    {(simulationData.mode === 'ai-both' && (!simulationData.discussion_questions || simulationData.discussion_questions.trim().length === 0)) && (
+                      <TooltipContent side="top">
+                        Discussion questions are required to launch simulation
                       </TooltipContent>
                     )}
                   </Tooltip>

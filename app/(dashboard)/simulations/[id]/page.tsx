@@ -7,6 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Download, UserCircle, Menu, Copy, ChevronDown, ChevronUp } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePrompt";
 import { buildMessagesForOpenAI, buildFollowUpQuestionsPrompt } from "@/utils/buildMessagesForOpenAI";
 import { SimulationMessage } from "@/utils/types";
@@ -95,6 +102,9 @@ export default function SimulationViewPage() {
   const [ragDocuments, setRagDocuments] = useState<any[]>([])
   const [selectedRagDocuments, setSelectedRagDocuments] = useState<boolean[]>([])
   const [isLoadingRagDocuments, setIsLoadingRagDocuments] = useState(false)
+  const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false)
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null)
+  const [followUpQuestionsForModal, setFollowUpQuestionsForModal] = useState<{question: string}[]>([])
   // const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
@@ -115,6 +125,27 @@ export default function SimulationViewPage() {
   const getPersonaColor = (personaId: string, personas: Persona[]) => {
     const index = personas.findIndex(p => p.id === personaId);
     return index !== -1 ? personaColors[index % personaColors.length] : personaColors[0];
+  };
+
+  // Function to identify which discussion question index a moderator message corresponds to
+  const getQuestionIndexForMessage = (messageText: string): number | null => {
+    if (!simulationData?.simulation?.discussion_questions) return null;
+    
+    const questions = simulationData.simulation.discussion_questions;
+    for (let i = 0; i < questions.length; i++) {
+      // Check if the message contains the question text
+      if (messageText.includes(questions[i])) {
+        return i;
+      }
+    }
+    return null;
+  };
+
+  // Handler for opening follow-up modal
+  const handleOpenFollowUpModal = (questionIndex: number) => {
+    setSelectedQuestionIndex(questionIndex);
+    setIsFollowUpModalOpen(true);
+    setFollowUpQuestionsForModal([]); // Clear previous questions
   };
 
   
@@ -1392,6 +1423,22 @@ const debugAPIRawResponse = async () => {
                                 )}
                                 <p className="text-sm">{message.text}</p>
                               </div>
+                              {/* Follow up button for discussion questions */}
+                              {isModeratorMessage && (() => {
+                                const questionIndex = getQuestionIndexForMessage(message.text);
+                                return questionIndex !== null ? (
+                                  <div className={`mt-2 ${isModeratorMessage ? "text-right" : ""}`}>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleOpenFollowUpModal(questionIndex)}
+                                      className="text-xs"
+                                    >
+                                      Follow up
+                                    </Button>
+                                  </div>
+                                ) : null;
+                              })()}
                             </div>
                           </div>
                         );
@@ -1800,6 +1847,43 @@ const debugAPIRawResponse = async () => {
           </div>
         </div>
       )}
+
+      {/* Follow-up Questions Modal */}
+      <Dialog open={isFollowUpModalOpen} onOpenChange={setIsFollowUpModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Follow-up Questions</DialogTitle>
+            <DialogDescription>
+              {selectedQuestionIndex !== null && simulationData?.simulation?.discussion_questions
+                ? `Select a follow-up question for: "${simulationData.simulation.discussion_questions[selectedQuestionIndex]}"`
+                : "Select a follow-up question to ask"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-2">
+            {followUpQuestionsForModal.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No follow-up questions available yet.</p>
+                <p className="text-sm mt-2">Click the button to generate follow-up questions.</p>
+              </div>
+            ) : (
+              followUpQuestionsForModal.map((questionObj, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary transition-colors"
+                  onClick={() => {
+                    // TODO: Handle follow-up question selection (Step 3)
+                    console.log('Selected follow-up question:', questionObj.question);
+                    setIsFollowUpModalOpen(false);
+                  }}
+                >
+                  <p className="text-sm">{questionObj.question}</p>
+                </button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

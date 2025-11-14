@@ -179,6 +179,79 @@ export default function SimulationViewPage() {
     return result;
   };
 
+  // Function to find the insertion point (index after the last response to a question)
+  const findInsertionPoint = (questionIndex: number, messages: SimulationMessage[]): number => {
+    if (!simulationData?.simulation?.discussion_questions || questionIndex < 0 || questionIndex >= simulationData.simulation.discussion_questions.length) {
+      return messages.length;
+    }
+
+    const targetQuestion = simulationData.simulation.discussion_questions[questionIndex];
+    let lastResponseIndex = -1;
+
+    // Find the moderator message that contains this question
+    for (let i = 0; i < messages.length; i++) {
+      if (messages[i].sender_type === 'moderator' && messages[i].message.includes(targetQuestion)) {
+        // Find the last participant response after this question
+        for (let j = i + 1; j < messages.length; j++) {
+          if (messages[j].sender_type === 'moderator') {
+            // Stop when we hit the next moderator message
+            break;
+          }
+          lastResponseIndex = j;
+        }
+        break;
+      }
+    }
+
+    // Return the index after the last response (or after the question if no responses)
+    return lastResponseIndex >= 0 ? lastResponseIndex + 1 : messages.length;
+  };
+
+  // Function to get all messages up to a specific insertion point
+  const getMessagesUpToInsertionPoint = (insertionPoint: number, messages: SimulationMessage[]): SimulationMessage[] => {
+    return messages.slice(0, insertionPoint);
+  };
+
+  // Function to update turn_numbers of messages after insertion point
+  const updateSubsequentTurnNumbers = async (insertionPoint: number, offset: number) => {
+    if (!simulationData?.simulation?.id) {
+      console.error("Simulation ID is not available");
+      return;
+    }
+
+    // Get all messages after the insertion point
+    const messagesToUpdate = simulationMessages.slice(insertionPoint);
+    
+    if (messagesToUpdate.length === 0) {
+      return; // Nothing to update
+    }
+
+    try {
+      // Call API to update turn_numbers
+      const response = await fetch('/api/simulation-messages/update-turn-numbers', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          simulation_id: simulationData.simulation.id,
+          message_ids: messagesToUpdate.map(msg => msg.id),
+          offset: offset
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error updating turn numbers: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Turn numbers updated successfully:', data);
+    } catch (error) {
+      console.error("Error updating turn numbers:", error);
+      throw error; // Re-throw to handle in calling function
+    }
+  };
+
   // Handler for opening follow-up modal and fetching questions
   const handleOpenFollowUpModal = async (questionIndex: number) => {
     setSelectedQuestionIndex(questionIndex);
@@ -243,6 +316,152 @@ export default function SimulationViewPage() {
       });
     } finally {
       setIsLoadingFollowUpQuestions(false);
+    }
+  };
+
+  // Handler for selecting and asking a follow-up question
+  const handleSelectFollowUpQuestion = async (followUpQuestion: string) => {
+    if (selectedQuestionIndex === null || !simulationData?.simulation?.id) {
+      console.error('No question selected or simulation data missing');
+      return;
+    }
+
+    setIsFollowUpModalOpen(false);
+    setIsSimulationRunning(true);
+
+    try {
+      // Find the insertion point
+      const insertionPoint = findInsertionPoint(selectedQuestionIndex, simulationMessages);
+      console.log('Insertion point:', insertionPoint);
+
+      // Get all messages up to the insertion point
+      const messagesUpToInsertion = getMessagesUpToInsertionPoint(insertionPoint, simulationMessages);
+      console.log('Messages up to insertion:', messagesUpToInsertion);
+
+      // Calculate the turn_number for the follow-up question
+      // If there are messages before insertion point, use the last message's turn_number + 1
+      // Otherwise, start at 1
+      let followUpTurnNumber = 1;
+      if (insertionPoint > 0 && simulationMessages[insertionPoint - 1]) {
+        followUpTurnNumber = simulationMessages[insertionPoint - 1].turn_number + 1;
+      } else if (insertionPoint === 0 && simulationMessages.length > 0) {
+        // If inserting at the beginning but messages exist, use the first message's turn_number
+        followUpTurnNumber = simulationMessages[0].turn_number;
+      }
+
+      // Save the follow-up question with a custom turn_number
+      const followUpQuestionEntry = {
+        simulation_id: simulationData.simulation.id,
+        sender_type: 'moderator',
+        sender_id: null,
+        message: followUpQuestion,
+        turn_number: followUpTurnNumber
+      };
+
+      const saveQuestionResponse = await fetch('/api/simulation-messages/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages: [followUpQuestionEntry] }),
+      });
+
+      if (!saveQuestionResponse.ok) {
+        throw new Error(`Error saving follow-up question: ${saveQuestionResponse.status}`);
+      }
+
+      // Now get the updated messages to include the follow-up question
+      const updatedMessages = await fetchSimulationMessages(simulationData.simulation.id);
+      if (!updatedMessages) {
+        throw new Error('Failed to fetch updated messages');
+      }
+
+      // Build context with all messages up to and including the follow-up question
+      const contextMessages = [...messagesUpToInsertion, updatedMessages[updatedMessages.length - 1]];
+
+      // Build prompt for generating responses
+      const sample = {
+        simulation: simulationData.simulation,
+        messages: contextMessages,
+        personas: simulationData.personas || []
+      };
+
+      const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction, [], []);
+      console.log('Prompt for follow-up responses:', prompt);
+
+      // Get responses from LLM
+      const data = await runSimulationAPI(prompt, modelInUse, 'chat');
+      
+      if (data.reply) {
+        // Parse the response into messages
+        const parsedMessages = parseSimulationResponse(data.reply);
+        const extractedParticipantMessages = extractParticipantMessages(parsedMessages);
+        
+        console.log('Extracted participant messages:', extractedParticipantMessages);
+        
+        // Calculate turn_numbers for responses (starting after the follow-up question)
+        const responseTurnNumber = followUpTurnNumber + 1;
+        const numResponses = extractedParticipantMessages.length;
+        
+        // Map responses to database structure with correct turn_numbers
+        const responseEntries = extractedParticipantMessages.map((msg, index) => {
+          const isModerator = msg.name.toLowerCase() === 'moderator';
+          let senderId = null;
+          
+          if (!isModerator) {
+            if (nameToPersonaIdMap[msg.name]) {
+              senderId = nameToPersonaIdMap[msg.name];
+            } else {
+              const firstName = msg.name.split(' ')[0];
+              senderId = nameToPersonaIdMap[firstName];
+            }
+          }
+          
+          return {
+            simulation_id: simulationData.simulation.id,
+            sender_type: isModerator ? 'moderator' : 'participant',
+            sender_id: senderId,
+            message: msg.message,
+            turn_number: responseTurnNumber + index
+          };
+        });
+
+        // Save the responses
+        const saveResponsesResponse = await fetch('/api/simulation-messages/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ messages: responseEntries }),
+        });
+
+        if (!saveResponsesResponse.ok) {
+          throw new Error(`Error saving responses: ${saveResponsesResponse.status}`);
+        }
+
+        // Calculate offset: N+1 where N is number of responses
+        const offset = numResponses + 1;
+
+        // Update turn_numbers of all subsequent messages
+        await updateSubsequentTurnNumbers(insertionPoint, offset);
+
+        // Refresh the conversation
+        await fetchSimulationMessages(simulationData.simulation.id);
+
+        toast({
+          title: "Success",
+          description: "Follow-up question and responses have been inserted.",
+        });
+      }
+    } catch (error) {
+      console.error('Error handling follow-up question:', error);
+      toast({
+        title: "Error",
+        description: "Failed to insert follow-up question. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSimulationRunning(false);
     }
   };
 
@@ -1977,12 +2196,9 @@ const debugAPIRawResponse = async () => {
                 <button
                   key={index}
                   type="button"
-                  className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary transition-colors"
-                  onClick={() => {
-                    // TODO: Handle follow-up question selection (Step 3)
-                    console.log('Selected follow-up question:', questionObj.question);
-                    setIsFollowUpModalOpen(false);
-                  }}
+                  className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleSelectFollowUpQuestion(questionObj.question)}
+                  disabled={isSimulationRunning}
                 >
                   <p className="text-sm">{questionObj.question}</p>
                 </button>

@@ -69,23 +69,39 @@ export async function getOrCreateFileSearchStore(
 /**
  * Upload a file to Google File Search Store using the Node.js SDK
  * @param storeName - The store name (format: fileSearchStores/{store_id})
- * @param file - The file to upload
+ * @param fileOrUrl - The file to upload (File object) or blob URL (string) to fetch
  * @param displayName - The display name for the file in the store
  * @returns The upload result with the file name
  */
 export async function uploadFileToFileSearchStore(
   storeName: string,
-  file: File,
+  fileOrUrl: File | string,
   displayName: string
 ): Promise<{ fileName: string; success: boolean }> {
   // Create a temporary file path
   const tempDir = tmpdir();
-  const tempFilePath = join(tempDir, `upload-${Date.now()}-${file.name}`);
+  const fileName = typeof fileOrUrl === 'string' ? displayName : fileOrUrl.name;
+  const tempFilePath = join(tempDir, `upload-${Date.now()}-${fileName}`);
   
   try {
-    // Convert File to Buffer and write to temp file
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    let buffer: Buffer;
+    
+    if (typeof fileOrUrl === 'string') {
+      // It's a URL - fetch it
+      console.log(`Fetching file from URL: ${fileOrUrl}`);
+      const response = await fetch(fileOrUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file from URL: ${response.statusText}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+    } else {
+      // It's a File object - convert to Buffer
+      const arrayBuffer = await fileOrUrl.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+    }
+    
+    // Write buffer to temp file
     await writeFile(tempFilePath, buffer);
 
     // Initialize Google GenAI client

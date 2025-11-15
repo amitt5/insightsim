@@ -102,12 +102,12 @@ export async function POST(
     // Validate discussion questions exist
     let discussionQuestions: string[] = [];
     if (Array.isArray(simulation.discussion_questions)) {
-      discussionQuestions = simulation.discussion_questions.filter(q => q && q.trim().length > 0);
+      discussionQuestions = simulation.discussion_questions.filter((q: any) => q && String(q).trim().length > 0);
     } else if (typeof simulation.discussion_questions === 'string') {
       discussionQuestions = simulation.discussion_questions
         .split('\n')
-        .map(q => q.trim())
-        .filter(q => q.length > 0);
+        .map((q: string) => q.trim())
+        .filter((q: string) => q.length > 0);
     }
     
     if (discussionQuestions.length === 0) {
@@ -147,6 +147,12 @@ export async function POST(
       nameToPersonaIdMap[firstName] = persona.id;
       nameToPersonaIdMap[persona.name] = persona.id;
     });
+    
+    // Set status to in_progress at the start
+    await supabase
+      .from('simulations')
+      .update({ status: 'in_progress' })
+      .eq('id', id)
     
     // Get existing messages to determine next turn_number
     const { data: existingMessages } = await supabase
@@ -286,7 +292,7 @@ export async function POST(
       }
     }
     
-    // Update simulation status to Running (not Completed, so user can ask follow-ups)
+    // Update simulation status to Running when all questions are processed
     await supabase
       .from('simulations')
       .update({ status: 'Running' })

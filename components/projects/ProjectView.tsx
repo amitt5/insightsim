@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -844,6 +844,99 @@ export default function ProjectView({ project, onUpdate }: ProjectViewProps) {
       fetchHumanAnalysis();
     }
   }, [project.id, toast]);
+
+  // Ref to track polling interval
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Separate useEffect for polling in_progress simulations
+  useEffect(() => {
+    if (!project.id) return;
+
+    // Check if there are any in_progress simulations
+    const hasInProgress = simulations.some(s => s.status === 'in_progress');
+    
+    // If no in_progress simulations and polling is active, stop it
+    if (!hasInProgress && pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+      return;
+    }
+
+    // If no in_progress simulations, don't start polling
+    if (!hasInProgress) return;
+
+    // If polling is already active, don't start another one
+    if (pollingIntervalRef.current) return;
+
+    let pollCount = 0;
+    const maxPolls = 200; // 10 minutes = 200 polls (3 seconds * 200 = 600 seconds)
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    console.log('Starting polling for in_progress simulations');
+
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+      
+      // Stop polling after max duration
+      if (pollCount > maxPolls) {
+        clearInterval(pollInterval);
+        pollingIntervalRef.current = null;
+        console.log('Polling stopped: Max duration reached');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/projects/${project.id}/simulations`);
+        if (!response.ok) {
+          retryCount++;
+          if (retryCount > maxRetries) {
+            clearInterval(pollInterval);
+            pollingIntervalRef.current = null;
+            console.error('Polling stopped: Max retries reached');
+            return;
+          }
+          return; // Retry on next interval
+        }
+
+        const data = await response.json();
+        const updatedSimulations = data.projectSimulations || [];
+        
+        // Check if any simulations are still in_progress
+        const stillInProgress = updatedSimulations.some((s: Simulation) => s.status === 'in_progress');
+        
+        // Update simulations state
+        setSimulations(updatedSimulations);
+        
+        // Reset retry count on success
+        retryCount = 0;
+        
+        // Stop polling if no more in_progress simulations
+        if (!stillInProgress) {
+          clearInterval(pollInterval);
+          pollingIntervalRef.current = null;
+          console.log('Polling stopped: All simulations completed');
+        }
+      } catch (error) {
+        retryCount++;
+        console.error('Error polling simulations:', error);
+        if (retryCount > maxRetries) {
+          clearInterval(pollInterval);
+          pollingIntervalRef.current = null;
+          console.error('Polling stopped: Max retries reached after errors');
+        }
+      }
+    }, 3000); // Poll every 3 seconds
+
+    pollingIntervalRef.current = pollInterval;
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [simulations, project.id]);
 
   // Fetch enhanced personas when personas tab is active
   useEffect(() => {

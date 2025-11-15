@@ -137,9 +137,15 @@ export default function StudyList({ project, simulations }: StudyListProps) {
                   </TableCell>
                   <TableCell>-</TableCell>
                   <TableCell>
-                    <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
-                      {simulation.status}
-                    </Badge>
+                    {simulation.status === "in_progress" ? (
+                      <Badge variant="secondary">
+                        In Progress...
+                      </Badge>
+                    ) : (
+                      <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
+                        {simulation.status}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>{new Date(simulation.created_at).toLocaleDateString()}</TableCell>
                 </TableRow>

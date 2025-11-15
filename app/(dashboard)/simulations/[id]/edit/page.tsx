@@ -584,7 +584,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
             .filter(line => line.trim() !== '')
             .map(line => line.trim());
 
-      // Update simulation status to Running
+      // Update simulation status to in_progress
       const saveResponse = await fetch(`/api/simulations/${id}`, {
         method: 'PUT',
         headers: {
@@ -594,7 +594,7 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
           ...simulationData,
           discussion_questions: discussionQuestionsArray,
           personas: selectedPersonas,
-          status: 'Running',
+          status: 'in_progress',
           active_step: step,
         }),
       });
@@ -604,25 +604,22 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
         throw new Error(errorData.error || 'Failed to save simulation');
       }
 
-      // Call backend API to run all questions
-      toast({
-        title: "Launching simulation...",
-        description: "This may take a few minutes. You'll be redirected when complete.",
-      });
-
-      const runResponse = await fetch(`/api/simulations/${id}/run-all-questions`, {
+      // Call backend API to run all questions (fire-and-forget)
+      fetch(`/api/simulations/${id}/run-all-questions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+      }).catch((error) => {
+        console.error('Error starting simulation:', error);
+        // Don't show error to user since they're already redirected
       });
 
-      if (!runResponse.ok) {
-        const errorData = await runResponse.json();
-        throw new Error(errorData.error || 'Failed to run simulation');
-      }
-
-      const runData = await runResponse.json();
+      // Redirect immediately
+      toast({
+        title: "Simulation launched",
+        description: "Simulation is running in the background. Redirecting to project page...",
+      });
 
       // Redirect based on project_id
       if (simulationData.project_id) {
@@ -630,11 +627,6 @@ export default function EditSimulationPage({ params }: { params: Promise<{ id: s
       } else {
         router.push('/simulations');
       }
-
-      toast({
-        title: "Success",
-        description: "Simulation launched successfully! You can now view it and ask follow-up questions.",
-      });
     } catch (error: any) {
       console.error("Error launching AI simulation:", error);
       toast({

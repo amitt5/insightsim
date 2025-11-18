@@ -8,7 +8,7 @@ function formatAnalysisContext(syntheticAnalysis: any, humanAnalysis: any, trans
   let context = "You are a research analysis assistant. Answer questions based on the following data from market research interviews.\n\n";
   
   // Add transcript search results if available
-  if (transcriptResults && transcriptResults.candidates && transcriptResults.candidates.length > 0) {
+  if (transcriptResults && transcriptResults.candidates && Array.isArray(transcriptResults.candidates) && transcriptResults.candidates.length > 0) {
     context += "=== TRANSCRIPT SEARCH RESULTS (Direct Quotes from Interviews) ===\n\n";
     transcriptResults.candidates.forEach((candidate: any, idx: number) => {
       if (candidate.content?.parts && candidate.content.parts.length > 0) {
@@ -89,6 +89,13 @@ function formatAnalysisContext(syntheticAnalysis: any, humanAnalysis: any, trans
     context += "- Prioritize information from TRANSCRIPT SEARCH RESULTS when answering questions about specific details, quotes, or mentions\n";
     context += "- Use analysis summaries for high-level insights and patterns\n";
     context += "- When citing transcript results, mention which simulation or interview it came from\n";
+  } else if (transcriptResults && transcriptResults.searched && transcriptResults.noResults) {
+    context += "- Note: Transcript search was performed but found no matching results for this query\n";
+    context += "- Answer based on the analysis summaries provided above\n";
+    context += "- If the question asks about specific details from transcripts, mention that no matching transcript content was found\n";
+  } else if (transcriptResults && transcriptResults.error) {
+    context += `- Note: Transcript search was requested but encountered an issue: ${transcriptResults.error}\n`;
+    context += "- Answer based on the analysis summaries provided above\n";
   } else {
     context += "- Answer questions based ONLY on the analysis data provided above\n";
   }
@@ -174,18 +181,65 @@ export async function POST(
               question,
               { maxResults: 5 }
             )
-            console.log('Transcript search completed:', transcriptSearchResults?.candidates?.length || 0, 'results')
+            
+            // Check if we got any results
+            if (!transcriptSearchResults?.candidates || transcriptSearchResults.candidates.length === 0) {
+              console.log('Transcript search returned no results for query:', question)
+              // Set to empty object so we know search was attempted but found nothing
+              transcriptSearchResults = { candidates: [], searched: true, noResults: true }
+            } else {
+              console.log('Transcript search completed:', transcriptSearchResults.candidates.length, 'results')
+            }
           } catch (searchError: any) {
             console.error('Error searching transcripts:', searchError)
-            // Don't fail the request, just log the error and continue without transcript results
+            // Set error flag but don't fail the request
+            transcriptSearchResults = { 
+              candidates: [], 
+              searched: true, 
+              error: searchError.message || 'Failed to search transcripts' 
+            }
             // The user will still get analysis-based answers
           }
         } else {
           console.log('No Google File Search Store found for project, skipping transcript search')
+          // Check if transcripts exist but store isn't set up
+          const { data: transcriptDocs } = await supabase
+            .from("rag_documents")
+            .select("id")
+            .eq("project_id", projectId)
+            .eq("transcript_type", "synthetic")
+            .limit(1)
+          
+          const { data: humanTranscripts } = await supabase
+            .from("rag_documents")
+            .select("id")
+            .eq("project_id", projectId)
+            .eq("transcript_type", "human")
+            .limit(1)
+          
+          if ((transcriptDocs && transcriptDocs.length > 0) || (humanTranscripts && humanTranscripts.length > 0)) {
+            // Transcripts exist but store not configured
+            transcriptSearchResults = { 
+              candidates: [], 
+              searched: false, 
+              error: 'Transcripts found but Google File Search Store is not configured. Please regenerate analysis to upload transcripts.' 
+            }
+          } else {
+            // No transcripts uploaded yet
+            transcriptSearchResults = { 
+              candidates: [], 
+              searched: false, 
+              error: 'No transcripts available. Please generate analysis first to upload transcripts.' 
+            }
+          }
         }
       } catch (error: any) {
         console.error('Error in transcript search setup:', error)
-        // Continue without transcript search
+        transcriptSearchResults = { 
+          candidates: [], 
+          searched: false, 
+          error: error.message || 'Failed to search transcripts' 
+        }
       }
     }
 

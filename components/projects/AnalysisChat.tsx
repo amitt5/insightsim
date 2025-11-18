@@ -25,6 +25,7 @@ export default function AnalysisChat({ projectId, hasAnalysis }: AnalysisChatPro
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchTranscripts, setSearchTranscripts] = useState(false);
+  const [isSearchingTranscripts, setIsSearchingTranscripts] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -50,6 +51,7 @@ export default function AnalysisChat({ projectId, hasAnalysis }: AnalysisChatPro
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
+    setIsSearchingTranscripts(searchTranscripts);
 
     try {
       const response = await fetch(`/api/projects/${projectId}/analysis/chat`, {
@@ -94,6 +96,7 @@ export default function AnalysisChat({ projectId, hasAnalysis }: AnalysisChatPro
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      setIsSearchingTranscripts(false);
     }
   };
 
@@ -161,8 +164,11 @@ export default function AnalysisChat({ projectId, hasAnalysis }: AnalysisChatPro
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                   <Bot className="h-4 w-4 text-blue-600" />
                 </div>
-                <div className="bg-gray-100 rounded-lg px-4 py-2">
+                <div className="bg-gray-100 rounded-lg px-4 py-2 flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                  <span className="text-xs text-gray-500">
+                    {isSearchingTranscripts ? 'Searching transcripts...' : 'Thinking...'}
+                  </span>
                 </div>
               </div>
             )}
@@ -178,6 +184,7 @@ export default function AnalysisChat({ projectId, hasAnalysis }: AnalysisChatPro
             id="search-transcripts"
             checked={searchTranscripts}
             onCheckedChange={(checked) => setSearchTranscripts(checked === true)}
+            disabled={isLoading}
           />
           <label
             htmlFor="search-transcripts"
@@ -185,6 +192,9 @@ export default function AnalysisChat({ projectId, hasAnalysis }: AnalysisChatPro
           >
             Search in transcripts
           </label>
+          <span className="text-xs text-gray-500 ml-1">
+            (Enable to search raw interview transcripts)
+          </span>
         </div>
         <div className="flex gap-2">
           <Textarea

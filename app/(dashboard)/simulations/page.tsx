@@ -233,9 +233,15 @@ export default function SimulationsPage() {
                   <td className="py-3 px-4">{simulation.mode}</td>
                   <td className="py-3 px-4">{simulation.participants}</td>
                   <td className="py-3 px-4">
-                    <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
-                      {simulation.status}
-                    </Badge>
+                    {simulation.status === "in_progress" ? (
+                      <Badge variant="secondary">
+                        In Progress...
+                      </Badge>
+                    ) : (
+                      <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
+                        {simulation.status}
+                      </Badge>
+                    )}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <DropdownMenu>
@@ -284,9 +290,15 @@ export default function SimulationsPage() {
                       {simulation.date}
                     </p>
                   </div>
-                  <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
-                    {simulation.status}
-                  </Badge>
+                  {simulation.status === "in_progress" ? (
+                    <Badge variant="secondary">
+                      In Progress...
+                    </Badge>
+                  ) : (
+                    <Badge variant={simulation.status === "Completed" ? "default" : "secondary"}>
+                      {simulation.status}
+                    </Badge>
+                  )}
                 </div>
                 
                 <div className="space-y-2">

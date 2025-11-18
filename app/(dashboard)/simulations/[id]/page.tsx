@@ -7,6 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Download, UserCircle, Menu, Copy, ChevronDown, ChevronUp } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { prepareInitialPrompt, prepareSummaryPrompt } from "@/utils/preparePrompt";
 import { buildMessagesForOpenAI, buildFollowUpQuestionsPrompt } from "@/utils/buildMessagesForOpenAI";
 import { SimulationMessage } from "@/utils/types";
@@ -95,6 +102,10 @@ export default function SimulationViewPage() {
   const [ragDocuments, setRagDocuments] = useState<any[]>([])
   const [selectedRagDocuments, setSelectedRagDocuments] = useState<boolean[]>([])
   const [isLoadingRagDocuments, setIsLoadingRagDocuments] = useState(false)
+  const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false)
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null)
+  const [followUpQuestionsForModal, setFollowUpQuestionsForModal] = useState<{question: string}[]>([])
+  const [customFollowUpQuestion, setCustomFollowUpQuestion] = useState("")
   // const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
@@ -115,6 +126,368 @@ export default function SimulationViewPage() {
   const getPersonaColor = (personaId: string, personas: Persona[]) => {
     const index = personas.findIndex(p => p.id === personaId);
     return index !== -1 ? personaColors[index % personaColors.length] : personaColors[0];
+  };
+
+  // Function to identify which discussion question index a moderator message corresponds to
+  const getQuestionIndexForMessage = (messageText: string): number | null => {
+    if (!simulationData?.simulation?.discussion_questions) return null;
+    
+    const questions = simulationData.simulation.discussion_questions;
+    for (let i = 0; i < questions.length; i++) {
+      // Check if the message contains the question text
+      if (messageText.includes(questions[i])) {
+        return i;
+      }
+    }
+    return null;
+  };
+
+  // Function to extract a specific question and its responses from messages
+  const getQuestionAndResponses = (questionIndex: number, messages: SimulationMessage[]): SimulationMessage[] => {
+    if (!simulationData?.simulation?.discussion_questions || questionIndex < 0 || questionIndex >= simulationData.simulation.discussion_questions.length) {
+      return [];
+    }
+
+    const targetQuestion = simulationData.simulation.discussion_questions[questionIndex];
+    const result: SimulationMessage[] = [];
+    let foundQuestion = false;
+    let questionMessageIndex = -1;
+
+    // Find the moderator message that contains this question
+    for (let i = 0; i < messages.length; i++) {
+      if (messages[i].sender_type === 'moderator' && messages[i].message.includes(targetQuestion)) {
+        foundQuestion = true;
+        questionMessageIndex = i;
+        result.push(messages[i]); // Add the question
+        break;
+      }
+    }
+
+    if (!foundQuestion) {
+      return [];
+    }
+
+    // Get all participant responses after this question until the next moderator message
+    for (let i = questionMessageIndex + 1; i < messages.length; i++) {
+      if (messages[i].sender_type === 'moderator') {
+        // Stop when we hit the next moderator message
+        break;
+      }
+      // Add participant responses
+      result.push(messages[i]);
+    }
+
+    return result;
+  };
+
+  // Function to find the insertion point (index after the last response to a question)
+  const findInsertionPoint = (questionIndex: number, messages: SimulationMessage[]): number => {
+    if (!simulationData?.simulation?.discussion_questions || questionIndex < 0 || questionIndex >= simulationData.simulation.discussion_questions.length) {
+      return messages.length;
+    }
+
+    const targetQuestion = simulationData.simulation.discussion_questions[questionIndex];
+    let lastResponseIndex = -1;
+
+    // Find the moderator message that contains this question
+    for (let i = 0; i < messages.length; i++) {
+      if (messages[i].sender_type === 'moderator' && messages[i].message.includes(targetQuestion)) {
+        // Find the last participant response after this question
+        for (let j = i + 1; j < messages.length; j++) {
+          if (messages[j].sender_type === 'moderator') {
+            // Stop when we hit the next moderator message
+            break;
+          }
+          lastResponseIndex = j;
+        }
+        break;
+      }
+    }
+
+    // Return the index after the last response (or after the question if no responses)
+    return lastResponseIndex >= 0 ? lastResponseIndex + 1 : messages.length;
+  };
+
+  // Function to get all messages up to a specific insertion point
+  const getMessagesUpToInsertionPoint = (insertionPoint: number, messages: SimulationMessage[]): SimulationMessage[] => {
+    return messages.slice(0, insertionPoint);
+  };
+
+  // Function to update turn_numbers of messages after insertion point
+  const updateSubsequentTurnNumbers = async (insertionPoint: number, offset: number) => {
+    if (!simulationData?.simulation?.id) {
+      console.error("Simulation ID is not available");
+      return;
+    }
+
+    // Get all messages after the insertion point
+    const messagesToUpdate = simulationMessages.slice(insertionPoint);
+    
+    if (messagesToUpdate.length === 0) {
+      return; // Nothing to update
+    }
+
+    try {
+      // Call API to update turn_numbers
+      const response = await fetch('/api/simulation-messages/update-turn-numbers', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          simulation_id: simulationData.simulation.id,
+          message_ids: messagesToUpdate.map(msg => msg.id),
+          offset: offset
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error updating turn numbers: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Turn numbers updated successfully:', data);
+    } catch (error) {
+      console.error("Error updating turn numbers:", error);
+      throw error; // Re-throw to handle in calling function
+    }
+  };
+
+  // Handler for opening follow-up modal and fetching questions
+  const handleOpenFollowUpModal = async (questionIndex: number) => {
+    setSelectedQuestionIndex(questionIndex);
+    setIsFollowUpModalOpen(true);
+    setFollowUpQuestionsForModal([]); // Clear previous questions
+    setCustomFollowUpQuestion(""); // Clear previous custom question
+    
+    // Extract the question and its responses
+    const questionMessages = getQuestionAndResponses(questionIndex, simulationMessages);
+    
+    if (questionMessages.length === 0) {
+      console.warn('No messages found for question index:', questionIndex);
+      return;
+    }
+
+    // Show loading state
+    setIsLoadingFollowUpQuestions(true);
+
+    try {
+      // Build prompt with only this question and its responses
+      const sample = {
+        simulation: simulationData?.simulation || {} as Simulation,
+        messages: questionMessages,
+        personas: simulationData?.personas || [] as Persona[]
+      };
+      
+      const prompt = buildFollowUpQuestionsPrompt(sample);
+      console.log('Fetching follow-up questions for question index:', questionIndex);
+      console.log('Messages used:', questionMessages);
+      
+      // Call API to get follow-up questions
+      const data = await runSimulationAPI(prompt, modelInUse, 'followup');
+      
+      if (data.reply) {
+        // Parse the response
+        const parsedMessages = parseSimulationResponse(data.reply);
+        console.log('Parsed follow-up questions:', parsedMessages);
+        
+        // Extract questions array (handle different response formats)
+        let questions: {question: string}[] = [];
+        if (Array.isArray(parsedMessages)) {
+          questions = parsedMessages;
+        } else if (parsedMessages.questions && Array.isArray(parsedMessages.questions)) {
+          questions = parsedMessages.questions;
+        } else if (parsedMessages && typeof parsedMessages === 'object') {
+          // Try to find any array property
+          for (const key in parsedMessages) {
+            if (Array.isArray(parsedMessages[key])) {
+              questions = parsedMessages[key];
+              break;
+            }
+          }
+        }
+        
+        setFollowUpQuestionsForModal(questions);
+      }
+    } catch (error) {
+      console.error('Error fetching follow-up questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch follow-up questions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingFollowUpQuestions(false);
+    }
+  };
+
+  // Handler for selecting and asking a follow-up question
+  const handleSelectFollowUpQuestion = async (followUpQuestion: string) => {
+    if (selectedQuestionIndex === null || !simulationData?.simulation?.id) {
+      console.error('No question selected or simulation data missing');
+      return;
+    }
+
+    // Keep modal open to show loading state
+    setIsSimulationRunning(true);
+
+    try {
+      // Find the insertion point
+      const insertionPoint = findInsertionPoint(selectedQuestionIndex, simulationMessages);
+      console.log('Insertion point:', insertionPoint);
+
+      // Get all messages up to the insertion point
+      const messagesUpToInsertion = getMessagesUpToInsertionPoint(insertionPoint, simulationMessages);
+      console.log('Messages up to insertion:', messagesUpToInsertion);
+
+      // Calculate the turn_number for the follow-up question
+      // If there are messages before insertion point, use the last message's turn_number + 1
+      // Otherwise, start at 1
+      let followUpTurnNumber = 1;
+      if (insertionPoint > 0 && simulationMessages[insertionPoint - 1]) {
+        followUpTurnNumber = simulationMessages[insertionPoint - 1].turn_number + 1;
+      } else if (insertionPoint === 0 && simulationMessages.length > 0) {
+        // If inserting at the beginning but messages exist, use the first message's turn_number
+        followUpTurnNumber = simulationMessages[0].turn_number;
+      }
+
+      // Save the follow-up question with a custom turn_number
+      const followUpQuestionEntry = {
+        simulation_id: simulationData.simulation.id,
+        sender_type: 'moderator',
+        sender_id: null,
+        message: followUpQuestion,
+        turn_number: followUpTurnNumber
+      };
+
+      const saveQuestionResponse = await fetch('/api/simulation-messages/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages: [followUpQuestionEntry] }),
+      });
+
+      if (!saveQuestionResponse.ok) {
+        throw new Error(`Error saving follow-up question: ${saveQuestionResponse.status}`);
+      }
+
+      // Now get the updated messages to include the follow-up question
+      const updatedMessages = await fetchSimulationMessages(simulationData.simulation.id);
+      if (!updatedMessages) {
+        throw new Error('Failed to fetch updated messages');
+      }
+
+      // Build context with all messages up to and including the follow-up question
+      const contextMessages = [...messagesUpToInsertion, updatedMessages[updatedMessages.length - 1]];
+
+      // Build prompt for generating responses
+      const sample = {
+        simulation: simulationData.simulation,
+        messages: contextMessages,
+        personas: simulationData.personas || []
+      };
+
+      const prompt = buildMessagesForOpenAI(sample, simulationData.simulation.study_type, userInstruction, [], []);
+      console.log('Prompt for follow-up responses:', prompt);
+
+      // Get responses from LLM
+      const data = await runSimulationAPI(prompt, modelInUse, 'chat');
+      
+      if (data.reply) {
+        // Parse the response into messages
+        const parsedMessages = parseSimulationResponse(data.reply);
+        const extractedParticipantMessages = extractParticipantMessages(parsedMessages);
+        
+        console.log('Extracted participant messages:', extractedParticipantMessages);
+        
+        // Calculate turn_numbers for responses (starting after the follow-up question)
+        const responseTurnNumber = followUpTurnNumber + 1;
+        const numResponses = extractedParticipantMessages.length;
+        
+        // Map responses to database structure with correct turn_numbers
+        const responseEntries = extractedParticipantMessages.map((msg, index) => {
+          const isModerator = msg.name.toLowerCase() === 'moderator';
+          let senderId = null;
+          
+          if (!isModerator) {
+            if (nameToPersonaIdMap[msg.name]) {
+              senderId = nameToPersonaIdMap[msg.name];
+            } else {
+              const firstName = msg.name.split(' ')[0];
+              senderId = nameToPersonaIdMap[firstName];
+            }
+          }
+          
+          return {
+            simulation_id: simulationData.simulation.id,
+            sender_type: isModerator ? 'moderator' : 'participant',
+            sender_id: senderId,
+            message: msg.message,
+            turn_number: responseTurnNumber + index
+          };
+        });
+
+        // Save the responses
+        const saveResponsesResponse = await fetch('/api/simulation-messages/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ messages: responseEntries }),
+        });
+
+        if (!saveResponsesResponse.ok) {
+          throw new Error(`Error saving responses: ${saveResponsesResponse.status}`);
+        }
+
+        // Calculate offset: N+1 where N is number of responses
+        const offset = numResponses + 1;
+
+        // Update turn_numbers of all subsequent messages
+        await updateSubsequentTurnNumbers(insertionPoint, offset);
+
+        // Refresh the conversation
+        await fetchSimulationMessages(simulationData.simulation.id);
+
+        toast({
+          title: "Success",
+          description: "Follow-up question and responses have been inserted.",
+        });
+      }
+    } catch (error) {
+      console.error('Error handling follow-up question:', error);
+      toast({
+        title: "Error",
+        description: "Failed to insert follow-up question. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSimulationRunning(false);
+      // Close modal after responses are received
+      setIsFollowUpModalOpen(false);
+      setCustomFollowUpQuestion(""); // Clear the question text
+    }
+  };
+
+  // Handler for selecting a suggested question (populates textarea)
+  const handleSelectSuggestedQuestion = (question: string) => {
+    setCustomFollowUpQuestion(question);
+  };
+
+  // Handler for asking the custom/edited follow-up question
+  const handleAskFollowUpQuestion = async () => {
+    const questionToAsk = customFollowUpQuestion.trim();
+    if (!questionToAsk) {
+      toast({
+        title: "Error",
+        description: "Please enter or select a question.",
+        variant: "destructive",
+      });
+      return;
+    }
+    await handleSelectFollowUpQuestion(questionToAsk);
+    // Question text will be cleared in the finally block of handleSelectFollowUpQuestion
   };
 
   
@@ -599,8 +972,16 @@ const debugAPIRawResponse = async () => {
          // if no messages, set the initial message, later also add condition simulationData.simulation.mode === "human-mod"
         setInitialMessage();
       } else {
-        // sort messages by created_at date
-        data.messages.sort((a: SimulationMessage, b: SimulationMessage) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        // sort messages by turn_number first, then by created_at as tiebreaker
+        // (API already orders by turn_number, but we ensure it here as well)
+        data.messages.sort((a: SimulationMessage, b: SimulationMessage) => {
+          // First sort by turn_number
+          if (a.turn_number !== b.turn_number) {
+            return a.turn_number - b.turn_number;
+          }
+          // If turn_numbers are equal, sort by created_at
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        });
         // if there are messages, check how many times moderator has spoken and then set the new message to the next question
         // const moderatorMessages = data.messages.filter((msg: SimulationMessage) => msg.sender_type === 'moderator');
         // if(moderatorMessages.length) {
@@ -1394,6 +1775,22 @@ const debugAPIRawResponse = async () => {
                                 )}
                                 <p className="text-sm">{message.text}</p>
                               </div>
+                              {/* Follow up button for discussion questions */}
+                              {isModeratorMessage && (() => {
+                                const questionIndex = getQuestionIndexForMessage(message.text);
+                                return questionIndex !== null ? (
+                                  <div className={`mt-2 ${isModeratorMessage ? "text-right" : ""}`}>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleOpenFollowUpModal(questionIndex)}
+                                      className="text-xs"
+                                    >
+                                      Follow up
+                                    </Button>
+                                  </div>
+                                ) : null;
+                              })()}
                             </div>
                           </div>
                         );
@@ -1782,6 +2179,102 @@ const debugAPIRawResponse = async () => {
           </div>
         </div>
       )}
+
+      {/* Follow-up Questions Modal */}
+      <Dialog open={isFollowUpModalOpen} onOpenChange={(open) => {
+        // Prevent closing while processing
+        if (!open && isSimulationRunning) {
+          return;
+        }
+        setIsFollowUpModalOpen(open);
+        if (!open) setCustomFollowUpQuestion(""); // Clear on close
+      }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Follow-up Questions</DialogTitle>
+            <DialogDescription>
+              {selectedQuestionIndex !== null && simulationData?.simulation?.discussion_questions
+                ? `Select a follow-up question for: "${simulationData.simulation.discussion_questions[selectedQuestionIndex]}"`
+                : "Select a follow-up question to ask"}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Scrollable list of suggested questions */}
+          <div className="mt-4 space-y-2 flex-1 overflow-y-auto">
+            {isSimulationRunning ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce" />
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                </div>
+                <p className="text-sm text-gray-500 font-medium">Asking your question and generating responses...</p>
+                <p className="text-xs text-gray-400 mt-2">Please wait, this may take a moment.</p>
+              </div>
+            ) : isLoadingFollowUpQuestions ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce" />
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                </div>
+                <p className="text-sm text-gray-500">Generating follow-up questions...</p>
+              </div>
+            ) : followUpQuestionsForModal.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No follow-up questions available yet.</p>
+                <p className="text-sm mt-2">You can type your own question below.</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-gray-500 mb-2">Click a question to edit it, or type your own:</p>
+                {followUpQuestionsForModal.map((questionObj, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => handleSelectSuggestedQuestion(questionObj.question)}
+                    disabled={isSimulationRunning}
+                  >
+                    <p className="text-sm">{questionObj.question}</p>
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+          
+          {/* Textarea and Ask button at the bottom */}
+          <div className="mt-4 pt-4 border-t space-y-3">
+            <div>
+              <Label htmlFor="custom-question" className="text-sm font-medium">
+                Your Question
+              </Label>
+              <textarea
+                id="custom-question"
+                value={customFollowUpQuestion}
+                onChange={(e) => setCustomFollowUpQuestion(e.target.value)}
+                placeholder="Type your question here or select one above..."
+                className="w-full mt-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                rows={3}
+                disabled={isSimulationRunning}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    handleAskFollowUpQuestion();
+                  }
+                }}
+              />
+            </div>
+            <Button
+              onClick={handleAskFollowUpQuestion}
+              disabled={!customFollowUpQuestion.trim() || isSimulationRunning}
+              className="w-full"
+            >
+              {isSimulationRunning ? "Asking..." : "Ask Question"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

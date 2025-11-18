@@ -3,6 +3,7 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 import { v4 as uuidv4 } from 'uuid'
+import { put } from '@vercel/blob'
 import {
   getOrCreateFileSearchStore,
   uploadFileToFileSearchStore,
@@ -97,11 +98,12 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Validate file size (50MB limit)
-    const maxSize = 50 * 1024 * 1024 // 50MB
+    // Validate file size (500MB limit - Vercel Blob supports up to 5TB)
+    // Using 500MB as a reasonable limit for PDF files
+    const maxSize = 500 * 1024 * 1024 // 500MB
     if (file.size > maxSize) {
       return NextResponse.json({ 
-        error: 'File size too large. Maximum size is 50MB.' 
+        error: 'File size too large. Maximum size is 500MB.' 
       }, { status: 400 })
     }
 
@@ -151,17 +153,33 @@ export async function POST(
       }
     }
 
-    // Step 2: Upload file directly to Google File Search Store using Python SDK
-    // The Python script handles the upload and waits for operation completion
+    // Step 2: Upload file to Vercel Blob first to avoid serverless function payload limits
+    let blobUrl: string;
+    try {
+      console.log(`Uploading file to Vercel Blob: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`)
+      const blob = await put(googleFileName, file, {
+        access: 'public',
+        addRandomSuffix: true,
+      });
+      blobUrl = blob.url;
+      console.log(`File uploaded to Vercel Blob: ${blobUrl}`)
+    } catch (blobError: any) {
+      console.error("Error uploading file to Vercel Blob:", blobError)
+      return NextResponse.json({ 
+        error: `Failed to upload file to storage: ${blobError.message || 'Unknown error'}` 
+      }, { status: 500 })
+    }
+
+    // Step 3: Upload file from Vercel Blob to Google File Search Store
     let googleFileNameResult: string = googleFileName;
 
     try {
       const uploadResult = await uploadFileToFileSearchStore(
         storeName,
-        file,
+        blobUrl,
         googleFileName
       )
-      // Python script already waits for operation to complete
+      // Upload function waits for operation to complete
       // So we get the final result directly
       googleFileNameResult = uploadResult.fileName;
       console.log(`File upload and import completed successfully, file: ${googleFileNameResult}`)
@@ -212,6 +230,7 @@ export async function POST(
     }
 
     // Step 4: Create document record in database with completed status
+    // Note: blobUrl is stored for potential future use, but file is now in Google File Search
     const documentData = {
       id: uuidv4(),
       project_id: resolvedParams.projectId,

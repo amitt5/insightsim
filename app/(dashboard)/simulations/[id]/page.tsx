@@ -105,6 +105,7 @@ export default function SimulationViewPage() {
   const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false)
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null)
   const [followUpQuestionsForModal, setFollowUpQuestionsForModal] = useState<{question: string}[]>([])
+  const [customFollowUpQuestion, setCustomFollowUpQuestion] = useState("")
   // const { availableCredits, setAvailableCredits, fetchUserCredits } = useCredits();
 
   // Color palette for personas (10 colors)
@@ -257,6 +258,7 @@ export default function SimulationViewPage() {
     setSelectedQuestionIndex(questionIndex);
     setIsFollowUpModalOpen(true);
     setFollowUpQuestionsForModal([]); // Clear previous questions
+    setCustomFollowUpQuestion(""); // Clear previous custom question
     
     // Extract the question and its responses
     const questionMessages = getQuestionAndResponses(questionIndex, simulationMessages);
@@ -463,6 +465,26 @@ export default function SimulationViewPage() {
     } finally {
       setIsSimulationRunning(false);
     }
+  };
+
+  // Handler for selecting a suggested question (populates textarea)
+  const handleSelectSuggestedQuestion = (question: string) => {
+    setCustomFollowUpQuestion(question);
+  };
+
+  // Handler for asking the custom/edited follow-up question
+  const handleAskFollowUpQuestion = async () => {
+    const questionToAsk = customFollowUpQuestion.trim();
+    if (!questionToAsk) {
+      toast({
+        title: "Error",
+        description: "Please enter or select a question.",
+        variant: "destructive",
+      });
+      return;
+    }
+    await handleSelectFollowUpQuestion(questionToAsk);
+    setCustomFollowUpQuestion(""); // Clear after asking
   };
 
   
@@ -2174,8 +2196,11 @@ const debugAPIRawResponse = async () => {
       )}
 
       {/* Follow-up Questions Modal */}
-      <Dialog open={isFollowUpModalOpen} onOpenChange={setIsFollowUpModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <Dialog open={isFollowUpModalOpen} onOpenChange={(open) => {
+        setIsFollowUpModalOpen(open);
+        if (!open) setCustomFollowUpQuestion(""); // Clear on close
+      }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Follow-up Questions</DialogTitle>
             <DialogDescription>
@@ -2184,7 +2209,9 @@ const debugAPIRawResponse = async () => {
                 : "Select a follow-up question to ask"}
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-4 space-y-2">
+          
+          {/* Scrollable list of suggested questions */}
+          <div className="mt-4 space-y-2 flex-1 overflow-y-auto">
             {isLoadingFollowUpQuestions ? (
               <div className="flex flex-col items-center justify-center py-8">
                 <div className="flex items-center gap-2 mb-2">
@@ -2197,21 +2224,55 @@ const debugAPIRawResponse = async () => {
             ) : followUpQuestionsForModal.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>No follow-up questions available yet.</p>
-                <p className="text-sm mt-2">Please try again or check if the question has responses.</p>
+                <p className="text-sm mt-2">You can type your own question below.</p>
               </div>
             ) : (
-              followUpQuestionsForModal.map((questionObj, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={() => handleSelectFollowUpQuestion(questionObj.question)}
-                  disabled={isSimulationRunning}
-                >
-                  <p className="text-sm">{questionObj.question}</p>
-                </button>
-              ))
+              <>
+                <p className="text-xs text-gray-500 mb-2">Click a question to edit it, or type your own:</p>
+                {followUpQuestionsForModal.map((questionObj, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => handleSelectSuggestedQuestion(questionObj.question)}
+                    disabled={isSimulationRunning}
+                  >
+                    <p className="text-sm">{questionObj.question}</p>
+                  </button>
+                ))}
+              </>
             )}
+          </div>
+          
+          {/* Textarea and Ask button at the bottom */}
+          <div className="mt-4 pt-4 border-t space-y-3">
+            <div>
+              <Label htmlFor="custom-question" className="text-sm font-medium">
+                Your Question
+              </Label>
+              <textarea
+                id="custom-question"
+                value={customFollowUpQuestion}
+                onChange={(e) => setCustomFollowUpQuestion(e.target.value)}
+                placeholder="Type your question here or select one above..."
+                className="w-full mt-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                rows={3}
+                disabled={isSimulationRunning}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    handleAskFollowUpQuestion();
+                  }
+                }}
+              />
+            </div>
+            <Button
+              onClick={handleAskFollowUpQuestion}
+              disabled={!customFollowUpQuestion.trim() || isSimulationRunning}
+              className="w-full"
+            >
+              {isSimulationRunning ? "Asking..." : "Ask Question"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

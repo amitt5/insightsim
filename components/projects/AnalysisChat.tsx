@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Send, Bot, User, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,6 +24,7 @@ export default function AnalysisChat({ projectId, hasAnalysis }: AnalysisChatPro
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [searchTranscripts, setSearchTranscripts] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -55,7 +57,10 @@ export default function AnalysisChat({ projectId, hasAnalysis }: AnalysisChatPro
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ 
+          question,
+          searchTranscripts 
+        }),
       });
 
       if (!response.ok) {
@@ -168,6 +173,19 @@ export default function AnalysisChat({ projectId, hasAnalysis }: AnalysisChatPro
 
       {/* Input Container */}
       <div className="border-t p-4">
+        <div className="flex items-center space-x-2 mb-3">
+          <Checkbox
+            id="search-transcripts"
+            checked={searchTranscripts}
+            onCheckedChange={(checked) => setSearchTranscripts(checked === true)}
+          />
+          <label
+            htmlFor="search-transcripts"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+          >
+            Search in transcripts
+          </label>
+        </div>
         <div className="flex gap-2">
           <Textarea
             ref={textareaRef}

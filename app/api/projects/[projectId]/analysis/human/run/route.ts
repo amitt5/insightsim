@@ -4,6 +4,7 @@ import { cookies } from "next/headers"
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
 import { POST as prepare } from "../prepare/route"
 import { OpenAI } from "openai"
+import { uploadHumanTranscript } from "@/utils/uploadTranscript"
 
 function buildPrompt(topic: string | undefined, transcriptJson: any) {
   const header = `You are a qualitative research analysis assistant. Analyze the following interview transcript and extract insights.
@@ -108,6 +109,48 @@ export async function POST(
       }, { status: 400 })
     }
 
+    // Get project info for Google File Search Store ID
+    const supabase = access.supabase
+    const { data: project } = await supabase
+      .from("projects")
+      .select("google_file_search_store_id")
+      .eq("id", projectId)
+      .single()
+
+    // Upload transcripts to Google File Search Store in parallel (don't await)
+    // This happens asynchronously and won't block analysis generation
+    if (transcriptPayload?.interviews && Array.isArray(transcriptPayload.interviews)) {
+      const uploadPromises = transcriptPayload.interviews.map((interview: any) => {
+        return uploadHumanTranscript(
+          projectId,
+          access.session.user.id,
+          {
+            respondentId: interview.respondentId,
+            name: interview.name,
+            email: interview.email,
+            age: interview.age,
+            gender: interview.gender,
+            messages: interview.messages || [],
+            source: interview.source
+          },
+          project?.google_file_search_store_id
+        ).catch((error: any) => {
+          // Log error but don't fail the analysis
+          console.error(`Failed to upload transcript for interview ${interview.respondentId}:`, error);
+          return { success: false, error: error.message };
+        });
+      });
+
+      // Start uploads but don't await - let them run in background
+      Promise.all(uploadPromises).then((results) => {
+        const successCount = results.filter(r => r.success).length;
+        const failCount = results.filter(r => !r.success).length;
+        console.log(`Transcript uploads completed: ${successCount} succeeded, ${failCount} failed`);
+      }).catch((error) => {
+        console.error('Error in transcript upload batch:', error);
+      });
+    }
+
     // Build prompt
     const topic = undefined // optional; can be wired to project.brief_text later
     const systemPrompt = buildPrompt(topic, transcriptPayload)
@@ -150,7 +193,6 @@ export async function POST(
     }
 
     // Save to database (upsert - overwrites if exists)
-    const supabase = access.supabase
     const { error: dbError } = await supabase
       .from('project_analysis')
       .upsert({

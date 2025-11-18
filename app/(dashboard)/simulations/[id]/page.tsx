@@ -328,7 +328,7 @@ export default function SimulationViewPage() {
       return;
     }
 
-    setIsFollowUpModalOpen(false);
+    // Keep modal open to show loading state
     setIsSimulationRunning(true);
 
     try {
@@ -464,6 +464,9 @@ export default function SimulationViewPage() {
       });
     } finally {
       setIsSimulationRunning(false);
+      // Close modal after responses are received
+      setIsFollowUpModalOpen(false);
+      setCustomFollowUpQuestion(""); // Clear the question text
     }
   };
 
@@ -484,7 +487,7 @@ export default function SimulationViewPage() {
       return;
     }
     await handleSelectFollowUpQuestion(questionToAsk);
-    setCustomFollowUpQuestion(""); // Clear after asking
+    // Question text will be cleared in the finally block of handleSelectFollowUpQuestion
   };
 
   
@@ -2197,6 +2200,10 @@ const debugAPIRawResponse = async () => {
 
       {/* Follow-up Questions Modal */}
       <Dialog open={isFollowUpModalOpen} onOpenChange={(open) => {
+        // Prevent closing while processing
+        if (!open && isSimulationRunning) {
+          return;
+        }
         setIsFollowUpModalOpen(open);
         if (!open) setCustomFollowUpQuestion(""); // Clear on close
       }}>
@@ -2212,7 +2219,17 @@ const debugAPIRawResponse = async () => {
           
           {/* Scrollable list of suggested questions */}
           <div className="mt-4 space-y-2 flex-1 overflow-y-auto">
-            {isLoadingFollowUpQuestions ? (
+            {isSimulationRunning ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce" />
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                </div>
+                <p className="text-sm text-gray-500 font-medium">Asking your question and generating responses...</p>
+                <p className="text-xs text-gray-400 mt-2">Please wait, this may take a moment.</p>
+              </div>
+            ) : isLoadingFollowUpQuestions ? (
               <div className="flex flex-col items-center justify-center py-8">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="h-2 w-2 bg-primary rounded-full animate-bounce" />

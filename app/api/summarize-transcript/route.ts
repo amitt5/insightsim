@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const { transcript } = await req.json();
     
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo', // Much cheaper than GPT-4
+      model: 'gpt-4o-mini', // Much cheaper than GPT-4
       messages: [
         {
           role: 'system',

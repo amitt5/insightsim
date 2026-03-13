@@ -23,8 +23,10 @@ import {
   Check,
   Plus,
   FlaskConical,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { supabase } from "@/lib/supabase"
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -145,6 +147,8 @@ export default function NewCampaignPage() {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [dragOver, setDragOver] = useState(false)
+  const [launching, setLaunching] = useState(false)
+  const [launchError, setLaunchError] = useState<string | null>(null)
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -153,15 +157,62 @@ export default function NewCampaignPage() {
     if (step === 1) return form.contentType !== null
     if (step === 2) return form.icp.trim().length > 0
     if (step === 4) return form.metrics.length > 0
-    if (step === 6) return form.campaignName.trim().length > 0
+    if (step === 6) return form.campaignName.trim().length > 0 && !launching
     return true
   }
 
   const handleNext = () => {
     if (step < 6) setStep((s) => s + 1)
-    else {
-      // UI-only: navigate to fake campaign result
-      router.push("/refinery/demo-campaign-123")
+    else launchCampaign()
+  }
+
+  const launchCampaign = async () => {
+    setLaunching(true)
+    setLaunchError(null)
+
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) throw new Error("You must be signed in to launch a campaign.")
+
+      // Form uses dashes (cold-email), DB CHECK uses underscores (cold_email)
+      const contentType = form.contentType!.replace(/-/g, "_")
+
+      const { data: campaign, error: campaignError } = await supabase
+        .from("refinery_campaigns")
+        .insert({
+          user_id: user.id,
+          name: form.campaignName.trim(),
+          content_type: contentType,
+          initial_draft: form.draft.trim() || null,
+          icp: form.icp.trim(),
+          rag_text: form.ragText.trim() || null,
+          rag_files: [],          // file uploads not wired yet
+          metrics: form.metrics,
+          extra_context: form.context.trim() || null,
+          iterations: form.iterations,
+          users_per_iter: form.usersPerIteration,
+          status: "pending",
+        })
+        .select("id")
+        .single()
+
+      if (campaignError) throw campaignError
+
+      const { error: jobError } = await supabase
+        .from("refinery_jobs")
+        .insert({
+          campaign_id: campaign.id,
+          status: "pending",
+          current_iteration: 0,
+          total_iterations: form.iterations,
+        })
+
+      if (jobError) throw jobError
+
+      router.push(`/refinery/${campaign.id}`)
+    } catch (err) {
+      setLaunchError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
+      setLaunching(false)
     }
   }
 
@@ -292,24 +343,34 @@ export default function NewCampaignPage() {
         </div>
 
         <footer className="shrink-0 border-t px-8 py-4 flex items-center justify-between bg-background">
-          <Button variant="ghost" onClick={handleBack} disabled={step === 1}>
+          <Button variant="ghost" onClick={handleBack} disabled={step === 1 || launching}>
             <ChevronLeft className="h-4 w-4 mr-1" />
             Back
           </Button>
 
-          <div className="flex items-center gap-2">
-            {step === 3 && (
-              <span className="text-xs text-muted-foreground mr-2">Optional step — you can skip</span>
+          <div className="flex items-center gap-3">
+            {launchError && (
+              <p className="text-sm text-destructive">{launchError}</p>
             )}
-            {step === 5 && (
-              <span className="text-xs text-muted-foreground mr-2">Optional step — you can skip</span>
+            {step === 3 && !launchError && (
+              <span className="text-xs text-muted-foreground">Optional step — you can skip</span>
+            )}
+            {step === 5 && !launchError && (
+              <span className="text-xs text-muted-foreground">Optional step — you can skip</span>
             )}
             <Button onClick={handleNext} disabled={!canAdvance()}>
               {step === 6 ? (
-                <>
-                  <FlaskConical className="h-4 w-4 mr-1.5" />
-                  Launch Campaign
-                </>
+                launching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    Launching…
+                  </>
+                ) : (
+                  <>
+                    <FlaskConical className="h-4 w-4 mr-1.5" />
+                    Launch Campaign
+                  </>
+                )
               ) : (
                 <>
                   Next

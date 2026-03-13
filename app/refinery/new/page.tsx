@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -26,7 +26,6 @@ import {
   Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { supabase } from "@/lib/supabase"
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -144,11 +143,41 @@ const INITIAL_FORM: FormState = {
 
 export default function NewCampaignPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const existingId = searchParams.get("id")
+
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [dragOver, setDragOver] = useState(false)
   const [launching, setLaunching] = useState(false)
   const [launchError, setLaunchError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Load existing draft when ?id= is present
+  useEffect(() => {
+    if (!existingId) return
+    fetch(`/api/refinery/campaigns?id=${existingId}`)
+      .then((r) => r.json())
+      .then(({ campaign, error }) => {
+        if (error || !campaign) return
+        const ct = campaign.content_type.replace(/_/g, "-") as ContentType
+        setForm({
+          contentType: ct,
+          draft: campaign.initial_draft ?? "",
+          icp: campaign.icp ?? "",
+          ragText: campaign.rag_text ?? "",
+          ragFiles: [],
+          metrics: campaign.metrics ?? [],
+          customMetric: "",
+          context: campaign.extra_context ?? "",
+          campaignName: campaign.name ?? "",
+          iterations: campaign.iterations ?? 3,
+          usersPerIteration: campaign.users_per_iter ?? 10,
+        })
+        setStep(6)
+      })
+  }, [existingId])
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -166,53 +195,61 @@ export default function NewCampaignPage() {
     else launchCampaign()
   }
 
+  const submitCampaign = async (launch: boolean) => {
+    const contentType = form.contentType!.replace(/-/g, "_")
+    const payload = {
+      launch,
+      name: form.campaignName.trim(),
+      content_type: contentType,
+      initial_draft: form.draft.trim() || null,
+      icp: form.icp.trim(),
+      rag_text: form.ragText.trim() || null,
+      rag_files: [],
+      metrics: form.metrics,
+      extra_context: form.context.trim() || null,
+      iterations: form.iterations,
+      users_per_iter: form.usersPerIteration,
+    }
+    const url = existingId
+      ? `/api/refinery/campaigns?id=${existingId}`
+      : "/api/refinery/campaigns"
+    const res = await fetch(url, {
+      method: existingId ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error ?? "Something went wrong.")
+    return json.campaignId as string
+  }
+
   const launchCampaign = async () => {
     setLaunching(true)
     setLaunchError(null)
-
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) throw new Error("You must be signed in to launch a campaign.")
-
-      // Form uses dashes (cold-email), DB CHECK uses underscores (cold_email)
-      const contentType = form.contentType!.replace(/-/g, "_")
-
-      const { data: campaign, error: campaignError } = await supabase
-        .from("refinery_campaigns")
-        .insert({
-          user_id: user.id,
-          name: form.campaignName.trim(),
-          content_type: contentType,
-          initial_draft: form.draft.trim() || null,
-          icp: form.icp.trim(),
-          rag_text: form.ragText.trim() || null,
-          rag_files: [],          // file uploads not wired yet
-          metrics: form.metrics,
-          extra_context: form.context.trim() || null,
-          iterations: form.iterations,
-          users_per_iter: form.usersPerIteration,
-          status: "pending",
-        })
-        .select("id")
-        .single()
-
-      if (campaignError) throw campaignError
-
-      const { error: jobError } = await supabase
-        .from("refinery_jobs")
-        .insert({
-          campaign_id: campaign.id,
-          status: "pending",
-          current_iteration: 0,
-          total_iterations: form.iterations,
-        })
-
-      if (jobError) throw jobError
-
-      router.push(`/refinery/${campaign.id}`)
+      const campaignId = await submitCampaign(true)
+      // Fire processor — responds immediately, runs in background
+      fetch("/api/refinery/processor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaignId }),
+      })
+      router.push(`/refinery/${campaignId}`)
     } catch (err) {
       setLaunchError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
       setLaunching(false)
+    }
+  }
+
+  const saveCampaign = async () => {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await submitCampaign(false)
+      router.push("/refinery")
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
+      setSaving(false)
     }
   }
 
@@ -349,16 +386,32 @@ export default function NewCampaignPage() {
           </Button>
 
           <div className="flex items-center gap-3">
-            {launchError && (
-              <p className="text-sm text-destructive">{launchError}</p>
+            {(launchError || saveError) && (
+              <p className="text-sm text-destructive">{launchError ?? saveError}</p>
             )}
-            {step === 3 && !launchError && (
+            {step === 3 && !launchError && !saveError && (
               <span className="text-xs text-muted-foreground">Optional step — you can skip</span>
             )}
-            {step === 5 && !launchError && (
+            {step === 5 && !launchError && !saveError && (
               <span className="text-xs text-muted-foreground">Optional step — you can skip</span>
             )}
-            <Button onClick={handleNext} disabled={!canAdvance()}>
+            {step === 6 && (
+              <Button
+                variant="outline"
+                onClick={saveCampaign}
+                disabled={!form.campaignName.trim() || saving || launching}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  "Save Draft"
+                )}
+              </Button>
+            )}
+            <Button onClick={handleNext} disabled={!canAdvance() || saving}>
               {step === 6 ? (
                 launching ? (
                   <>

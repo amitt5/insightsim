@@ -8,6 +8,8 @@
 // For campaigns with many iterations, uncomment and raise maxDuration:
 // export const maxDuration = 300; // requires Vercel Pro/Enterprise
 
+//B2B SaaS founders and Head of Growth at Series A–B startups (20–150 employees). They're overwhelmed, data-driven, and allergic to fluff. They've been burned by agencies before and are skeptical of anything that sounds like a sales pitch. They care deeply about CAC, pipeline efficiency, and time-to-close.
+
 import { NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { openai } from '@/lib/openai';

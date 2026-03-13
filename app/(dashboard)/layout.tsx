@@ -64,11 +64,17 @@ export default function DashboardLayout({
             >
               Enhanced Personas (beta)
             </Link>
-            <Link 
+            <Link
               href="/interviews"
               className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
             >
               Human Interviews
+            </Link>
+            <Link
+              href="/refinery"
+              className="flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:bg-accent"
+            >
+              Refinery
             </Link>
             {isAdmin && (
               <Link 

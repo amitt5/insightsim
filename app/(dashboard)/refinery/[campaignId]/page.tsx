@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import {
   FlaskConical, CheckCircle2, Loader2, Clock,
   TrendingUp, Users, MessageSquare,
@@ -210,52 +211,52 @@ export default function CampaignResultsPage({
           </div>
         </header>
 
-        <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
-          {/* Iteration selector */}
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Iterations</p>
-            <div className="flex items-center gap-2 flex-wrap">
-              {Array.from({ length: totalIterations }, (_, i) => {
-                const n = i + 1
-                const status = iterStatus(n)
-                const iter = iterations.find((it) => it.iteration_number === n)
-                const score = iter?.aggregate_score ?? null
-                const isActive = activeIteration === n
+        <Tabs
+          value={String(activeIteration)}
+          onValueChange={(v) => {
+            const n = Number(v)
+            if (iterStatus(n) !== "pending") setActiveIteration(n)
+          }}
+        >
+          {/* Tab bar */}
+          <div className="border-b bg-background px-6">
+            <div className="max-w-6xl mx-auto">
+              <TabsList className="h-auto bg-transparent p-0 gap-0 rounded-none">
+                {Array.from({ length: totalIterations }, (_, i) => {
+                  const n = i + 1
+                  const status = iterStatus(n)
+                  const iter = iterations.find((it) => it.iteration_number === n)
+                  const score = iter?.aggregate_score ?? null
 
-                return (
-                  <button
-                    key={n}
-                    onClick={() => status === "completed" && setActiveIteration(n)}
-                    className={cn(
-                      "flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm transition-all",
-                      isActive
-                        ? "border-primary bg-primary text-primary-foreground font-medium shadow-sm"
-                        : status === "completed"
-                        ? "border-border hover:border-primary hover:bg-accent cursor-pointer"
-                        : status === "running"
-                        ? "border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 cursor-pointer"
-                        : "border-dashed border-muted-foreground/30 text-muted-foreground cursor-default opacity-60"
-                    )}
-                  >
-                    <span className="font-medium">#{n}</span>
-                    {status === "completed" && score !== null && (
-                      <span className={cn(
-                        "text-xs font-semibold rounded px-1.5 py-0.5",
-                        isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-foreground"
-                      )}>
-                        {score.toFixed(1)}
+                  return (
+                    <TabsTrigger
+                      key={n}
+                      value={String(n)}
+                      disabled={status === "pending"}
+                      className={cn(
+                        "relative rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium transition-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none",
+                        status === "running" && "text-amber-600 dark:text-amber-400",
+                        status === "pending" && "opacity-50 cursor-default",
+                      )}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span>#{n}</span>
+                        {status === "completed" && score !== null && (
+                          <span className="text-xs font-semibold text-muted-foreground">
+                            {score.toFixed(1)}
+                          </span>
+                        )}
+                        {status === "running" && <Loader2 className="h-3 w-3 animate-spin" />}
+                        {status === "pending" && <Clock className="h-3 w-3" />}
                       </span>
-                    )}
-                    {status === "running" && <Loader2 className="h-3 w-3 animate-spin" />}
-                    {status === "pending" && <Clock className="h-3 w-3" />}
-                  </button>
-                )
-              })}
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
             </div>
           </div>
 
-          <Separator />
-
+          <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
           {/* Iteration detail */}
           {isComplete && activeIter ? (
             <>
@@ -425,7 +426,8 @@ export default function CampaignResultsPage({
               </div>
             </>
           )}
-        </div>
+          </div>
+        </Tabs>
       </div>
     </TooltipProvider>
   )

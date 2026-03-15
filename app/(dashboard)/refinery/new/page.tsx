@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -139,12 +138,16 @@ const INITIAL_FORM: FormState = {
   usersPerIteration: 10,
 }
 
+function stepStorageKey(id: string) {
+  return `refinery_step_${id}`
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function NewCampaignPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const existingId = searchParams.get("id")
+  const campaignId = searchParams.get("id")
 
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
@@ -153,15 +156,25 @@ export default function NewCampaignPage() {
   const [launchError, setLaunchError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [autoSaving, setAutoSaving] = useState(false)
 
-  // Load existing draft when ?id= is present
+  // Redirect to dashboard if no id (should always have one now)
   useEffect(() => {
-    if (!existingId) return
-    fetch(`/api/refinery/campaigns?id=${existingId}`)
+    if (!campaignId) {
+      router.replace("/refinery")
+    }
+  }, [campaignId, router])
+
+  // Load existing draft and restore step
+  useEffect(() => {
+    if (!campaignId) return
+    fetch(`/api/refinery/campaigns?id=${campaignId}`)
       .then((r) => r.json())
       .then(({ campaign, error }) => {
         if (error || !campaign) return
-        const ct = campaign.content_type.replace(/_/g, "-") as ContentType
+        const ct = campaign.content_type
+          ? (campaign.content_type.replace(/_/g, "-") as ContentType)
+          : null
         setForm({
           contentType: ct,
           draft: campaign.initial_draft ?? "",
@@ -175,9 +188,14 @@ export default function NewCampaignPage() {
           iterations: campaign.iterations ?? 3,
           usersPerIteration: campaign.users_per_iter ?? 10,
         })
-        setStep(6)
+        // Restore saved step from localStorage
+        const saved = localStorage.getItem(stepStorageKey(campaignId))
+        if (saved) {
+          const n = parseInt(saved, 10)
+          if (n >= 1 && n <= STEPS.length) setStep(n)
+        }
       })
-  }, [existingId])
+  }, [campaignId])
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -186,54 +204,66 @@ export default function NewCampaignPage() {
     if (step === 1) return form.contentType !== null
     if (step === 2) return form.icp.trim().length > 0
     if (step === 4) return form.metrics.length > 0
-    if (step === 6) return form.campaignName.trim().length > 0 && !launching
+    if (step === 6) return !launching
     return true
   }
 
-  const handleNext = () => {
-    if (step < 6) setStep((s) => s + 1)
-    else launchCampaign()
-  }
+  const buildPayload = (launch: boolean) => ({
+    launch,
+    name: form.campaignName.trim(),
+    content_type: form.contentType ? form.contentType.replace(/-/g, "_") : "cold_email",
+    initial_draft: form.draft.trim() || null,
+    icp: form.icp.trim(),
+    rag_text: form.ragText.trim() || null,
+    rag_files: [],
+    metrics: form.metrics,
+    extra_context: form.context.trim() || null,
+    iterations: form.iterations,
+    users_per_iter: form.usersPerIteration,
+  })
 
-  const submitCampaign = async (launch: boolean) => {
-    const contentType = form.contentType!.replace(/-/g, "_")
-    const payload = {
-      launch,
-      name: form.campaignName.trim(),
-      content_type: contentType,
-      initial_draft: form.draft.trim() || null,
-      icp: form.icp.trim(),
-      rag_text: form.ragText.trim() || null,
-      rag_files: [],
-      metrics: form.metrics,
-      extra_context: form.context.trim() || null,
-      iterations: form.iterations,
-      users_per_iter: form.usersPerIteration,
-    }
-    const url = existingId
-      ? `/api/refinery/campaigns?id=${existingId}`
-      : "/api/refinery/campaigns"
-    const res = await fetch(url, {
-      method: existingId ? "PATCH" : "POST",
+  const patchCampaign = async (launch: boolean) => {
+    if (!campaignId) return
+    const res = await fetch(`/api/refinery/campaigns?id=${campaignId}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(buildPayload(launch)),
     })
     const json = await res.json()
     if (!res.ok) throw new Error(json.error ?? "Something went wrong.")
-    return json.campaignId as string
+  }
+
+  const handleNext = async () => {
+    if (step < STEPS.length) {
+      // Auto-save current step then advance
+      setAutoSaving(true)
+      try {
+        await patchCampaign(false)
+      } catch {
+        // Non-blocking — step still advances
+      } finally {
+        setAutoSaving(false)
+      }
+      const nextStep = step + 1
+      setStep(nextStep)
+      if (campaignId) localStorage.setItem(stepStorageKey(campaignId), String(nextStep))
+    } else {
+      launchCampaign()
+    }
   }
 
   const launchCampaign = async () => {
     setLaunching(true)
     setLaunchError(null)
     try {
-      const campaignId = await submitCampaign(true)
+      await patchCampaign(true)
       // Fire processor — responds immediately, runs in background
       fetch("/api/refinery/processor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ campaignId }),
       })
+      if (campaignId) localStorage.removeItem(stepStorageKey(campaignId))
       router.push(`/refinery/${campaignId}`)
     } catch (err) {
       setLaunchError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
@@ -245,7 +275,8 @@ export default function NewCampaignPage() {
     setSaving(true)
     setSaveError(null)
     try {
-      await submitCampaign(false)
+      await patchCampaign(false)
+      if (campaignId) localStorage.removeItem(stepStorageKey(campaignId))
       router.push("/refinery")
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
@@ -254,7 +285,16 @@ export default function NewCampaignPage() {
   }
 
   const handleBack = () => {
-    if (step > 1) setStep((s) => s - 1)
+    if (step > 1) {
+      const prevStep = step - 1
+      setStep(prevStep)
+      if (campaignId) localStorage.setItem(stepStorageKey(campaignId), String(prevStep))
+    }
+  }
+
+  const handleStepClick = (number: number) => {
+    setStep(number)
+    if (campaignId) localStorage.setItem(stepStorageKey(campaignId), String(number))
   }
 
   const toggleMetric = (metric: string) => {
@@ -285,65 +325,46 @@ export default function NewCampaignPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* ── Sidebar ─────────────────────────────────────────── */}
-      <aside className="w-56 shrink-0 border-r flex flex-col">
-        <div className="px-5 py-4 border-b">
-          <Link href="/refinery" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <FlaskConical className="h-4 w-4" />
-            <span className="font-semibold text-foreground">Refinery</span>
-          </Link>
-          <p className="text-xs text-muted-foreground mt-0.5">New campaign</p>
-        </div>
-
-        <nav className="flex-1 px-3 py-4 space-y-1">
+    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-background -m-6">
+      {/* ── Horizontal step bar ─────────────────────────────── */}
+      <div className="border-b bg-background shrink-0 px-8">
+        <div className="flex items-center gap-0">
           {STEPS.map(({ number, label }) => {
             const isActive = step === number
             const isCompleted = step > number
-
             return (
               <button
                 key={number}
-                onClick={() => isCompleted && setStep(number)}
+                onClick={() => isCompleted && handleStepClick(number)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors text-left",
+                  "flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-none",
                   isActive
-                    ? "bg-primary text-primary-foreground font-medium"
+                    ? "border-primary text-foreground font-medium"
                     : isCompleted
-                    ? "text-foreground hover:bg-accent cursor-pointer"
-                    : "text-muted-foreground cursor-default"
+                    ? "border-transparent text-foreground hover:text-foreground cursor-pointer"
+                    : "border-transparent text-muted-foreground cursor-default"
                 )}
               >
-                <span
-                  className={cn(
-                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold border",
-                    isActive
-                      ? "border-primary-foreground bg-primary-foreground text-primary"
-                      : isCompleted
-                      ? "border-transparent bg-primary text-primary-foreground"
-                      : "border-muted-foreground/40"
-                  )}
-                >
+                <span className={cn(
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold border",
+                  isActive
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : isCompleted
+                    ? "border-transparent bg-primary text-primary-foreground"
+                    : "border-muted-foreground/40 text-muted-foreground"
+                )}>
                   {isCompleted ? <Check className="h-3 w-3" /> : number}
                 </span>
                 <span>{label}</span>
               </button>
             )
           })}
-        </nav>
-
-        <div className="px-5 py-4 border-t">
-          <p className="text-xs text-muted-foreground">
-            Step {step} of {STEPS.length}
-          </p>
-          <div className="mt-1.5 h-1 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-300"
-              style={{ width: `${(step / STEPS.length) * 100}%` }}
-            />
+          <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+            {autoSaving && <><Loader2 className="h-3 w-3 animate-spin" />Saving…</>}
+            {form.campaignName && <span className="font-medium text-foreground">{form.campaignName}</span>}
           </div>
         </div>
-      </aside>
+      </div>
 
       {/* ── Main content ────────────────────────────────────── */}
       <main className="flex-1 flex flex-col overflow-hidden">
@@ -352,6 +373,12 @@ export default function NewCampaignPage() {
             <h1 className="text-lg font-semibold">{STEPS[step - 1].label}</h1>
             <p className="text-sm text-muted-foreground">{stepSubtitle(step)}</p>
           </div>
+          {autoSaving && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Saving…
+            </div>
+          )}
         </header>
 
         <div className="flex-1 overflow-y-auto px-8 py-6">
@@ -380,7 +407,7 @@ export default function NewCampaignPage() {
         </div>
 
         <footer className="shrink-0 border-t px-8 py-4 flex items-center justify-between bg-background">
-          <Button variant="ghost" onClick={handleBack} disabled={step === 1 || launching}>
+          <Button variant="ghost" onClick={handleBack} disabled={step === 1 || launching || autoSaving}>
             <ChevronLeft className="h-4 w-4 mr-1" />
             Back
           </Button>
@@ -395,24 +422,22 @@ export default function NewCampaignPage() {
             {step === 5 && !launchError && !saveError && (
               <span className="text-xs text-muted-foreground">Optional step — you can skip</span>
             )}
-            {step === 6 && (
-              <Button
-                variant="outline"
-                onClick={saveCampaign}
-                disabled={!form.campaignName.trim() || saving || launching}
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  "Save Draft"
-                )}
-              </Button>
-            )}
-            <Button onClick={handleNext} disabled={!canAdvance() || saving}>
-              {step === 6 ? (
+            <Button
+              variant="outline"
+              onClick={saveCampaign}
+              disabled={saving || launching || autoSaving}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Save & Exit"
+              )}
+            </Button>
+            <Button onClick={handleNext} disabled={!canAdvance() || saving || autoSaving}>
+              {step === STEPS.length ? (
                 launching ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />

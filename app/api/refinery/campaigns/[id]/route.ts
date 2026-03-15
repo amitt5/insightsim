@@ -2,6 +2,34 @@ import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
+// DELETE /api/refinery/campaigns/[id]
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  const cookieStore = cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = params;
+
+  const { error } = await supabase
+    .from('refinery_campaigns')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', session.user.id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
 // GET /api/refinery/campaigns/[id]
 // Returns campaign + job + iterations for the results page.
 export async function GET(

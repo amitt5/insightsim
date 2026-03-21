@@ -27,6 +27,7 @@ interface Campaign {
   rag_text: string | null;
   metrics: string[];
   extra_context: string | null;
+  messaging_guidelines: string | null;
   iterations: number;
   users_per_iter: number;
 }
@@ -366,6 +367,9 @@ async function generateIterationContent(
   const contextSection = campaign.extra_context
     ? `\n\nAdditional product/service context:\n${campaign.extra_context}`
     : '';
+  const guidelinesSection = campaign.messaging_guidelines
+    ? `\n\nMessaging guidelines (MUST follow throughout):\n${campaign.messaging_guidelines}`
+    : '';
 
   let userPrompt: string;
 
@@ -378,13 +382,14 @@ async function generateIterationContent(
     userPrompt = `Write a high-performing ${contentTypeLabel} for the following audience and optimization goals.
 
 Target audience (ICP): ${campaign.icp}
-Metrics to optimize for: ${metricsStr}${contextSection}${draftSection}
+Metrics to optimize for: ${metricsStr}${contextSection}${draftSection}${guidelinesSection}
 
 Instructions:
 - Write the complete ${contentTypeLabel} copy — no labels, headers, or commentary
 - Optimize specifically for: ${metricsStr}
 - Speak directly to the ICP's real pain points and motivations — be specific, not generic
 - Use concrete language; avoid buzzwords and empty claims
+- Follow the messaging guidelines strictly — lean into what's specified and avoid what's flagged
 
 Return JSON: { "content": "the full copy here", "improvement_notes": null }`;
 
@@ -392,7 +397,7 @@ Return JSON: { "content": "the full copy here", "improvement_notes": null }`;
     // PROMPT: Subsequent iterations — improve based on synthetic user feedback
     userPrompt = `You are improving a ${contentTypeLabel} based on synthetic user feedback. Your goal is meaningful score improvement on: ${metricsStr}.
 
-Target audience (ICP): ${campaign.icp}${contextSection}
+Target audience (ICP): ${campaign.icp}${contextSection}${guidelinesSection}
 
 Previous version (iteration ${iterNum - 1}):
 ---
@@ -407,6 +412,7 @@ Instructions:
 - Preserve and amplify what scored well
 - Make concrete changes — not vague refinements
 - Write the complete ${contentTypeLabel} copy only — no labels or commentary
+- Continue adhering to the messaging guidelines from the brief
 
 Return JSON: { "content": "the improved full copy", "improvement_notes": "2-3 sentences on what was changed and why, based on the feedback" }`;
   }

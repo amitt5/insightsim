@@ -1,574 +1,967 @@
 "use client"
 
-import { useState, useEffect, useCallback, use } from "react"
-import Link from "next/link"
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip as RechartsTooltip, ResponsiveContainer,
-} from "recharts"
+import { use, useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import {
-  FlaskConical, CheckCircle2, Loader2, Clock,
-  TrendingUp, Users, MessageSquare,
+  Mail,
+  Zap,
+  MessageSquare,
+  FileText,
+  Share2,
+  LayoutTemplate,
+  ChevronRight,
+  ChevronLeft,
+  Upload,
+  X,
+  Check,
+  Plus,
+  FlaskConical,
+  Loader2,
+  BarChart2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { RefineryResultsView } from "../_components/RefineryResultsView"
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────────
 
-interface Campaign {
-  id: string
-  name: string
-  content_type: string
-  status: string
+type ContentType =
+  | "cold-email"
+  | "ad-creative"
+  | "subject-line"
+  | "landing-page"
+  | "social-post"
+  | "other"
+
+interface FormState {
+  // Step 1
+  contentType: ContentType | null
+  contentTypeOther: string
+  draft: string
+  messagingGuidelines: string
+  // Step 2
+  icp: string
+  // Step 3
+  ragText: string
+  ragFiles: string[] // just filenames for the UI shell
+  // Step 4
+  metrics: string[]
+  customMetric: string
+  // Step 5
+  context: string
+  // Step 6
+  campaignName: string
   iterations: number
-  users_per_iter: number
+  usersPerIteration: number
 }
 
-interface Job {
-  status: string
-  current_iteration: number
-  total_iterations: number
-  error: string | null
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const SETUP_STEPS = [
+  { number: 1, label: "Context" },
+  { number: 2, label: "Content" },
+  { number: 3, label: "ICP" },
+  { number: 4, label: "RAG Data" },
+  { number: 5, label: "Metrics" },
+  { number: 6, label: "Run Setup" },
+]
+
+const CONTENT_TYPES: {
+  id: ContentType
+  label: string
+  description: string
+  icon: React.ReactNode
+}[] = [
+  {
+    id: "cold-email",
+    label: "Cold Email",
+    description: "Outbound email sequences",
+    icon: <Mail className="h-5 w-5" />,
+  },
+  {
+    id: "ad-creative",
+    label: "Ad Creative",
+    description: "Paid social or display copy",
+    icon: <Zap className="h-5 w-5" />,
+  },
+  {
+    id: "subject-line",
+    label: "Subject Line",
+    description: "Email subject lines",
+    icon: <MessageSquare className="h-5 w-5" />,
+  },
+  {
+    id: "landing-page",
+    label: "Landing Page Copy",
+    description: "Hero, CTA, and body copy",
+    icon: <LayoutTemplate className="h-5 w-5" />,
+  },
+  {
+    id: "social-post",
+    label: "Social Post",
+    description: "LinkedIn, Twitter, etc.",
+    icon: <Share2 className="h-5 w-5" />,
+  },
+  {
+    id: "other",
+    label: "Other",
+    description: "Any other marketing copy",
+    icon: <FileText className="h-5 w-5" />,
+  },
+]
+
+const PRESET_METRICS = [
+  "Reply Rate",
+  "CTR",
+  "Curiosity",
+  "Premium Feel",
+  "Clarity",
+  "Persuasiveness",
+  "Urgency",
+  "Trust",
+  "Relevance",
+  "Excitement",
+]
+
+const INITIAL_FORM: FormState = {
+  contentType: null,
+  contentTypeOther: "",
+  draft: "",
+  messagingGuidelines: "",
+  icp: "",
+  ragText: "",
+  ragFiles: [],
+  metrics: [],
+  customMetric: "",
+  context: "",
+  campaignName: "",
+  iterations: 3,
+  usersPerIteration: 10,
 }
 
-interface Iteration {
-  id: string
-  iteration_number: number
-  content: string
-  aggregate_score: number | null
-  improvement_notes: string | null
-  status: string
+function stepStorageKey(id: string) {
+  return `refinery_step_${id}`
 }
 
-interface IterUser {
-  id: string
-  name: string
-  age: number | null
-  gender: string | null
-  profession: string | null
-  bio: string | null
-  score: number
-  feedback: string
-}
+// ── Main component ────────────────────────────────────────────────────────────
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function initials(name: string) {
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
-}
-
-function scoreColor(score: number | null) {
-  if (score === null) return "bg-muted"
-  if (score >= 6.5) return "bg-emerald-500"
-  if (score >= 5.5) return "bg-lime-400"
-  if (score >= 4.5) return "bg-amber-400"
-  if (score >= 3.5) return "bg-orange-400"
-  return "bg-red-400"
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
-
-export default function CampaignResultsPage({
+export default function CampaignPage({
   params,
 }: {
   params: Promise<{ campaignId: string }>
 }) {
   const { campaignId } = use(params)
+  const router = useRouter()
 
-  const [campaign, setCampaign] = useState<Campaign | null>(null)
-  const [job, setJob] = useState<Job | null>(null)
-  const [iterations, setIterations] = useState<Iteration[]>([])
-  const [activeIteration, setActiveIteration] = useState(1)
-  const [iterUsers, setIterUsers] = useState<IterUser[]>([])
-  const [loadingUsers, setLoadingUsers] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [step, setStep] = useState(1)
+  const [maxStep, setMaxStep] = useState(1)
+  const [form, setForm] = useState<FormState>(INITIAL_FORM)
+  const [dragOver, setDragOver] = useState(false)
+  const [launching, setLaunching] = useState(false)
+  const [launchError, setLaunchError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [autoSaving, setAutoSaving] = useState(false)
+  const [campaignName, setCampaignName] = useState("")
 
-  // Fetch campaign + job + iterations
-  const fetchCampaign = useCallback(async () => {
-    const res = await fetch(`/api/refinery/campaigns/${campaignId}`)
-    const data = await res.json()
-    if (data.error) { setError(data.error); return }
-    setCampaign(data.campaign)
-    setJob(data.job)
-    setIterations(data.iterations)
+  // Load campaign and restore step
+  useEffect(() => {
+    fetch(`/api/refinery/campaigns?id=${campaignId}`)
+      .then((r) => r.json())
+      .then(({ campaign, error }) => {
+        if (error || !campaign) return
+        const ct = campaign.content_type
+          ? (campaign.content_type.replace(/_/g, "-") as ContentType)
+          : null
+        setForm({
+          contentType: ct,
+          contentTypeOther: campaign.content_type_other ?? "",
+          draft: campaign.initial_draft ?? "",
+          icp: campaign.icp ?? "",
+          ragText: campaign.rag_text ?? "",
+          ragFiles: [],
+          metrics: campaign.metrics ?? [],
+          customMetric: "",
+          context: campaign.extra_context ?? "",
+          messagingGuidelines: campaign.messaging_guidelines ?? "",
+          campaignName: campaign.name ?? "",
+          iterations: campaign.iterations ?? 3,
+          usersPerIteration: campaign.users_per_iter ?? 10,
+        })
+        setCampaignName(campaign.name ?? "")
+
+        // Analysis tab always visible for all campaigns
+        setMaxStep(7)
+
+        // For launched campaigns, land on Analysis tab
+        if (campaign.status !== "draft") {
+          setStep(7)
+          return
+        }
+
+        // Draft: restore saved step from localStorage
+        const savedStep = localStorage.getItem(stepStorageKey(campaignId))
+        if (savedStep) {
+          const n = parseInt(savedStep, 10)
+          if (n >= 1 && n <= 6) setStep(n)
+        }
+      })
   }, [campaignId])
 
-  // Initial load
-  useEffect(() => {
-    fetchCampaign()
-  }, [fetchCampaign])
+  const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }))
 
-  // Poll every 4s while job is running or pending
-  useEffect(() => {
-    if (!job) return
-    if (job.status === "completed" || job.status === "failed") return
-    const id = setInterval(fetchCampaign, 4000)
-    return () => clearInterval(id)
-  }, [job?.status, fetchCampaign])
+  const canAdvance = () => {
+    if (step === 2) return form.contentType !== null && (form.contentType !== "other" || form.contentTypeOther.trim().length > 0)
+    if (step === 3) return form.icp.trim().length > 0
+    if (step === 5) return form.metrics.length > 0
+    if (step === 6) return !launching
+    return true
+  }
 
-  // Auto-advance active iteration to latest completed
-  useEffect(() => {
-    const completed = iterations.filter((it) => it.status === "completed")
-    if (completed.length > 0) {
-      setActiveIteration(completed[completed.length - 1].iteration_number)
+  const buildPayload = (launch: boolean) => ({
+    launch,
+    name: form.campaignName.trim(),
+    content_type: form.contentType ? form.contentType.replace(/-/g, "_") : "cold_email",
+    content_type_other: form.contentType === "other" ? form.contentTypeOther.trim() || null : null,
+    initial_draft: form.draft.trim() || null,
+    icp: form.icp.trim(),
+    rag_text: form.ragText.trim() || null,
+    rag_files: [],
+    metrics: form.metrics,
+    extra_context: form.context.trim() || null,
+    messaging_guidelines: form.messagingGuidelines.trim() || null,
+    iterations: form.iterations,
+    users_per_iter: form.usersPerIteration,
+  })
+
+  const patchCampaign = async (launch: boolean) => {
+    const res = await fetch(`/api/refinery/campaigns?id=${campaignId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildPayload(launch)),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error ?? "Something went wrong.")
+  }
+
+  const handleNext = async () => {
+    if (step < 6) {
+      // Auto-save current step then advance
+      setAutoSaving(true)
+      try {
+        await patchCampaign(false)
+      } catch {
+        // Non-blocking — step still advances
+      } finally {
+        setAutoSaving(false)
+      }
+      const nextStep = step + 1
+      const newMaxStep = Math.max(maxStep, nextStep)
+      setStep(nextStep)
+      setMaxStep(newMaxStep)
+      localStorage.setItem(stepStorageKey(campaignId), String(nextStep))
+    } else if (step === 6) {
+      launchCampaign()
     }
-  }, [iterations.length])
+  }
 
-  // Fetch users whenever active iteration changes
-  useEffect(() => {
-    const iter = iterations.find((it) => it.iteration_number === activeIteration)
-    if (!iter || iter.status !== "completed") { setIterUsers([]); return }
-    setLoadingUsers(true)
-    fetch(`/api/refinery/campaigns/${campaignId}/iteration?n=${activeIteration}`)
-      .then((r) => r.json())
-      .then((data) => setIterUsers(data.users ?? []))
-      .finally(() => setLoadingUsers(false))
-  }, [activeIteration, campaignId, iterations])
+  const launchCampaign = async () => {
+    setLaunching(true)
+    setLaunchError(null)
+    try {
+      await patchCampaign(true)
+      // Fire processor — responds immediately, runs in background
+      fetch("/api/refinery/processor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaignId }),
+      })
+      localStorage.removeItem(stepStorageKey(campaignId))
+      // Navigate to step 7 (Analysis)
+      setStep(7)
+      setMaxStep(7)
+    } catch (err) {
+      setLaunchError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
+      setLaunching(false)
+    }
+  }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-destructive text-sm">{error}</p>
-      </div>
+  const saveCampaign = async () => {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await patchCampaign(false)
+      localStorage.removeItem(stepStorageKey(campaignId))
+      router.push("/refinery")
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
+      setSaving(false)
+    }
+  }
+
+  const handleBack = () => {
+    if (step > 1) {
+      const prevStep = step === 7 ? 6 : step - 1
+      setStep(prevStep)
+      localStorage.setItem(stepStorageKey(campaignId), String(prevStep))
+    }
+  }
+
+  const handleStepClick = (number: number) => {
+    if (number > maxStep) return
+    setStep(number)
+    localStorage.setItem(stepStorageKey(campaignId), String(number))
+  }
+
+  const toggleMetric = (metric: string) => {
+    update(
+      "metrics",
+      form.metrics.includes(metric)
+        ? form.metrics.filter((m) => m !== metric)
+        : [...form.metrics, metric]
     )
   }
 
-  if (!campaign) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    )
+  const addCustomMetric = () => {
+    const trimmed = form.customMetric.trim()
+    if (!trimmed || form.metrics.includes(trimmed)) return
+    update("metrics", [...form.metrics, trimmed])
+    update("customMetric", "")
   }
 
-  const totalIterations = campaign.iterations
-  const activeIter = iterations.find((it) => it.iteration_number === activeIteration)
-  const isComplete = activeIter?.status === "completed"
-  const completedCount = iterations.filter((it) => it.status === "completed").length
+  const removeFile = (name: string) =>
+    update("ragFiles", form.ragFiles.filter((f) => f !== name))
 
-  const chartData = iterations
-    .filter((it) => it.status === "completed" && it.aggregate_score !== null)
-    .map((it) => ({ iteration: it.iteration_number, score: it.aggregate_score as number }))
-
-  // Pick 4 representative feedback lines: top 2 + bottom 2 by score
-  const feedbackLines = (() => {
-    if (iterUsers.length === 0) return []
-    const sorted = [...iterUsers].sort((a, b) => b.score - a.score)
-    const top = sorted.slice(0, 2)
-    const bottom = sorted.slice(-2).reverse()
-    return [...top, ...bottom]
-      .filter((u) => u.feedback)
-      .map((u) => u.feedback)
-  })()
-
-  function iterStatus(n: number) {
-    const iter = iterations.find((it) => it.iteration_number === n)
-    if (!iter) return job?.status === "running" || job?.status === "pending" ? "pending" : "pending"
-    return iter.status // "running" | "completed" | "pending"
+  // Fake drag-and-drop (UI only)
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const names = Array.from(e.dataTransfer.files).map((f) => f.name)
+    update("ragFiles", [...form.ragFiles, ...names])
   }
+
+  const displayName = campaignName || form.campaignName
 
   return (
-    <TooltipProvider delayDuration={100}>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="border-b bg-background px-6 py-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-              <Link href="/refinery" className="flex items-center gap-1 hover:text-foreground transition-colors">
-                <FlaskConical className="h-3 w-3" />
-                Refinery
-              </Link>
-              <span>/</span>
-              <span className="text-foreground">{campaign.name}</span>
-            </div>
-
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-xl font-semibold">{campaign.name}</h1>
-                <Badge variant="secondary" className="capitalize">
-                  {campaign.content_type.replace(/_/g, " ")}
-                </Badge>
-                <StatusBadge status={campaign.status} />
-              </div>
-
-              <div className="shrink-0 text-right">
-                <p className="text-sm font-medium">
-                  {completedCount} of {totalIterations} iterations complete
-                </p>
-                <div className="mt-1.5 h-1.5 w-48 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all"
-                    style={{ width: `${(completedCount / totalIterations) * 100}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <Tabs
-          value={String(activeIteration)}
-          onValueChange={(v) => {
-            const n = Number(v)
-            if (iterStatus(n) !== "pending") setActiveIteration(n)
-          }}
-        >
-          {/* Tab bar */}
-          <div className="border-b bg-background px-6">
-            <div className="max-w-6xl mx-auto">
-              <TabsList className="h-auto bg-transparent p-0 gap-0 rounded-none">
-                {Array.from({ length: totalIterations }, (_, i) => {
-                  const n = i + 1
-                  const status = iterStatus(n)
-                  const iter = iterations.find((it) => it.iteration_number === n)
-                  const score = iter?.aggregate_score ?? null
-
-                  return (
-                    <TabsTrigger
-                      key={n}
-                      value={String(n)}
-                      disabled={status === "pending"}
-                      className={cn(
-                        "relative rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium transition-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none",
-                        status === "running" && "text-amber-600 dark:text-amber-400",
-                        status === "pending" && "opacity-50 cursor-default",
-                      )}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <span>#{n}</span>
-                        {status === "completed" && score !== null && (
-                          <span className="text-xs font-semibold text-muted-foreground">
-                            {score.toFixed(1)}
-                          </span>
-                        )}
-                        {status === "running" && <Loader2 className="h-3 w-3 animate-spin" />}
-                        {status === "pending" && <Clock className="h-3 w-3" />}
-                      </span>
-                    </TabsTrigger>
-                  )
-                })}
-              </TabsList>
-            </div>
-          </div>
-
-          <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
-          {/* Iteration detail */}
-          {isComplete && activeIter ? (
-            <>
-              <div className="grid grid-cols-2 gap-6">
-                {/* Left: content */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                    <h2 className="text-sm font-semibold">Version {activeIteration}</h2>
-                  </div>
-                  {activeIter.improvement_notes && (
-                    <p className="text-xs text-muted-foreground italic border-l-2 border-muted pl-3">
-                      {activeIter.improvement_notes}
-                    </p>
-                  )}
-                  <div className="rounded-lg border bg-muted/20 p-5">
-                    <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans text-foreground">
-                      {activeIter.content}
-                    </pre>
-                  </div>
-                </div>
-
-                {/* Right: score + feedback */}
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                      <h2 className="text-sm font-semibold">Aggregate Score</h2>
-                    </div>
-                    <AggregateScore
-                      score={activeIter.aggregate_score}
-                      iteration={activeIteration}
-                      prevScore={iterations.find((it) => it.iteration_number === activeIteration - 1)?.aggregate_score ?? null}
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div>
-                    <h2 className="text-sm font-semibold mb-3">Synthetic User Feedback</h2>
-                    {feedbackLines.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">Loading feedback…</p>
-                    ) : (
-                      <div className="space-y-2.5">
-                        {feedbackLines.map((line, i) => (
-                          <div key={i} className="flex gap-2.5 text-sm">
-                            <span className="mt-0.5 shrink-0 h-4 w-4 rounded-full bg-muted flex items-center justify-center text-[10px] text-muted-foreground font-medium">
-                              {i + 1}
-                            </span>
-                            <p className="text-muted-foreground leading-relaxed">{line}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Synthetic user grid */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-sm font-semibold">
-                    Synthetic Users — Iteration {activeIteration}
-                  </h2>
-                  <span className="text-xs text-muted-foreground">
-                    ({iterUsers.length} users · hover for details)
-                  </span>
-                </div>
-
-                {loadingUsers ? (
-                  <div className="flex items-center gap-2 py-4">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Loading users…</span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-6 gap-2">
-                    {iterUsers.map((user) => (
-                      <Tooltip key={user.id}>
-                        <TooltipTrigger asChild>
-                          <div className={cn(
-                            "aspect-square rounded-lg flex flex-col items-center justify-center gap-1 cursor-default select-none transition-all hover:scale-105 hover:shadow-md",
-                            scoreColor(user.score)
-                          )}>
-                            <span className="text-sm font-bold text-white">{initials(user.name)}</span>
-                            <span className="text-xs font-semibold text-white">{user.score.toFixed(1)}</span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-[220px] p-3 space-y-2">
-                          <div>
-                            <p className="font-semibold text-sm">{user.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {[user.age, user.gender, user.profession].filter(Boolean).join(" · ")}
-                            </p>
-                          </div>
-                          {user.bio && <p className="text-xs leading-relaxed">{user.bio}</p>}
-                          <Separator />
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">Score</span>
-                            <span className="text-sm font-bold">{user.score.toFixed(1)} / 10</span>
-                          </div>
-                          {user.feedback && (
-                            <p className="text-xs text-muted-foreground italic">"{user.feedback}"</p>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
-                    ))}
-                  </div>
+    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-background -m-6">
+      {/* ── Horizontal step bar ─────────────────────────────── */}
+      <div className="border-b bg-background shrink-0 px-8">
+        <div className="flex items-center gap-0">
+          {SETUP_STEPS.map(({ number, label }) => {
+            const isActive = step === number
+            const isReachable = maxStep >= number
+            const isCompleted = maxStep > number && step !== number
+            return (
+              <button
+                key={number}
+                onClick={() => isReachable && handleStepClick(number)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-none",
+                  isActive
+                    ? "border-primary text-foreground font-medium"
+                    : isReachable
+                    ? "border-transparent text-foreground hover:text-foreground cursor-pointer"
+                    : "border-transparent text-muted-foreground cursor-default"
                 )}
+              >
+                <span className={cn(
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold border",
+                  isActive
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : isCompleted
+                    ? "border-transparent bg-primary text-primary-foreground"
+                    : isReachable
+                    ? "border-primary/60 text-primary/80"
+                    : "border-muted-foreground/40 text-muted-foreground"
+                )}>
+                  {isCompleted ? <Check className="h-3 w-3" /> : number}
+                </span>
+                <span>{label}</span>
+              </button>
+            )
+          })}
 
-                <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
-                  <span>Score legend:</span>
-                  {[
-                    { color: "bg-red-400", label: "< 3.5" },
-                    { color: "bg-orange-400", label: "3.5–4.5" },
-                    { color: "bg-amber-400", label: "4.5–5.5" },
-                    { color: "bg-lime-400", label: "5.5–6.5" },
-                    { color: "bg-emerald-500", label: "6.5+" },
-                  ].map(({ color, label }) => (
-                    <span key={label} className="flex items-center gap-1.5">
-                      <span className={cn("h-2.5 w-2.5 rounded-sm", color)} />
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              {iterStatus(activeIteration) === "running" ? (
-                <>
-                  <Loader2 className="h-8 w-8 text-amber-500 animate-spin mb-3" />
-                  <p className="text-sm font-medium">Iteration {activeIteration} is running…</p>
-                  <p className="text-xs text-muted-foreground mt-1">Synthetic users are evaluating this version.</p>
-                </>
-              ) : job?.status === "pending" ? (
-                <>
-                  <Clock className="h-8 w-8 text-muted-foreground mb-3 animate-pulse" />
-                  <p className="text-sm font-medium">Campaign is queued</p>
-                  <p className="text-xs text-muted-foreground mt-1">Starting shortly…</p>
-                </>
-              ) : (
-                <>
-                  <Clock className="h-8 w-8 text-muted-foreground mb-3" />
-                  <p className="text-sm font-medium">Iteration {activeIteration} hasn't started yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">It will run after previous iterations complete.</p>
-                </>
-              )}
-            </div>
-          )}
-
-          {chartData.length > 1 && (
+          {/* Step 7: Analysis — always shown */}
+          {maxStep >= 7 && (
             <>
-              <Separator />
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-sm font-semibold">Score Progression</h2>
-                </div>
-                <ProgressionChart
-                  data={chartData}
-                  activeIteration={activeIteration}
-                  onDotClick={(n) => setActiveIteration(n)}
-                />
-              </div>
+              <div className="h-5 w-px bg-border mx-2" />
+              <button
+                onClick={() => handleStepClick(7)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-none",
+                  step === 7
+                    ? "border-primary text-foreground font-medium"
+                    : "border-transparent text-foreground hover:text-foreground cursor-pointer"
+                )}
+              >
+                <BarChart2 className="h-4 w-4" />
+                <span>Analysis</span>
+              </button>
             </>
           )}
+
+          <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+            {autoSaving && <><Loader2 className="h-3 w-3 animate-spin" />Saving…</>}
+            {displayName && <span className="font-medium text-foreground">{displayName}</span>}
           </div>
-        </Tabs>
-      </div>
-    </TooltipProvider>
-  )
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: string }) {
-  if (status === "completed") {
-    return (
-      <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 rounded-full px-2.5 py-0.5">
-        <CheckCircle2 className="h-3 w-3" />
-        Completed
-      </span>
-    )
-  }
-  if (status === "running") {
-    return (
-      <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-full px-2.5 py-0.5">
-        <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-        Running
-      </span>
-    )
-  }
-  if (status === "failed") {
-    return (
-      <span className="flex items-center gap-1.5 text-xs font-medium text-destructive bg-destructive/10 border border-destructive/20 rounded-full px-2.5 py-0.5">
-        Failed
-      </span>
-    )
-  }
-  return (
-    <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground border rounded-full px-2.5 py-0.5">
-      <Clock className="h-3 w-3" />
-      Pending
-    </span>
-  )
-}
-
-function AggregateScore({
-  score, iteration, prevScore,
-}: {
-  score: number | null
-  iteration: number
-  prevScore: number | null
-}) {
-  if (score === null) return null
-
-  const radius = 36
-  const circumference = 2 * Math.PI * radius
-  const dashoffset = circumference * (1 - score / 10)
-  const ringColor =
-    score >= 6.5 ? "#10b981" :
-    score >= 5.5 ? "#84cc16" :
-    score >= 4.5 ? "#f59e0b" : "#ef4444"
-  const delta = prevScore !== null ? score - prevScore : null
-
-  return (
-    <div className="flex items-center gap-5">
-      <div className="relative flex items-center justify-center">
-        <svg width="96" height="96" className="-rotate-90">
-          <circle cx="48" cy="48" r={radius} fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/50" />
-          <circle cx="48" cy="48" r={radius} fill="none" stroke={ringColor} strokeWidth="8" strokeLinecap="round"
-            strokeDasharray={circumference} strokeDashoffset={dashoffset}
-            style={{ transition: "stroke-dashoffset 0.6s ease" }} />
-        </svg>
-        <div className="absolute text-center">
-          <span className="text-xl font-bold tabular-nums leading-none">{score.toFixed(1)}</span>
-          <span className="block text-[10px] text-muted-foreground">/ 10</span>
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <p className="text-sm font-medium">
-          {score >= 6.5 ? "Strong result" : score >= 5.5 ? "Improving" : score >= 4.5 ? "Mixed signals" : "Needs work"}
+      {/* ── Step 7: Analysis view (full width, no wizard chrome) ── */}
+      {step === 7 ? (
+        <div className="flex-1 overflow-y-auto">
+          <RefineryResultsView campaignId={campaignId} />
+        </div>
+      ) : (
+        /* ── Steps 1–6: Normal wizard chrome ── */
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <header className="flex items-center justify-between px-8 py-4 border-b shrink-0">
+            <div>
+              <h1 className="text-lg font-semibold">{SETUP_STEPS[step - 1].label}</h1>
+              <p className="text-sm text-muted-foreground">{stepSubtitle(step)}</p>
+            </div>
+            {autoSaving && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Saving…
+              </div>
+            )}
+          </header>
+
+          <div className="flex-1 overflow-y-auto px-8 py-6">
+            {step === 1 && <Step5Context form={form} update={update} />}
+            {step === 2 && <Step1Content form={form} update={update} />}
+            {step === 3 && <Step2ICP form={form} update={update} />}
+            {step === 4 && (
+              <Step3RAG
+                form={form}
+                update={update}
+                dragOver={dragOver}
+                setDragOver={setDragOver}
+                handleDrop={handleDrop}
+                removeFile={removeFile}
+              />
+            )}
+            {step === 5 && (
+              <Step4Metrics
+                form={form}
+                update={update}
+                toggleMetric={toggleMetric}
+                addCustomMetric={addCustomMetric}
+              />
+            )}
+            {step === 6 && <Step6RunSetup form={form} update={update} />}
+          </div>
+
+          <footer className="shrink-0 border-t px-8 py-4 flex items-center justify-between bg-background">
+            <Button variant="ghost" onClick={handleBack} disabled={step === 1 || launching || autoSaving}>
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+
+            <div className="flex items-center gap-3">
+              {(launchError || saveError) && (
+                <p className="text-sm text-destructive">{launchError ?? saveError}</p>
+              )}
+              {step === 1 && !launchError && !saveError && (
+                <span className="text-xs text-muted-foreground">Optional step — you can skip</span>
+              )}
+              {step === 4 && !launchError && !saveError && (
+                <span className="text-xs text-muted-foreground">Optional step — you can skip</span>
+              )}
+              <Button
+                variant="outline"
+                onClick={saveCampaign}
+                disabled={saving || launching || autoSaving}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  "Save & Exit"
+                )}
+              </Button>
+              <Button onClick={handleNext} disabled={!canAdvance() || saving || autoSaving}>
+                {step === 6 ? (
+                  launching ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      Launching…
+                    </>
+                  ) : (
+                    <>
+                      <FlaskConical className="h-4 w-4 mr-1.5" />
+                      Launch Campaign
+                    </>
+                  )
+                ) : (
+                  <>
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </footer>
+        </main>
+      )}
+    </div>
+  )
+}
+
+// ── Step subtitle helper ───────────────────────────────────────────────────────
+
+function stepSubtitle(step: number) {
+  switch (step) {
+    case 1: return "Add any extra context about your product or campaign."
+    case 2: return "Choose what you want to optimize and provide a starting draft."
+    case 3: return "Describe your ideal customer profile to ground the synthetic users."
+    case 4: return "Paste or upload existing research to make synthetic users more accurate."
+    case 5: return "Select the signals you want to optimize for."
+    case 6: return "Configure how many iterations and synthetic users to run."
+    default: return ""
+  }
+}
+
+// ── Step 1: Content ───────────────────────────────────────────────────────────
+
+function Step1Content({
+  form,
+  update,
+}: {
+  form: FormState
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
+}) {
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">What do you want to optimize?</Label>
+        <div className="grid grid-cols-3 gap-3">
+          {CONTENT_TYPES.map(({ id, label, description, icon }) => (
+            <button
+              key={id}
+              onClick={() => update("contentType", id)}
+              className={cn(
+                "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-all hover:border-primary hover:bg-accent",
+                form.contentType === id
+                  ? "border-primary bg-primary/5 ring-1 ring-primary"
+                  : "border-border"
+              )}
+            >
+              <div
+                className={cn(
+                  "rounded-md p-1.5",
+                  form.contentType === id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                {icon}
+              </div>
+              <div>
+                <p className="text-sm font-medium">{label}</p>
+                <p className="text-xs text-muted-foreground">{description}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {form.contentType === "other" && (
+        <div className="space-y-2">
+          <Label htmlFor="contentTypeOther" className="text-sm font-medium">
+            What are you optimizing?
+          </Label>
+          <Input
+            id="contentTypeOther"
+            placeholder="e.g. LinkedIn connection request, sales script, SMS…"
+            value={form.contentTypeOther}
+            onChange={(e) => update("contentTypeOther", e.target.value)}
+            autoFocus
+          />
+        </div>
+      )}
+
+      <Separator />
+
+      <div className="space-y-2">
+        <Label htmlFor="draft" className="text-sm font-medium">
+          Starting draft{" "}
+          <span className="text-muted-foreground font-normal">(optional)</span>
+        </Label>
+        <p className="text-xs text-muted-foreground">
+          Paste your current copy here. If left blank, Refinery will generate a first version for you.
         </p>
-        <p className="text-xs text-muted-foreground leading-relaxed max-w-[180px]">
-          {score >= 6.5
-            ? "Most synthetic users found this version relevant and compelling."
-            : score >= 5.5
-            ? "Good progress — users are engaging but still have key objections."
-            : score >= 4.5
-            ? "Halfway there. Pain framing is landing but CTA needs work."
-            : "Opener and value prop aren't connecting yet. Keep iterating."}
+        <Textarea
+          id="draft"
+          placeholder="Paste your current email, ad copy, subject line, etc."
+          className="min-h-[180px] resize-none"
+          value={form.draft}
+          onChange={(e) => update("draft", e.target.value)}
+        />
+      </div>
+
+      <Separator />
+
+      <div className="space-y-2">
+        <Label htmlFor="messagingGuidelines" className="text-sm font-medium">
+          Messaging guidelines{" "}
+          <span className="text-muted-foreground font-normal">(optional)</span>
+        </Label>
+        <p className="text-xs text-muted-foreground">
+          What to lean into, what to avoid, and any key phrases. The AI will follow these throughout every iteration.
         </p>
-        {iteration > 1 && delta !== null && (
-          <p className={cn("text-xs font-medium", delta >= 0 ? "text-emerald-600" : "text-destructive")}>
-            {delta >= 0 ? "+" : ""}{delta.toFixed(1)} vs. iteration {iteration - 1}
-          </p>
-        )}
+        <Textarea
+          id="messagingGuidelines"
+          placeholder={`Example:\nWhat to lean into: urgency, social proof, specific outcomes\nWhat to avoid: buzzwords, vague claims, passive voice\nKey phrases: "proven results", "in 14 days", "no lock-in"`}
+          className="min-h-[140px] resize-none"
+          value={form.messagingGuidelines}
+          onChange={(e) => update("messagingGuidelines", e.target.value)}
+        />
       </div>
     </div>
   )
 }
 
-function ProgressionChart({
-  data, activeIteration, onDotClick,
+// ── Step 2: ICP ───────────────────────────────────────────────────────────────
+
+function Step2ICP({
+  form,
+  update,
 }: {
-  data: { iteration: number; score: number }[]
-  activeIteration: number
-  onDotClick: (n: number) => void
+  form: FormState
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
 }) {
   return (
-    <div className="rounded-lg border bg-muted/10 p-4">
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-          <XAxis dataKey="iteration" tickFormatter={(v) => `#${v}`} tick={{ fontSize: 12 }} />
-          <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 12 }} />
-          <RechartsTooltip
-            content={({ active, payload }) => {
-              if (!active || !payload?.length) return null
-              const d = payload[0].payload as { iteration: number; score: number }
-              return (
-                <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
-                  <p className="font-medium">Iteration #{d.iteration}</p>
-                  <p className="text-muted-foreground">Score: <span className="font-semibold text-foreground">{d.score.toFixed(1)}</span></p>
-                </div>
-              )
-            }}
+    <div className="max-w-2xl space-y-4">
+      <div className="rounded-md bg-muted/50 border px-4 py-3 text-sm text-muted-foreground">
+        Be specific — the more detail you give about your ideal customer, the more accurate the synthetic users will be.
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="icp" className="text-sm font-medium">
+          ICP Description
+        </Label>
+        <Textarea
+          id="icp"
+          placeholder={`Example:\nB2B SaaS founders and Head of Growth at Series A–B startups (20–150 employees). They're overwhelmed, data-driven, and allergic to fluff. They've been burned by agencies before and are skeptical of anything that sounds like a sales pitch. They care deeply about CAC, pipeline efficiency, and time-to-close.`}
+          className="min-h-[220px] resize-none"
+          value={form.icp}
+          onChange={(e) => update("icp", e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          Include: job titles, company stage, pain points, motivations, and any relevant demographics.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 3: RAG Data ──────────────────────────────────────────────────────────
+
+function Step3RAG({
+  form,
+  update,
+  dragOver,
+  setDragOver,
+  handleDrop,
+  removeFile,
+}: {
+  form: FormState
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
+  dragOver: boolean
+  setDragOver: (v: boolean) => void
+  handleDrop: (e: React.DragEvent) => void
+  removeFile: (name: string) => void
+}) {
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="rounded-md bg-muted/50 border px-4 py-3 text-sm text-muted-foreground">
+        Ground your synthetic users in real data — customer interviews, sales call transcripts, Trustpilot reviews, support tickets, etc.
+      </div>
+
+      {/* Text paste */}
+      <div className="space-y-2">
+        <Label htmlFor="ragText" className="text-sm font-medium">
+          Paste transcripts, reviews, or notes
+        </Label>
+        <Textarea
+          id="ragText"
+          placeholder={`Paste any raw customer voice data here...\n\nExample:\n"We tried three tools before this one. The onboarding was always the problem — nobody had time to read docs." — Sarah, VP Marketing\n\n"Price wasn't the issue. Trust was." — Anon review, G2`}
+          className="min-h-[180px] resize-none"
+          value={form.ragText}
+          onChange={(e) => update("ragText", e.target.value)}
+        />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Separator className="flex-1" />
+        <span className="text-xs text-muted-foreground shrink-0">or upload files</span>
+        <Separator className="flex-1" />
+      </div>
+
+      {/* File drop zone */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        className={cn(
+          "rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors",
+          dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-muted-foreground/50"
+        )}
+      >
+        <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-3" />
+        <p className="text-sm font-medium">Drag files here, or click to browse</p>
+        <p className="text-xs text-muted-foreground mt-1">PDF, TXT, DOCX, CSV — up to 10 MB each</p>
+        <Button variant="outline" size="sm" className="mt-4" onClick={() => {}}>
+          Browse files
+        </Button>
+      </div>
+
+      {/* Uploaded files list */}
+      {form.ragFiles.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Uploaded files</Label>
+          <div className="space-y-1.5">
+            {form.ragFiles.map((name) => (
+              <div
+                key={name}
+                className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+              >
+                <span className="text-foreground">{name}</span>
+                <button
+                  onClick={() => removeFile(name)}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Step 4: Metrics ───────────────────────────────────────────────────────────
+
+function Step4Metrics({
+  form,
+  update,
+  toggleMetric,
+  addCustomMetric,
+}: {
+  form: FormState
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
+  toggleMetric: (m: string) => void
+  addCustomMetric: () => void
+}) {
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">What do you want to optimize for?</Label>
+        <p className="text-xs text-muted-foreground">
+          Select one or more metrics. Synthetic users will score and give feedback on each.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {PRESET_METRICS.map((metric) => {
+            const selected = form.metrics.includes(metric)
+            return (
+              <button
+                key={metric}
+                onClick={() => toggleMetric(metric)}
+                className={cn(
+                  "rounded-full px-4 py-1.5 text-sm font-medium border transition-all",
+                  selected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-foreground border-border hover:border-primary hover:bg-accent"
+                )}
+              >
+                {selected && <Check className="inline h-3 w-3 mr-1.5 -mt-0.5" />}
+                {metric}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">
+          Add a custom metric{" "}
+          <span className="text-muted-foreground font-normal">(optional)</span>
+        </Label>
+        <div className="flex gap-2">
+          <Input
+            placeholder="e.g. Exclusivity, FOMO, Authority…"
+            value={form.customMetric}
+            onChange={(e) => update("customMetric", e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") addCustomMetric() }}
           />
-          <Line
-            type="monotone"
-            dataKey="score"
-            stroke="hsl(var(--primary))"
-            strokeWidth={2.5}
-            dot={(props: { cx: number; cy: number; payload: { iteration: number; score: number } }) => {
-              const { cx, cy, payload } = props
-              const isActive = payload.iteration === activeIteration
-              return (
-                <circle key={payload.iteration} cx={cx} cy={cy} r={isActive ? 6 : 4}
-                  fill={isActive ? "hsl(var(--primary))" : "hsl(var(--background))"}
-                  stroke="hsl(var(--primary))" strokeWidth={2}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => onDotClick(payload.iteration)} />
-              )
-            }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-      <p className="text-xs text-muted-foreground text-center mt-1">Click a point to jump to that iteration</p>
+          <Button variant="outline" onClick={addCustomMetric} disabled={!form.customMetric.trim()}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {form.metrics.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-sm text-muted-foreground">Selected metrics ({form.metrics.length})</Label>
+          <div className="flex flex-wrap gap-1.5">
+            {form.metrics.map((m) => (
+              <Badge key={m} variant="secondary" className="gap-1 pr-1">
+                {m}
+                <button
+                  onClick={() => toggleMetric(m)}
+                  className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Step 5: Context ───────────────────────────────────────────────────────────
+
+function Step5Context({
+  form,
+  update,
+}: {
+  form: FormState
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
+}) {
+  return (
+    <div className="max-w-2xl space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="context" className="text-sm font-medium">
+          Additional context about your product or campaign
+        </Label>
+        <p className="text-xs text-muted-foreground">
+          Anything that helps synthetic users better understand what they're evaluating — pricing, key differentiators, competitors, objections to address, tone of voice, etc.
+        </p>
+        <Textarea
+          id="context"
+          placeholder={`Example:\nWe're a B2B prospecting tool that integrates with HubSpot and Salesforce. Our biggest differentiator is that we use AI to auto-personalize outbound at scale — not just name/company inserts, but genuine research-backed personalization. Key objections: "we already use [competitor]", "we don't have budget". Tone: confident, direct, no buzzwords.`}
+          className="min-h-[220px] resize-none"
+          value={form.context}
+          onChange={(e) => update("context", e.target.value)}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ── Step 6: Run Setup ─────────────────────────────────────────────────────────
+
+function Step6RunSetup({
+  form,
+  update,
+}: {
+  form: FormState
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
+}) {
+  return (
+    <div className="max-w-2xl space-y-8">
+      {/* Campaign name */}
+      <div className="space-y-2">
+        <Label htmlFor="campaignName" className="text-sm font-medium">
+          Campaign name
+        </Label>
+        <Input
+          id="campaignName"
+          placeholder="e.g. Q2 Cold Email — SaaS Founders"
+          value={form.campaignName}
+          onChange={(e) => update("campaignName", e.target.value)}
+        />
+      </div>
+
+      <Separator />
+
+      {/* Iterations */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-sm font-medium">Iterations</Label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              How many rounds of scoring and rewriting to run.
+            </p>
+          </div>
+          <span className="text-2xl font-bold tabular-nums">{form.iterations}</span>
+        </div>
+        <input
+          type="range"
+          min={1}
+          max={10}
+          step={1}
+          value={form.iterations}
+          onChange={(e) => update("iterations", Number(e.target.value))}
+          className="w-full accent-primary"
+        />
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>1 (quick)</span>
+          <span>10 (thorough)</span>
+        </div>
+      </div>
+
+      {/* Users per iteration */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-sm font-medium">Synthetic users per iteration</Label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              How many distinct personas will evaluate each version.
+            </p>
+          </div>
+          <span className="text-2xl font-bold tabular-nums">{form.usersPerIteration}</span>
+        </div>
+        <input
+          type="range"
+          min={5}
+          max={50}
+          step={5}
+          value={form.usersPerIteration}
+          onChange={(e) => update("usersPerIteration", Number(e.target.value))}
+          className="w-full accent-primary"
+        />
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>5</span>
+          <span>50</span>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Summary card */}
+      <div className="rounded-lg border bg-muted/30 px-5 py-4 space-y-3">
+        <p className="text-sm font-medium">Campaign summary</p>
+        <div className="grid grid-cols-2 gap-y-2 text-sm">
+          <span className="text-muted-foreground">Content type</span>
+          <span className="capitalize">{form.contentType?.replace(/-/g, " ") ?? "—"}</span>
+          <span className="text-muted-foreground">Metrics</span>
+          <span>{form.metrics.length > 0 ? form.metrics.join(", ") : "—"}</span>
+          <span className="text-muted-foreground">Iterations</span>
+          <span>{form.iterations}</span>
+          <span className="text-muted-foreground">Users / iteration</span>
+          <span>{form.usersPerIteration}</span>
+          <span className="text-muted-foreground">Total evaluations</span>
+          <span className="font-semibold">{form.iterations * form.usersPerIteration}</span>
+        </div>
+      </div>
     </div>
   )
 }

@@ -107,7 +107,7 @@ export default function RefineryDashboard() {
       if (!res.ok) throw new Error(data.error ?? "Failed to create campaign")
       setNewModalOpen(false)
       setNewName("")
-      router.push(`/refinery/new?id=${data.campaignId}`)
+      router.push(`/refinery/${data.campaignId}`)
     } catch (err: unknown) {
       toast({
         title: "Error",
@@ -207,11 +207,9 @@ export default function RefineryDashboard() {
             Refinery helps you optimise marketing copy through iterative synthetic user testing.
             Create your first campaign to get started.
           </p>
-          <Button asChild>
-            <Link href="/refinery/new">
-              <Plus className="h-4 w-4 mr-1.5" />
-              New Campaign
-            </Link>
+          <Button onClick={() => { setNewName(""); setNewModalOpen(true) }}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            New Campaign
           </Button>
         </div>
       )}
@@ -233,7 +231,7 @@ export default function RefineryDashboard() {
             <TableBody>
               {campaigns.map((c) => {
                 const status = STATUS_STYLE[c.status] ?? { label: c.status, variant: "outline" as const }
-                const href = c.status === "draft" ? `/refinery/new?id=${c.id}` : `/refinery/${c.id}`
+                const href = `/refinery/${c.id}`
                 return (
                   <TableRow key={c.id} className="group">
                     <TableCell>

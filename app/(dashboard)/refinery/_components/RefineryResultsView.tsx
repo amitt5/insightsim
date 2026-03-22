@@ -16,6 +16,7 @@ import {
   TrendingUp, Users, MessageSquare,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { RefineryThumbnailResultsView } from "./RefineryThumbnailResultsView"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,28 @@ interface IterUser {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+interface UGCContent {
+  script: string
+  image_url: string
+  video_url: string
+}
+
+function parseUGCContent(content: string): UGCContent | null {
+  try {
+    const parsed = JSON.parse(content) as Record<string, unknown>
+    if (
+      typeof parsed.script === 'string' &&
+      typeof parsed.video_url === 'string' &&
+      typeof parsed.image_url === 'string'
+    ) {
+      return parsed as unknown as UGCContent
+    }
+    return null
+  } catch {
+    return null
+  }
+}
 
 function initials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
@@ -135,6 +158,10 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
+  }
+
+  if (campaign.content_type === "ugc_thumbnail") {
+    return <RefineryThumbnailResultsView campaignId={campaignId} />
   }
 
   const totalIterations = campaign.iterations
@@ -250,11 +277,34 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                         {activeIter.improvement_notes}
                       </p>
                     )}
-                    <div className="rounded-lg border bg-muted/20 p-5">
-                      <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans text-foreground">
-                        {activeIter.content}
-                      </pre>
-                    </div>
+                    {(() => {
+                      const ugc = parseUGCContent(activeIter.content)
+                      if (ugc) {
+                        return (
+                          <div className="space-y-3">
+                            <video
+                              controls
+                              src={ugc.video_url}
+                              className="w-full rounded-lg border bg-black"
+                              style={{ maxHeight: '360px' }}
+                            />
+                            <div className="rounded-lg border bg-muted/20 p-4">
+                              <p className="text-xs text-muted-foreground font-medium mb-2">Ad Script</p>
+                              <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans text-foreground">
+                                {ugc.script}
+                              </pre>
+                            </div>
+                          </div>
+                        )
+                      }
+                      return (
+                        <div className="rounded-lg border bg-muted/20 p-5">
+                          <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans text-foreground">
+                            {activeIter.content}
+                          </pre>
+                        </div>
+                      )
+                    })()}
                   </div>
 
                   {/* Right: score + feedback */}

@@ -1,5 +1,7 @@
 # InsightSim – Claude Code Guide
 
+when in plan mode DO NOT create a plan without asking first. 
+
 ## Project Overview
 InsightSim is a synthetic market research platform built with Next.js and Supabase. Users create research projects, generate AI personas, and run qualitative simulations (IDIs and FGDs) with an AI moderator.
 

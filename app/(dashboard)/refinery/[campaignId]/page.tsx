@@ -15,6 +15,8 @@ import {
   FileText,
   Share2,
   LayoutTemplate,
+  Video,
+  ImageIcon,
   ChevronRight,
   ChevronLeft,
   Upload,
@@ -36,6 +38,8 @@ type ContentType =
   | "subject-line"
   | "landing-page"
   | "social-post"
+  | "ugc-ad"
+  | "ugc-thumbnail"
   | "other"
 
 interface FormState {
@@ -106,6 +110,18 @@ const CONTENT_TYPES: {
     label: "Social Post",
     description: "LinkedIn, Twitter, etc.",
     icon: <Share2 className="h-5 w-5" />,
+  },
+  {
+    id: "ugc-ad",
+    label: "UGC Ad",
+    description: "AI-generated video ad creative",
+    icon: <Video className="h-5 w-5" />,
+  },
+  {
+    id: "ugc-thumbnail",
+    label: "UGC Thumbnail",
+    description: "Test images for scroll-stopping power",
+    icon: <ImageIcon className="h-5 w-5" />,
   },
   {
     id: "other",
@@ -456,7 +472,7 @@ export default function CampaignPage({
                 addCustomMetric={addCustomMetric}
               />
             )}
-            {step === 6 && <Step6RunSetup form={form} update={update} />}
+            {step === 6 && <Step6RunSetup form={form} update={update} isThumbnail={form.contentType === "ugc-thumbnail"} />}
           </div>
 
           <footer className="shrink-0 border-t px-8 py-4 flex items-center justify-between bg-background">
@@ -871,9 +887,11 @@ function Step5Context({
 function Step6RunSetup({
   form,
   update,
+  isThumbnail,
 }: {
   form: FormState
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
+  isThumbnail: boolean
 }) {
   return (
     <div className="max-w-2xl space-y-8">
@@ -896,25 +914,29 @@ function Step6RunSetup({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <Label className="text-sm font-medium">Iterations</Label>
+            <Label className="text-sm font-medium">
+              {isThumbnail ? "Number of images to generate" : "Iterations"}
+            </Label>
             <p className="text-xs text-muted-foreground mt-0.5">
-              How many rounds of scoring and rewriting to run.
+              {isThumbnail
+                ? "How many thumbnail variations to generate and test."
+                : "How many rounds of scoring and rewriting to run."}
             </p>
           </div>
           <span className="text-2xl font-bold tabular-nums">{form.iterations}</span>
         </div>
         <input
           type="range"
-          min={1}
-          max={10}
-          step={1}
+          min={isThumbnail ? 5 : 1}
+          max={isThumbnail ? 50 : 10}
+          step={isThumbnail ? 5 : 1}
           value={form.iterations}
           onChange={(e) => update("iterations", Number(e.target.value))}
           className="w-full accent-primary"
         />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>1 (quick)</span>
-          <span>10 (thorough)</span>
+          <span>{isThumbnail ? "5" : "1 (quick)"}</span>
+          <span>{isThumbnail ? "50" : "10 (thorough)"}</span>
         </div>
       </div>
 

@@ -13,6 +13,8 @@
 import { NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { openai } from '@/lib/openai';
+import { generatePersonImage } from '@/lib/runware';
+import { generateUGCVideo } from '@/lib/fal';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -137,12 +139,46 @@ export async function POST(req: Request) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// THUMBNAIL PROMPT VARIATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const THUMBNAIL_VARIATIONS = [
+  'holding a protein shake bottle, smiling directly at camera, gym background',
+  'mid-workout, energetic expression, lifting weights, gym floor',
+  'casual outdoor setting, post-run glow, natural morning lighting',
+  'kitchen counter, just finished workout, holding shake, relaxed confidence',
+  'close-up portrait, athletic wear, bright studio lighting, warm smile',
+  'seated on gym bench, towel around neck, triumphant expression',
+  'dynamic pose stretching, athletic wear, outdoor park setting',
+  'leaning against gym wall, arms crossed, confident direct gaze',
+  'walking out of gym, golden hour lighting, healthy energetic look',
+  'overhead shot angle, lying on yoga mat, post-workout, peaceful expression',
+  'side profile, tying hair up, athletic wear, locker room background',
+  'front-facing, sipping from shaker bottle, gym mirror reflection',
+];
+
+function buildThumbnailPrompts(n: number, extraContext: string | null): string[] {
+  const base = extraContext?.trim()
+    ? `Photorealistic portrait photo of a 26-year-old athletic woman, ${extraContext.trim()},`
+    : 'Photorealistic portrait photo of a 26-year-old athletic woman,';
+
+  return Array.from({ length: n }, (_, i) => {
+    const variation = THUMBNAIL_VARIATIONS[i % THUMBNAIL_VARIATIONS.length];
+    return `${base} ${variation}, professional photo quality, no text, no watermark`;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main job runner
 // Called fire-and-forget. Manages panel generation, iteration loop, and
 // final status updates. Always updates job status — never leaves it 'running'.
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function runJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise<void> {
+  if (campaign.content_type === 'ugc_thumbnail') {
+    return runThumbnailJob(db, campaign, job);
+  }
+
   try {
     // ── GENERATE SYNTHETIC USER PANEL ─────────────────────────────────────────
     // Single OpenAI call to produce all users. Inserts panel + synthetic users.
@@ -151,6 +187,19 @@ async function runJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise
 
     // ── ITERATION LOOP ────────────────────────────────────────────────────────
     // Each iteration: generate content → score all users → aggregate → repeat.
+
+    // ── GENERATE BRAND AMBASSADOR IMAGE (ugc_ad campaigns only) ──────────────
+    // Single Runware call per campaign — same person appears across all iterations.
+
+    let ambassadorImageUrl: string | undefined;
+
+    if (campaign.content_type === 'ugc_ad') {
+      console.log('[refinery/processor] Generating brand ambassador image via Runware…');
+      ambassadorImageUrl = await generatePersonImage(
+        'Photorealistic portrait of a 26-year-old athletic woman with a warm smile, wearing stylish gym clothes, standing in a bright modern gym, natural soft lighting, looking directly at camera, professional photo quality, no text'
+      );
+      console.log('[refinery/processor] Ambassador image generated:', ambassadorImageUrl);
+    }
 
     let previousContent: string | null = null;
     let previousFeedbackSummary: string | null = null;
@@ -161,7 +210,8 @@ async function runJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise
         campaign,
         iterNum,
         previousContent,
-        previousFeedbackSummary
+        previousFeedbackSummary,
+        ambassadorImageUrl
       );
 
       // Insert the iteration row as 'running' so the UI can show it in progress
@@ -182,14 +232,24 @@ async function runJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise
       }
 
       // ── SCORE SYNTHETIC USERS (batches of 5) ────────────────────────────────
-      // Each user independently rates the content. Batches of 5 run concurrently;
-      // batches themselves are sequential to avoid hammering the OpenAI API.
+      // For ugc_ad campaigns, extract the script from the JSON blob so synthetic
+      // users evaluate the spoken copy — not the serialised JSON.
+
+      let scoreContent = content;
+      if (campaign.content_type === 'ugc_ad') {
+        try {
+          const parsed = JSON.parse(content) as { script?: string };
+          if (parsed.script) scoreContent = parsed.script;
+        } catch {
+          // fall back to raw content
+        }
+      }
 
       const responses = await scoreAllUsers(
         db,
         campaign,
         iteration.id,
-        content,
+        scoreContent,
         syntheticUsers
       );
 
@@ -232,6 +292,78 @@ async function runJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise
       completed_at: new Date().toISOString(),
     }).eq('id', job.id);
 
+    await db.from('refinery_campaigns').update({ status: 'failed' }).eq('id', campaign.id);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THUMBNAIL JOB
+//
+// Generates N images in parallel via Runware, then scores each image with all
+// synthetic users. Images are treated as "iterations" — one image per row.
+// Scoring prompt focuses on scroll-stopping power, not copy quality.
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function runThumbnailJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise<void> {
+  try {
+    // 1. Generate synthetic users (same as standard campaigns)
+    const syntheticUsers = await generateSyntheticUsers(db, campaign);
+
+    // 2. Build varied prompts and generate all images in parallel
+    const prompts = buildThumbnailPrompts(campaign.iterations, campaign.extra_context);
+    console.log(`[refinery/processor] Generating ${prompts.length} thumbnail images in parallel…`);
+    const imageUrls = await Promise.all(prompts.map(generatePersonImage));
+    console.log(`[refinery/processor] ${imageUrls.length} images generated.`);
+
+    // 3. Score in batches of 5 (parallel within batch, sequential across batches)
+    for (let i = 0; i < imageUrls.length; i += 5) {
+      const batch = imageUrls.slice(i, i + 5);
+
+      await Promise.all(batch.map(async (url, idx) => {
+        const iterNum = i + idx + 1;
+
+        const { data: iter, error: iterErr } = await db
+          .from('refinery_iterations')
+          .insert({
+            campaign_id: campaign.id,
+            iteration_number: iterNum,
+            content: url,
+            status: 'running',
+          })
+          .select('id')
+          .single();
+
+        if (iterErr || !iter) throw new Error(`Failed to insert thumbnail iteration ${iterNum}: ${iterErr?.message}`);
+
+        const responses = await scoreAllUsers(db, campaign, iter.id, url, syntheticUsers);
+        const rawAvg = responses.reduce((s, r) => s + r.score, 0) / responses.length;
+
+        await db.from('refinery_iterations').update({
+          aggregate_score: compressScore(rawAvg),
+          status: 'completed',
+        }).eq('id', iter.id);
+      }));
+
+      await db.from('refinery_jobs').update({
+        current_iteration: Math.min(i + 5, imageUrls.length),
+      }).eq('id', job.id);
+    }
+
+    await db.from('refinery_jobs').update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+    }).eq('id', job.id);
+
+    await db.from('refinery_campaigns').update({ status: 'completed' }).eq('id', campaign.id);
+
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[refinery/processor] Thumbnail job failed:', message);
+    await db.from('refinery_jobs').update({
+      status: 'failed',
+      error: message,
+      completed_at: new Date().toISOString(),
+    }).eq('id', job.id);
     await db.from('refinery_campaigns').update({ status: 'failed' }).eq('id', campaign.id);
   }
 }
@@ -360,8 +492,19 @@ async function generateIterationContent(
   campaign: Campaign,
   iterNum: number,
   previousContent: string | null,
-  previousFeedbackSummary: string | null
+  previousFeedbackSummary: string | null,
+  ambassadorImageUrl?: string
 ): Promise<{ content: string; improvementNotes: string | null }> {
+  // ── UGC AD: hardcoded protein shake flow ────────────────────────────────────
+  if (campaign.content_type === 'ugc_ad') {
+    return generateUGCIterationContent(
+      iterNum,
+      previousContent,
+      previousFeedbackSummary,
+      ambassadorImageUrl!
+    );
+  }
+
   const metricsStr = campaign.metrics.join(', ');
   const contentTypeLabel = campaign.content_type.replace(/_/g, ' ');
   const contextSection = campaign.extra_context
@@ -465,8 +608,14 @@ async function scoreAllUsers(
   content: string,
   users: SyntheticUser[]
 ): Promise<ScoringResponse[]> {
-  const metricsStr = campaign.metrics.join(', ');
-  const contentTypeLabel = campaign.content_type.replace(/_/g, ' ');
+  // Thumbnail campaigns use fixed scoring criteria — ignore campaign metrics
+  const isThumbnail = campaign.content_type === 'ugc_thumbnail';
+  const metricsStr = isThumbnail
+    ? 'scroll-stopping power, visual appeal, authenticity, whether you\'d click to watch'
+    : campaign.metrics.join(', ');
+  const contentTypeLabel = isThumbnail
+    ? 'social media thumbnail for a UGC ad'
+    : campaign.content_type.replace(/_/g, ' ');
   const allResponses: ScoringResponse[] = [];
 
   for (let i = 0; i < users.length; i += 5) {
@@ -526,8 +675,28 @@ async function scoreOneUser(
     .slice(0, 3)
     .join(' | ');
 
-  // PROMPT: Synthetic user scoring
-  const userPrompt = `You are ${user.name}, ${user.age ?? 'unknown age'} year old ${user.gender ?? 'person'}, ${user.profession ?? 'professional'}.
+  // PROMPT: Synthetic user scoring — thumbnail variant uses image-specific framing
+  const isThumbnailContent = content.startsWith('https://') || content.startsWith('http://');
+
+  const userPrompt = isThumbnailContent
+    ? `You are ${user.name}, ${user.age ?? 'unknown age'} year old ${user.gender ?? 'person'}, ${user.profession ?? 'professional'}.
+Bio: ${user.bio ?? 'No bio provided.'}
+How you think: ${traitLines}
+
+You're scrolling Instagram. You just saw a thumbnail image: a photo of a young athletic woman used as a UGC ad for a protein shake brand.
+The image URL is: ${content}
+
+Imagine this image as the thumbnail of a short video ad. React as yourself — would you stop scrolling?
+Consider specifically: ${metricsStr}.
+
+Scoring guidance:
+- 1–3: You'd scroll right past. Generic, unappealing, or off-putting.
+- 4–5: You notice it but keep scrolling. Nothing special.
+- 6–7: You might pause for a second. Something caught your eye.
+- 8+: You'd actually stop and watch. Rare — only if it's genuinely striking or relatable.
+
+Return JSON: { "score": <integer 1-10>, "feedback": "<2-3 sentences — what specifically made you stop or scroll past, and why>" }`
+    : `You are ${user.name}, ${user.age ?? 'unknown age'} year old ${user.gender ?? 'person'}, ${user.profession ?? 'professional'}.
 Bio: ${user.bio ?? 'No bio provided.'}
 How you think: ${traitLines}
 
@@ -579,6 +748,104 @@ Return JSON: { "score": <integer 1-10>, "feedback": "<2-3 sentences of specific,
   return {
     score,
     feedback: typeof parsed.feedback === 'string' ? parsed.feedback : '',
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GENERATE UGC ITERATION CONTENT (ad_creative campaigns)
+//
+// Hardcoded to ProPulse Protein shake brand for hackathon demo.
+// Generates a 30s UGC script via OpenAI, then passes it to VEED Fabric
+// along with the ambassador image to produce a video.
+// Returns content as a JSON string: { script, image_url, video_url }
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function generateUGCIterationContent(
+  iterNum: number,
+  previousScript: string | null,
+  previousFeedbackSummary: string | null,
+  ambassadorImageUrl: string
+): Promise<{ content: string; improvementNotes: string | null }> {
+  const brandContext = `Brand: ProPulse Protein. Clean, grass-fed whey. 25g protein per serving. No artificial sweeteners. Tastes like real food.
+Target: health-conscious gym-goers aged 22–35 who are tired of chalky, artificial-tasting protein powders.
+UGC style: authentic, first-person, casual — like a friend recommending it, not a sales pitch.
+Script length: ~30 seconds when spoken (roughly 75–90 words). No stage directions or labels — just the spoken words.`;
+
+  let userPrompt: string;
+
+  if (iterNum === 1 || !previousScript) {
+    userPrompt = `${brandContext}
+
+Write a 30-second UGC ad script for ProPulse Protein. Casual, first-person, authentic. No buzzwords.
+
+Return JSON: { "script": "the full spoken script here", "improvement_notes": null }`;
+  } else {
+    // Extract previous script from JSON blob if needed
+    let prevScript = previousScript;
+    try {
+      const parsed = JSON.parse(previousScript) as { script?: string };
+      if (parsed.script) prevScript = parsed.script;
+    } catch { /* already plain text */ }
+
+    userPrompt = `${brandContext}
+
+Previous script (iteration ${iterNum - 1}):
+---
+${prevScript}
+---
+
+Feedback from synthetic users:
+${previousFeedbackSummary}
+
+Rewrite the script to directly address the criticisms. Keep what worked, fix what didn't. Same casual UGC tone.
+
+Return JSON: { "script": "improved spoken script", "improvement_notes": "2-3 sentences on what changed and why" }`;
+  }
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [
+      {
+        role: 'system',
+        content: 'You write authentic UGC ad scripts. Return only valid JSON — no markdown, no commentary.',
+      },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature: 0.8,
+    max_tokens: 600,
+    response_format: { type: 'json_object' },
+  });
+
+  const raw = completion.choices[0].message.content ?? '{}';
+  let parsed: { script?: string; improvement_notes?: string | null };
+
+  try {
+    parsed = JSON.parse(raw) as { script?: string; improvement_notes?: string | null };
+  } catch {
+    throw new Error(`Failed to parse UGC script JSON (iter ${iterNum}): ${raw.slice(0, 200)}`);
+  }
+
+  if (!parsed.script) {
+    throw new Error(`No script in UGC response (iter ${iterNum}): ${raw.slice(0, 200)}`);
+  }
+
+  const script = parsed.script;
+  console.log(`[refinery/processor] UGC script iter ${iterNum}: ${script.slice(0, 80)}…`);
+
+  // Generate video via VEED Fabric
+  console.log(`[refinery/processor] Calling VEED Fabric for iter ${iterNum}…`);
+  const videoUrl = await generateUGCVideo(ambassadorImageUrl, script);
+  console.log(`[refinery/processor] Video generated iter ${iterNum}:`, videoUrl);
+
+  const content = JSON.stringify({
+    script,
+    image_url: ambassadorImageUrl,
+    video_url: videoUrl,
+  });
+
+  return {
+    content,
+    improvementNotes: parsed.improvement_notes ?? null,
   };
 }
 

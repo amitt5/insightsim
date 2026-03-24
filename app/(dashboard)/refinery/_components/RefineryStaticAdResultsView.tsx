@@ -12,12 +12,9 @@ import {
 } from "@/components/ui/tooltip"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  CheckCircle2, Loader2, Clock,
-  TrendingUp, Users, MessageSquare,
+  CheckCircle2, Loader2, Clock, TrendingUp, Users,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { RefineryThumbnailResultsView } from "./RefineryThumbnailResultsView"
-import { RefineryStaticAdResultsView } from "./RefineryStaticAdResultsView"
 import { RunMoreButton } from "./RunMoreButton"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -55,39 +52,43 @@ interface IterUser {
   profession: string | null
   bio: string | null
   score: number
-  feedback: string
+  feedback: string | null
+}
+
+interface StaticAdContent {
+  imageUrl: string
+  imagePrompt: string
+  textLayout: string
+  headline: string
+  body: string
+  features: string[]
+  cta: string
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-interface UGCContent {
-  script: string
-  image_url: string
-  video_url: string
-}
-
-function parseUGCContent(content: string): UGCContent | null {
+function parseStaticAd(content: string): StaticAdContent | null {
   try {
-    const parsed = JSON.parse(content) as Record<string, unknown>
-    if (
-      typeof parsed.script === 'string' &&
-      typeof parsed.video_url === 'string' &&
-      typeof parsed.image_url === 'string'
-    ) {
-      return parsed as unknown as UGCContent
-    }
+    const parsed = JSON.parse(content) as Partial<StaticAdContent>
+    if (parsed.imageUrl && parsed.headline) return parsed as StaticAdContent
     return null
   } catch {
     return null
   }
 }
 
-function initials(name: string) {
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+function textLayoutClass(layout: string): string {
+  switch (layout) {
+    case "top-left":    return "top-0 left-0 items-start text-left"
+    case "top-right":   return "top-0 right-0 items-end text-right"
+    case "bottom-left": return "bottom-0 left-0 items-start text-left"
+    case "bottom-right":return "bottom-0 right-0 items-end text-right"
+    case "center":      return "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 items-center text-center w-[85%]"
+    default:            return "bottom-0 left-0 right-0 items-start text-left" // bottom-center
+  }
 }
 
-function scoreColor(score: number | null) {
-  if (score === null) return "bg-muted"
+function scoreColor(score: number) {
   if (score >= 6.5) return "bg-emerald-500"
   if (score >= 5.5) return "bg-lime-400"
   if (score >= 4.5) return "bg-amber-400"
@@ -95,9 +96,75 @@ function scoreColor(score: number | null) {
   return "bg-red-400"
 }
 
+function initials(name: string) {
+  return name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase()
+}
+
+// ─── Ad card ─────────────────────────────────────────────────────────────────
+
+function StaticAdCard({ ad, score }: { ad: StaticAdContent; score: number | null }) {
+  const layoutClass = textLayoutClass(ad.textLayout)
+  const isBottomCenter = !["top-left","top-right","bottom-left","bottom-right","center"].includes(ad.textLayout)
+
+  return (
+    <div className="relative rounded-xl overflow-hidden bg-muted w-full max-w-sm mx-auto shadow-lg" style={{ paddingBottom: "125%" }}>
+      {/* Background image */}
+      <img
+        src={ad.imageUrl}
+        alt={ad.headline}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+
+      {/* Score badge */}
+      {score !== null && (
+        <div className={cn(
+          "absolute top-3 right-3 z-20 rounded-full px-2.5 py-1 text-xs font-bold text-white shadow",
+          scoreColor(score)
+        )}>
+          {score.toFixed(1)}
+        </div>
+      )}
+
+      {/* Layout badge */}
+      <div className="absolute top-3 left-3 z-20 bg-black/60 text-white text-[10px] font-medium rounded px-1.5 py-0.5">
+        {ad.textLayout}
+      </div>
+
+      {/* Copy overlay */}
+      <div className={cn(
+        "absolute z-10 flex flex-col gap-1.5 p-4",
+        isBottomCenter ? "bottom-0 left-0 right-0" : layoutClass,
+        "max-w-[80%]"
+      )}>
+        {/* Dark gradient backdrop */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent -z-10 rounded-t" />
+
+        <h3 className="text-white font-bold text-lg leading-snug drop-shadow">{ad.headline}</h3>
+        {ad.body && (
+          <p className="text-white/90 text-xs leading-relaxed">{ad.body}</p>
+        )}
+        {ad.features.length > 0 && (
+          <ul className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+            {ad.features.map((f, i) => (
+              <li key={i} className="text-white/80 text-[11px] flex items-center gap-1">
+                <span className="text-emerald-400">✓</span> {f}
+              </li>
+            ))}
+          </ul>
+        )}
+        {ad.cta && (
+          <span className="inline-block mt-1 self-start bg-white text-black text-[11px] font-semibold rounded-full px-3 py-1">
+            {ad.cta}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function RefineryResultsView({ campaignId }: { campaignId: string }) {
+export function RefineryStaticAdResultsView({ campaignId }: { campaignId: string }) {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [job, setJob] = useState<Job | null>(null)
   const [iterations, setIterations] = useState<Iteration[]>([])
@@ -115,11 +182,8 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
     setIterations(data.iterations)
   }, [campaignId])
 
-  useEffect(() => {
-    fetchCampaign()
-  }, [fetchCampaign])
+  useEffect(() => { fetchCampaign() }, [fetchCampaign])
 
-  // Poll every 4s while job is running or pending
   useEffect(() => {
     if (!job) return
     if (job.status === "completed" || job.status === "failed") return
@@ -127,7 +191,7 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
     return () => clearInterval(id)
   }, [job?.status, fetchCampaign])
 
-  // Auto-advance active iteration to latest completed
+  // Auto-advance to latest completed iteration
   useEffect(() => {
     const completed = iterations.filter((it) => it.status === "completed")
     if (completed.length > 0) {
@@ -135,7 +199,6 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
     }
   }, [iterations.length])
 
-  // Fetch users whenever active iteration changes
   useEffect(() => {
     const iter = iterations.find((it) => it.iteration_number === activeIteration)
     if (!iter || iter.status !== "completed") { setIterUsers([]); return }
@@ -146,29 +209,17 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
       .finally(() => setLoadingUsers(false))
   }, [activeIteration, campaignId, iterations])
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <p className="text-destructive text-sm">{error}</p>
-      </div>
-    )
-  }
+  if (error) return (
+    <div className="flex items-center justify-center py-16">
+      <p className="text-destructive text-sm">{error}</p>
+    </div>
+  )
 
-  if (!campaign) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
-  if (campaign.content_type === "ugc_thumbnail") {
-    return <RefineryThumbnailResultsView campaignId={campaignId} />
-  }
-
-  if (campaign.content_type === "static_ad") {
-    return <RefineryStaticAdResultsView campaignId={campaignId} />
-  }
+  if (!campaign) return (
+    <div className="flex items-center justify-center py-16">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  )
 
   const totalIterations = campaign.iterations
   const activeIter = iterations.find((it) => it.iteration_number === activeIteration)
@@ -182,11 +233,9 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
   const feedbackLines = (() => {
     if (iterUsers.length === 0) return []
     const sorted = [...iterUsers].sort((a, b) => b.score - a.score)
-    const top = sorted.slice(0, 2)
-    const bottom = sorted.slice(-2).reverse()
-    return [...top, ...bottom]
+    return [...sorted.slice(0, 2), ...sorted.slice(-2).reverse()]
       .filter((u) => u.feedback)
-      .map((u) => u.feedback)
+      .map((u) => u.feedback as string)
   })()
 
   function iterStatus(n: number) {
@@ -195,20 +244,19 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
     return iter.status
   }
 
+  const activeAd = activeIter ? parseStaticAd(activeIter.content) : null
+
   return (
     <TooltipProvider delayDuration={100}>
       <div className="bg-background">
-        {/* Campaign info header */}
+        {/* Header */}
         <div className="border-b bg-background px-6 py-4">
           <div className="max-w-6xl mx-auto flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-xl font-semibold">{campaign.name}</h2>
-              <Badge variant="secondary" className="capitalize">
-                {campaign.content_type.replace(/_/g, " ")}
-              </Badge>
+              <Badge variant="secondary">Static Ad</Badge>
               <StatusBadge status={campaign.status} />
             </div>
-
             <div className="shrink-0 flex flex-col items-end gap-2">
               {campaign.status === "completed" && (
                 <RunMoreButton campaignId={campaignId} onComplete={fetchCampaign} />
@@ -242,7 +290,6 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                   const status = iterStatus(n)
                   const iter = iterations.find((it) => it.iteration_number === n)
                   const score = iter?.aggregate_score ?? null
-
                   return (
                     <TabsTrigger
                       key={n}
@@ -272,48 +319,23 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
           </div>
 
           <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
-            {isComplete && activeIter ? (
+            {isComplete && activeIter && !activeAd && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-xs font-mono text-destructive break-all">
+                <p className="font-semibold mb-1">Could not parse ad content:</p>
+                <pre className="whitespace-pre-wrap">{activeIter.content}</pre>
+              </div>
+            )}
+            {isComplete && activeIter && activeAd ? (
               <>
-                <div className="grid grid-cols-2 gap-6">
-                  {/* Left: content */}
+                <div className="grid grid-cols-2 gap-8">
+                  {/* Left: composited ad card */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                      <h2 className="text-sm font-semibold">Version {activeIteration}</h2>
-                    </div>
                     {activeIter.improvement_notes && (
                       <p className="text-xs text-muted-foreground italic border-l-2 border-muted pl-3">
                         {activeIter.improvement_notes}
                       </p>
                     )}
-                    {(() => {
-                      const ugc = parseUGCContent(activeIter.content)
-                      if (ugc) {
-                        return (
-                          <div className="space-y-3">
-                            <video
-                              controls
-                              src={ugc.video_url}
-                              className="w-full rounded-lg border bg-black"
-                              style={{ maxHeight: '360px' }}
-                            />
-                            <div className="rounded-lg border bg-muted/20 p-4">
-                              <p className="text-xs text-muted-foreground font-medium mb-2">Ad Script</p>
-                              <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans text-foreground">
-                                {ugc.script}
-                              </pre>
-                            </div>
-                          </div>
-                        )
-                      }
-                      return (
-                        <div className="rounded-lg border bg-muted/20 p-5">
-                          <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans text-foreground">
-                            {activeIter.content}
-                          </pre>
-                        </div>
-                      )
-                    })()}
+                    <StaticAdCard ad={activeAd} score={activeIter.aggregate_score} />
                   </div>
 
                   {/* Right: score + feedback */}
@@ -328,6 +350,39 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                         iteration={activeIteration}
                         prevScore={iterations.find((it) => it.iteration_number === activeIteration - 1)?.aggregate_score ?? null}
                       />
+                    </div>
+
+                    <Separator />
+
+                    {/* Ad copy breakdown */}
+                    <div className="space-y-2">
+                      <h2 className="text-sm font-semibold">Ad Copy</h2>
+                      <div className="rounded-lg border bg-muted/20 p-4 space-y-2 text-sm">
+                        <div>
+                          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Headline</span>
+                          <p className="font-semibold">{activeAd.headline}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Body</span>
+                          <p className="text-muted-foreground">{activeAd.body}</p>
+                        </div>
+                        {activeAd.features.length > 0 && (
+                          <div>
+                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Features</span>
+                            <ul className="space-y-0.5 mt-0.5">
+                              {activeAd.features.map((f, i) => (
+                                <li key={i} className="text-muted-foreground flex gap-1.5">
+                                  <span className="text-emerald-500 shrink-0">✓</span>{f}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <div>
+                          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">CTA</span>
+                          <p className="font-medium">{activeAd.cta}</p>
+                        </div>
+                      </div>
                     </div>
 
                     <Separator />
@@ -358,14 +413,9 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-muted-foreground" />
-                    <h2 className="text-sm font-semibold">
-                      Synthetic Users — Iteration {activeIteration}
-                    </h2>
-                    <span className="text-xs text-muted-foreground">
-                      ({iterUsers.length} users · hover for details)
-                    </span>
+                    <h2 className="text-sm font-semibold">Synthetic Users — Iteration {activeIteration}</h2>
+                    <span className="text-xs text-muted-foreground">({iterUsers.length} users · hover for details)</span>
                   </div>
-
                   {loadingUsers ? (
                     <div className="flex items-center gap-2 py-4">
                       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -378,10 +428,10 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                           <TooltipTrigger asChild>
                             <div className={cn(
                               "aspect-square rounded-lg flex flex-col items-center justify-center gap-1 cursor-default select-none transition-all hover:scale-105 hover:shadow-md",
-                              scoreColor(user.score)
+                              scoreColor(user.score), "text-white"
                             )}>
-                              <span className="text-sm font-bold text-white">{initials(user.name)}</span>
-                              <span className="text-xs font-semibold text-white">{user.score.toFixed(1)}</span>
+                              <span className="text-sm font-bold">{initials(user.name)}</span>
+                              <span className="text-xs font-semibold">{user.score.toFixed(1)}</span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[220px] p-3 space-y-2">
@@ -405,22 +455,6 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                       ))}
                     </div>
                   )}
-
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
-                    <span>Score legend:</span>
-                    {[
-                      { color: "bg-red-400", label: "< 3.5" },
-                      { color: "bg-orange-400", label: "3.5–4.5" },
-                      { color: "bg-amber-400", label: "4.5–5.5" },
-                      { color: "bg-lime-400", label: "5.5–6.5" },
-                      { color: "bg-emerald-500", label: "6.5+" },
-                    ].map(({ color, label }) => (
-                      <span key={label} className="flex items-center gap-1.5">
-                        <span className={cn("h-2.5 w-2.5 rounded-sm", color)} />
-                        {label}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               </>
             ) : (
@@ -428,8 +462,8 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                 {iterStatus(activeIteration) === "running" ? (
                   <>
                     <Loader2 className="h-8 w-8 text-amber-500 animate-spin mb-3" />
-                    <p className="text-sm font-medium">Iteration {activeIteration} is running…</p>
-                    <p className="text-xs text-muted-foreground mt-1">Synthetic users are evaluating this version.</p>
+                    <p className="text-sm font-medium">Generating ad #{activeIteration}…</p>
+                    <p className="text-xs text-muted-foreground mt-1">Creating image and testing with synthetic users.</p>
                   </>
                 ) : job?.status === "pending" ? (
                   <>
@@ -455,11 +489,45 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     <h2 className="text-sm font-semibold">Score Progression</h2>
                   </div>
-                  <ProgressionChart
-                    data={chartData}
-                    activeIteration={activeIteration}
-                    onDotClick={(n) => setActiveIteration(n)}
-                  />
+                  <div className="rounded-lg border bg-muted/10 p-4">
+                    <ResponsiveContainer width="100%" height={200}>
+                      <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis dataKey="iteration" tickFormatter={(v) => `#${v}`} tick={{ fontSize: 12 }} />
+                        <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 12 }} />
+                        <RechartsTooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null
+                            const d = payload[0].payload as { iteration: number; score: number }
+                            return (
+                              <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
+                                <p className="font-medium">Iteration #{d.iteration}</p>
+                                <p className="text-muted-foreground">Score: <span className="font-semibold text-foreground">{d.score.toFixed(1)}</span></p>
+                              </div>
+                            )
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="score"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2.5}
+                          dot={(props: { cx: number; cy: number; payload: { iteration: number; score: number } }) => {
+                            const { cx, cy, payload } = props
+                            const isActive = payload.iteration === activeIteration
+                            return (
+                              <circle key={payload.iteration} cx={cx} cy={cy} r={isActive ? 6 : 4}
+                                fill={isActive ? "hsl(var(--primary))" : "hsl(var(--background))"}
+                                stroke="hsl(var(--primary))" strokeWidth={2}
+                                style={{ cursor: "pointer" }}
+                                onClick={() => setActiveIteration(payload.iteration)} />
+                            )
+                          }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                    <p className="text-xs text-muted-foreground text-center mt-1">Click a point to jump to that iteration</p>
+                  </div>
                 </div>
               </>
             )}
@@ -473,33 +541,24 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-  if (status === "completed") {
-    return (
-      <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 rounded-full px-2.5 py-0.5">
-        <CheckCircle2 className="h-3 w-3" />
-        Completed
-      </span>
-    )
-  }
-  if (status === "running") {
-    return (
-      <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-full px-2.5 py-0.5">
-        <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-        Running
-      </span>
-    )
-  }
-  if (status === "failed") {
-    return (
-      <span className="flex items-center gap-1.5 text-xs font-medium text-destructive bg-destructive/10 border border-destructive/20 rounded-full px-2.5 py-0.5">
-        Failed
-      </span>
-    )
-  }
+  if (status === "completed") return (
+    <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 rounded-full px-2.5 py-0.5">
+      <CheckCircle2 className="h-3 w-3" />Completed
+    </span>
+  )
+  if (status === "running") return (
+    <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-full px-2.5 py-0.5">
+      <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />Running
+    </span>
+  )
+  if (status === "failed") return (
+    <span className="flex items-center gap-1.5 text-xs font-medium text-destructive bg-destructive/10 border border-destructive/20 rounded-full px-2.5 py-0.5">
+      Failed
+    </span>
+  )
   return (
     <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground border rounded-full px-2.5 py-0.5">
-      <Clock className="h-3 w-3" />
-      Pending
+      <Clock className="h-3 w-3" />Pending
     </span>
   )
 }
@@ -512,7 +571,6 @@ function AggregateScore({
   prevScore: number | null
 }) {
   if (score === null) return null
-
   const radius = 36
   const circumference = 2 * Math.PI * radius
   const dashoffset = circumference * (1 - score / 10)
@@ -536,19 +594,18 @@ function AggregateScore({
           <span className="block text-[10px] text-muted-foreground">/ 10</span>
         </div>
       </div>
-
       <div className="space-y-1.5">
         <p className="text-sm font-medium">
           {score >= 6.5 ? "Strong result" : score >= 5.5 ? "Improving" : score >= 4.5 ? "Mixed signals" : "Needs work"}
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed max-w-[180px]">
           {score >= 6.5
-            ? "Most synthetic users found this version relevant and compelling."
+            ? "Most synthetic users found this ad compelling."
             : score >= 5.5
-            ? "Good progress — users are engaging but still have key objections."
+            ? "Good progress — users are engaging but have objections."
             : score >= 4.5
-            ? "Halfway there. Pain framing is landing but CTA needs work."
-            : "Opener and value prop aren't connecting yet. Keep iterating."}
+            ? "Halfway there. Visual or copy needs refinement."
+            : "Visual and copy aren't connecting yet. Keep iterating."}
         </p>
         {iteration > 1 && delta !== null && (
           <p className={cn("text-xs font-medium", delta >= 0 ? "text-emerald-600" : "text-destructive")}>
@@ -556,56 +613,6 @@ function AggregateScore({
           </p>
         )}
       </div>
-    </div>
-  )
-}
-
-function ProgressionChart({
-  data, activeIteration, onDotClick,
-}: {
-  data: { iteration: number; score: number }[]
-  activeIteration: number
-  onDotClick: (n: number) => void
-}) {
-  return (
-    <div className="rounded-lg border bg-muted/10 p-4">
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-          <XAxis dataKey="iteration" tickFormatter={(v) => `#${v}`} tick={{ fontSize: 12 }} />
-          <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 12 }} />
-          <RechartsTooltip
-            content={({ active, payload }) => {
-              if (!active || !payload?.length) return null
-              const d = payload[0].payload as { iteration: number; score: number }
-              return (
-                <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
-                  <p className="font-medium">Iteration #{d.iteration}</p>
-                  <p className="text-muted-foreground">Score: <span className="font-semibold text-foreground">{d.score.toFixed(1)}</span></p>
-                </div>
-              )
-            }}
-          />
-          <Line
-            type="monotone"
-            dataKey="score"
-            stroke="hsl(var(--primary))"
-            strokeWidth={2.5}
-            dot={(props: { cx: number; cy: number; payload: { iteration: number; score: number } }) => {
-              const { cx, cy, payload } = props
-              const isActive = payload.iteration === activeIteration
-              return (
-                <circle key={payload.iteration} cx={cx} cy={cy} r={isActive ? 6 : 4}
-                  fill={isActive ? "hsl(var(--primary))" : "hsl(var(--background))"}
-                  stroke="hsl(var(--primary))" strokeWidth={2}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => onDotClick(payload.iteration)} />
-              )
-            }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-      <p className="text-xs text-muted-foreground text-center mt-1">Click a point to jump to that iteration</p>
     </div>
   )
 }

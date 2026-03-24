@@ -17,6 +17,7 @@ import {
   LayoutTemplate,
   Video,
   ImageIcon,
+  Layers,
   ChevronRight,
   ChevronLeft,
   Upload,
@@ -40,6 +41,7 @@ type ContentType =
   | "social-post"
   | "ugc-ad"
   | "ugc-thumbnail"
+  | "static-ad"
   | "other"
 
 interface FormState {
@@ -122,6 +124,12 @@ const CONTENT_TYPES: {
     label: "UGC Thumbnail",
     description: "Test images for scroll-stopping power",
     icon: <ImageIcon className="h-5 w-5" />,
+  },
+  {
+    id: "static-ad",
+    label: "Static Ad",
+    description: "Iterative image + copy ad creative",
+    icon: <Layers className="h-5 w-5" />,
   },
   {
     id: "other",
@@ -610,15 +618,19 @@ function Step1Content({
 
       <div className="space-y-2">
         <Label htmlFor="draft" className="text-sm font-medium">
-          Starting draft{" "}
+          {form.contentType === "static-ad" ? "Ad concept / brief" : "Starting draft"}{" "}
           <span className="text-muted-foreground font-normal">(optional)</span>
         </Label>
         <p className="text-xs text-muted-foreground">
-          Paste your current copy here. If left blank, Refinery will generate a first version for you.
+          {form.contentType === "static-ad"
+            ? "Describe the look and feel you have in mind. If left blank, Refinery will generate a concept from your ICP and context."
+            : "Paste your current copy here. If left blank, Refinery will generate a first version for you."}
         </p>
         <Textarea
           id="draft"
-          placeholder="Paste your current email, ad copy, subject line, etc."
+          placeholder={form.contentType === "static-ad"
+            ? "e.g. Dark green background, premium feel, GLP-1 weight loss product, show injection pen, target audience is women 30–50"
+            : "Paste your current email, ad copy, subject line, etc."}
           className="min-h-[180px] resize-none"
           value={form.draft}
           onChange={(e) => update("draft", e.target.value)}

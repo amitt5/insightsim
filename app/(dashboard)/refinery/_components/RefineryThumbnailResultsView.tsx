@@ -7,6 +7,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Loader2, CheckCircle2, Clock, Images } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { RunMoreButton } from "./RunMoreButton"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -133,7 +134,10 @@ export function RefineryThumbnailResultsView({ campaignId }: { campaignId: strin
               <Badge variant="secondary">UGC Thumbnail</Badge>
               <StatusBadge status={campaign.status} />
             </div>
-            <div className="shrink-0 text-right">
+            <div className="shrink-0 flex flex-col items-end gap-2">
+              {campaign.status === "completed" && (
+                <RunMoreButton campaignId={campaignId} onComplete={fetchCampaign} />
+              )}
               <p className="text-sm font-medium">
                 {completedCount} of {totalImages} images tested
               </p>

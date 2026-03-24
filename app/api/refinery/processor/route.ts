@@ -13,7 +13,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { openai } from '@/lib/openai';
-import { generatePersonImage } from '@/lib/runware';
+import { generatePersonImage, callGeminiVision } from '@/lib/runware';
 import { generateUGCVideo } from '@/lib/fal';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -180,17 +180,49 @@ async function runJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise
   }
 
   try {
-    // ── GENERATE SYNTHETIC USER PANEL ─────────────────────────────────────────
-    // Single OpenAI call to produce all users. Inserts panel + synthetic users.
+    // ── CHECK FOR EXISTING ITERATIONS (resume scenario) ───────────────────────
+    const { data: completedIters } = await db
+      .from('refinery_iterations')
+      .select('id, iteration_number, content')
+      .eq('campaign_id', campaign.id)
+      .eq('status', 'completed')
+      .order('iteration_number', { ascending: true });
 
-    const syntheticUsers = await generateSyntheticUsers(db, campaign);
+    const isResume = completedIters && completedIters.length > 0;
+    const startIterNum = isResume ? completedIters[completedIters.length - 1].iteration_number + 1 : 1;
 
-    // ── ITERATION LOOP ────────────────────────────────────────────────────────
-    // Each iteration: generate content → score all users → aggregate → repeat.
+    // ── GENERATE OR REUSE SYNTHETIC USER PANEL ────────────────────────────────
+    let syntheticUsers: SyntheticUser[];
+    if (isResume) {
+      const { data: existingUsers } = await db
+        .from('refinery_synthetic_users')
+        .select('id, name, age, gender, profession, bio, persona_data')
+        .eq('campaign_id', campaign.id);
+      syntheticUsers = (existingUsers ?? []) as SyntheticUser[];
+      if (syntheticUsers.length === 0) {
+        syntheticUsers = await generateSyntheticUsers(db, campaign);
+      }
+    } else {
+      syntheticUsers = await generateSyntheticUsers(db, campaign);
+    }
+
+    // ── SEED PREVIOUS CONTENT/FEEDBACK FROM LAST COMPLETED ITERATION ──────────
+    let previousContent: string | null = null;
+    let previousFeedbackSummary: string | null = null;
+
+    if (isResume) {
+      const lastIter = completedIters[completedIters.length - 1];
+      previousContent = lastIter.content;
+      const { data: lastResponses } = await db
+        .from('refinery_responses')
+        .select('score, feedback')
+        .eq('iteration_id', lastIter.id);
+      if (lastResponses?.length) {
+        previousFeedbackSummary = buildFeedbackSummary(lastResponses as ScoringResponse[]);
+      }
+    }
 
     // ── GENERATE BRAND AMBASSADOR IMAGE (ugc_ad campaigns only) ──────────────
-    // Single Runware call per campaign — same person appears across all iterations.
-
     let ambassadorImageUrl: string | undefined;
 
     if (campaign.content_type === 'ugc_ad') {
@@ -201,10 +233,7 @@ async function runJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise
       console.log('[refinery/processor] Ambassador image generated:', ambassadorImageUrl);
     }
 
-    let previousContent: string | null = null;
-    let previousFeedbackSummary: string | null = null;
-
-    for (let iterNum = 1; iterNum <= campaign.iterations; iterNum++) {
+    for (let iterNum = startIterNum; iterNum <= campaign.iterations; iterNum++) {
       // Generate content for this iteration (from scratch on iter 1, improved on 2+)
       const { content, improvementNotes } = await generateIterationContent(
         campaign,
@@ -244,6 +273,7 @@ async function runJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise
           // fall back to raw content
         }
       }
+      // static_ad: pass raw JSON — scoreOneStaticAdUser handles parsing
 
       const responses = await scoreAllUsers(
         db,
@@ -306,12 +336,38 @@ async function runJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise
 
 async function runThumbnailJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise<void> {
   try {
-    // 1. Generate synthetic users (same as standard campaigns)
-    const syntheticUsers = await generateSyntheticUsers(db, campaign);
+    // Check for already-completed iterations (resume scenario)
+    const { data: existingIters } = await db
+      .from('refinery_iterations')
+      .select('id, iteration_number')
+      .eq('campaign_id', campaign.id)
+      .eq('status', 'completed');
+    const completedCount = existingIters?.length ?? 0;
+    const newImagesNeeded = campaign.iterations - completedCount;
 
-    // 2. Build varied prompts and generate all images in parallel
-    const prompts = buildThumbnailPrompts(campaign.iterations, campaign.extra_context);
-    console.log(`[refinery/processor] Generating ${prompts.length} thumbnail images in parallel…`);
+    if (newImagesNeeded <= 0) {
+      await db.from('refinery_jobs').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', job.id);
+      await db.from('refinery_campaigns').update({ status: 'completed' }).eq('id', campaign.id);
+      return;
+    }
+
+    // 1. Generate or reuse synthetic users
+    let syntheticUsers: SyntheticUser[];
+    if (completedCount > 0) {
+      const { data: existingUsers } = await db
+        .from('refinery_synthetic_users')
+        .select('id, name, age, gender, profession, bio, persona_data')
+        .eq('campaign_id', campaign.id);
+      syntheticUsers = (existingUsers ?? []) as SyntheticUser[];
+      if (syntheticUsers.length === 0) syntheticUsers = await generateSyntheticUsers(db, campaign);
+    } else {
+      syntheticUsers = await generateSyntheticUsers(db, campaign);
+    }
+
+    // 2. Build prompts only for the new images needed
+    const allPrompts = buildThumbnailPrompts(campaign.iterations, campaign.extra_context);
+    const prompts = allPrompts.slice(completedCount);
+    console.log(`[refinery/processor] Generating ${prompts.length} new thumbnail images in parallel…`);
     const imageUrls = await Promise.all(prompts.map(generatePersonImage));
     console.log(`[refinery/processor] ${imageUrls.length} images generated.`);
 
@@ -320,7 +376,7 @@ async function runThumbnailJob(db: SupabaseClient, campaign: Campaign, job: Job)
       const batch = imageUrls.slice(i, i + 5);
 
       await Promise.all(batch.map(async (url, idx) => {
-        const iterNum = i + idx + 1;
+        const iterNum = completedCount + i + idx + 1;
 
         const { data: iter, error: iterErr } = await db
           .from('refinery_iterations')
@@ -495,6 +551,11 @@ async function generateIterationContent(
   previousFeedbackSummary: string | null,
   ambassadorImageUrl?: string
 ): Promise<{ content: string; improvementNotes: string | null }> {
+  // ── STATIC AD: iterative image + copy flow ──────────────────────────────────
+  if (campaign.content_type === 'static_ad') {
+    return generateStaticAdContent(campaign, iterNum, previousContent, previousFeedbackSummary);
+  }
+
   // ── UGC AD: hardcoded protein shake flow ────────────────────────────────────
   if (campaign.content_type === 'ugc_ad') {
     return generateUGCIterationContent(
@@ -608,13 +669,18 @@ async function scoreAllUsers(
   content: string,
   users: SyntheticUser[]
 ): Promise<ScoringResponse[]> {
-  // Thumbnail campaigns use fixed scoring criteria — ignore campaign metrics
+  // Thumbnail and static ad campaigns use fixed scoring criteria
   const isThumbnail = campaign.content_type === 'ugc_thumbnail';
+  const isStaticAd = campaign.content_type === 'static_ad';
   const metricsStr = isThumbnail
     ? 'scroll-stopping power, visual appeal, authenticity, whether you\'d click to watch'
+    : isStaticAd
+    ? 'purchase intent, visual appeal, copy clarity, scroll-stopping power, text placement'
     : campaign.metrics.join(', ');
   const contentTypeLabel = isThumbnail
     ? 'social media thumbnail for a UGC ad'
+    : isStaticAd
+    ? 'static social media ad'
     : campaign.content_type.replace(/_/g, ' ');
   const allResponses: ScoringResponse[] = [];
 
@@ -623,7 +689,9 @@ async function scoreAllUsers(
 
     // Run all 5 scoring calls concurrently
     const batchScores = await Promise.all(
-      batch.map((user) => scoreOneUser(user, content, contentTypeLabel, metricsStr))
+      isStaticAd
+        ? batch.map((user) => scoreOneStaticAdUser(user, content))
+        : batch.map((user) => scoreOneUser(user, content, contentTypeLabel, metricsStr))
     );
 
     // Insert this batch into refinery_responses
@@ -655,6 +723,75 @@ async function scoreAllUsers(
   }
 
   return allResponses;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCORE ONE STATIC AD USER (Gemini Vision)
+//
+// Uses Google Gemini 3 Flash via Runware so the synthetic user actually sees
+// the background image alongside the ad copy. Falls back to neutral on error.
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function scoreOneStaticAdUser(
+  user: SyntheticUser,
+  content: string,
+): Promise<{ score: number; feedback: string }> {
+  let ad: { imageUrl?: string; textLayout?: string; headline?: string; body?: string; features?: string[]; cta?: string } = {};
+  try { ad = JSON.parse(content); } catch { /* fall through */ }
+
+  const traitLines = Object.values(user.persona_data).slice(0, 3).join(' | ');
+
+  const systemPrompt = `You are a realistic synthetic user evaluating a static social media ad. Return only valid JSON — no markdown, no commentary.`;
+
+  const userMessage = `You are ${user.name}, ${user.age ?? 'unknown age'} year old ${user.gender ?? 'person'}, ${user.profession ?? 'professional'}.
+Bio: ${user.bio ?? 'No bio provided.'}
+How you think: ${traitLines}
+
+You're scrolling Instagram and you see this static ad. The image above is the background visual. The ad has this copy overlaid on it:
+- Text position: ${ad.textLayout ?? 'bottom-center'}
+- Headline: "${ad.headline ?? ''}"
+- Body: "${ad.body ?? ''}"
+- Features: ${(ad.features ?? []).join(', ')}
+- CTA: "${ad.cta ?? ''}"
+
+React as yourself. Consider: purchase intent, visual appeal, copy clarity, scroll-stopping power, and whether the text placement works with the image composition.
+
+Scoring guidance:
+- 1–3: Off-putting or irrelevant. You'd scroll past immediately.
+- 4–5: Generic. Nothing special.
+- 6–7: Has something — you might pause.
+- 8+: Genuinely compelling. Rare.
+
+Return JSON: { "score": <integer 1-10>, "feedback": "<2-3 sentences — react personally to both the image and the copy, including whether the text placement works>" }`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: ad.imageUrl ?? '' } },
+            { type: 'text', text: userMessage },
+          ],
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 400,
+      response_format: { type: 'json_object' },
+    });
+    const raw = completion.choices[0].message.content ?? '{}';
+    const parsed = JSON.parse(raw) as { score?: number; feedback?: string };
+    const score = typeof parsed.score === 'number'
+      ? Math.max(1, Math.min(10, Math.round(parsed.score)))
+      : 5;
+    return { score, feedback: typeof parsed.feedback === 'string' ? parsed.feedback : '' };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[vision scorer] Failed for user ${user.id}:`, msg);
+    return { score: 5, feedback: `Scoring error: ${msg.slice(0, 120)}` };
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -748,6 +885,149 @@ Return JSON: { "score": <integer 1-10>, "feedback": "<2-3 sentences of specific,
   return {
     score,
     feedback: typeof parsed.feedback === 'string' ? parsed.feedback : '',
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GENERATE STATIC AD CONTENT
+//
+// Each iteration: OpenAI generates ad copy + image prompt → Runware generates
+// the visual → returns JSON { imageUrl, imagePrompt, textLayout, headline,
+// body, features, cta }. Iterations 2+ improve both copy and layout from feedback.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface StaticAdContent {
+  imagePrompt?: string;
+  textLayout?: string;
+  headline?: string;
+  body?: string;
+  features?: string[];
+  cta?: string;
+  improvement_notes?: string | null;
+}
+
+const LAYOUT_OPTIONS = '"top-left", "top-right", "bottom-left", "bottom-right", "bottom-center", or "center"';
+
+async function generateStaticAdContent(
+  campaign: Campaign,
+  iterNum: number,
+  previousContent: string | null,
+  previousFeedbackSummary: string | null,
+): Promise<{ content: string; improvementNotes: string | null }> {
+  const contextSection = campaign.extra_context
+    ? `\n\nBrand/product context:\n${campaign.extra_context}`
+    : '';
+  const briefSection = campaign.initial_draft
+    ? `\n\nAd concept brief:\n${campaign.initial_draft}`
+    : '';
+
+  let userPrompt: string;
+
+  if (iterNum === 1) {
+    userPrompt = `Create a static social media ad for the following audience and brand.
+
+Target audience (ICP): ${campaign.icp}${contextSection}${briefSection}
+
+Return JSON with this exact shape:
+{
+  "imagePrompt": "detailed visual description for AI image generation — photorealistic, describe scene/lighting/composition/mood, NO text or logos in the image",
+  "textLayout": <one of ${LAYOUT_OPTIONS}>,
+  "headline": "5–10 word punchy headline",
+  "body": "1–3 sentences of supporting copy",
+  "features": ["concrete benefit 1", "concrete benefit 2", "concrete benefit 3"],
+  "cta": "2–5 word call to action",
+  "improvement_notes": null
+}
+
+Rules:
+- imagePrompt must describe a photorealistic scene that fits the brand — no text, no logos, no watermarks
+- textLayout should complement the composition (e.g. top-right if the subject is on the left side)
+- headline and copy must speak directly to the ICP's pain points — be specific, not generic
+- features should be concrete benefits, not empty claims`;
+
+  } else {
+    let prevAdFormatted = previousContent ?? '';
+    try {
+      const prev = JSON.parse(previousContent ?? '{}') as StaticAdContent;
+      prevAdFormatted = `Headline: "${prev.headline}"
+Body: "${prev.body}"
+Features: ${prev.features?.join(', ')}
+CTA: "${prev.cta}"
+Text position: ${prev.textLayout}
+Visual: ${prev.imagePrompt}`;
+    } catch { /* fall back to raw */ }
+
+    userPrompt = `You are improving a static social media ad based on synthetic user feedback.
+
+Target audience (ICP): ${campaign.icp}${contextSection}
+
+Previous ad (iteration ${iterNum - 1}):
+---
+${prevAdFormatted}
+---
+
+Feedback from synthetic users:
+${previousFeedbackSummary}
+
+Improve the ad. You may change the headline, body, features, CTA, text layout position, and the visual description — whatever the feedback suggests.
+
+Return JSON with this exact shape:
+{
+  "imagePrompt": "updated visual description — photorealistic, no text or logos in image",
+  "textLayout": <one of ${LAYOUT_OPTIONS}>,
+  "headline": "improved headline",
+  "body": "improved body copy",
+  "features": ["benefit 1", "benefit 2", "benefit 3"],
+  "cta": "improved CTA",
+  "improvement_notes": "2-3 sentences on what was changed and why based on the feedback"
+}`;
+  }
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [
+      {
+        role: 'system',
+        content: 'You create and optimize static social media ad concepts. Return only valid JSON — no markdown, no commentary.',
+      },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature: 0.8,
+    max_tokens: 1000,
+    response_format: { type: 'json_object' },
+  });
+
+  const raw = completion.choices[0].message.content ?? '{}';
+  let parsed: StaticAdContent;
+
+  try {
+    parsed = JSON.parse(raw) as StaticAdContent;
+  } catch {
+    throw new Error(`Failed to parse static ad content JSON: ${raw.slice(0, 300)}`);
+  }
+
+  if (!parsed.headline || !parsed.imagePrompt) {
+    throw new Error(`Missing required fields in static ad response: ${raw.slice(0, 200)}`);
+  }
+
+  // Generate the visual via Runware
+  console.log(`[refinery/processor] Generating static ad image via Runware (iter ${iterNum})…`);
+  const imageUrl = await generatePersonImage(parsed.imagePrompt);
+  console.log(`[refinery/processor] Static ad image generated: ${imageUrl}`);
+
+  const contentJson = JSON.stringify({
+    imageUrl,
+    imagePrompt: parsed.imagePrompt,
+    textLayout: parsed.textLayout ?? 'bottom-center',
+    headline: parsed.headline,
+    body: parsed.body ?? '',
+    features: parsed.features ?? [],
+    cta: parsed.cta ?? '',
+  });
+
+  return {
+    content: contentJson,
+    improvementNotes: parsed.improvement_notes ?? null,
   };
 }
 

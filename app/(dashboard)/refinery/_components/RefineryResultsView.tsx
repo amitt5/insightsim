@@ -420,7 +420,7 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                               <span className="text-xs font-semibold text-white">{user.score.toFixed(1)}</span>
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[260px] p-3 space-y-2">
+                          <TooltipContent side="top" align="center" avoidCollisions={true} collisionPadding={12} className="max-w-[300px] p-3 space-y-2 max-h-[420px] overflow-y-auto">
                             <div>
                               <p className="font-semibold text-sm">{user.name}</p>
                               <p className="text-xs text-muted-foreground">
@@ -441,7 +441,11 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                                 <Separator />
                                 <div>
                                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">Their message</p>
-                                  <p className="text-xs leading-relaxed">{user.personalizedContent}</p>
+                                  <p className="text-xs leading-relaxed whitespace-pre-wrap">
+                                    {user.personalizedContent.length > 300
+                                      ? user.personalizedContent.slice(0, 300) + "…"
+                                      : user.personalizedContent}
+                                  </p>
                                 </div>
                               </>
                             )}

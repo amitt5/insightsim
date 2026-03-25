@@ -164,6 +164,9 @@ CREATE TABLE refinery_responses (
   UNIQUE (iteration_id, synthetic_user_id)
 );
 
+ALTER TABLE refinery_responses ADD COLUMN IF NOT EXISTS personalized_content TEXT;
+ALTER TABLE refinery_iterations ADD COLUMN IF NOT EXISTS rag_recommendations TEXT;
+
 CREATE INDEX idx_refinery_responses_iteration_id      ON refinery_responses(iteration_id);
 CREATE INDEX idx_refinery_responses_campaign_id       ON refinery_responses(campaign_id);
 CREATE INDEX idx_refinery_responses_synthetic_user_id ON refinery_responses(synthetic_user_id);

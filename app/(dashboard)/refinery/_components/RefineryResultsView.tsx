@@ -13,7 +13,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   CheckCircle2, Loader2, Clock,
-  TrendingUp, Users, MessageSquare,
+  TrendingUp, Users, MessageSquare, Lightbulb,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { RefineryThumbnailResultsView } from "./RefineryThumbnailResultsView"
@@ -44,6 +44,7 @@ interface Iteration {
   content: string
   aggregate_score: number | null
   improvement_notes: string | null
+  rag_recommendations: string | null
   status: string
 }
 
@@ -56,6 +57,7 @@ interface IterUser {
   bio: string | null
   score: number
   feedback: string
+  personalizedContent: string | null
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -279,7 +281,7 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                      <h2 className="text-sm font-semibold">Version {activeIteration}</h2>
+                      <h2 className="text-sm font-semibold">Iteration Prompt {activeIteration}</h2>
                     </div>
                     {activeIter.improvement_notes && (
                       <p className="text-xs text-muted-foreground italic border-l-2 border-muted pl-3">
@@ -307,7 +309,8 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                         )
                       }
                       return (
-                        <div className="rounded-lg border bg-muted/20 p-5">
+                        <div className="rounded-lg border border-dashed bg-muted/10 p-5">
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">Personalization Prompt</p>
                           <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans text-foreground">
                             {activeIter.content}
                           </pre>
@@ -349,6 +352,39 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                         </div>
                       )}
                     </div>
+
+                    {(() => {
+                      if (!activeIter?.rag_recommendations) return null
+                      let recs: { type: string; description: string; why: string }[] = []
+                      try {
+                        const parsed = JSON.parse(activeIter.rag_recommendations) as { recommendations?: { type: string; description: string; why: string }[] }
+                        recs = parsed.recommendations ?? []
+                      } catch { return null }
+                      if (recs.length === 0) return null
+                      return (
+                        <>
+                          <Separator />
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Lightbulb className="h-4 w-4 text-amber-500" />
+                              <h2 className="text-sm font-semibold">How to improve this campaign</h2>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-3">
+                              Add this content to your RAG data to give the AI more to work with:
+                            </p>
+                            <div className="space-y-2.5">
+                              {recs.map((rec, i) => (
+                                <div key={i} className="rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 p-3 space-y-1">
+                                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">{rec.type}</p>
+                                  <p className="text-xs leading-relaxed">{rec.description}</p>
+                                  <p className="text-xs text-muted-foreground italic">Why: {rec.why}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )
+                    })()}
                   </div>
                 </div>
 
@@ -384,7 +420,7 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                               <span className="text-xs font-semibold text-white">{user.score.toFixed(1)}</span>
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[220px] p-3 space-y-2">
+                          <TooltipContent side="top" className="max-w-[260px] p-3 space-y-2">
                             <div>
                               <p className="font-semibold text-sm">{user.name}</p>
                               <p className="text-xs text-muted-foreground">
@@ -399,6 +435,15 @@ export function RefineryResultsView({ campaignId }: { campaignId: string }) {
                             </div>
                             {user.feedback && (
                               <p className="text-xs text-muted-foreground italic">"{user.feedback}"</p>
+                            )}
+                            {user.personalizedContent && (
+                              <>
+                                <Separator />
+                                <div>
+                                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">Their message</p>
+                                  <p className="text-xs leading-relaxed">{user.personalizedContent}</p>
+                                </div>
+                              </>
                             )}
                           </TooltipContent>
                         </Tooltip>

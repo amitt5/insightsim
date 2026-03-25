@@ -37,6 +37,7 @@ export async function GET(
     .select(`
       score,
       feedback,
+      personalized_content,
       refinery_synthetic_users (
         id, name, age, gender, profession, bio
       )
@@ -61,6 +62,7 @@ export async function GET(
       bio: u?.bio ?? null,
       score: r.score,
       feedback: r.feedback,
+      personalizedContent: r.personalized_content ?? null,
     };
   });
 

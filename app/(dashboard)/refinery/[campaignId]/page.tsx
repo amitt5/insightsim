@@ -546,7 +546,7 @@ export default function CampaignPage({
 function stepSubtitle(step: number) {
   switch (step) {
     case 1: return "Add any extra context about your product or campaign."
-    case 2: return "Choose what you want to optimize and provide a starting draft."
+    case 2: return "Choose what you want to optimize and provide a starting prompt."
     case 3: return "Describe your ideal customer profile to ground the synthetic users."
     case 4: return "Paste or upload existing research to make synthetic users more accurate."
     case 5: return "Select the signals you want to optimize for."
@@ -618,13 +618,13 @@ function Step1Content({
 
       <div className="space-y-2">
         <Label htmlFor="draft" className="text-sm font-medium">
-          {form.contentType === "static-ad" ? "Ad concept / brief" : "Starting draft"}{" "}
+          {form.contentType === "static-ad" ? "Ad concept / brief" : "Starting prompt"}{" "}
           <span className="text-muted-foreground font-normal">(optional)</span>
         </Label>
         <p className="text-xs text-muted-foreground">
           {form.contentType === "static-ad"
             ? "Describe the look and feel you have in mind. If left blank, Refinery will generate a concept from your ICP and context."
-            : "Paste your current copy here. If left blank, Refinery will generate a first version for you."}
+            : "Paste your initial prompt or hypothesis here (e.g. \"Write a LinkedIn message for {{firstName}} that leads with their compliance deadline...\"). If left blank, Refinery will generate a starting prompt from your ICP and context."}
         </p>
         <Textarea
           id="draft"

@@ -64,7 +64,7 @@ export async function GET(
 
     supabase
       .from('refinery_iterations')
-      .select('id, iteration_number, content, aggregate_score, improvement_notes, status')
+      .select('id, iteration_number, content, aggregate_score, improvement_notes, rag_recommendations, status')
       .eq('campaign_id', id)
       .order('iteration_number', { ascending: true }),
   ]);

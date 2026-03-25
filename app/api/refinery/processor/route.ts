@@ -79,6 +79,12 @@ function compressScore(raw: number): number {
   return Math.round(capped * 100) / 100;
 }
 
+// Text content types use the prompt-iteration architecture.
+// Ad/media types (static_ad, ugc_ad, ugc_thumbnail) keep their existing flows.
+function isTextPromptType(contentType: string): boolean {
+  return !['static_ad', 'ugc_ad', 'ugc_thumbnail'].includes(contentType);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/refinery/processor
 // Loads the campaign and pending job, marks the job as running, then fires
@@ -240,6 +246,7 @@ async function runJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise
         iterNum,
         previousContent,
         previousFeedbackSummary,
+        syntheticUsers,
         ambassadorImageUrl
       );
 
@@ -290,10 +297,15 @@ async function runJob(db: SupabaseClient, campaign: Campaign, job: Job): Promise
       previousFeedbackSummary = buildFeedbackSummary(responses);
       previousContent = content;
 
+      const ragRecs = isTextPromptType(campaign.content_type)
+        ? await generateRagRecommendations(previousFeedbackSummary, campaign)
+        : null;
+
       // Mark iteration completed with its aggregate score
       await db.from('refinery_iterations').update({
         aggregate_score: aggregateScore,
         status: 'completed',
+        ...(ragRecs ? { rag_recommendations: ragRecs } : {}),
       }).eq('id', iteration.id);
 
       // Update job progress so the UI can show current_iteration advancing
@@ -448,24 +460,28 @@ async function generateSyntheticUsers(
 ICP: ${campaign.icp}${ragContext}
 
 Rules:
-- Each user must feel like a specific real person — vary age, background, career stage, motivations, and communication style within the ICP
-- Do NOT generate generic archetypes or clones with minor variations
-- Spread users across different pain points, levels of skepticism, and buying readiness
-- Psychographic traits (persona_data) should reflect how each person thinks and makes decisions — not just demographics
+- Each user must feel like a specific real person with a believable LinkedIn profile
+- Vary seniority, company stage, career arc, communication style, and current pain across the panel
+- Do NOT generate generic archetypes or near-clones — every person should have a distinct situation
+- Ground each person in a realistic company context with specific detail (size, stage, location, industry niche)
 
 Return a JSON object with this exact shape:
 {
   "users": [
     {
       "name": "Full Name",
-      "age": 34,
+      "age": 41,
       "gender": "female",
-      "profession": "Head of Growth at 50-person SaaS startup",
-      "bio": "Two sentences: their professional context and one thing that makes them distinctive as a person.",
+      "profession": "CISO at a Series B fintech",
+      "bio": "Two sentences: their professional context and what makes them distinctive as a person.",
       "persona_data": {
-        "trait_1": "Highly analytical — demands proof before committing. Has been burned by overpromised tools before.",
-        "trait_2": "Motivated by team wins over personal credit. Measures everything.",
-        "trait_3": "Short on time. Skims first, reads only if the first line grabs her."
+        "company": "Meridian Financial — Series B fintech, ~180 employees, NYC, processing $2B in annual transactions",
+        "career_arc": "15 years in compliance before moving into security leadership 3 years ago — thinks like a regulator, not a technologist",
+        "recent_signal": "Posted last month about tabletop exercise fatigue; has publicly criticized AI compliance tools as 'checkbox theatre'",
+        "communication_style": "Direct and skeptical. Responds to peer framing and specific proof, ignores vendor pitches immediately",
+        "decision_driver": "Needs examiner-ready evidence and defensible audit trails — her personal liability is on the line",
+        "blocker": "Has been burned by two tools that overpromised. Will not engage without a concrete, verifiable proof point",
+        "pain_right_now": "NYDFS 23 NYCRR 500 amendment deadline approaching and her current exercise process can't generate examiner-ready reports"
       }
     }
   ]
@@ -549,6 +565,7 @@ async function generateIterationContent(
   iterNum: number,
   previousContent: string | null,
   previousFeedbackSummary: string | null,
+  panelUsers: SyntheticUser[],
   ambassadorImageUrl?: string
 ): Promise<{ content: string; improvementNotes: string | null }> {
   // ── STATIC AD: iterative image + copy flow ──────────────────────────────────
@@ -574,18 +591,49 @@ async function generateIterationContent(
   const guidelinesSection = campaign.messaging_guidelines
     ? `\n\nMessaging guidelines (MUST follow throughout):\n${campaign.messaging_guidelines}`
     : '';
+  const panelSection = panelUsers.length > 0
+    ? `\n\nYour prompt will generate messages for these synthetic users:\n` +
+      panelUsers.map(u => {
+        const d = u.persona_data ?? {};
+        const extras = [
+          d.company,
+          d.recent_signal,
+          d.decision_driver,
+          d.blocker,
+          d.pain_right_now,
+        ].filter(Boolean).join(' | ');
+        return `- ${u.name}, ${u.age ?? '?'}, ${u.profession ?? 'professional'}${extras ? `: ${extras}` : ''}`;
+      }).join('\n')
+    : '';
 
   let userPrompt: string;
+  const usePromptIteration = isTextPromptType(campaign.content_type);
 
   if (iterNum === 1) {
-    // PROMPT: First iteration — generate or refine initial draft
     const draftSection = campaign.initial_draft
-      ? `\n\nStarting draft to improve upon:\n---\n${campaign.initial_draft}\n---`
+      ? `\n\nStarting prompt / hypothesis to build from:\n---\n${campaign.initial_draft}\n---`
       : '';
 
-    userPrompt = `Write a high-performing ${contentTypeLabel} for the following audience and optimization goals.
+    if (usePromptIteration) {
+      // PROMPT: Generate a personalization prompt (not a message) for text content types
+      userPrompt = `Write a detailed prompt that an AI can use to write a personalized ${contentTypeLabel} for each individual recipient.
+The prompt you write will be used like this: an AI reads it, then generates a unique ${contentTypeLabel} tailored to a specific person's name, role, company, and pain points.
 
-Target audience (ICP): ${campaign.icp}
+Target audience (ICP): ${campaign.icp}${panelSection}
+Metrics to optimize for: ${metricsStr}${contextSection}${draftSection}${guidelinesSection}
+
+Your prompt must:
+- Tell the AI what tone, structure, and length to use
+- Specify what to reference from the recipient's profile (role, pain points, company context, etc.)
+- Name what to avoid (buzzwords, generic claims, vague benefits, etc.)
+- Be concrete and opinionated — not a vague instruction
+
+Return JSON: { "content": "the full personalization prompt here", "improvement_notes": null }`;
+    } else {
+      // PROMPT: Legacy path for ugc_thumbnail (generates a message, not a prompt)
+      userPrompt = `Write a high-performing ${contentTypeLabel} for the following audience and optimization goals.
+
+Target audience (ICP): ${campaign.icp}${panelSection}
 Metrics to optimize for: ${metricsStr}${contextSection}${draftSection}${guidelinesSection}
 
 Instructions:
@@ -593,15 +641,36 @@ Instructions:
 - Optimize specifically for: ${metricsStr}
 - Speak directly to the ICP's real pain points and motivations — be specific, not generic
 - Use concrete language; avoid buzzwords and empty claims
-- Follow the messaging guidelines strictly — lean into what's specified and avoid what's flagged
 
 Return JSON: { "content": "the full copy here", "improvement_notes": null }`;
+    }
 
   } else {
-    // PROMPT: Subsequent iterations — improve based on synthetic user feedback
-    userPrompt = `You are improving a ${contentTypeLabel} based on synthetic user feedback. Your goal is meaningful score improvement on: ${metricsStr}.
+    if (usePromptIteration) {
+      // PROMPT: Refine the personalization prompt based on per-persona feedback
+      userPrompt = `You are refining a personalization prompt for ${contentTypeLabel}. Each synthetic user received a message generated from the previous prompt — tailored to their own profile — and scored it.
 
-Target audience (ICP): ${campaign.icp}${contextSection}${guidelinesSection}
+Target audience (ICP): ${campaign.icp}${panelSection}${contextSection}${guidelinesSection}
+
+Previous prompt (iteration ${iterNum - 1}):
+---
+${previousContent}
+---
+
+Aggregated feedback (each user evaluated their own personalized message):
+${previousFeedbackSummary}
+
+Refine the prompt to address what failed and preserve what worked:
+- Where feedback said "generic" or "vague" — make the instructions more specific
+- Where feedback flagged tone, length, or structure issues — add explicit guidance
+- Keep instructions that led to positive reactions
+
+Return JSON: { "content": "the improved personalization prompt", "improvement_notes": "2-3 sentences on what changed and why" }`;
+    } else {
+      // PROMPT: Legacy path for ugc_thumbnail
+      userPrompt = `You are improving a ${contentTypeLabel} based on synthetic user feedback. Your goal is meaningful score improvement on: ${metricsStr}.
+
+Target audience (ICP): ${campaign.icp}${panelSection}${contextSection}${guidelinesSection}
 
 Previous version (iteration ${iterNum - 1}):
 ---
@@ -616,9 +685,9 @@ Instructions:
 - Preserve and amplify what scored well
 - Make concrete changes — not vague refinements
 - Write the complete ${contentTypeLabel} copy only — no labels or commentary
-- Continue adhering to the messaging guidelines from the brief
 
 Return JSON: { "content": "the improved full copy", "improvement_notes": "2-3 sentences on what was changed and why, based on the feedback" }`;
+    }
   }
 
   const completion = await openai.chat.completions.create({
@@ -655,6 +724,59 @@ Return JSON: { "content": "the improved full copy", "improvement_notes": "2-3 se
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GENERATE PERSONALIZED MESSAGE FOR ONE USER
+//
+// Takes the iteration prompt (instructions) + a synthetic user's profile and
+// produces a personalized message for that specific person. Used before scoring
+// so each user evaluates copy written for them, not a generic template.
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function generatePersonalizedMessage(
+  iterationPrompt: string,
+  user: SyntheticUser,
+  contentTypeLabel: string
+): Promise<string> {
+  const profileDetails = Object.entries(user.persona_data ?? {})
+    .map(([key, value]) => `- ${key.replace(/_/g, ' ')}: ${value}`)
+    .join('\n');
+
+  const userPrompt = `Use the following instructions to write a personalized ${contentTypeLabel} for this specific person.
+
+Recipient profile:
+- Name: ${user.name}
+- Age: ${user.age ?? 'unknown'}, ${user.gender ?? 'unknown gender'}
+- Role: ${user.profession ?? 'professional'}
+- Background: ${user.bio ?? 'No bio available'}
+${profileDetails}
+
+Instructions (follow these exactly):
+${iterationPrompt}
+
+Return JSON: { "content": "the personalized message, nothing else" }`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You write personalized marketing copy. Return only valid JSON — no markdown, no commentary.',
+        },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+      response_format: { type: 'json_object' },
+    });
+    const raw = completion.choices[0].message.content ?? '{}';
+    const parsed = JSON.parse(raw) as { content?: string };
+    return parsed.content ?? '';
+  } catch {
+    return '';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SCORE ALL SYNTHETIC USERS
 //
 // Splits users into sequential batches of 5. Within each batch, all 5 scoring
@@ -669,9 +791,10 @@ async function scoreAllUsers(
   content: string,
   users: SyntheticUser[]
 ): Promise<ScoringResponse[]> {
-  // Thumbnail and static ad campaigns use fixed scoring criteria
   const isThumbnail = campaign.content_type === 'ugc_thumbnail';
   const isStaticAd = campaign.content_type === 'static_ad';
+  const usePersonalization = isTextPromptType(campaign.content_type);
+
   const metricsStr = isThumbnail
     ? 'scroll-stopping power, visual appeal, authenticity, whether you\'d click to watch'
     : isStaticAd
@@ -682,44 +805,73 @@ async function scoreAllUsers(
     : isStaticAd
     ? 'static social media ad'
     : campaign.content_type.replace(/_/g, ' ');
+
   const allResponses: ScoringResponse[] = [];
 
   for (let i = 0; i < users.length; i += 5) {
     const batch = users.slice(i, i + 5);
 
-    // Run all 5 scoring calls concurrently
-    const batchScores = await Promise.all(
-      isStaticAd
-        ? batch.map((user) => scoreOneStaticAdUser(user, content))
-        : batch.map((user) => scoreOneUser(user, content, contentTypeLabel, metricsStr))
-    );
+    if (usePersonalization) {
+      // TEXT TYPES: generate a personalized message per user, then score that message
+      const batchResults = await Promise.all(
+        batch.map(async (user) => {
+          const personalizedContent = await generatePersonalizedMessage(content, user, contentTypeLabel);
+          const result = await scoreOneUser(user, personalizedContent, contentTypeLabel, metricsStr);
+          return { ...result, personalizedContent };
+        })
+      );
 
-    // Insert this batch into refinery_responses
-    const rows = batchScores.map((result, idx) => ({
-      iteration_id: iterationId,
-      campaign_id: campaign.id,
-      synthetic_user_id: batch[idx].id,
-      score: result.score,
-      feedback: result.feedback,
-    }));
+      const rows = batchResults.map((result, idx) => ({
+        iteration_id: iterationId,
+        campaign_id: campaign.id,
+        synthetic_user_id: batch[idx].id,
+        score: result.score,
+        feedback: result.feedback,
+        personalized_content: result.personalizedContent,
+      }));
 
-    const { error: insertError } = await db
-      .from('refinery_responses')
-      .insert(rows);
+      const { error: insertError } = await db.from('refinery_responses').insert(rows);
+      if (insertError) {
+        throw new Error(`Failed to insert responses for batch ${Math.floor(i / 5) + 1}: ${insertError.message}`);
+      }
 
-    if (insertError) {
-      throw new Error(
-        `Failed to insert responses for batch ${Math.floor(i / 5) + 1}: ${insertError.message}`
+      allResponses.push(
+        ...batchResults.map((r, idx) => ({
+          synthetic_user_id: batch[idx].id,
+          score: r.score,
+          feedback: r.feedback,
+        }))
+      );
+
+    } else {
+      // AD/MEDIA TYPES: score the raw content directly (existing behaviour)
+      const batchScores = await Promise.all(
+        isStaticAd
+          ? batch.map((user) => scoreOneStaticAdUser(user, content))
+          : batch.map((user) => scoreOneUser(user, content, contentTypeLabel, metricsStr))
+      );
+
+      const rows = batchScores.map((result, idx) => ({
+        iteration_id: iterationId,
+        campaign_id: campaign.id,
+        synthetic_user_id: batch[idx].id,
+        score: result.score,
+        feedback: result.feedback,
+      }));
+
+      const { error: insertError } = await db.from('refinery_responses').insert(rows);
+      if (insertError) {
+        throw new Error(`Failed to insert responses for batch ${Math.floor(i / 5) + 1}: ${insertError.message}`);
+      }
+
+      allResponses.push(
+        ...batchScores.map((r, idx) => ({
+          synthetic_user_id: batch[idx].id,
+          score: r.score,
+          feedback: r.feedback,
+        }))
       );
     }
-
-    allResponses.push(
-      ...batchScores.map((r, idx) => ({
-        synthetic_user_id: batch[idx].id,
-        score: r.score,
-        feedback: r.feedback,
-      }))
-    );
   }
 
   return allResponses;
@@ -739,13 +891,15 @@ async function scoreOneStaticAdUser(
   let ad: { imageUrl?: string; textLayout?: string; headline?: string; body?: string; features?: string[]; cta?: string } = {};
   try { ad = JSON.parse(content); } catch { /* fall through */ }
 
-  const traitLines = Object.values(user.persona_data).slice(0, 3).join(' | ');
+  const profileDetails = Object.entries(user.persona_data ?? {})
+    .map(([key, value]) => `- ${key.replace(/_/g, ' ')}: ${value}`)
+    .join('\n');
 
   const systemPrompt = `You are a realistic synthetic user evaluating a static social media ad. Return only valid JSON — no markdown, no commentary.`;
 
   const userMessage = `You are ${user.name}, ${user.age ?? 'unknown age'} year old ${user.gender ?? 'person'}, ${user.profession ?? 'professional'}.
 Bio: ${user.bio ?? 'No bio provided.'}
-How you think: ${traitLines}
+${profileDetails}
 
 You're scrolling Instagram and you see this static ad. The image above is the background visual. The ad has this copy overlaid on it:
 - Text position: ${ad.textLayout ?? 'bottom-center'}
@@ -808,9 +962,9 @@ async function scoreOneUser(
   contentTypeLabel: string,
   metricsStr: string
 ): Promise<{ score: number; feedback: string }> {
-  const traitLines = Object.values(user.persona_data)
-    .slice(0, 3)
-    .join(' | ');
+  const profileDetails = Object.entries(user.persona_data ?? {})
+    .map(([key, value]) => `- ${key.replace(/_/g, ' ')}: ${value}`)
+    .join('\n');
 
   // PROMPT: Synthetic user scoring — thumbnail variant uses image-specific framing
   const isThumbnailContent = content.startsWith('https://') || content.startsWith('http://');
@@ -818,7 +972,7 @@ async function scoreOneUser(
   const userPrompt = isThumbnailContent
     ? `You are ${user.name}, ${user.age ?? 'unknown age'} year old ${user.gender ?? 'person'}, ${user.profession ?? 'professional'}.
 Bio: ${user.bio ?? 'No bio provided.'}
-How you think: ${traitLines}
+${profileDetails}
 
 You're scrolling Instagram. You just saw a thumbnail image: a photo of a young athletic woman used as a UGC ad for a protein shake brand.
 The image URL is: ${content}
@@ -835,9 +989,9 @@ Scoring guidance:
 Return JSON: { "score": <integer 1-10>, "feedback": "<2-3 sentences — what specifically made you stop or scroll past, and why>" }`
     : `You are ${user.name}, ${user.age ?? 'unknown age'} year old ${user.gender ?? 'person'}, ${user.profession ?? 'professional'}.
 Bio: ${user.bio ?? 'No bio provided.'}
-How you think: ${traitLines}
+${profileDetails}
 
-You've just seen this ${contentTypeLabel}:
+You've just received this ${contentTypeLabel}, written specifically for you:
 ---
 ${content}
 ---
@@ -1151,4 +1305,61 @@ ${top}
 
 Most critical responses:
 ${bottom}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GENERATE RAG RECOMMENDATIONS
+//
+// Analyzes the iteration's feedback and tells the user what real-world content
+// (case studies, metrics, testimonials, etc.) they should add to their RAG
+// context to break through score plateaus. Stored per iteration, shown in UI.
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function generateRagRecommendations(
+  feedbackSummary: string,
+  campaign: Campaign
+): Promise<string | null> {
+  const contentTypeLabel = campaign.content_type.replace(/_/g, ' ');
+  const metricsStr = campaign.metrics.join(', ');
+
+  const userPrompt = `You are analyzing synthetic user feedback on a ${contentTypeLabel} campaign.
+
+Target audience: ${campaign.icp}
+Metrics being optimized: ${metricsStr}
+
+Feedback from this iteration:
+${feedbackSummary}
+
+Based on this feedback, identify what specific real-world content or data — if added to the campaign's research context — would most improve future messages. Only suggest content the user could realistically find and paste in: customer stories, specific metrics, testimonials, case studies, named outcomes, pricing context, competitive comparisons, industry benchmarks, etc. Do NOT suggest generic writing improvements.
+
+Return JSON:
+{
+  "recommendations": [
+    {
+      "type": "Customer case study",
+      "description": "A story from a fintech firm that used ChaosTrack to pass an NYDFS audit — ideally with a named outcome like time saved or findings avoided",
+      "why": "Personas asked repeatedly for proof from similar companies before engaging"
+    }
+  ]
+}`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You analyze marketing feedback and recommend research content. Return only valid JSON — no markdown, no commentary.',
+        },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.3,
+      max_tokens: 600,
+      response_format: { type: 'json_object' },
+    });
+    return completion.choices[0].message.content ?? null;
+  } catch (err) {
+    console.error('[refinery/processor] RAG recommendations failed (non-critical):', err);
+    return null;
+  }
 }

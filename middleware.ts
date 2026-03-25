@@ -10,7 +10,8 @@ export async function middleware(request: NextRequest) {
   const publicPaths = [
     '/',           // Add this line to make the landing page public
     '/idi/',
-    '/api/public/'
+    '/api/public/',
+    '/pitch'
   ];
 
   // Check if the current path is public
